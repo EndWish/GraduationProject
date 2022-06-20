@@ -147,12 +147,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="GameFramework.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="MainProject.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="GameFramework.cpp" />
     <ClCompile Include="MainProject.cpp" />
   </ItemGroup>
   <ItemGroup>
