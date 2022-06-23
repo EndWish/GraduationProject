@@ -39,9 +39,9 @@ bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd) {
 	m_hInstance = hInstance;
 	m_hWnd = hMainWnd;
 
-	CreateDirect3dDevice();
-	//CreateCommandQueueAndList();
-	//CreateRtvAndDsvDescriptorHeaps();
+	CreateDirect3dDevice();	// 가장먼저 디바이스를 생성해야 명령 대기열이나 서술자 힙 등을 생성할 수 있다.
+	CreateCommandQueueAndList();
+	CreateRtvAndDsvDescriptorHeaps();
 	//CreateSwapChain();
 	//CreateDepthStencilView();
 
@@ -90,5 +90,51 @@ void GameFramework::CreateDirect3dDevice()
 	for (UINT i = 0; i < m_nSwapChainBuffers; i++) m_fenceValues[i] = 0;
 
 	m_fenceEvent = ::CreateEvent(NULL, FALSE, FALSE, NULL);
+
+}
+void GameFramework::CreateCommandQueueAndList() 
+{
+	HRESULT hResult;
+
+	// 명령 대기열 생성
+	D3D12_COMMAND_QUEUE_DESC d3dCommandQueueDesc;
+	::ZeroMemory(&d3dCommandQueueDesc, sizeof(D3D12_COMMAND_QUEUE_DESC));
+	d3dCommandQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAG_NONE;
+	d3dCommandQueueDesc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+	hResult = m_pD3dDevice->CreateCommandQueue(&d3dCommandQueueDesc, _uuidof(ID3D12CommandQueue), (void**)&m_pD3dCommandQueue);
+
+	// 명령 할당자 생성
+	hResult = m_pD3dDevice->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, __uuidof(ID3D12CommandAllocator), (void**)&m_pD3dCommandAllocator);
+
+	// 명령 목록 생성 - CPU를 통해 명령 목록을 명령 대기열에 전달했다고 해서 즉시 실행되는 것이 아님에 주의! (CPU와 GPU는 독립적으로 돌아가기 때문에)
+	hResult = m_pD3dDevice->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_pD3dCommandAllocator.Get(), NULL, __uuidof(ID3D12GraphicsCommandList), (void**)&m_pD3dCommandList);
+	hResult = m_pD3dCommandList->Close();
+	 
+	/*	관련 설명 : 명령 대기열CommandQueue의 ExecuteCommandLists 함수를 통해명령 목록(CommandList)을 넣을 수 있다.
+		명령들을 명령 목록에 다 추가했으면, Close 메서드를 호출해서 명령들의 기록이 끝났음을 Direct3D에 알려줘야 한다.
+		하지만 (CPU를 통해) 명령 대기열에 명령 목록을 넣었다고 해서 바로 실행되는 것은 아니다. (CPU와 GPU가 독립적으로 수행되기 때문에) 
+		
+		D3D12_COMMAND_LIST_TYPE_DIRECT : GPU가 직접 실행할 수 있는 명령 버퍼
+		https://lipcoder.tistory.com/41
+	*/
+
+}
+void GameFramework::CreateRtvAndDsvDescriptorHeaps() {
+
+	// 랜더 타켓의 서술자 힙 생성
+	D3D12_DESCRIPTOR_HEAP_DESC d3dDescriptorHeapDesc;
+	::ZeroMemory(&d3dDescriptorHeapDesc, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
+	d3dDescriptorHeapDesc.NumDescriptors = m_nSwapChainBuffers;	// 현래 랜더 타켓은 전면, 후면 2개 사용
+	d3dDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
+	d3dDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
+	d3dDescriptorHeapDesc.NodeMask = 0;
+	HRESULT hResult = m_pD3dDevice->CreateDescriptorHeap(&d3dDescriptorHeapDesc, __uuidof(ID3D12DescriptorHeap), (void**)&m_pD3dRtvDescriptorHeap);
+	m_rtvDescriptorIncrementSize = m_pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+
+	// 깊이-스텐실의 서술자 힙 생성
+	d3dDescriptorHeapDesc.NumDescriptors = 1;	// 깊이-스텐실은 1개 사용
+	d3dDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_DSV;
+	hResult = m_pD3dDevice->CreateDescriptorHeap(&d3dDescriptorHeapDesc, __uuidof(ID3D12DescriptorHeap), (void**)&m_pD3dDsvDescriptorHeap);
+	m_dsvDescriptorIncrementSize = m_pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
 }

@@ -23,7 +23,7 @@ private:
 
 	//렌더 타겟 버퍼, 서술자 힙 인터페이스 포인터, 
 	ComPtr<ID3D12Resource> m_ppD3dRenderTargetBuffers[m_nSwapChainBuffers];	//렌더타겟버퍼(후면버퍼) 포인터들
-	ComPtr<ID3D12DescriptorHeap> m_pd3dRtvDescriptorHeap;	//렌더타켓 서술자 힙 포인터, 서술자 힙은 서술자들을 담는 메모리이다. 서술자는 리소스가상 메모리를 관리해주는 매개체 https://ssinyoung.tistory.com/37 참고
+	ComPtr<ID3D12DescriptorHeap> m_pD3dRtvDescriptorHeap;	//렌더타켓 서술자 힙 포인터, 서술자 힙은 서술자들을 담는 메모리이다. 서술자는 리소스가상 메모리를 관리해주는 매개체 https://ssinyoung.tistory.com/37 참고
 	UINT m_rtvDescriptorIncrementSize;	//렌더 타겟 서술자 원소의 크기이다.
 	
 	//깊이-스텐실 버퍼, 서술자 힙 인터페이스 포인터, 깊이-스텐실 서술자 원소의 크기이다.
@@ -50,12 +50,13 @@ public:
 	// 생성시(초기화) 함수
 	bool OnCreate(HINSTANCE hInstance, HWND hMainWnd);	// ㅇㅇㅇ하는 함수
 
-	// 제일 처음 생성해야 하는 것들 (OnCreate()에 포함된다.)
+	// 생성시(초기화) 함수의 부분들
 	void CreateDirect3dDevice();	// dxgiFactory를 생성하고, 그것을 이용하여 어댑터(그래픽 카드)를 살펴서 적절한 그래픽카드로 디바이스를 생성한다.
-	//void CreateCommandQueueAndList();
-	//void CreateRtvAndDsvDescriptorHeaps();
+	void CreateCommandQueueAndList();
+	void CreateRtvAndDsvDescriptorHeaps();
 	//void CreateSwapChain();
 	//void CreateDepthStencilView();
+
 
 };
 
