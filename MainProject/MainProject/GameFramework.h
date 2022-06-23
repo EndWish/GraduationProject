@@ -54,7 +54,8 @@ public:
 	void CreateDirect3dDevice();	// dxgiFactory를 생성하고, 그것을 이용하여 어댑터(그래픽 카드)를 살펴서 적절한 그래픽카드로 디바이스를 생성한다.
 	void CreateCommandQueueAndList();
 	void CreateRtvAndDsvDescriptorHeaps();
-	//void CreateSwapChain();
+	void CreateSwapChain();
+	void CreateRenderTargetViews();		// GPU에서 읽을 수 있도록 렌더타겟 뷰를 생성 ( CreateSwapChain()과 화면 크기 전환할때 사용된다.  )
 	//void CreateDepthStencilView();
 
 

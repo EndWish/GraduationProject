@@ -42,7 +42,7 @@ bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd) {
 	CreateDirect3dDevice();	// 가장먼저 디바이스를 생성해야 명령 대기열이나 서술자 힙 등을 생성할 수 있다.
 	CreateCommandQueueAndList();
 	CreateRtvAndDsvDescriptorHeaps();
-	//CreateSwapChain();
+	CreateSwapChain();	// DxgiFactory, CommandQueue, RtvDescriptorHeap 이 미리 만들어져 있어야 한다.
 	//CreateDepthStencilView();
 
 	return(true);
@@ -119,7 +119,8 @@ void GameFramework::CreateCommandQueueAndList()
 	*/
 
 }
-void GameFramework::CreateRtvAndDsvDescriptorHeaps() {
+void GameFramework::CreateRtvAndDsvDescriptorHeaps() 
+{
 
 	// 랜더 타켓의 서술자 힙 생성
 	D3D12_DESCRIPTOR_HEAP_DESC d3dDescriptorHeapDesc;
@@ -129,7 +130,7 @@ void GameFramework::CreateRtvAndDsvDescriptorHeaps() {
 	d3dDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	d3dDescriptorHeapDesc.NodeMask = 0;
 	HRESULT hResult = m_pD3dDevice->CreateDescriptorHeap(&d3dDescriptorHeapDesc, __uuidof(ID3D12DescriptorHeap), (void**)&m_pD3dRtvDescriptorHeap);
-	m_rtvDescriptorIncrementSize = m_pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	m_rtvDescriptorIncrementSize = m_pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);	// 렌더 타겟 뷰를 만들때 사용됨
 
 	// 깊이-스텐실의 서술자 힙 생성
 	d3dDescriptorHeapDesc.NumDescriptors = 1;	// 깊이-스텐실은 1개 사용
@@ -137,4 +138,43 @@ void GameFramework::CreateRtvAndDsvDescriptorHeaps() {
 	hResult = m_pD3dDevice->CreateDescriptorHeap(&d3dDescriptorHeapDesc, __uuidof(ID3D12DescriptorHeap), (void**)&m_pD3dDsvDescriptorHeap);
 	m_dsvDescriptorIncrementSize = m_pD3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
+}
+void GameFramework::CreateSwapChain()
+{
+	RECT rcClient;
+	::GetClientRect(m_hWnd, &rcClient);	// 클라이언트 크기를 rcClient에 저장
+	m_windowClientWidth = rcClient.right - rcClient.left;
+	m_windowClientHeight = rcClient.bottom - rcClient.top;
+
+	DXGI_SWAP_CHAIN_DESC dxgiSwapChainDesc;
+	::ZeroMemory(&dxgiSwapChainDesc, sizeof(dxgiSwapChainDesc));
+	dxgiSwapChainDesc.BufferCount = m_nSwapChainBuffers;	// 스왑체인(렌더 타켓) 버퍼의 개수
+	dxgiSwapChainDesc.BufferDesc.Width = m_windowClientWidth;	// 윈도우 클라이언트 영역의 가로 크기 
+	dxgiSwapChainDesc.BufferDesc.Height = m_windowClientHeight;	// 윈도우 클라이언트 영역의 세로 크기 
+	dxgiSwapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;	// 픽셀을 RGBA에 8bit 형태로 그리기
+	dxgiSwapChainDesc.BufferDesc.RefreshRate.Numerator = 60;	// RefreshRate : 화면 갱신률(프레임) //분자
+	dxgiSwapChainDesc.BufferDesc.RefreshRate.Denominator = 1;	// 분모
+	dxgiSwapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;	// 출력용 버퍼로 쓰겠다고 지정하는것.
+	dxgiSwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;	// 스왑체인의 기본 정보.
+	dxgiSwapChainDesc.OutputWindow = m_hWnd;	// 출력할 윈도우
+	dxgiSwapChainDesc.SampleDesc.Count = (m_msaa4xEnable) ? 4 : 1;
+	dxgiSwapChainDesc.SampleDesc.Quality = (m_msaa4xEnable) ? (m_msaa4xQualityLevels - 1) : 0;
+	dxgiSwapChainDesc.Windowed = TRUE;	// 창모드를 쓸껀지?
+	dxgiSwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
+
+	HRESULT hResult = m_pDxgiFactory->CreateSwapChain(m_pD3dCommandQueue.Get(), &dxgiSwapChainDesc, (IDXGISwapChain**)m_pDxgiSwapChain.GetAddressOf() );
+
+	m_swapChainBufferCurrentIndex = m_pDxgiSwapChain->GetCurrentBackBufferIndex();
+
+	hResult = m_pDxgiFactory->MakeWindowAssociation(m_hWnd, DXGI_MWA_NO_ALT_ENTER);
+
+	CreateRenderTargetViews();	// RtvDescriptorHeap 이 미리 만들어져 있어야 한다.
+}
+void GameFramework::CreateRenderTargetViews() {
+	D3D12_CPU_DESCRIPTOR_HANDLE d3dRtvCPUDescriptorHandle = m_pD3dRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();	// 서술자 힙을 통해 시작주소를 가져온다.
+	for (UINT i = 0; i < m_nSwapChainBuffers; i++) {
+		m_pDxgiSwapChain->GetBuffer(i, __uuidof(ID3D12Resource), (void**)&m_ppD3dRenderTargetBuffers[i]);	// 렌더타켓 버퍼를 생성한다.
+		m_pD3dDevice->CreateRenderTargetView(m_ppD3dRenderTargetBuffers[i].Get(), NULL, d3dRtvCPUDescriptorHandle);	// 렌더타켓 뷰를 서술자 힙에 생성(적제) (뷰==서술자?)
+		d3dRtvCPUDescriptorHandle.ptr += m_rtvDescriptorIncrementSize;	// 다음번 주소로 이동
+	}
 }
