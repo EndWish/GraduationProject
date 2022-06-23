@@ -48,30 +48,32 @@ bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd) {
 	return(true);
 }
 
-// 제일 처음 생성해야 하는 것들 (OnCreate()에 포함된다.)
-void GameFramework::CreateDirect3dDevice() {
+// 제일 처음 생성시해야 하는 것들 (OnCreate()에 포함된다.)
+void GameFramework::CreateDirect3dDevice() 
+{
+
 	HRESULT hResult;
 
 	UINT nDXGIFactoryFlags = 0;
 
-	hResult = ::CreateDXGIFactory2(nDXGIFactoryFlags, __uuidof(IDXGIFactory4), (void**)m_pDxgiFactory.GetAddressOf() );
+	hResult = ::CreateDXGIFactory2(nDXGIFactoryFlags, __uuidof(IDXGIFactory4), (void**)&m_pDxgiFactory );	// m_pDxgiFactory.GetAddressOf()와 &m_pDxgiFactory 는 같다.
 
 	ComPtr<IDXGIAdapter1> pD3dAdapter = NULL;	// 알아서 소멸됨
 
-	for (UINT i = 0; DXGI_ERROR_NOT_FOUND != m_pDxgiFactory->EnumAdapters1(i, pD3dAdapter.GetAddressOf()); i++) {	// i번째 어뎁터(그래픽 카드)에 대한 포인터를 pD3dAdapter변수에 저장
+	for (UINT i = 0; DXGI_ERROR_NOT_FOUND != m_pDxgiFactory->EnumAdapters1(i, &pD3dAdapter); i++) {	// i번째 어뎁터(그래픽 카드)에 대한 포인터를 pD3dAdapter변수에 저장
 		DXGI_ADAPTER_DESC1 dxgiAdapterDesc;
 		pD3dAdapter->GetDesc1(&dxgiAdapterDesc);	// 어댑터의 정보를 가져온다.
 
 		if (dxgiAdapterDesc.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) // 어댑터가 소프트웨어이면 건너뛴다.
 			continue;	
 
-		if (SUCCEEDED(D3D12CreateDevice(pD3dAdapter.Get(), D3D_FEATURE_LEVEL_12_0, _uuidof(ID3D12Device), (void**)m_pD3dDevice.GetAddressOf())))	// 합당한 어댑터가 있으면 그것으로 디바이스를 생성한다.
+		if (SUCCEEDED(D3D12CreateDevice(pD3dAdapter.Get(), D3D_FEATURE_LEVEL_12_0, _uuidof(ID3D12Device), (void**)&m_pD3dDevice)))	// 합당한 어댑터가 있으면 그것으로 디바이스를 생성한다.
 			break;
 	}
 
 	if (!pD3dAdapter) {
 		m_pDxgiFactory->EnumWarpAdapter(_uuidof(IDXGIFactory4), (void**)pD3dAdapter.GetAddressOf());
-		hResult = D3D12CreateDevice(pD3dAdapter.Get(), D3D_FEATURE_LEVEL_12_0, _uuidof(ID3D12Device), (void**)m_pD3dDevice.GetAddressOf() );
+		hResult = D3D12CreateDevice(pD3dAdapter.Get(), D3D_FEATURE_LEVEL_12_0, _uuidof(ID3D12Device), (void**)&m_pD3dDevice );
 	}
 
 	// 다중샘플링 정보
@@ -84,7 +86,7 @@ void GameFramework::CreateDirect3dDevice() {
 	m_msaa4xQualityLevels = d3dMsaaQualityLevels.NumQualityLevels;
 	m_msaa4xEnable = (m_msaa4xQualityLevels > 1) ? true : false;
 
-	hResult = m_pD3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)m_pD3dFence.GetAddressOf());
+	hResult = m_pD3dDevice->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(ID3D12Fence), (void**)&m_pD3dFence);
 	for (UINT i = 0; i < m_nSwapChainBuffers; i++) m_fenceValues[i] = 0;
 
 	m_fenceEvent = ::CreateEvent(NULL, FALSE, FALSE, NULL);

@@ -47,7 +47,7 @@ public:
 	GameFramework();
 	~GameFramework();
 
-	// 생성(초기화) 함수
+	// 생성시(초기화) 함수
 	bool OnCreate(HINSTANCE hInstance, HWND hMainWnd);	// ㅇㅇㅇ하는 함수
 
 	// 제일 처음 생성해야 하는 것들 (OnCreate()에 포함된다.)
