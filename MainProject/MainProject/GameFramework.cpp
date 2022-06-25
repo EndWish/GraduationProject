@@ -34,7 +34,7 @@ GameFramework::~GameFramework()
 
 }
 
-// 생성시(초기화) 함수
+// 생성시(초기화) 함수 및 소멸시 함수
 bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd) {
 	m_hInstance = hInstance;
 	m_hWnd = hMainWnd;
@@ -46,6 +46,12 @@ bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd) {
 	CreateDepthStencilView();
 
 	return true;
+}
+void GameFramework::OnDestroy()
+{
+	// 씬들을 Destroy 한다.
+
+	::CloseHandle(m_fenceEvent);
 }
 
 // 제일 처음 생성시해야 하는 것들 (OnCreate()에 포함된다.)
@@ -218,4 +224,10 @@ void GameFramework::CreateDepthStencilView()
 
 	D3D12_CPU_DESCRIPTOR_HANDLE d3dDsvCPUDescriptorHandle = m_pD3dDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	m_pD3dDevice->CreateDepthStencilView(m_pD3dDepthStencilBuffer.Get(), &d3dDepthStencilViewDesc, d3dDsvCPUDescriptorHandle);	// 깊이-스텐실 뷰를 서술자 힙에 생성(적제) (뷰==서술자?)
+}
+
+// 다음 프레임으로 진행하는 함수
+void GameFramework::FrameAdvance() 
+{
+
 }

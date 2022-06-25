@@ -42,12 +42,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     MSG msg;
 
     // 기본 메시지 루프입니다:
-    while (GetMessage(&msg, nullptr, 0, 0)) {
-        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
-            TranslateMessage(&msg);
-            DispatchMessage(&msg);
+    while (true) {
+        if (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT) 
+                break;
+            if (!::TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
+                ::TranslateMessage(&msg);
+                ::DispatchMessage(&msg);
+            }
+        }
+        else {
+            g_GameFramework.FrameAdvance();
         }
     }
+    g_GameFramework.FrameAdvance();
 
     return (int) msg.wParam;
 }

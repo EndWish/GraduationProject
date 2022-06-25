@@ -47,8 +47,9 @@ public:
 	GameFramework();
 	~GameFramework();
 
-	// 생성시(초기화) 함수
+	// 생성시(초기화) 함수 및 소멸시 함수
 	bool OnCreate(HINSTANCE hInstance, HWND hMainWnd);
+	void OnDestroy();
 
 	// 생성시(초기화) 함수의 부분들
 	void CreateDirect3dDevice();	// dxgiFactory를 생성하고, 그것을 이용하여 어댑터(그래픽 카드)를 살펴서 적절한 그래픽카드로 디바이스를 생성한다.
@@ -57,6 +58,9 @@ public:
 	void CreateSwapChain();
 	void CreateRenderTargetViews();		// GPU에서 읽을 수 있도록 렌더타겟 뷰를 생성 ( CreateSwapChain()과 화면 크기 전환할때 사용된다.  )
 	void CreateDepthStencilView();	// 깊이-스텐실 버퍼(리소스)를 만들고 깊이-스텐실 뷰를 서술자 힙에 적제
+
+	// 다음 프레임으로 진행하는 함수
+	void FrameAdvance();
 
 };
 
