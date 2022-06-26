@@ -55,7 +55,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             g_GameFramework.FrameAdvance();
         }
     }
-    g_GameFramework.FrameAdvance();
+    g_GameFramework.OnDestroy();
 
     return (int) msg.wParam;
 }

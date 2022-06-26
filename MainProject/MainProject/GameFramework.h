@@ -1,9 +1,13 @@
 #pragma once
+
+#include "GameTimer.h"
+
 class GameFramework {
 private:
 	HINSTANCE m_hInstance;
 	HWND m_hWnd;
 
+	//------------------------------------디바이스관련 변수-------------------------------------
 	//클라이언트 해상도
 	int m_windowClientWidth;
 	int m_windowClientHeight;
@@ -41,6 +45,9 @@ private:
 	HANDLE m_fenceEvent;
 	UINT64 m_fenceValues[m_nSwapChainBuffers];
 	
+	//------------------------------------게임관련 변수-------------------------------------
+	//
+	GameTimer m_gameTimer;
 
 public:
 	// 생성자 및 소멸자

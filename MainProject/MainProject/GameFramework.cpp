@@ -45,6 +45,9 @@ bool GameFramework::OnCreate(HINSTANCE hInstance, HWND hMainWnd) {
 	CreateSwapChain();	// DxgiFactory, CommandQueue, RtvDescriptorHeap 이 미리 만들어져 있어야 한다.
 	CreateDepthStencilView();
 
+	// 최초의 씬 빌드 [추가]
+	m_gameTimer.Reset();
+
 	return true;
 }
 void GameFramework::OnDestroy()
@@ -229,5 +232,8 @@ void GameFramework::CreateDepthStencilView()
 // 다음 프레임으로 진행하는 함수
 void GameFramework::FrameAdvance() 
 {
+	m_gameTimer.Tick(60.0f);
 
+	wstring ws = L"FPS : " + to_wstring(m_gameTimer.GetFPS());
+	::SetWindowText(m_hWnd, (LPCWSTR)ws.c_str());	// 렉걸림
 }

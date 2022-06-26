@@ -16,9 +16,13 @@
 #include <wrl.h>
 #include <shellapi.h>
 
+#include <fstream>
 #include <cmath>
 #include <string>
-#include <fstream>
+#include <array>
+#include <queue>
+
+#define DEBUG
 
 using namespace std;
 
