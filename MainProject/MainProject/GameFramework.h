@@ -1,6 +1,7 @@
 #pragma once
 
 #include "GameTimer.h"
+#include "Scene.h"
 
 class GameFramework {
 private:
@@ -48,6 +49,7 @@ private:
 	//------------------------------------게임관련 변수-------------------------------------
 	//
 	GameTimer m_gameTimer;
+	stack<Scene> m_scenes;	// 씬들을 관리한다. top에 있는 씬이 현재 진행될 씬이다.
 
 public:
 	// 생성자 및 소멸자
@@ -66,9 +68,17 @@ public:
 	void CreateRenderTargetViews();		// GPU에서 읽을 수 있도록 렌더타겟 뷰를 생성 ( CreateSwapChain()과 화면 크기 전환할때 사용된다.  )
 	void CreateDepthStencilView();	// 깊이-스텐실 버퍼(리소스)를 만들고 깊이-스텐실 뷰를 서술자 힙에 적제
 
+	// Get Set 함수
+	Scene& GetCurrentSceneRef();
+
 	// 다음 프레임으로 진행하는 함수
 	void FrameAdvance();
 
+	// 씬 관련 함수들
+	void PushScene(Scene&& newScene);	// 씬을 추가하고 그 씬으로 전환한다. 호출후 매개변수로 넘겨준 변수를 사용하면 안된다.(move를 통해 이동시키기 때문)
+	void PopScene();	// 현재 씬을 제거한다.
+	void ChangeScene(Scene&& newScene);	// 현재씬을 제거하고 새로운 씬으로 대체한다.
+	void ClearScene();	// 모든 씬을 제거한다.
 };
 
 

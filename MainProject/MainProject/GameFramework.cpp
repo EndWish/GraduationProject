@@ -229,11 +229,61 @@ void GameFramework::CreateDepthStencilView()
 	m_pD3dDevice->CreateDepthStencilView(m_pD3dDepthStencilBuffer.Get(), &d3dDepthStencilViewDesc, d3dDsvCPUDescriptorHandle);	// 깊이-스텐실 뷰를 서술자 힙에 생성(적제) (뷰==서술자?)
 }
 
+// Get Set 함수
+Scene& GameFramework::GetCurrentSceneRef()
+{
+#ifdef DEBUG
+	if (m_scenes.empty()) {
+		cout << "GameFramework::GetCurrentScene() : 씬이 존재하지 않는데 씬을 얻을려고 함!\n";
+	}
+#endif // DEBUG
+
+	return m_scenes.top();
+}
+
 // 다음 프레임으로 진행하는 함수
 void GameFramework::FrameAdvance() 
 {
 	m_gameTimer.Tick(60.0f);
 
 	wstring ws = L"FPS : " + to_wstring(m_gameTimer.GetFPS());
-	::SetWindowText(m_hWnd, (LPCWSTR)ws.c_str());	// 렉걸림
+	::SetWindowText(m_hWnd, (LPCWSTR)ws.c_str());	// FPS를 제한 하지 않을 경우 렉걸림
+
+}
+
+// 씬 관련 함수들
+void GameFramework::PushScene(Scene&& newScene) 
+{
+	// 현재 씬을 일시정지
+	if (!m_scenes.empty())
+		m_scenes.top().Pause();
+
+	// 새로운 씬으로 전환
+	m_scenes.push(newScene);
+
+	// 새로운 씬 초기화
+	m_scenes.top().Enter();
+	
+}
+void GameFramework::PopScene() 
+{
+#ifdef DEBUG
+	if (m_scenes.empty()) {
+		cout << "GameFramework::PopScene() : 씬이 존재하지 않는데 씬을 삭제하려고 함!\n";
+	}
+#endif // DEBUG
+
+	m_scenes.top().Exit();
+	m_scenes.pop();
+}
+void GameFramework::ChangeScene(Scene&& newScene)
+{
+	PopScene();
+	PushScene(move(newScene));
+}
+void GameFramework::ClearScene()
+{
+	while (!m_scenes.empty()) {
+		PopScene();
+	}
 }

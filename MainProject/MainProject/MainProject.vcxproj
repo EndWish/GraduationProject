@@ -149,6 +149,7 @@
   <ItemGroup>
     <ClInclude Include="GameFramework.h" />
     <ClInclude Include="GameTimer.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="MainProject.h" />
     <ClInclude Include="Resource.h" />
@@ -158,6 +159,7 @@
     <ClCompile Include="GameFramework.cpp" />
     <ClCompile Include="GameTimer.cpp" />
     <ClCompile Include="MainProject.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
   <ItemGroup>
