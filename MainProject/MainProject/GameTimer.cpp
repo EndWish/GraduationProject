@@ -14,7 +14,6 @@ GameTimer::GameTimer()
 	m_pausedPerformanceCounter = 0;
 
 	m_sumFrameTimes = 0;
-	m_framePerSec = 1;
 
 	m_paused = false;
 }
@@ -40,7 +39,7 @@ int GameTimer::GetFPS()
 		cout << "GameTimer::GetFPS() : 일시정지 상태에서 함수를 호출했습니다.\n";
 #endif // DEBUG
 
-	return m_framePerSec;
+	return m_frameTimes.size() + 1;
 }
 bool GameTimer::IsPaused() 
 {
@@ -74,10 +73,8 @@ void GameTimer::Tick(float lockFPS)
 	// FPS계산하기 : FPS = 1초(m_sumFrameTimes) 동안 지나간 프레임수(m_frameTimes.size())
 	m_frameTimes.push(m_timeElapsed);
 	m_sumFrameTimes += m_timeElapsed;
-	m_framePerSec++;
 	while (m_sumFrameTimes > 1.0f) {	// m_sumFrameTimes가 1초가 될때 까지 pop() 한다.
 		m_sumFrameTimes -= m_frameTimes.front();
-		m_framePerSec--;
 		m_frameTimes.pop();
 	}
 }

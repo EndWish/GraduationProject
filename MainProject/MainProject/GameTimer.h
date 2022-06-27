@@ -12,9 +12,8 @@ private:
 	long long m_lastPerformanceCounter;	// 지난 Tick의 까지의 진동수
 	long long m_pausedPerformanceCounter;
 	
-	queue<float> m_frameTimes;
+	queue<float> m_frameTimes;	// m_frameTimes 의 합이 1초가 되도록 유지 함으로써 m_frameTimes의 개수가 FPS가 된다.
 	float m_sumFrameTimes;
-	int m_framePerSec;	// FPS = 1초(m_sumFrameTimes) 동안 지나간 프레임수(m_frameTimes.size())
 
 	bool m_paused;
 
