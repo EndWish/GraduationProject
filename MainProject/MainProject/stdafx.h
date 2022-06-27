@@ -53,3 +53,16 @@ using Microsoft::WRL::ComPtr;	// #include <wrl.h>, COM 객체를 위한 스마�
 #pragma comment(lib, "dxgi.lib")
 
 #pragma comment(lib, "dxguid.lib")
+
+namespace Matrix4x4
+{
+	inline XMFLOAT4X4 Identity() {
+		XMFLOAT4X4 result;
+		XMStoreFloat4x4(&result, XMMatrixIdentity());
+		return result;
+	}
+	inline void Identity(XMFLOAT4X4& dest) {
+		XMStoreFloat4x4(&dest, XMMatrixIdentity());
+	}
+
+}
