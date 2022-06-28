@@ -16,12 +16,15 @@
 #include <wrl.h>
 #include <shellapi.h>
 
+#include <memory>
 #include <fstream>
 #include <cmath>
 #include <string>
 #include <array>
 #include <queue>
 #include <stack>
+#include <ranges>
+#include <algorithm>
 
 #define DEBUG
 

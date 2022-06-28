@@ -20,11 +20,11 @@ Scene::Scene(Scene&& other) noexcept //이동생성자
 }	
 Scene& Scene::operator=(const Scene& other)	//복사할당
 {
-
+	return *this;
 }
 Scene& Scene::operator=(Scene&& other) noexcept //이동할당
 {
-
+	return *this;
 }
 
 // 씬 전환에 관련된 함수
