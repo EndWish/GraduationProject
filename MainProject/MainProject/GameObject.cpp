@@ -14,7 +14,6 @@ GameObject::GameObject()
 
 	// 매쉬 포인터 초기화
 	// 메테리얼 포인터들 초기화
-
 }
 GameObject::~GameObject() 
 {

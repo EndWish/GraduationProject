@@ -12,8 +12,6 @@ HINSTANCE hInst;                                // 현재 인스턴스입니다.
 WCHAR szTitle[MAX_LOADSTRING];                  // 제목 표시줄 텍스트입니다.
 WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름입니다.
 
-GameFramework g_GameFramework;
-
 // 이 코드 모듈에 포함된 함수의 선언을 전달합니다:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -52,10 +50,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
             }
         }
         else {
-            g_GameFramework.FrameAdvance();
+            GameFramework::Instance().FrameAdvance();
         }
     }
-    g_GameFramework.OnDestroy();
+    GameFramework::Destroy();
 
     return (int) msg.wParam;
 }
@@ -101,7 +99,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
       return FALSE;
    }
 
-   g_GameFramework.OnCreate(hInst, hWnd);
+   GameFramework::Create(hInst, hWnd);  // 싱글톤은 게임이 플레이되기 전에 Create 해서 플레이도중 loading과 같은 과정을 최소화 시켜줘야한다.
 
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);

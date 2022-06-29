@@ -4,7 +4,18 @@
 #include "Scene.h"
 
 class GameFramework {
-private:
+private:	// 정적 변수▼
+	static unique_ptr<GameFramework> s_pInstance;	// 싱글톤 변수, https://boycoding.tistory.com/109
+
+public:		// 정적 함수▼
+	// 생성시(초기화) 함수 및 소멸시 함수
+	static bool Create(HINSTANCE hInstance, HWND hMainWnd);
+	static void Destroy();
+
+	// 전역 적으로 접근할 수 있는 함수
+	static GameFramework& Instance();
+
+private:	// 멤버 변수▼
 	HINSTANCE m_hInstance;
 	HWND m_hWnd;
 
@@ -51,14 +62,10 @@ private:
 	GameTimer m_gameTimer;
 	stack<Scene> m_scenes;	// 씬들을 관리한다. top에 있는 씬이 현재 진행될 씬이다.
 
-public:
-	// 생성자 및 소멸자
-	GameFramework();
-	~GameFramework();
-
-	// 생성시(초기화) 함수 및 소멸시 함수
-	bool OnCreate(HINSTANCE hInstance, HWND hMainWnd);
-	void OnDestroy();
+public:	// 생성관련 멤버 함수▼
+	~GameFramework();	// 소멸자
+private:
+	GameFramework();	// 생성자
 
 	// 생성시(초기화) 함수의 부분들
 	void CreateDirect3dDevice();	// dxgiFactory를 생성하고, 그것을 이용하여 어댑터(그래픽 카드)를 살펴서 적절한 그래픽카드로 디바이스를 생성한다.
@@ -68,6 +75,7 @@ public:
 	void CreateRenderTargetViews();		// GPU에서 읽을 수 있도록 렌더타겟 뷰를 생성 ( CreateSwapChain()과 화면 크기 전환할때 사용된다.  )
 	void CreateDepthStencilView();	// 깊이-스텐실 버퍼(리소스)를 만들고 깊이-스텐실 뷰를 서술자 힙에 적제
 
+public:		// 멤버 함수▼
 	// Get Set 함수
 	Scene& GetCurrentSceneRef();
 
