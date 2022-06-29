@@ -85,6 +85,10 @@ GameFramework::GameFramework()
 	for (int i = 0; i < m_nSwapChainBuffers; i++) 
 		m_fenceValues[i] = 0;
 
+	//------------------------------------게임관련 변수-------------------------------------
+	// 타이머
+	m_gameTimer = GameTimer();
+
 }
 GameFramework::~GameFramework() 
 {
@@ -268,12 +272,12 @@ void GameFramework::CreateDepthStencilView()
 Scene& GameFramework::GetCurrentSceneRef()
 {
 #ifdef DEBUG
-	if (m_scenes.empty()) {
+	if (m_pScenes.empty()) {
 		cout << "GameFramework::GetCurrentScene() : 씬이 존재하지 않는데 씬을 얻을려고 함!\n";
 	}
 #endif // DEBUG
 
-	return m_scenes.top();
+	return *m_pScenes.top();
 }
 
 // 다음 프레임으로 진행하는 함수
@@ -281,44 +285,47 @@ void GameFramework::FrameAdvance()
 {
 	m_gameTimer.Tick(60.0f);
 
+	// 입력을 처리한다. [수정]
+	// 씬을 진행시킨다. [수정]
+	// 렌더링 한다. [수정]
+
 	wstring ws = L"FPS : " + to_wstring(m_gameTimer.GetFPS());
 	::SetWindowText(m_hWnd, (LPCWSTR)ws.c_str());	// FPS를 제한 하지 않을 경우 렉걸림
 
 }
 
 // 씬 관련 함수들
-void GameFramework::PushScene(Scene&& newScene) 
+void GameFramework::PushScene(const shared_ptr<Scene>& pScene)
 {
 	// 현재 씬을 일시정지
-	if (!m_scenes.empty())
-		m_scenes.top().Pause();
+	if (!m_pScenes.empty())
+		m_pScenes.top()->Pause();
 
 	// 새로운 씬으로 전환
-	m_scenes.push(newScene);
+	m_pScenes.push(pScene);
 
 	// 새로운 씬 초기화
-	m_scenes.top().Enter();
+	m_pScenes.top()->Enter();
 	
 }
 void GameFramework::PopScene() 
 {
 #ifdef DEBUG
-	if (m_scenes.empty()) {
+	if (m_pScenes.empty()) {
 		cout << "GameFramework::PopScene() : 씬이 존재하지 않는데 씬을 삭제하려고 함!\n";
 	}
 #endif // DEBUG
 
-	m_scenes.top().Exit();
-	m_scenes.pop();
+	m_pScenes.top()->Exit();
+	m_pScenes.pop();
 }
-void GameFramework::ChangeScene(Scene&& newScene)
+void GameFramework::ChangeScene(const shared_ptr<Scene>& pScene)
 {
 	PopScene();
-	PushScene(move(newScene));
+	PushScene(pScene);
 }
 void GameFramework::ClearScene()
 {
-	while (!m_scenes.empty()) {
+	while (!m_pScenes.empty())
 		PopScene();
-	}
 }

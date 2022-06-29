@@ -60,7 +60,7 @@ private:	// 멤버 변수▼
 	//------------------------------------게임관련 변수-------------------------------------
 	//
 	GameTimer m_gameTimer;
-	stack<Scene> m_scenes;	// 씬들을 관리한다. top에 있는 씬이 현재 진행될 씬이다.
+	stack<shared_ptr<Scene>> m_pScenes;	// 씬들을 관리한다. top에 있는 씬이 현재 진행될 씬이다.
 
 public:	// 생성관련 멤버 함수▼
 	~GameFramework();	// 소멸자
@@ -83,9 +83,9 @@ public:		// 멤버 함수▼
 	void FrameAdvance();
 
 	// 씬 관련 함수들
-	void PushScene(Scene&& newScene);	// 씬을 추가하고 그 씬으로 전환한다. 호출후 매개변수로 넘겨준 변수를 사용하면 안된다.(move를 통해 이동시키기 때문)
+	void PushScene(const shared_ptr<Scene>& pScene);	// 씬을 추가하고 그 씬으로 전환한다. 호출후 매개변수로 넘겨준 변수를 사용하면 안된다.(move를 통해 이동시키기 때문)
 	void PopScene();	// 현재 씬을 제거한다.
-	void ChangeScene(Scene&& newScene);	// 현재씬을 제거하고 새로운 씬으로 대체한다.
+	void ChangeScene(const shared_ptr<Scene>& pScene);	// 현재씬을 제거하고 새로운 씬으로 대체한다.
 	void ClearScene();	// 모든 씬을 제거한다.
 };
 

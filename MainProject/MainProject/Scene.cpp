@@ -10,22 +10,6 @@ Scene::~Scene() // 소멸자
 {
 
 }
-Scene::Scene(const Scene& other) //복사생성자
-{
-
-}
-Scene::Scene(Scene&& other) noexcept //이동생성자
-{
-
-}	
-Scene& Scene::operator=(const Scene& other)	//복사할당
-{
-	return *this;
-}
-Scene& Scene::operator=(Scene&& other) noexcept //이동할당
-{
-	return *this;
-}
 
 // 씬 전환에 관련된 함수
 void Scene::Enter()	// 게임프레임워크에 들어가면서 초기화시키는 함수 (==OnCreate)
