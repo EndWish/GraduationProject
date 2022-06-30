@@ -21,9 +21,9 @@ public:
 	GameTimer();
 	~GameTimer();
 
-	float GetTimeElapsed();
-	int GetFPS();
-	bool IsPaused();
+	float GetTimeElapsed() const;
+	int GetFPS() const;
+	bool IsPaused() const;
 
 	void Tick(float lockFPS = 0.0f);	// 한틱 진행한다.	lockFPS를 통해 FPS를 제한할 수 있다.
 	void Pause();	// 일시정지

@@ -1,6 +1,6 @@
 #pragma once
 class GameObject : public enable_shared_from_this<GameObject> {
-protected:
+protected:	// 멤버 변수▼
 	string m_name;	// 객체의 이름
 
 	XMFLOAT4X4 m_worldTransform;	// 모델->월드 좌표로 바꾸기 위한 행렬
@@ -16,7 +16,7 @@ protected:
 	weak_ptr<GameObject> m_pParent;	// 부모를 가리키는 포인터
 	vector<shared_ptr<GameObject>> m_pChildren;	// 자식들을 가리키는 포인터들 (자신이 root일 경우 Scene에서 포인터로 가리켜 생존시킨다.)
 
-public:
+public:		// 생성관련 멤버 함수▼
 	// 생성자, 소멸자, 복사생성자, 이동생성자, 복사할당, 이동할당
 	GameObject();
 	~GameObject();
@@ -25,6 +25,7 @@ public:
 	virtual GameObject& operator=(const GameObject& other);	//복사할당 (*자식 오브젝트도 함께 깊은복사한다. *부모가 없을때 Scene에 직접 연결해줘야 한다.)
 	virtual GameObject& operator=(GameObject&& other) noexcept;	//이동할당
 
+public:		// 멤버 함수▼
 	void SetChild(const shared_ptr<GameObject>& pChild);
 
 };

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "GameTimer.h"
 
+// 생성관련 멤버 함수▼
 // 생성자 및 소멸자
 GameTimer::GameTimer()
 {
@@ -22,8 +23,9 @@ GameTimer::~GameTimer()
 
 }
 
+// 멤버 함수▼
 // get set 함수
-float GameTimer::GetTimeElapsed() 
+float GameTimer::GetTimeElapsed() const
 {
 #ifdef DEBUG
 	if (m_paused)
@@ -32,7 +34,7 @@ float GameTimer::GetTimeElapsed()
 
 	return m_timeElapsed;
 }
-int GameTimer::GetFPS() 
+int GameTimer::GetFPS() const
 {
 #ifdef DEBUG
 	if (m_paused)
@@ -41,7 +43,7 @@ int GameTimer::GetFPS()
 
 	return m_frameTimes.size() + 1;
 }
-bool GameTimer::IsPaused() 
+bool GameTimer::IsPaused() const
 {
 	return m_paused;
 }
