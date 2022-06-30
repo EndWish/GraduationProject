@@ -19,7 +19,7 @@ protected:	// 멤버 변수▼
 public:		// 생성관련 멤버 함수▼
 	// 생성자, 소멸자, 복사생성자, 이동생성자, 복사할당, 이동할당
 	GameObject();
-	~GameObject();
+	virtual ~GameObject();
 	GameObject(const GameObject& other);	//복사생성자 (*자식 오브젝트도 함께 깊은복사한다. *부모가 없을때 Scene에 직접 연결해줘야 한다.)
 	GameObject(GameObject&& other) noexcept;	//이동생성자 (이 함수를 호출한 후 other을 사용 하면 안된다. other이 소멸되기 때문에, 또한 other에게 연결되어 있던 포인터도 모두 끊기기 때문에 사용시 각별한 주의가 필요하다.)
 	virtual GameObject& operator=(const GameObject& other);	//복사할당 (*자식 오브젝트도 함께 깊은복사한다. *부모가 없을때 Scene에 직접 연결해줘야 한다.)

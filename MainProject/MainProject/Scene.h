@@ -8,7 +8,7 @@ class Scene {
 public:
 	// 생성자, 소멸자, 복사생성, 이동생성, 복사할당, 이동할당
 	Scene();	// 기본 생성자
-	~Scene();	// 소멸자
+	virtual ~Scene();	// 소멸자
 
 	// 씬 전환에 관련된 함수
 	virtual void Enter();	// 게임프레임워크에 들어가면서 초기화시키는 함수 (==OnCreate)
