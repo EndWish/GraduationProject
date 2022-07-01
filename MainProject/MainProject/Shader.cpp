@@ -19,20 +19,20 @@ void Shader::CreateShader(const ComPtr<ID3D12Device>& pDevice, const ComPtr<ID3D
 	::ZeroMemory(&m_pipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 	m_pipelineStateDesc.pRootSignature = pRootSignature.Get();
 	m_pipelineStateDesc.VS = CreateVertexShader();
-	//m_pipelineStateDesc.PS = CreatePixelShader();
-	//m_pipelineStateDesc.InputLayout = CreateInputLayout();
-	//m_pipelineStateDesc.RasterizerState = CreateRasterizerState();
-	//m_pipelineStateDesc.BlendState = CreateBlendState();
-	//m_pipelineStateDesc.DepthStencilState = CreateDepthStencilState();
-	//m_pipelineStateDesc.SampleMask = UINT_MAX;
-	//m_pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	//m_pipelineStateDesc.NumRenderTargets = 1;
-	//m_pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	//m_pipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	//m_pipelineStateDesc.SampleDesc.Count = 1;
-	//m_pipelineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	m_pipelineStateDesc.PS = CreatePixelShader();
+	m_pipelineStateDesc.InputLayout = CreateInputLayout();
+	m_pipelineStateDesc.RasterizerState = CreateRasterizerState();
+	m_pipelineStateDesc.BlendState = CreateBlendState();
+	m_pipelineStateDesc.DepthStencilState = CreateDepthStencilState();
+	m_pipelineStateDesc.SampleMask = UINT_MAX;
+	m_pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+	m_pipelineStateDesc.NumRenderTargets = 1;
+	m_pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	m_pipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	m_pipelineStateDesc.SampleDesc.Count = 1;
+	m_pipelineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-	//HRESULT hResult = pDevice->CreateGraphicsPipelineState(&m_pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&m_pPipelineState);
+	HRESULT hResult = pDevice->CreateGraphicsPipelineState(&m_pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&m_pPipelineState);
 }
 
 // 정점,픽셀 쉐이더를 파일로 부터 컴파일해서 가져오기
