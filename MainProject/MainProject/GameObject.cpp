@@ -2,7 +2,7 @@
 #include "GameObject.h"
 #include "GameFramework.h"	// 상위객체에 접근하여 Scene에 오브젝트를 연결하기 위해 포함하였다.
 
-// 생성관련 멤버 함수▼
+/// 생성관련 멤버 함수▼
 // 생성자, 소멸자
 GameObject::GameObject() 
 {
@@ -132,7 +132,7 @@ GameObject& GameObject::operator=(GameObject&& other) noexcept 	//이동할당
 	return *this;
 }
 
-// 멤버 함수▼
+/// 멤버 함수▼
 // 자식 오브젝트 추가
 void GameObject::SetChild(const shared_ptr<GameObject>& pChild)
 {

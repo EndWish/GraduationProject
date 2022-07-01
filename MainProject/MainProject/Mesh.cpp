@@ -4,13 +4,13 @@
 ///////////////////////////////////////////////////////////////////////////////
 /// Mesh
 
-// ¸â¹ö º¯¼ö¡å
+/// ¸â¹ö º¯¼ö¡å
 // »ý¼ºÀÚ ¹× ¼Ò¸êÀÚ
 Mesh::Mesh() {
 	m_primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 
 	m_nVertices = 0;
-	m_positionBuffer.Reset();
+	m_pPositionBuffer.Reset();
 	m_positionBufferView = D3D12_VERTEX_BUFFER_VIEW();
 
 	m_OOBB = BoundingOrientedBox();
@@ -20,7 +20,7 @@ Mesh::~Mesh()
 
 }
 
-// ¸â¹ö ÇÔ¼ö¡å
+/// ¸â¹ö ÇÔ¼ö¡å
 // ·»´õ¸µ
 void Mesh::Render(ID3D12GraphicsCommandList* pCommandList) 
 {
@@ -34,7 +34,7 @@ void Mesh::Render(ID3D12GraphicsCommandList* pCommandList)
 ///////////////////////////////////////////////////////////////////////////////
 /// IndexingMesh
 
-// ¸â¹ö º¯¼ö¡å
+/// ¸â¹ö º¯¼ö¡å
 // »ý¼ºÀÚ ¹× ¼Ò¸êÀÚ
 IndexingMesh::IndexingMesh()
 {
@@ -45,7 +45,7 @@ IndexingMesh::~IndexingMesh()
 
 }
 
-// ¸â¹ö ÇÔ¼ö¡å
+/// ¸â¹ö ÇÔ¼ö¡å
 // ·»´õ¸µ
 void IndexingMesh::Render(ID3D12GraphicsCommandList* pCommandList) {
 	pCommandList->IASetPrimitiveTopology(m_primitiveTopology);
@@ -62,7 +62,7 @@ void IndexingMesh::Render(ID3D12GraphicsCommandList* pCommandList) {
 /// NormalIndexingMesh
 NormalIndexingMesh::NormalIndexingMesh() 
 {
-	m_normalBuffer.Reset();
+	m_pNormalBuffer.Reset();
 	m_normalBufferView = D3D12_VERTEX_BUFFER_VIEW();
 }
 NormalIndexingMesh::~NormalIndexingMesh() 
@@ -70,7 +70,7 @@ NormalIndexingMesh::~NormalIndexingMesh()
 
 }
 
-// ¸â¹ö ÇÔ¼ö¡å
+/// ¸â¹ö ÇÔ¼ö¡å
 // ·»´õ¸µ
 void NormalIndexingMesh::Render(ID3D12GraphicsCommandList* pCommandList) {
 	pCommandList->IASetPrimitiveTopology(m_primitiveTopology);

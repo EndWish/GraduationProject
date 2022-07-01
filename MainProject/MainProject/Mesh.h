@@ -1,13 +1,19 @@
 #pragma once
 
+#include "Material.h"
+
 class Mesh {
 protected:	// 멤버 변수▼
 	D3D12_PRIMITIVE_TOPOLOGY m_primitiveTopology;
 	
 	UINT m_nVertices;
 
-	ComPtr<ID3D12Resource> m_positionBuffer;
+	ComPtr<ID3D12Resource> m_pPositionBuffer;
 	D3D12_VERTEX_BUFFER_VIEW m_positionBufferView;
+
+	vector<shared_ptr<Material>> m_pMaterials;
+
+	// 쉐이더 포인터 [수정] + 메테리얼을 통해 쉐이더의 정보를 업데이트 해야한다.
 
 	BoundingOrientedBox m_OOBB;
 
@@ -39,7 +45,7 @@ public:		// 멤버 함수▼
 
 class NormalIndexingMesh : public IndexingMesh {
 protected:	// 멤버 변수▼
-	ComPtr<ID3D12Resource> m_normalBuffer;
+	ComPtr<ID3D12Resource> m_pNormalBuffer;
 	D3D12_VERTEX_BUFFER_VIEW m_normalBufferView;
 
 public:		// 생성관련 멤버 함수▼

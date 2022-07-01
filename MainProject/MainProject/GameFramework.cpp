@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "GameFramework.h"
 
-// 정적 변수▼
+/// 정적 변수▼
 unique_ptr<GameFramework> GameFramework::s_pInstance;
 
-// 정적 함수▼
+/// 정적 함수▼
 // 생성 함수 및 소멸 함수
 bool GameFramework::Create(HINSTANCE hInstance, HWND hMainWnd) 
 {
@@ -267,7 +267,7 @@ void GameFramework::CreateDepthStencilView()
 	m_pD3dDevice->CreateDepthStencilView(m_pD3dDepthStencilBuffer.Get(), &d3dDepthStencilViewDesc, d3dDsvCPUDescriptorHandle);	// 깊이-스텐실 뷰를 서술자 힙에 생성(적제) (뷰==서술자?)
 }
 
-// 멤버 함수▼
+/// 멤버 함수▼
 // Get Set 함수
 Scene& GameFramework::GetCurrentSceneRef()
 {
