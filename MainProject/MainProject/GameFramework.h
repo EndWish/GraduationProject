@@ -56,6 +56,9 @@ private:	// 멤버 변수▼
 	ComPtr<ID3D12Fence> m_pD3dFence;
 	HANDLE m_fenceEvent;
 	UINT64 m_fenceValues[m_nSwapChainBuffers];
+
+	//루트 시그니처 생성
+	ComPtr<ID3D12RootSignature> m_pRootSignature;
 	
 	//------------------------------------게임관련 변수-------------------------------------
 	//
@@ -74,6 +77,7 @@ private:
 	void CreateSwapChain();
 	void CreateRenderTargetViews();		// GPU에서 읽을 수 있도록 렌더타겟 뷰를 생성 ( CreateSwapChain()과 화면 크기 전환할때 사용된다.  )
 	void CreateDepthStencilView();	// 깊이-스텐실 버퍼(리소스)를 만들고 깊이-스텐실 뷰를 서술자 힙에 적제
+	void CreateGraphicsRootSignature();	// 루트 시그니처를 생성한다.
 
 public:		// 멤버 함수▼
 	// Get Set 함수

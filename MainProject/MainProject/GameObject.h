@@ -1,4 +1,7 @@
 #pragma once
+
+#include "Mesh.h"
+
 class GameObject : public enable_shared_from_this<GameObject> {
 protected:	// ¸â¹ö º¯¼ö¡å
 	string m_name;	// °´Ã¼ÀÇ ÀÌ¸§

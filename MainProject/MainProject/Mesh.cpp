@@ -22,7 +22,7 @@ Mesh::~Mesh()
 
 /// ¸â¹ö ÇÔ¼ö¡å
 // ·»´õ¸µ
-void Mesh::Render(ID3D12GraphicsCommandList* pCommandList) 
+void Mesh::Render(const ComPtr<ID3D12GraphicsCommandList>& pCommandList)
 {
 	pCommandList->IASetPrimitiveTopology(m_primitiveTopology);
 	pCommandList->IASetVertexBuffers(0, 1, &m_positionBufferView);
@@ -47,7 +47,7 @@ IndexingMesh::~IndexingMesh()
 
 /// ¸â¹ö ÇÔ¼ö¡å
 // ·»´õ¸µ
-void IndexingMesh::Render(ID3D12GraphicsCommandList* pCommandList) {
+void IndexingMesh::Render(const ComPtr<ID3D12GraphicsCommandList>& pCommandList) {
 	pCommandList->IASetPrimitiveTopology(m_primitiveTopology);
 	pCommandList->IASetVertexBuffers(0, 1, &m_positionBufferView);
 
@@ -72,7 +72,7 @@ NormalIndexingMesh::~NormalIndexingMesh()
 
 /// ¸â¹ö ÇÔ¼ö¡å
 // ·»´õ¸µ
-void NormalIndexingMesh::Render(ID3D12GraphicsCommandList* pCommandList) {
+void NormalIndexingMesh::Render(const ComPtr<ID3D12GraphicsCommandList>& pCommandList) {
 	pCommandList->IASetPrimitiveTopology(m_primitiveTopology);
 	D3D12_VERTEX_BUFFER_VIEW pVertexBufferViews[2] = { m_positionBufferView, m_normalBufferView };
 	pCommandList->IASetVertexBuffers(0, 2, pVertexBufferViews);

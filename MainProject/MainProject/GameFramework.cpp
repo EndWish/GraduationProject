@@ -21,6 +21,9 @@ bool GameFramework::Create(HINSTANCE hInstance, HWND hMainWnd)
 		gameFramework.CreateRtvAndDsvDescriptorHeaps();
 		gameFramework.CreateSwapChain();	// DxgiFactory, CommandQueue, RtvDescriptorHeap 이 미리 만들어져 있어야 한다.
 		gameFramework.CreateDepthStencilView();
+		gameFramework.CreateGraphicsRootSignature();
+		
+		Shader::instance.CreateShader(gameFramework.m_pD3dDevice, gameFramework.m_pRootSignature);	// 임시로 쉐이더를 생성해봄 [수정]
 
 		// 최초의 씬 빌드 [수정]
 		gameFramework.m_gameTimer.Reset();
@@ -265,6 +268,38 @@ void GameFramework::CreateDepthStencilView()
 
 	D3D12_CPU_DESCRIPTOR_HANDLE d3dDsvCPUDescriptorHandle = m_pD3dDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	m_pD3dDevice->CreateDepthStencilView(m_pD3dDepthStencilBuffer.Get(), &d3dDepthStencilViewDesc, d3dDsvCPUDescriptorHandle);	// 깊이-스텐실 뷰를 서술자 힙에 생성(적제) (뷰==서술자?)
+}
+void GameFramework::CreateGraphicsRootSignature() {
+	D3D12_ROOT_PARAMETER pRootParameters[2];
+
+	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera
+	pRootParameters[0].Descriptor.RegisterSpace = 0;
+	pRootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pRootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	pRootParameters[1].Constants.Num32BitValues = 32;
+	pRootParameters[1].Constants.ShaderRegister = 2; //GameObject
+	pRootParameters[1].Constants.RegisterSpace = 0;
+	pRootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
+	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
+	::ZeroMemory(&rootSignatureDesc, sizeof(D3D12_ROOT_SIGNATURE_DESC));
+	rootSignatureDesc.NumParameters = _countof(pRootParameters);
+	rootSignatureDesc.pParameters = pRootParameters;
+	rootSignatureDesc.NumStaticSamplers = 0;
+	rootSignatureDesc.pStaticSamplers = NULL;
+	rootSignatureDesc.Flags = rootSignatureFlags;
+
+	ID3DBlob* pSignatureBlob = NULL;
+	ID3DBlob* pErrorBlob = NULL;
+	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignatureBlob, &pErrorBlob);
+	m_pD3dDevice->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), __uuidof(ID3D12RootSignature), (void**)&m_pRootSignature);
+	if (pSignatureBlob)
+		pSignatureBlob->Release();
+	if (pErrorBlob)
+		pErrorBlob->Release();
 }
 
 /// 멤버 함수▼

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Material.h"
+#include "Shader.h"
 
 class Mesh {
 protected:	// 멤버 변수▼
@@ -23,7 +24,7 @@ public:		// 생성관련 멤버 함수▼
 	virtual ~Mesh();
 
 public:		// 멤버 함수▼
-	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList);
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& pd3dCommandList);
 
 };
 
@@ -39,7 +40,7 @@ public:		// 생성관련 멤버 함수▼
 	virtual ~IndexingMesh();
 
 public:		// 멤버 함수▼
-	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList);
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& pd3dCommandList);
 
 };
 
@@ -53,6 +54,6 @@ public:		// 생성관련 멤버 함수▼
 	virtual ~NormalIndexingMesh();
 
 public:		// 멤버 함수▼
-	virtual void Render(ID3D12GraphicsCommandList* pd3dCommandList);
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& pd3dCommandList);
 
 };
