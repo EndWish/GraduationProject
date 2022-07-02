@@ -134,6 +134,19 @@ GameObject& GameObject::operator=(GameObject&& other) noexcept 	//이동할당
 
 /// 멤버 함수▼
 // 자식 오브젝트 추가
+XMFLOAT3 GameObject::GetWorldRightVector() const {
+	return XMFLOAT3(m_worldTransform._11, m_worldTransform._12, m_worldTransform._13);
+}
+XMFLOAT3 GameObject::GetWorldUpVector() const {
+	return XMFLOAT3(m_worldTransform._21, m_worldTransform._22, m_worldTransform._23);
+}
+XMFLOAT3 GameObject::GetWorldLookVector() const {
+	return XMFLOAT3(m_worldTransform._31, m_worldTransform._32, m_worldTransform._33);
+}
+XMFLOAT3 GameObject::GetWorldPosition() const 
+{
+	return XMFLOAT3(m_worldTransform._41, m_worldTransform._42, m_worldTransform._43);
+}
 void GameObject::SetChild(const shared_ptr<GameObject>& pChild)
 {
 	// 입양할 아이가, 부모가 있을 경우 부모로 부터 독립시킨다.
@@ -146,3 +159,4 @@ void GameObject::SetChild(const shared_ptr<GameObject>& pChild)
 	// 자식의 부모를 나로 지정
 	pChild->m_pParent = shared_from_this();
 }
+

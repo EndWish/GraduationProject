@@ -29,7 +29,14 @@ public:		// 생성관련 멤버 함수▼
 	virtual GameObject& operator=(GameObject&& other) noexcept;	//이동할당
 
 public:		// 멤버 함수▼
+	// get set 함수
+	XMFLOAT3 GetWorldRightVector() const;
+	XMFLOAT3 GetWorldUpVector() const;
+	XMFLOAT3 GetWorldLookVector() const;
+	XMFLOAT3 GetWorldPosition() const;
+
 	void SetChild(const shared_ptr<GameObject>& pChild);
+	
 
 };
 

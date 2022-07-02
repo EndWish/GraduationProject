@@ -17,7 +17,8 @@ public:
 	virtual void Resume();	// 재개
 
 	// 게임 진행에 관련된 함수
-	virtual void FrameAdvance();	// 다음 프레임으로 진행 (== Update, == Run)
+	virtual void FrameAdvance() = 0;	// 다음 프레임으로 진행 (== Update, == Run)
+	virtual void Render(const ComPtr <ID3D12GraphicsCommandList>& pCommandList) = 0;
 
 	// 씬에 오브젝트 추가 및 삭제하는 함수
 	virtual void AddGameObject(const shared_ptr<GameObject>& pGameObject) = 0;

@@ -57,6 +57,21 @@ using Microsoft::WRL::ComPtr;	// #include <wrl.h>, COM 객체를 위한 스마�
 
 #pragma comment(lib, "dxguid.lib")
 
+extern ID3D12Resource* CreateBufferResource(const ComPtr<ID3D12Device>& pDevice,const ComPtr<ID3D12GraphicsCommandList>& pCommandList, void* pData, UINT nBytes, D3D12_HEAP_TYPE heapType = D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATES resourceStates = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, ID3D12Resource** ppUploadBuffer = NULL);
+
+namespace Vector3
+{
+	inline XMFLOAT3 TransformCoord(const XMFLOAT3& xmVector, const XMMATRIX& xmTransform) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMVector3TransformCoord(XMLoadFloat3(&xmVector), xmTransform));
+		return(result);
+	}
+
+	inline XMFLOAT3 TransformCoord(const XMFLOAT3& xmVector, const XMFLOAT4X4& matrix) {
+		return(TransformCoord(xmVector, XMLoadFloat4x4(&matrix)));
+	}
+}
+
 namespace Matrix4x4
 {
 	inline XMFLOAT4X4 Identity() {
@@ -66,6 +81,18 @@ namespace Matrix4x4
 	}
 	inline void Identity(XMFLOAT4X4& dest) {
 		XMStoreFloat4x4(&dest, XMMatrixIdentity());
+	}
+
+	inline XMFLOAT4X4 LookAtLH(const XMFLOAT3& eyePosition, const XMFLOAT3& lookAtPosition, const XMFLOAT3& upDirection) {
+		XMFLOAT4X4 xmmtx4x4Result;
+		XMStoreFloat4x4(&xmmtx4x4Result, XMMatrixLookAtLH(XMLoadFloat3(&eyePosition), XMLoadFloat3(&lookAtPosition), XMLoadFloat3(&upDirection)));
+		return(xmmtx4x4Result);
+	}
+
+	inline XMFLOAT4X4 PerspectiveFovLH(float FOVAngleY, float aspectRatio, float nearZ, float farZ) {
+		XMFLOAT4X4 xmmtx4x4Result;
+		XMStoreFloat4x4(&xmmtx4x4Result, XMMatrixPerspectiveFovLH(FOVAngleY, aspectRatio, nearZ, farZ));
+		return(xmmtx4x4Result);
 	}
 
 }

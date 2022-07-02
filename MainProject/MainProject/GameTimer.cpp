@@ -41,7 +41,7 @@ int GameTimer::GetFPS() const
 		cout << "GameTimer::GetFPS() : 일시정지 상태에서 함수를 호출했습니다.\n";
 #endif // DEBUG
 
-	return m_frameTimes.size() + 1;
+	return (int)m_frameTimes.size() + 1;
 }
 bool GameTimer::IsPaused() const
 {
