@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GameTimer.h"
-#include "Scene.h"
+#include "Scenes.h"
 
 class GameFramework {
 private:	// 정적 변수▼

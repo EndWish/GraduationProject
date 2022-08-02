@@ -26,7 +26,10 @@ bool GameFramework::Create(HINSTANCE hInstance, HWND hMainWnd)
 		Shader::instance.CreateShader(gameFramework.m_pDevice, gameFramework.m_pRootSignature);	// 임시로 쉐이더를 생성해봄 [수정]
 
 		// 최초의 씬 빌드 [수정]
-		gameFramework.m_gameTimer.Reset();
+		shared_ptr<Scene> startScene = make_shared<Scene>();
+		gameFramework.PushScene(startScene);
+
+		gameFramework.m_gameTimer.Reset();	// 타이머 리셋
 
 		return true;
 	}
