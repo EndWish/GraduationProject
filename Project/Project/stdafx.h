@@ -4,8 +4,12 @@
 
 #pragma once
 
+#pragma comment(linker, "/entry:wWinMainCRTStartup /subsystem:console")    // 콘솔창 띄우기( 테스트를 위한 용도 )
 #include "targetver.h"
 #define WIN32_LEAN_AND_MEAN             // 거의 사용되지 않는 내용을 Windows 헤더에서 제외합니다.
+
+//#define DEBUG
+
 // Windows 헤더 파일
 #include <windows.h>
 // C 런타임 헤더 파일입니다.
@@ -13,3 +17,43 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+
+#include <string>
+#include <wrl.h>
+#include <shellapi.h>
+
+#include <d3d12.h>
+#include <dxgi1_4.h>
+#include <D3Dcompiler.h>
+#include <DirectXMath.h>
+#include <DirectXPackedVector.h>
+#include <DirectXColors.h>
+
+
+
+#pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "d3d12.lib")
+#pragma comment(lib, "dxgi.lib")
+#pragma comment(lib, "dxguid.lib")
+
+// io
+#include <iostream>
+
+// 스마트 포인터 
+#include <memory>
+
+// 컨테이너
+#include <vector>
+#include <array>
+#include <list>
+#include <ranges>
+#include <queue>
+#include <stack>
+
+#include <algorithm>
+
+using namespace std;
+using namespace DirectX;
+using namespace DirectX::PackedVector;
+
+using Microsoft::WRL::ComPtr;
