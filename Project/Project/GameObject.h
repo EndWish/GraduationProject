@@ -18,7 +18,7 @@ protected:
 
 public:
 	GameObject();
-	~GameObject();
+	virtual ~GameObject();
 
 // get set ÇÔ¼ö
 	

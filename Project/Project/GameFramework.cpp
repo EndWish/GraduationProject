@@ -60,7 +60,7 @@ GameFramework::GameFramework() {
 	// 현재 스왑체인의 후면 버퍼의 인덱스
 	swapChainBufferCurrentIndex = 0;
 	fenceEvent = NULL;
-	PushScene(make_shared<Scene>());
+	//PushScene(make_shared<Scene>());
 }
 
 GameFramework::~GameFramework() {
@@ -272,7 +272,7 @@ void GameFramework::FrameAdvance() {
 	ProcessInput();
 	// 씬 진행. 스택의 맨 위 원소에 대해 진행
 	if (!pScenes.empty()) {
-		pScenes.top()->FrameAdvance();
+		pScenes.top()->FrameAdvance(gameTimer.GetTimeElapsed());
 	}
 
 
@@ -301,10 +301,7 @@ void GameFramework::FrameAdvance() {
 	//렌더 타겟 뷰(서술자)와 깊이-스텐실 뷰(서술자)를 출력-병합 단계(OM)에 연결한다. 
 	pCommandList->OMSetRenderTargets(1, &rtvCPUDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
 
-	//t += 0.01;
-	if (t > 1) t -= 1;
-	float pClearColor[4] = { t, 0.1f, 0.1f, 1.0f };
-	//float pClearColor[4] = {1.0f, 0.5f, 0.0f, 1.0f};
+	float pClearColor[4] = {1.0f, 0.5f, 0.0f, 1.0f};
 	pCommandList->ClearRenderTargetView(rtvCPUDescriptorHandle, pClearColor, 0, NULL);
 
 	//원하는 값으로 깊이-스텐실(뷰)을 지운다. 
@@ -418,12 +415,9 @@ void GameFramework::ProcessInput() {
 
 void GameFramework::PushScene(const shared_ptr<Scene>& _pScene) {
 	pScenes.push(_pScene);
-
-	pScenes.top()->InitScene();
 }
 void GameFramework::PopScene() {
 	if (!pScenes.empty()) {
-		pScenes.top()->ExitScene();
 		pScenes.pop();
 	}
 }
@@ -434,7 +428,6 @@ void GameFramework::ChangeScene(const shared_ptr<Scene>& _pScene) {
 void GameFramework::ClearScene() {
 
 	while (!pScenes.empty()) {
-			pScenes.top()->ExitScene();
 			pScenes.pop();
 	}
 }

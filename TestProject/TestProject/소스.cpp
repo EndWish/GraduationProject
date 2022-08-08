@@ -34,9 +34,5 @@ public:
 
 int main() 
 {
-	//shared_ptr<Scene> spScene(new ShopScene);
-	Scene* pScene(new ShopScene);
-	pScene->Animate();
-	pScene->Animate2();
-	delete pScene;
+	shared_ptr<Scene> test;
 }
