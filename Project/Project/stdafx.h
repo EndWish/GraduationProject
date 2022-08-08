@@ -50,6 +50,7 @@
 #include <ranges>
 #include <queue>
 #include <stack>
+#include <format>
 
 #include <algorithm>
 
@@ -58,3 +59,48 @@ using namespace DirectX;
 using namespace DirectX::PackedVector;
 
 using Microsoft::WRL::ComPtr;
+
+namespace Vector3 {
+	inline XMFLOAT3 Normalize(const XMFLOAT3& _vector) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMVector3Normalize(XMLoadFloat3(&_vector)));
+		return(result);
+	}
+	inline XMFLOAT3 Normalize(float _x, float _y, float _z) {
+		XMFLOAT3 result(_x, _y, _z);
+		XMStoreFloat3(&result, XMVector3Normalize(XMLoadFloat3(&result)));
+		return(result);
+	}
+
+	inline XMFLOAT3 ScalarProduct(const XMFLOAT3& _vector, float _scalar) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMLoadFloat3(&_vector) * _scalar);
+		return result;
+	}
+	inline XMFLOAT3 Add(const XMFLOAT3& _vector1, const XMFLOAT3& _vector2) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMLoadFloat3(&_vector1) + XMLoadFloat3(&_vector2));
+		return result;
+	}
+	inline XMFLOAT3 Add(const XMFLOAT3& _vector1, const  XMFLOAT3& _vector2, float _scalar) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMLoadFloat3(&_vector1) + (XMLoadFloat3(&_vector2) * _scalar));
+		return result;
+	}
+
+}
+
+namespace Matrix4x4 {
+	inline XMFLOAT4X4 Identity() {
+		XMFLOAT4X4 result;
+		XMStoreFloat4x4(&result, XMMatrixIdentity());
+		return result;
+	}
+
+	inline XMFLOAT4X4 Multiply(const XMFLOAT4X4& _matrix1, const XMFLOAT4X4& _matrix2) {
+		XMFLOAT4X4 result;
+		XMStoreFloat4x4(&result, XMLoadFloat4x4(&_matrix1) * XMLoadFloat4x4(&_matrix2));
+		return(result);
+	}
+}
+
