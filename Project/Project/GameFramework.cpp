@@ -60,6 +60,7 @@ GameFramework::GameFramework() {
 	// 현재 스왑체인의 후면 버퍼의 인덱스
 	swapChainBufferCurrentIndex = 0;
 	fenceEvent = NULL;
+	PushScene(make_shared<Scene>());
 }
 
 GameFramework::~GameFramework() {
@@ -269,8 +270,11 @@ void GameFramework::FrameAdvance() {
 
 	gameTimer.Tick(60.0f);
 	ProcessInput();
+	// 씬 진행. 스택의 맨 위 원소에 대해 진행
+	if (!pScenes.empty()) {
+		pScenes.top()->FrameAdvance();
+	}
 
-	// 씬 진행
 
 	// 명령 할당자와 명령 리스트를 리셋한다.
 	HRESULT hResult = pCommandAllocator->Reset();
@@ -322,7 +326,8 @@ void GameFramework::FrameAdvance() {
 	//명령 리스트를 명령 큐에 추가하여 실행한다. 
 	vector<ComPtr<ID3D12CommandList>> pCommandLists = { pCommandList.Get() };
 	pCommandQueue->ExecuteCommandLists(1, pCommandLists.data()->GetAddressOf());
-	
+
+
 	//GPU가 모든 명령 리스트를 실행할 때 까지 기다린다. 
 	WaitForGpuComplete();
 
@@ -396,7 +401,40 @@ void GameFramework::ProcessInput() {
 
 	}
 	if (true) {
-		if (keysBuffers['W'] & 0xF0) ChangeSwapChainState();
-	}
+		if (keysBuffers['W'] & 0xF0) {
+			ChangeSwapChainState();
+		}
+		// 일시정지
+		if (keysBuffers['P'] & 0xF0) {
 
+			//PushScene(make_shared<Scene>("pause"));
+		}
+		// 재시작
+		if (keysBuffers['R'] & 0xF0) {
+			PopScene();
+		}
+	}
+}
+
+void GameFramework::PushScene(const shared_ptr<Scene>& _pScene) {
+	pScenes.push(_pScene);
+
+	pScenes.top()->InitScene();
+}
+void GameFramework::PopScene() {
+	if (!pScenes.empty()) {
+		pScenes.top()->ExitScene();
+		pScenes.pop();
+	}
+}
+void GameFramework::ChangeScene(const shared_ptr<Scene>& _pScene) {
+	PopScene();
+	PushScene(_pScene);
+}
+void GameFramework::ClearScene() {
+
+	while (!pScenes.empty()) {
+			pScenes.top()->ExitScene();
+			pScenes.pop();
+	}
 }

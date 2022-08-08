@@ -55,19 +55,6 @@ void Timer::Tick(double _lockFPS) {
 	}
 }
 
-void Timer::Pause() {
-	QueryPerformanceCounter((LARGE_INTEGER*)&pauseFrequency);
-	paused = true;
-
-}
-
-void Timer::Resume() {
-	long long lastGapFrequency = pauseFrequency - lastFrequency;
-	QueryPerformanceCounter((LARGE_INTEGER*)&totalFrequency);
-	lastFrequency = totalFrequency - lastGapFrequency;		// lastFrequency를 중지했던 시간 만큼 보정
-	paused = false;
-}
-
 void Timer::Reset() {
 	QueryPerformanceCounter((LARGE_INTEGER*)&lastFrequency);		// 현재 누적 진동수 저장
 	totalFrequency = lastFrequency;

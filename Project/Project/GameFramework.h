@@ -1,5 +1,6 @@
 #pragma once
 #include "Timer.h"
+#include "Scene.h"
 
 class GameFramework {
 // 정적 변수
@@ -56,6 +57,9 @@ private:
 	// 게임 타이머
 	Timer gameTimer;
 	
+	// 씬
+	stack<shared_ptr<Scene>> pScenes;
+
 // 생성, 소멸자
 private:
 	GameFramework();
@@ -80,4 +84,8 @@ public:
 	void ChangeSwapChainState();
 	void ProcessInput();
 
+	void PushScene(const shared_ptr<Scene>& _pScene);
+	void PopScene();
+	void ChangeScene(const shared_ptr<Scene>& _pScene);
+	void ClearScene();
 };

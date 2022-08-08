@@ -28,8 +28,9 @@
 #include <DirectXMath.h>
 #include <DirectXPackedVector.h>
 #include <DirectXColors.h>
+#include <DirectXCollision.h>
 
-
+#include <mmsystem.h>
 
 #pragma comment(lib, "d3dcompiler.lib")
 #pragma comment(lib, "d3d12.lib")
