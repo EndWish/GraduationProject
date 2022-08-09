@@ -28,6 +28,7 @@ PlayScene::PlayScene(int _stageNum) {
 	// 현재 두 플레이어가 있는 방을 첫방으로 설정
 	pNowRoom[0] = pRooms[0];
 	pNowRoom[1] = pRooms[0];
+
 }
 
 PlayScene::~PlayScene() {
@@ -36,7 +37,20 @@ PlayScene::~PlayScene() {
 
 
 void PlayScene::FrameAdvance(double _timeElapsed) {
+	// 충돌검사를 진행할 방들을 체크.
+	AnimateObjects(_timeElapsed);
 
+	Room p1Room = checkCurrentRoom(pPlayer[0]->GetBoundingBox(), 0);
+	Room p2Room = checkCurrentRoom(pPlayer[0]->GetBoundingBox(), 0);
+
+	if (p1Room.GetType() == "Enemy" && p1Room == p2Room) {
+		// 방 문이 닫힘
+		// 클리어까지 다른방으로 이동 불가
+	}
+	
+}
+
+void PlayScene::AnimateObjects(double _timeElapsed) {
 	// 플레이어가 살아있는 경우 애니메이션을 수행
 	if (!pPlayer[0]->GetIsDead()) {
 		pPlayer[0]->Animate(_timeElapsed);
@@ -50,14 +64,14 @@ void PlayScene::FrameAdvance(double _timeElapsed) {
 	for (const auto& room : pRooms) {
 		room->AnimateObjects(_timeElapsed);
 	}
-
-	// 충돌검사를 진행할 방들을 체크
-	checkCurrentRoom(pPlayer[0]->GetBoundingBox(), 0);
-	checkCurrentRoom(pPlayer[1]->GetBoundingBox(), 1);
-	
 }
-
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	// 프레임워크에서 렌더링 전에 루트시그니처를 set
+
+	// 뷰 프러스텀 내에서 걸러지므로 
+	for (const auto& room : pRooms) {
+		room->Render(_pCommandList);
+	}
 
 }
 
@@ -74,21 +88,21 @@ void PlayScene::loadRoomsForFile(string _fileName) {
 
 	// 룸 내 오브젝트들을 로드
 
-	// 
+	// 룸과 인접한 룸들을 담음
 }
 
-void PlayScene::checkCurrentRoom(const BoundingOrientedBox& _playerOOBB, int _playerNum) {
+const Room& PlayScene::checkCurrentRoom(const BoundingOrientedBox& _playerOOBB, int _playerNum) {
 
 	// 먼저 기존에 존재했던 방과 먼저 충돌체크
 	if (pNowRoom[_playerNum]->GetBoundingBox().Contains(XMLoadFloat3(&_playerOOBB.Center)) != DISJOINT) {	// 충돌할 경우
-		return;
+		return *pNowRoom[_playerNum];
 	}
 	// 기존 방에서 인접해있던 방과 충돌체크
 	else {
 		for (const auto& room : pNowRoom[_playerNum]->GetSideRooms()) {
 			if (room.lock()->GetBoundingBox().Contains(XMLoadFloat3(&_playerOOBB.Center)) != DISJOINT) {
 				pNowRoom[_playerNum] = room.lock();
-				break;
+				return *room.lock();
 			}
 		}
 	}

@@ -11,7 +11,7 @@ public:
 
 public:
 	virtual void FrameAdvance(double _timeElapsed) = 0;
-	
+	virtual void AnimateObjects(double _timeElapsed) = 0;
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 };
 
@@ -37,8 +37,9 @@ public:
 
 public:
 	void FrameAdvance(double _timeElapsed) final;
+	void AnimateObjects(double _timeElapsed) final;
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
 
 	// 현재 플레이어가 속해있는 방 ( 충돌검사를 진행할 방 ) 을 찾는 함수
-	void checkCurrentRoom(const BoundingOrientedBox& _playerOOBB, int _playerNum);
+	const Room& checkCurrentRoom(const BoundingOrientedBox& _playerOOBB, int _playerNum);
 };

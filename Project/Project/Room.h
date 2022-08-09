@@ -6,6 +6,11 @@ private:
 	// 방의 고유 번호
 	int id;
 
+	// 방의 타입.
+	string type;
+	
+
+	// 플레이어가 방 내에 있는지 확인하기 위함
 	BoundingOrientedBox boundingBox;
 
 	// 룸내에 인접한 다른 룸들
@@ -21,10 +26,18 @@ private:
 public:
 	Room();
 	~Room();
+	bool operator==(const Room& _other) const;
 
 public:
-	void AnimateObjects(double _timeElapsed);
+	int GetID() const;
+	string GetType() const;
 	const BoundingOrientedBox& GetBoundingBox() const;
 	const vector<weak_ptr<Room>>& GetSideRooms() const;
+
+	void SetType(string _type);
+
+	void AnimateObjects(double _timeElapsed);
+	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
 };
 

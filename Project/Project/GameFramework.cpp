@@ -270,7 +270,7 @@ void GameFramework::FrameAdvance() {
 
 	gameTimer.Tick(60.0f);
 	ProcessInput();
-	// 씬 진행. 스택의 맨 위 원소에 대해 진행
+	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
 	if (!pScenes.empty()) {
 		pScenes.top()->FrameAdvance(gameTimer.GetTimeElapsed());
 	}
@@ -310,8 +310,10 @@ void GameFramework::FrameAdvance() {
 	//그래픽 루트 시그너쳐를 파이프라인에 연결(설정)한다.
 	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
 
-	//씬 렌더링    (Scene에서 카메라, 플레이어를 관리한다.)
-	//GetCurrentSceneRef().Render(m_pCommandList);    [수정]
+	//씬 렌더링  (Scene에서 카메라, 플레이어를 관리한다.)
+	if (!pScenes.empty()) {
+		pScenes.top()->Render(pCommandList);
+	}
 
 	// 현재 렌더 타겟에 대한 렌더링이 끝나기를 기다린다.
 	resourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
