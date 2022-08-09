@@ -25,8 +25,34 @@ XMFLOAT3 GameObject::GetEachPosition() const {
 	return XMFLOAT3(eachTransform._41, eachTransform._42, eachTransform._43);
 }
 
+XMFLOAT4X4 GameObject::GetFrontMoveMatrix(float _distance) const {
+	// 이동할 벡터 = look단위 벡터에 거리를 곱한값
+	XMFLOAT3 moveVector = Vector3::ScalarProduct(GetLookUnitVector(), _distance);
+	XMFLOAT4X4 result = Matrix4x4::Identity();
+	result._41 = moveVector.x;
+	result._42 = moveVector.y;
+	result._43 = moveVector.z;
+	return result;
+}
+XMFLOAT4X4 GameObject::GetRightMoveMatrix(float _distance) const {
+	// 이동할 벡터 = look단위 벡터에 거리를 곱한값
+	XMFLOAT3 moveVector = Vector3::ScalarProduct(GetRightUnitVector(), _distance);
+	XMFLOAT4X4 result = Matrix4x4::Identity();
+	result._41 = moveVector.x;
+	result._42 = moveVector.y;
+	result._43 = moveVector.z;
+	return result;
+}
+
 const BoundingOrientedBox& GameObject::GetBoundingBox() const {
 	return boundingBox;
+}
+
+void GameObject::SetEachPosition(XMFLOAT3& _position) {
+	eachTransform._41 = _position.x;
+	eachTransform._42 = _position.y;
+	eachTransform._43 = _position.z;
+	UpdateWorldTransform();
 }
 
 void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
@@ -40,13 +66,6 @@ void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 
 	// 자식의 부모를 나로 지정
 	_pChild->pParent = shared_from_this();
-}
-
-void GameObject::SetEachPosition(const XMFLOAT3& _position) {
-	eachTransform._41 = _position.x;
-	eachTransform._42 = _position.y;
-	eachTransform._43 = _position.z;
-	UpdateWorldTransform();
 }
 
 void GameObject::UpdateWorldTransform() {
@@ -63,18 +82,21 @@ void GameObject::UpdateWorldTransform() {
 	}
 }
 
-void GameObject::MoveFront(float _distance) {
-	// look단위벡터에 _distance 를 곱한 값 만큼 이동한다.
-	XMFLOAT3 destination = Vector3::Add(GetEachPosition(), GetLookUnitVector(), _distance);
-	SetEachPosition(destination);
-}
-
-void GameObject::MoveRight(float _distance) {
-	// look단위벡터에 _distance 를 곱한 값 만큼 이동한다.
-	XMFLOAT3 destination = Vector3::Add(GetEachPosition(), GetRightUnitVector(), _distance);
-	SetEachPosition(destination);
+void GameObject::ApplyTransform(XMFLOAT4X4& _transform) {
+	eachTransform = Matrix4x4::Multiply(eachTransform, _transform);
+	UpdateWorldTransform();
 }
 
 void GameObject::Animate(double _timeElapsed) {
 	cout << format("GameObject({}) : 애니메이션 실행\n");
+	for (const auto& pChild : pChildren) {
+		pChild->Animate(_timeElapsed);
+	}
+}
+
+void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	cout << format("GameObject({}) : 렌더 실행\n");
+	for (const auto& pChild : pChildren) {
+		pChild->Render(_pCommandList);
+	}
 }
