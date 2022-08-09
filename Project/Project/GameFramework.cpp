@@ -60,6 +60,7 @@ GameFramework::GameFramework() {
 	// 현재 스왑체인의 후면 버퍼의 인덱스
 	swapChainBufferCurrentIndex = 0;
 	fenceEvent = NULL;
+	//PushScene(make_shared<Scene>());
 }
 
 GameFramework::~GameFramework() {
@@ -269,8 +270,11 @@ void GameFramework::FrameAdvance() {
 
 	gameTimer.Tick(60.0f);
 	ProcessInput();
+	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
+	if (!pScenes.empty()) {
+		pScenes.top()->FrameAdvance(gameTimer.GetTimeElapsed());
+	}
 
-	// 씬 진행
 
 	// 명령 할당자와 명령 리스트를 리셋한다.
 	HRESULT hResult = pCommandAllocator->Reset();
@@ -297,10 +301,7 @@ void GameFramework::FrameAdvance() {
 	//렌더 타겟 뷰(서술자)와 깊이-스텐실 뷰(서술자)를 출력-병합 단계(OM)에 연결한다. 
 	pCommandList->OMSetRenderTargets(1, &rtvCPUDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
 
-	//t += 0.01;
-	if (t > 1) t -= 1;
-	float pClearColor[4] = { t, 0.1f, 0.1f, 1.0f };
-	//float pClearColor[4] = {1.0f, 0.5f, 0.0f, 1.0f};
+	float pClearColor[4] = {1.0f, 0.5f, 0.0f, 1.0f};
 	pCommandList->ClearRenderTargetView(rtvCPUDescriptorHandle, pClearColor, 0, NULL);
 
 	//원하는 값으로 깊이-스텐실(뷰)을 지운다. 
@@ -309,8 +310,10 @@ void GameFramework::FrameAdvance() {
 	//그래픽 루트 시그너쳐를 파이프라인에 연결(설정)한다.
 	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
 
-	//씬 렌더링    (Scene에서 카메라, 플레이어를 관리한다.)
-	//GetCurrentSceneRef().Render(m_pCommandList);    [수정]
+	//씬 렌더링  (Scene에서 카메라, 플레이어를 관리한다.)
+	if (!pScenes.empty()) {
+		pScenes.top()->Render(pCommandList);
+	}
 
 	// 현재 렌더 타겟에 대한 렌더링이 끝나기를 기다린다.
 	resourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -322,7 +325,8 @@ void GameFramework::FrameAdvance() {
 	//명령 리스트를 명령 큐에 추가하여 실행한다. 
 	vector<ComPtr<ID3D12CommandList>> pCommandLists = { pCommandList.Get() };
 	pCommandQueue->ExecuteCommandLists(1, pCommandLists.data()->GetAddressOf());
-	
+
+
 	//GPU가 모든 명령 리스트를 실행할 때 까지 기다린다. 
 	WaitForGpuComplete();
 
@@ -396,7 +400,36 @@ void GameFramework::ProcessInput() {
 
 	}
 	if (true) {
-		if (keysBuffers['W'] & 0xF0) ChangeSwapChainState();
-	}
+		if (keysBuffers['W'] & 0xF0) {
+			ChangeSwapChainState();
+		}
+		// 일시정지
+		if (keysBuffers['P'] & 0xF0) {
 
+			//PushScene(make_shared<Scene>("pause"));
+		}
+		// 재시작
+		if (keysBuffers['R'] & 0xF0) {
+			PopScene();
+		}
+	}
+}
+
+void GameFramework::PushScene(const shared_ptr<Scene>& _pScene) {
+	pScenes.push(_pScene);
+}
+void GameFramework::PopScene() {
+	if (!pScenes.empty()) {
+		pScenes.pop();
+	}
+}
+void GameFramework::ChangeScene(const shared_ptr<Scene>& _pScene) {
+	PopScene();
+	PushScene(_pScene);
+}
+void GameFramework::ClearScene() {
+
+	while (!pScenes.empty()) {
+			pScenes.pop();
+	}
 }
