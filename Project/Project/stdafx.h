@@ -46,11 +46,12 @@
 // 컨테이너
 #include <vector>
 #include <array>
-#include <list>
+#include <map>
 #include <ranges>
 #include <queue>
 #include <stack>
 #include <format>
+#include <fstream>
 
 #include <algorithm>
 
@@ -59,6 +60,10 @@ using namespace DirectX;
 using namespace DirectX::PackedVector;
 
 using Microsoft::WRL::ComPtr;
+
+// file로 부터 string을 읽는다.
+void ReadStringBinary(string& _dest, ifstream& _file);
+void ReadXMFLOAT3Binary(XMFLOAT3& _dest);
 
 namespace Vector3 {
 	inline XMFLOAT3 Normalize(const XMFLOAT3& _vector) {
