@@ -63,7 +63,6 @@ using Microsoft::WRL::ComPtr;
 
 // file로 부터 string을 읽는다.
 void ReadStringBinary(string& _dest, ifstream& _file);
-void ReadXMFLOAT3Binary(XMFLOAT3& _dest);
 
 namespace Vector3 {
 	inline XMFLOAT3 Normalize(const XMFLOAT3& _vector) {

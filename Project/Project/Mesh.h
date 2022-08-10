@@ -13,7 +13,7 @@ protected:
 	ComPtr<ID3D12Resource> pNormalBuffer;		// 노멀벡터의 정보
 	D3D12_VERTEX_BUFFER_VIEW normalBufferView;
 
-	vector<int> nSubMeshIndices;	// subMesh들의 인덱스 개수
+	vector<UINT> nSubMeshIndex;	// subMesh들의 인덱스 개수
 	vector<ComPtr<ID3D12Resource>> pSubMeshIndexBuffers;	// subMesh들의 인덱스 정보
 	vector<D3D12_INDEX_BUFFER_VIEW> subMeshIndexBufferViews;
 
