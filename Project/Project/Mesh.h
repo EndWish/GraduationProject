@@ -25,7 +25,7 @@ public:		// 생성관련 멤버 함수▼
 	virtual ~Mesh();
 
 public:		// 멤버 함수▼
-	shared_ptr<Mesh> LoadFromFile(string& _fileName);
+	shared_ptr<Mesh> LoadFromFile(string& _fileName, ComPtr<ID3D12Device>& _pDevice, ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pd3dCommandList);
 };
 
@@ -38,8 +38,7 @@ class MeshManager {
 
 protected:
 	map<string, shared_ptr<Mesh>> storage;
-	
 
 public:
-	shared_ptr<Mesh> GetMesh(string& _name);
+	shared_ptr<Mesh> GetMesh(string& _name, ComPtr<ID3D12Device>& _pDevice, ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };

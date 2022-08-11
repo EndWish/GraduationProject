@@ -64,6 +64,9 @@ using Microsoft::WRL::ComPtr;
 // file로 부터 string을 읽는다.
 void ReadStringBinary(string& _dest, ifstream& _file);
 
+// 리소스 생성
+ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* _pData, UINT _byteSize, D3D12_HEAP_TYPE _heapType, D3D12_RESOURCE_STATES _resourceStates);
+
 namespace Vector3 {
 	inline XMFLOAT3 Normalize(const XMFLOAT3& _vector) {
 		XMFLOAT3 result;
