@@ -40,10 +40,9 @@ void PlayScene::FrameAdvance(double _timeElapsed) {
 	// 충돌검사를 진행할 방들을 체크.
 	AnimateObjects(_timeElapsed);
 
-	Room p1Room = checkCurrentRoom(pPlayer[0]->GetBoundingBox(), 0);
-	Room p2Room = checkCurrentRoom(pPlayer[0]->GetBoundingBox(), 0);
 
-	if (p1Room.GetType() == "Enemy" && p1Room == p2Room) {
+
+	if (pNowRoom[0]->GetType() == "Enemy" && pNowRoom[0]->GetID() == pNowRoom[1]->GetID()) {
 		// 방 문이 닫힘
 		// 클리어까지 다른방으로 이동 불가
 	}
@@ -91,18 +90,16 @@ void PlayScene::loadRoomsForFile(string _fileName) {
 	// 룸과 인접한 룸들을 담음
 }
 
-const Room& PlayScene::checkCurrentRoom(const BoundingOrientedBox& _playerOOBB, int _playerNum) {
+void PlayScene::CheckCurrentRoom(const BoundingOrientedBox& _playerOOBB, int _playerNum) {
 
 	// 먼저 기존에 존재했던 방과 먼저 충돌체크
 	if (pNowRoom[_playerNum]->GetBoundingBox().Contains(XMLoadFloat3(&_playerOOBB.Center)) != DISJOINT) {	// 충돌할 경우
-		return *pNowRoom[_playerNum];
 	}
 	// 기존 방에서 인접해있던 방과 충돌체크
 	else {
 		for (const auto& room : pNowRoom[_playerNum]->GetSideRooms()) {
 			if (room.lock()->GetBoundingBox().Contains(XMLoadFloat3(&_playerOOBB.Center)) != DISJOINT) {
 				pNowRoom[_playerNum] = room.lock();
-				return *room.lock();
 			}
 		}
 	}
