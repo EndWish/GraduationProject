@@ -15,6 +15,9 @@ public:
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 };
 
+
+///////////////////////////////////////////////////////////////////////////////
+/// PlayScene
 class PlayScene : public Scene {
 private:
 	

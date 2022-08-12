@@ -1,11 +1,12 @@
 #pragma once
 #include "GameObject.h"
+#include "Camera.h"
 
 class Player : public GameObject {
 private:
 	// 플레이어가 죽은지를 판단
 	bool isDead;
-
+	weak_ptr<Camera> pCamera;
 
 public:
 	Player();
@@ -13,6 +14,8 @@ public:
 
 public:
 	bool GetIsDead() const;
+	shared_ptr<Camera> GetCamera() const;
+
 	void Animate(double _timeElapsed);
 };
 

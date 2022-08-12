@@ -241,12 +241,12 @@ void GameFramework::CreateGraphicsRootSignature() {
 	D3D12_ROOT_PARAMETER pRootParameters[2];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera
+	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
 	pRootParameters[0].Descriptor.RegisterSpace = 0;
 	pRootParameters[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	pRootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-	pRootParameters[1].Constants.Num32BitValues = 32;
+	pRootParameters[1].Constants.Num32BitValues = 16;
 	pRootParameters[1].Constants.ShaderRegister = 2; //GameObject
 	pRootParameters[1].Constants.RegisterSpace = 0;
 	pRootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
@@ -264,6 +264,16 @@ void GameFramework::CreateGraphicsRootSignature() {
 	ComPtr<ID3DBlob> pErrorBlob = NULL;
 	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignatureBlob, &pErrorBlob);
 	pDevice->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), __uuidof(ID3D12RootSignature), (void**)&pRootSignature);
+}
+
+pair<int, int> GameFramework::GetClientSize() const {
+	return { clientWidth , clientHeight };
+}
+const ComPtr<ID3D12Device>& GameFramework::GetDevice() const {
+	return pDevice;
+}
+const ComPtr<ID3D12GraphicsCommandList>& GameFramework::GetCommandList() const {
+	return pCommandList;
 }
 
 void GameFramework::FrameAdvance() {

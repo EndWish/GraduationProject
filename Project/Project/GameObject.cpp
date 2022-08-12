@@ -12,22 +12,35 @@ GameObject::~GameObject() {
 
 }
 
-XMFLOAT3 GameObject::GetRightUnitVector() const {
+XMFLOAT3 GameObject::GetEachRightVector() const {
 	return Vector3::Normalize(eachTransform._11, eachTransform._12, eachTransform._13);
 }
-XMFLOAT3 GameObject::GetUpUnitVector() const {
+XMFLOAT3 GameObject::GetEachUpVector() const {
 	return Vector3::Normalize(eachTransform._21, eachTransform._22, eachTransform._23);
 }
-XMFLOAT3 GameObject::GetLookUnitVector() const {
+XMFLOAT3 GameObject::GetEachLookVector() const {
 	return Vector3::Normalize(eachTransform._31, eachTransform._32, eachTransform._33);
 }
 XMFLOAT3 GameObject::GetEachPosition() const {
 	return XMFLOAT3(eachTransform._41, eachTransform._42, eachTransform._43);
 }
 
+XMFLOAT3 GameObject::GetWorldRightVector() const {
+	return Vector3::Normalize(worldTransform._11, worldTransform._12, worldTransform._13);
+}
+XMFLOAT3 GameObject::GetWorldUpVector() const {
+	return Vector3::Normalize(worldTransform._21, worldTransform._22, worldTransform._23);
+}
+XMFLOAT3 GameObject::GetWorldLookVector() const {
+	return Vector3::Normalize(worldTransform._31, worldTransform._32, worldTransform._33);
+}
+XMFLOAT3 GameObject::GetWorldPosition() const {
+	return XMFLOAT3(worldTransform._41, worldTransform._42, worldTransform._43);
+}
+
 XMFLOAT4X4 GameObject::GetFrontMoveMatrix(float _distance) const {
 	// 이동할 벡터 = look단위 벡터에 거리를 곱한값
-	XMFLOAT3 moveVector = Vector3::ScalarProduct(GetLookUnitVector(), _distance);
+	XMFLOAT3 moveVector = Vector3::ScalarProduct(GetEachLookVector(), _distance);
 	XMFLOAT4X4 result = Matrix4x4::Identity();
 	result._41 = moveVector.x;
 	result._42 = moveVector.y;
@@ -36,7 +49,7 @@ XMFLOAT4X4 GameObject::GetFrontMoveMatrix(float _distance) const {
 }
 XMFLOAT4X4 GameObject::GetRightMoveMatrix(float _distance) const {
 	// 이동할 벡터 = look단위 벡터에 거리를 곱한값
-	XMFLOAT3 moveVector = Vector3::ScalarProduct(GetRightUnitVector(), _distance);
+	XMFLOAT3 moveVector = Vector3::ScalarProduct(GetEachRightVector(), _distance);
 	XMFLOAT4X4 result = Matrix4x4::Identity();
 	result._41 = moveVector.x;
 	result._42 = moveVector.y;
