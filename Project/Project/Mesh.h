@@ -1,6 +1,12 @@
 #pragma once
 
+#include "Shader.h"
+
 class Mesh {
+protected:
+	static shared_ptr<Shader> shader;
+public:
+	static void MakeShader();
 protected:
 	string name;
 
@@ -25,8 +31,8 @@ public:		// 생성관련 멤버 함수▼
 	virtual ~Mesh();
 
 public:		// 멤버 함수▼
-	shared_ptr<Mesh> LoadFromFile(string& _fileName, ComPtr<ID3D12Device>& _pDevice, ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pd3dCommandList);
+	void LoadFromFile(string& _fileName, ComPtr<ID3D12Device>& _pDevice, ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 
 // 조명까지 계산 하는 메쉬

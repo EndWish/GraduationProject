@@ -10,7 +10,6 @@ Scene::~Scene() {
 
 }
 
-
 ///////////////////////////////////////////////////////////////////////////////
 /// PlayScene
 PlayScene::PlayScene(int _stageNum) {
@@ -30,7 +29,7 @@ PlayScene::PlayScene(int _stageNum) {
 	// 현재 두 플레이어가 있는 방을 첫방으로 설정
 	pNowRoom[0] = pRooms[0];
 	pNowRoom[1] = pRooms[0];
-
+	
 }
 
 PlayScene::~PlayScene() {
@@ -79,7 +78,6 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 
 }
-
 
 void PlayScene::loadRoomsForFile(string _fileName) {
 

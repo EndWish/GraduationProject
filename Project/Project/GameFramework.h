@@ -80,6 +80,7 @@ public:
 	pair<int,int> GetClientSize() const;
 	const ComPtr<ID3D12Device>& GetDevice() const;
 	const ComPtr<ID3D12GraphicsCommandList>& GetCommandList() const;
+	const ComPtr<ID3D12RootSignature>& GetRootSignature() const;
 
 	void FrameAdvance();
 	void WaitForGpuComplete();			// GPU와 동기화하기 위한 대기

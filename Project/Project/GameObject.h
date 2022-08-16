@@ -63,6 +63,8 @@ public:
 	virtual void Animate(double _timeElapsed);
 	// 렌더
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	// 월드 변환행렬을 쉐이더로 넘겨준다.
+	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 };
 

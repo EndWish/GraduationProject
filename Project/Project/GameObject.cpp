@@ -79,6 +79,7 @@ void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 
 	// 자식의 부모를 나로 지정
 	_pChild->pParent = shared_from_this();
+	cout << "정상";
 }
 
 void GameObject::UpdateWorldTransform() {
@@ -109,7 +110,16 @@ void GameObject::Animate(double _timeElapsed) {
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	cout << format("GameObject({}) : 렌더 실행\n");
+	UpdateShaderVariable(_pCommandList);
+	// 사용할 쉐이더의 그래픽스 파이프라인을 설정한다 [수정요망]
+	pMesh.lock()->Render(_pCommandList);
 	for (const auto& pChild : pChildren) {
 		pChild->Render(_pCommandList);
 	}
+}
+
+void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	XMFLOAT4X4 world;
+	XMStoreFloat4x4(&world, XMMatrixTranspose(XMLoadFloat4x4(&worldTransform)));
+	_pCommandList->SetGraphicsRoot32BitConstants(1, 16, &world, 0);
 }

@@ -26,7 +26,6 @@ private:
 public:
 	Room();
 	~Room();
-	bool operator==(const Room& _other) const;
 
 public:
 	int GetID() const;
