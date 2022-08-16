@@ -10,10 +10,6 @@ Room::~Room() {
 
 }
 
-bool Room::operator==(const Room& _other) const {
-	return _other.GetID() == id;
-}
-
 void Room::AnimateObjects(double _timeElapsed) {
 	for (const auto& pItem : pItems) {
 		pItem->Animate(_timeElapsed);

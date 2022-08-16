@@ -27,13 +27,18 @@ public:
 // get set 함수
 	
 	// 오른쪽 방향의 단위벡터를 얻는다.
-	XMFLOAT3 GetRightUnitVector() const;
+	XMFLOAT3 GetEachRightVector() const;
 	// 위쪽 방향의 단위벡터를 얻는다.
-	XMFLOAT3 GetUpUnitVector() const;
+	XMFLOAT3 GetEachUpVector() const;
 	// 바라보고 있는 방향의 단위벡터를 얻는다.
-	XMFLOAT3 GetLookUnitVector() const;
+	XMFLOAT3 GetEachLookVector() const;
 	// 부모좌표계 기준 자신의 위치를 리턴한다.
 	XMFLOAT3 GetEachPosition() const;
+	// 월드좌표계 기준 자신의 위치를 리턴한다.
+	XMFLOAT3 GetWorldPosition() const;
+	XMFLOAT3 GetWorldRightVector() const;
+	XMFLOAT3 GetWorldUpVector() const;
+	XMFLOAT3 GetWorldLookVector() const;
 
 	// 앞으로 이동하는 행령을 얻는다.
 	XMFLOAT4X4 GetFrontMoveMatrix(float _distance) const;
@@ -50,7 +55,7 @@ public:
 	void SetChild(const shared_ptr<GameObject> _pChild);
 
 	// eachTransform를 가지고 worldTransform를 업데이트 한다.
-	void UpdateWorldTransform();
+	virtual void UpdateWorldTransform();
 	// 변환행렬을 적용하고 worldTransform을 업데이트 한다.
 	void ApplyTransform(XMFLOAT4X4& _transform);
 
@@ -58,6 +63,8 @@ public:
 	virtual void Animate(double _timeElapsed);
 	// 렌더
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	// 월드 변환행렬을 쉐이더로 넘겨준다.
+	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 };
 

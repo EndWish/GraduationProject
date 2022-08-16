@@ -1,16 +1,20 @@
 #include "stdafx.h"
 #include "Mesh.h"
 
+shared_ptr<Shader> Mesh::shader;
 
+void Mesh::MakeShader() {
+	shader = make_shared<Shader>();
+}
 
 Mesh::Mesh() {
-
+	primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 }
 Mesh::~Mesh() {
 
 }
 
-shared_ptr<Mesh> Mesh::LoadFromFile(string& _fileName, ComPtr<ID3D12Device>& _pDevice, ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void Mesh::LoadFromFile(string& _fileName, ComPtr<ID3D12Device>& _pDevice, ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	ifstream file("Model/" + _fileName, ios::binary);	// 파일을 연다
 	
 	// 버텍스의 개수 읽기
@@ -60,17 +64,23 @@ shared_ptr<Mesh> Mesh::LoadFromFile(string& _fileName, ComPtr<ID3D12Device>& _pD
 		subMeshIndexBufferViews[i].Format = DXGI_FORMAT_R32_UINT;
 		subMeshIndexBufferViews[i].SizeInBytes = sizeof(UINT) * nSubMeshIndex[i];
 	}
-	
 }
-void Mesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pd3dCommandList) {
+
+void Mesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	cout << format("Mesh({}) : Mesh함수 수행\n", name);
+
+	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[2] = { positionBufferView , normalBufferView};
+	_pCommandList->IASetVertexBuffers(0, 2, vertexBuffersViews);
+	for (int i = 0; i < nSubMeshIndex.size(); ++i) {
+		// 해당 서브매쉬와 매칭되는 메테리얼을 Set 해준다.
+		_pCommandList->IASetIndexBuffer(&subMeshIndexBufferViews[i]);
+		_pCommandList->DrawIndexedInstanced(nSubMeshIndex[i], 1, 0, 0, 0);
+	}
 }
 
 /////////////////////////////////////////////////////////////////////////////////////
 ///	MeshManager
-
-
-
 shared_ptr<Mesh> MeshManager::GetMesh(string& _name, ComPtr<ID3D12Device>& _pDevice, ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	if(storage.contains(_name)) {	// 처음 불러온 메쉬일 경우
 		shared_ptr<Mesh> newMesh = make_shared<Mesh>();

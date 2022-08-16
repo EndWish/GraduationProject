@@ -10,13 +10,14 @@ Scene::~Scene() {
 
 }
 
-
+///////////////////////////////////////////////////////////////////////////////
+/// PlayScene
 PlayScene::PlayScene(int _stageNum) {
 
 	// 첫 스테이지에서 플레이어 생성
 	if (_stageNum == 1) {
-		//pPlayer[0] = make_shared<Player>();
-		//pPlayer[1] = make_shared<Player>();
+		pPlayer[0] = make_shared<Player>();
+		pPlayer[1] = make_shared<Player>();
 	}
 
 	// 룸 생성
@@ -28,13 +29,12 @@ PlayScene::PlayScene(int _stageNum) {
 	// 현재 두 플레이어가 있는 방을 첫방으로 설정
 	pNowRoom[0] = pRooms[0];
 	pNowRoom[1] = pRooms[0];
-
+	
 }
 
 PlayScene::~PlayScene() {
 
 }
-
 
 void PlayScene::FrameAdvance(double _timeElapsed) {
 	// 충돌검사를 진행할 방들을 체크.
@@ -67,13 +67,17 @@ void PlayScene::AnimateObjects(double _timeElapsed) {
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
 
+	shared_ptr<Camera> pP1Camera = pPlayer[0]->GetCamera();
+	pP1Camera->SetViewPortAndScissorRect();
+	pP1Camera->UpdateShaderVariable();
+
 	// 뷰 프러스텀 내에서 걸러지므로 
 	for (const auto& room : pRooms) {
 		room->Render(_pCommandList);
 	}
 
-}
 
+}
 
 void PlayScene::loadRoomsForFile(string _fileName) {
 
