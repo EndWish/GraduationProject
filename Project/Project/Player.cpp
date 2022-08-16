@@ -3,15 +3,19 @@
 
 
 Player::Player() {
+
+}
+
+Player::~Player() {
+
+}
+
+void Player::Create() {
 	isDead = false;
 
 	shared_ptr<Camera> newCamera = make_shared<Camera>();
 	pCamera = newCamera;
 	SetChild(newCamera);
-}
-
-Player::~Player() {
-
 }
 
 bool Player::GetIsDead() const {

@@ -79,7 +79,6 @@ void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 
 	// 자식의 부모를 나로 지정
 	_pChild->pParent = shared_from_this();
-	cout << "정상";
 }
 
 void GameObject::UpdateWorldTransform() {
