@@ -17,12 +17,13 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
-
+#include <exception>
 #include <string>
 #include <wrl.h>
 #include <shellapi.h>
 
 #include <d3d12.h>
+#include "d3dx12.h"
 #include <dxgi1_4.h>
 #include <D3Dcompiler.h>
 #include <DirectXMath.h>
@@ -65,7 +66,7 @@ using Microsoft::WRL::ComPtr;
 void ReadStringBinary(string& _dest, ifstream& _file);
 
 // 리소스 생성
-ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* _pData, UINT _byteSize, D3D12_HEAP_TYPE _heapType, D3D12_RESOURCE_STATES _resourceStates);
+void CreateBufferResource(ComPtr<ID3D12Resource>* _dst, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* _pData, UINT _byteSize, D3D12_HEAP_TYPE _heapType, D3D12_RESOURCE_STATES _resourceStates,ComPtr<ID3D12Resource>* _pUploadBuffer);
 
 //xmfloat 출력하기
 std::ostream& operator<<(std::ostream& os, const XMFLOAT3& f3);
