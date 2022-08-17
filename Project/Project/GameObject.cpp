@@ -112,7 +112,6 @@ void GameObject::Animate(double _timeElapsed) {
 }
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	cout << format("{}의 월드 좌표는 ({},{},{}), 바라보는 방향은 ({},{},{})\n", name, worldTransform._41, worldTransform._42, worldTransform._43, worldTransform._31, worldTransform._32, worldTransform._33);
 	if (pMesh.lock()) {	// 메쉬가 있을 경우에만 렌더링을 한다.
 		UpdateShaderVariable(_pCommandList);
 		// 사용할 쉐이더의 그래픽스 파이프라인을 설정한다 [수정요망]
@@ -121,6 +120,7 @@ void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) 
 		for (const auto& pChild : pChildren) {
 			pChild->Render(_pCommandList);
 		}
+
 	}
 }
 

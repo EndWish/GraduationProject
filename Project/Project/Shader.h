@@ -4,7 +4,7 @@ protected:
 	ComPtr<ID3DBlob> pVSBlob, pPSBlob;
 	ComPtr<ID3D12PipelineState> pPipelineState;
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc;
-	vector<D3D12_INPUT_ELEMENT_DESC> pInputElementDescs;
+	vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
 
 public:
 	// 생성 관련 함수들
@@ -19,6 +19,7 @@ public:
 
 	//
 	void PrepareRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void PrepareRender2(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 };
 

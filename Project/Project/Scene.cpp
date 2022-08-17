@@ -26,11 +26,12 @@ PlayScene::PlayScene(int _stageNum) {
 	string fileName = "Stage";
 	fileName += (to_string(_stageNum) + ".bin");
 
-	loadRoomsForFile(fileName);
+	LoadRoomsForFile(fileName);
 
 	// 현재 두 플레이어가 있는 방을 첫방으로 설정
 	//pNowRoom[0] = pRooms[0];
 	//pNowRoom[1] = pRooms[0];
+
 }
 
 PlayScene::~PlayScene() {
@@ -49,7 +50,6 @@ void PlayScene::FrameAdvance(double _timeElapsed) {
 		// 방 문이 닫힘
 		// 클리어까지 다른방으로 이동 불가
 	//}
-	Render(gameFramework.GetCommandList());
 	
 }
 
@@ -80,12 +80,11 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	for (const auto& room : pRooms) {
 		room->Render(_pCommandList);
 	}
-
+	
 }
 
-void PlayScene::loadRoomsForFile(string _fileName) {
+void PlayScene::LoadRoomsForFile(string _fileName) {
 
-	cout << _fileName << "로드 !\n";
 	// 스테이지 내 룸의 개수만큼 룸 배열의 공간 할당
 	// pRooms.resize(룸 크기);
 

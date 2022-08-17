@@ -31,12 +31,11 @@ private:
 	// 현재 플레이어가 있는 룸의 포인터
 	array<shared_ptr<Room> , 2> pNowRoom;
 
-
 public:
 	PlayScene(int _stageNum);
 	~PlayScene() final;
 
-	void loadRoomsForFile(string _fileName);
+	void LoadRoomsForFile(string _fileName);
 
 public:
 	void FrameAdvance(double _timeElapsed) final;

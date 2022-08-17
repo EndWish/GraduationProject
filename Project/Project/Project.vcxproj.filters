@@ -104,7 +104,7 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Shaders.hlsl" />
-    <FxCompile Include="Light.hlsl" />
+    <None Include="Light.hlsl" />
+    <None Include="Shaders.hlsl" />
   </ItemGroup>
 </Project>

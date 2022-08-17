@@ -24,9 +24,17 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 		// 쉐이더 생성
 		Mesh::MakeShader();
 
+		gameFramework.pCommandList->Reset(gameFramework.pCommandAllocator.Get(), NULL);
+
 		// 최초씬 생성
 		shared_ptr<Scene> startScene = make_shared<PlayScene>(1);
 		gameFramework.PushScene(startScene);
+
+		gameFramework.pCommandList->Close();
+		vector<ComPtr<ID3D12CommandList>> pCommandLists = { gameFramework.pCommandList.Get() };
+		gameFramework.pCommandQueue->ExecuteCommandLists(1, pCommandLists.data()->GetAddressOf());
+
+		gameFramework.WaitForGpuComplete();
 
 		//gameFramework.m_gameTimer.Reset();    // 타이머 리셋
 	}
@@ -186,15 +194,17 @@ void GameFramework::CreateSwapChain()
 }
 
 void GameFramework::CreateRenderTargetViews() {
+	HRESULT hResult;
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvCPUDescriptorHandle = pRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();    // 서술자 힙을 통해 시작주소를 가져온다.
 	for (int i = 0; i < nSwapChainBuffer; ++i) {
-		pDxgiSwapChain->GetBuffer(i, __uuidof(ID3D12Resource), (void**)&pRenderTargetBuffers[i]);    // 렌더타겟 버퍼를 생성한다.
+		hResult = pDxgiSwapChain->GetBuffer(i, __uuidof(ID3D12Resource), (void**)&pRenderTargetBuffers[i]);    // 렌더타겟 버퍼를 생성한다.
 		pDevice->CreateRenderTargetView(pRenderTargetBuffers[i].Get(), NULL, rtvCPUDescriptorHandle);    // 렌더타겟 뷰를 서술자 힙에 생성(적재)
 		rtvCPUDescriptorHandle.ptr += rtvDescriptorIncrementSize;    // 다음번 주소로 이동
 	}
 }
 
 void GameFramework::CreateDepthStencilView() {
+	HRESULT hResult;
 	// 깊이-스텐실 버퍼(리소스)를 만들기 위한 정보들 입력
 	D3D12_RESOURCE_DESC resourceDesc;
 	resourceDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
@@ -222,7 +232,7 @@ void GameFramework::CreateDepthStencilView() {
 	clearValue.DepthStencil.Stencil = 0;
 
 	// 깊이-스텐실 버퍼(리소스) 생성
-	pDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, __uuidof(ID3D12Resource), (void**)&pDepthStencilBuffer);
+	hResult = pDevice->CreateCommittedResource(&heapProperties, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_DEPTH_WRITE, &clearValue, __uuidof(ID3D12Resource), (void**)&pDepthStencilBuffer);
 
 	D3D12_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
 	::ZeroMemory(&depthStencilViewDesc, sizeof(D3D12_DEPTH_STENCIL_VIEW_DESC));
@@ -235,6 +245,7 @@ void GameFramework::CreateDepthStencilView() {
 }
 
 void GameFramework::CreateGraphicsRootSignature() {
+	HRESULT hResult;
 	D3D12_ROOT_PARAMETER pRootParameters[2];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
@@ -259,8 +270,8 @@ void GameFramework::CreateGraphicsRootSignature() {
 
 	ComPtr<ID3DBlob> pSignatureBlob = NULL;
 	ComPtr<ID3DBlob> pErrorBlob = NULL;
-	D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignatureBlob, &pErrorBlob);
-	pDevice->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), __uuidof(ID3D12RootSignature), (void**)&pRootSignature);
+	hResult = D3D12SerializeRootSignature(&rootSignatureDesc, D3D_ROOT_SIGNATURE_VERSION_1, &pSignatureBlob, &pErrorBlob);
+	hResult = pDevice->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), __uuidof(ID3D12RootSignature), (void**)&pRootSignature);
 }
 
 // get, set 함수
@@ -272,6 +283,9 @@ const ComPtr<ID3D12Device>& GameFramework::GetDevice() const {
 }
 const ComPtr<ID3D12GraphicsCommandList>& GameFramework::GetCommandList() const {
 	return pCommandList;
+}
+const ComPtr<ID3D12CommandQueue>& GameFramework::GetCommandQueue() const {
+	return pCommandQueue;
 }
 const ComPtr<ID3D12RootSignature>& GameFramework::GetRootSignature() const {
 	return pRootSignature;
@@ -363,7 +377,6 @@ void GameFramework::FrameAdvance() {
 void GameFramework::WaitForGpuComplete() {
 	UINT64 fenceValue = ++fenceValues[swapChainBufferCurrentIndex]; // 현재 버퍼의 펜스값을 증가
 	HRESULT hResult = pCommandQueue->Signal(pFence.Get(), fenceValue);
-
 	if (pFence->GetCompletedValue() < fenceValue) {
 		hResult = pFence->SetEventOnCompletion(fenceValue, fenceEvent);	
 		WaitForSingleObject(fenceEvent, INFINITE);					// GPU가 처리를 끝낼때 까지 기다림

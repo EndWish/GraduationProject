@@ -17,8 +17,8 @@ using namespace std;
 
 int main() 
 {
-	ifstream in("test.txt");
-	ofstream out("test", ios::binary);
+	ifstream in("triangle.txt");
+	ofstream out("triangle", ios::binary);
 
 	UINT nVertex;
 	in >> nVertex;

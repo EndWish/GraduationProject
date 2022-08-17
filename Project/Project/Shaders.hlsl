@@ -37,7 +37,7 @@ VS_OUTPUT DefaultVertexShader(VS_INPUT input)
 	return output;
 }
 
-float4 DefaultPixelShader(VS_OUTPUT output) : SV_TARGET
+float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET
 {
-	return output.color;
+	return input.color;
 }

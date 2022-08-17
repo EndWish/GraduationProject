@@ -26,7 +26,7 @@ void Player::Create() {
 
 	// [юс╫ц]
 	newCamera->SetEachPosition(XMFLOAT3(0, 0, -10));
-	pMesh = gameFramework.GetMeshManager().GetMesh("test.bin", gameFramework.GetDevice(), gameFramework.GetCommandList());
+	pMesh = gameFramework.GetMeshManager().GetMesh("test", gameFramework.GetDevice(), gameFramework.GetCommandList());
 
 }
 
