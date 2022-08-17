@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "Scene.h"
 #include "Timer.h"
+#include "GameFramework.h"
 
 Scene::Scene() {
 	
@@ -37,15 +38,18 @@ PlayScene::~PlayScene() {
 }
 
 void PlayScene::FrameAdvance(double _timeElapsed) {
+	GameFramework& gameFramework = GameFramework::Instance();
+
 	// 충돌검사를 진행할 방들을 체크.
 	AnimateObjects(_timeElapsed);
 
-
+	
 
 	//if (pNowRoom[0]->GetType() == "Enemy" && pNowRoom[0]->GetID() == pNowRoom[1]->GetID()) {
 		// 방 문이 닫힘
 		// 클리어까지 다른방으로 이동 불가
 	//}
+	Render(gameFramework.GetCommandList());
 	
 }
 
@@ -70,11 +74,12 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	pP1Camera->SetViewPortAndScissorRect();
 	pP1Camera->UpdateShaderVariable();
 
+	pPlayer[0]->Render(_pCommandList);
+
 	// 뷰 프러스텀 내에서 걸러지므로 
 	for (const auto& room : pRooms) {
 		room->Render(_pCommandList);
 	}
-
 
 }
 

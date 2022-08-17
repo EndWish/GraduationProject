@@ -276,6 +276,9 @@ const ComPtr<ID3D12GraphicsCommandList>& GameFramework::GetCommandList() const {
 const ComPtr<ID3D12RootSignature>& GameFramework::GetRootSignature() const {
 	return pRootSignature;
 }
+MeshManager& GameFramework::GetMeshManager() {
+	return meshManager;
+}
 
 void GameFramework::FrameAdvance() {
 

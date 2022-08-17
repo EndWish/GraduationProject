@@ -2,14 +2,18 @@
 #include "GameObject.h"
 
 GameObject::GameObject() {
+
+}
+GameObject::~GameObject() {
+
+}
+
+void GameObject::Create() {
 	name = "unknown";
 	worldTransform = Matrix4x4::Identity();
 	eachTransform = Matrix4x4::Identity();
 	boundingBox = BoundingOrientedBox();
 	isOOBBBCover = false;
-}
-GameObject::~GameObject() {
-
 }
 
 XMFLOAT3 GameObject::GetEachRightVector() const {
@@ -61,7 +65,7 @@ const BoundingOrientedBox& GameObject::GetBoundingBox() const {
 	return boundingBox;
 }
 
-void GameObject::SetEachPosition(XMFLOAT3& _position) {
+void GameObject::SetEachPosition(const XMFLOAT3& _position) {
 	eachTransform._41 = _position.x;
 	eachTransform._42 = _position.y;
 	eachTransform._43 = _position.z;
@@ -95,7 +99,7 @@ void GameObject::UpdateWorldTransform() {
 	}
 }
 
-void GameObject::ApplyTransform(XMFLOAT4X4& _transform) {
+void GameObject::ApplyTransform(const XMFLOAT4X4& _transform) {
 	eachTransform = Matrix4x4::Multiply(eachTransform, _transform);
 	UpdateWorldTransform();
 }
@@ -108,12 +112,15 @@ void GameObject::Animate(double _timeElapsed) {
 }
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	cout << format("GameObject({}) : 렌더 실행\n");
-	UpdateShaderVariable(_pCommandList);
-	// 사용할 쉐이더의 그래픽스 파이프라인을 설정한다 [수정요망]
-	pMesh.lock()->Render(_pCommandList);
-	for (const auto& pChild : pChildren) {
-		pChild->Render(_pCommandList);
+	cout << format("{}의 월드 좌표는 ({},{},{}), 바라보는 방향은 ({},{},{})\n", name, worldTransform._41, worldTransform._42, worldTransform._43, worldTransform._31, worldTransform._32, worldTransform._33);
+	if (pMesh.lock()) {	// 메쉬가 있을 경우에만 렌더링을 한다.
+		UpdateShaderVariable(_pCommandList);
+		// 사용할 쉐이더의 그래픽스 파이프라인을 설정한다 [수정요망]
+		Mesh::GetShader()->PrepareRender(_pCommandList);
+		pMesh.lock()->Render(_pCommandList);
+		for (const auto& pChild : pChildren) {
+			pChild->Render(_pCommandList);
+		}
 	}
 }
 

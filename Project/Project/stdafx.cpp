@@ -90,3 +90,22 @@ ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice
 
 	return pBuffer;
 }
+
+//xmfloat 출력하기
+std::ostream& operator<<(std::ostream& os, const XMFLOAT3& f3) {
+	os << "(" << f3.x << " " << f3.y << " " << f3.z << ")";
+	return os;
+}
+std::ostream& operator<<(std::ostream& os, const XMFLOAT4& f4) {
+	os << "(" << f4.x << " " << f4.y << " " << f4.z << f4.w << ")";
+	return os;
+}
+std::ostream& operator<<(std::ostream& os, const XMFLOAT4X4& f4x4) {
+	for (int i = 0; i < 4; ++i) {
+		for (int j = 0; j < 4; ++j) {
+			os << f4x4.m[i][j] << " ";
+		}
+		os << "\n";
+	}
+	return os;
+}
