@@ -24,6 +24,8 @@ public:
 	GameObject();
 	virtual ~GameObject();
 
+	virtual void Create();
+
 // get set 함수
 	
 	// 오른쪽 방향의 단위벡터를 얻는다.
@@ -50,14 +52,14 @@ public:
 	const BoundingOrientedBox& GetBoundingBox() const;
 
 	// 위치를 강제로 이동시킨다.
-	void SetEachPosition(XMFLOAT3& _position);
+	void SetEachPosition(const XMFLOAT3& _position);
 	// 자식을 추가한다.
 	void SetChild(const shared_ptr<GameObject> _pChild);
 
 	// eachTransform를 가지고 worldTransform를 업데이트 한다.
 	virtual void UpdateWorldTransform();
 	// 변환행렬을 적용하고 worldTransform을 업데이트 한다.
-	void ApplyTransform(XMFLOAT4X4& _transform);
+	void ApplyTransform(const XMFLOAT4X4& _transform);
 
 	// 애니메이션
 	virtual void Animate(double _timeElapsed);

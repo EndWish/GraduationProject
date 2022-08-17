@@ -3,7 +3,18 @@
 #include "GameFramework.h"
 
 Camera::Camera() {
+
+}
+
+Camera::~Camera() {
+
+}
+
+void Camera::Create() {
+	GameObject::Create();
 	GameFramework& gameFramework = GameFramework::Instance();	// gameFramework의 래퍼런스를 가져온다.
+
+	name = "카메라";
 
 	viewTransform = Matrix4x4::Identity();
 	projectionTransform = Matrix4x4::Identity();
@@ -11,17 +22,13 @@ Camera::Camera() {
 	auto [width, height] = gameFramework.GetClientSize();
 	viewPort = { 0,0, (float)width, (float)height, 0, 1 };
 	scissorRect = { 0,0, width, height };
-	
+
 	UINT cbElementSize = (sizeof(VS_CameraMappedFormat) + 255) & (~255);
 	pCameraBuffer = CreateBufferResource(gameFramework.GetDevice(), gameFramework.GetCommandList(), NULL, cbElementSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
 	pCameraBuffer->Map(0, NULL, (void**)&pMappedCamera);
 
 	UpdateViewTransform();
 	UpdateProjectionTransform(0.1f, 1000.0f, (float)width / height, 75.0f);
-}
-
-Camera::~Camera() {
-
 }
 
 void Camera::SetViewPortAndScissorRect() {

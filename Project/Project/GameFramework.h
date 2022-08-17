@@ -56,6 +56,9 @@ private:
 
 	// 게임 타이머
 	Timer gameTimer;
+
+	// 메쉬 메니저
+	MeshManager meshManager;
 	
 	// 씬
 	stack<shared_ptr<Scene>> pScenes;
@@ -81,6 +84,7 @@ public:
 	const ComPtr<ID3D12Device>& GetDevice() const;
 	const ComPtr<ID3D12GraphicsCommandList>& GetCommandList() const;
 	const ComPtr<ID3D12RootSignature>& GetRootSignature() const;
+	MeshManager& GetMeshManager();
 
 	void FrameAdvance();
 	void WaitForGpuComplete();			// GPU와 동기화하기 위한 대기

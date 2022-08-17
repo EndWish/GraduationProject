@@ -22,6 +22,8 @@ public:
 	Camera();
 	virtual ~Camera();
 
+	void Create();
+
 	void SetViewPortAndScissorRect();
 	void UpdateShaderVariable();
 	void UpdateViewTransform();
