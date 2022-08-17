@@ -9,30 +9,62 @@
 #include <vector>
 #include <chrono>
 
+#define UINT unsigned int
+
 using namespace std;
 
-class Scene {
 
-public:
-	Scene() { cout << "Scene 积己\n"; };
-	~Scene() { cout << "Scene 家戈\n"; };
-	//virtual ~Scene() { cout << "Scene 家戈\n"; };
-
-	virtual void Animate() { cout << "Scene Animate\n"; };
-	void Animate2() { cout << "Scene Animate2\n"; };
-};
-
-class ShopScene : public Scene {
-
-public:
-	ShopScene() { cout << "ShopScene 积己\n"; };
-	~ShopScene() { cout << "ShopScene 家戈\n"; };
-
-	void Animate() final { cout << "ShopScene Animate\n"; };
-	void Animate2() { cout << "ShopScene Animate2\n"; };
-};
 
 int main() 
 {
-	shared_ptr<Scene> test;
+	ifstream in("test.txt");
+	ofstream out("test", ios::binary);
+
+	UINT nVertex;
+	in >> nVertex;
+	out.write((char*)&nVertex, sizeof(UINT));
+
+	UINT nameSize;
+	in >> nameSize;
+	out.write((char*)&nameSize, sizeof(UINT));
+
+	string name;
+	in >> name;
+	out.write((char*)name.c_str(), sizeof(char) * nameSize);
+
+	float boundingBox[6];
+	for (int i = 0; i < 6; ++i) {
+		in >> boundingBox[i];
+		out.write((char*)&boundingBox[i], sizeof(float));
+	}
+
+	vector<float> positions(3 * nVertex);
+	for (int i = 0; i < 3 * nVertex; ++i) {
+		in >> positions[i];
+		out.write((char*)&positions[i], sizeof(float));
+	}
+
+	vector<float> normals(3 * nVertex);
+	for (int i = 0; i < 3 * nVertex; ++i) {
+		in >> normals[i];
+		out.write((char*)&normals[i], sizeof(float));
+	}
+
+	UINT nSubMesh;
+	in >> nSubMesh;
+	out.write((char*)&nSubMesh, sizeof(UINT));
+
+
+	for (int i = 0; i < nSubMesh; ++i) {
+		UINT nSubMeshIndex;
+		in >> nSubMeshIndex;
+		out.write((char*)&nSubMeshIndex, sizeof(UINT));
+
+		vector<UINT> subMeshIndex(nSubMeshIndex);
+		for (int j = 0; j < nSubMeshIndex; ++j) {
+			in >> subMeshIndex[j];
+			out.write((char*)&subMeshIndex[j], sizeof(UINT));
+		}
+	}
+
 }
