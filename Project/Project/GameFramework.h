@@ -83,6 +83,7 @@ public:
 	pair<int,int> GetClientSize() const;
 	const ComPtr<ID3D12Device>& GetDevice() const;
 	const ComPtr<ID3D12GraphicsCommandList>& GetCommandList() const;
+	const ComPtr<ID3D12CommandQueue>& GetCommandQueue() const;
 	const ComPtr<ID3D12RootSignature>& GetRootSignature() const;
 	MeshManager& GetMeshManager();
 

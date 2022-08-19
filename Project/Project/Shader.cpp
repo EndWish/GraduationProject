@@ -26,7 +26,7 @@ Shader::Shader() {
 	pVSBlob.Reset();
 	pPSBlob.Reset();
 
-	pInputElementDescs.clear();
+	inputElementDescs.clear();
 }
 
 Shader::~Shader() {
@@ -111,14 +111,14 @@ D3D12_BLEND_DESC Shader::CreateBlendState() {
 }
 
 D3D12_INPUT_LAYOUT_DESC Shader::CreateInputLayout() {
-	pInputElementDescs.assign(2, {});
+	inputElementDescs.assign(2, {});
 
-	pInputElementDescs[0] = {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};
-	pInputElementDescs[1] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-
+	inputElementDescs[0] = {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};
+	inputElementDescs[1] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
-	inputLayoutDesc.pInputElementDescs = pInputElementDescs.data();
-	inputLayoutDesc.NumElements = pInputElementDescs.size();
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = inputElementDescs.size();
 
 	return inputLayoutDesc;
 }

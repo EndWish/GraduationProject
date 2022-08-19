@@ -8,15 +8,13 @@ cbuffer cbGameObjectInfo : register(b2) {
 	matrix worldTransform : packoffset(c0);
 };
 
-#include "Light.hlsl"
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 
 struct VS_INPUT
 {
-	float3 modelPosition : POSITION;
-	float3 modelNormal : NORMAL;
+	float3 position : POSITION;
+	float3 normal : NORMAL;
 };
 
 struct VS_OUTPUT
@@ -29,16 +27,17 @@ struct VS_OUTPUT
 VS_OUTPUT DefaultVertexShader(VS_INPUT input)
 {
 	VS_OUTPUT output;
-
-	output.normal = mul(input.modelNormal, (float3x3)worldTransform);
-	output.position = mul(mul(mul(float4(input.modelPosition, 1.0f), worldTransform), view), projection);
-	output.normal = normalize(output.normal);
+	//float4 output;
 	
-	output.color = float4(0, 1, 0, 1);
+	output.normal = mul(input.normal, (float3x3)worldTransform);
+	output.position = mul(mul(mul(float4(input.position, 1.0f), worldTransform), view), projection);
+	//output.position = float4(input.modelPosition, 1.0f);
+	output.normal = normalize(output.normal);
+	output.color = float4(1, 1, 1, 1);
 	return output;
 }
 
-float4 DefaultPixelShader(VS_OUTPUT output) : SV_TARGET
+float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET
 {
-	return output.color;
+	return input.color;
 }

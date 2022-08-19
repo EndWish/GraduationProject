@@ -24,7 +24,8 @@ void Camera::Create() {
 	scissorRect = { 0,0, width, height };
 
 	UINT cbElementSize = (sizeof(VS_CameraMappedFormat) + 255) & (~255);
-	pCameraBuffer = CreateBufferResource(gameFramework.GetDevice(), gameFramework.GetCommandList(), NULL, cbElementSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
+	ComPtr<ID3D12Resource> temp;
+	pCameraBuffer = CreateBufferResource(gameFramework.GetDevice(), gameFramework.GetCommandList(), NULL, cbElementSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
 	pCameraBuffer->Map(0, NULL, (void**)&pMappedCamera);
 
 	UpdateViewTransform();
