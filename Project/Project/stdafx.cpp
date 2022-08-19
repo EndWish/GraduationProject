@@ -76,7 +76,7 @@ std::ostream& operator<<(std::ostream& os, const XMFLOAT3& f3) {
 	return os;
 }
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4& f4) {
-	os << "(" << f4.x << " " << f4.y << " " << f4.z << f4.w << ")";
+	os << "(" << f4.x << " " << f4.y << " " << f4.z << " " << f4.w << ")";
 	return os;
 }
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4X4& f4x4) {

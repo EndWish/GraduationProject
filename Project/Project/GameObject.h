@@ -1,6 +1,8 @@
 #pragma once
 #include "Mesh.h"
 
+class Light;
+
 class GameObject : public enable_shared_from_this<GameObject> {
 protected:
 	string name;
@@ -11,13 +13,17 @@ protected:
 	// 부모좌표계 기준
 	XMFLOAT4X4 eachTransform;
 
+	// 물체가 가지고 있는 빛의 포인터
+	shared_ptr<Light> pLight;
+
+
 	BoundingOrientedBox boundingBox;
 	// true일경우 하위 오브젝트들을 모두 포함하는 바운딩박스 객체임
 	bool isOOBBBCover;
 
 	weak_ptr<GameObject> pParent;
 	vector<shared_ptr<GameObject>> pChildren;
-
+	
 	weak_ptr<Mesh> pMesh;
 
 public:

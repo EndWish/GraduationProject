@@ -246,7 +246,7 @@ void GameFramework::CreateDepthStencilView() {
 
 void GameFramework::CreateGraphicsRootSignature() {
 	HRESULT hResult;
-	D3D12_ROOT_PARAMETER pRootParameters[2];
+	D3D12_ROOT_PARAMETER pRootParameters[3];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
@@ -258,6 +258,11 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[1].Constants.ShaderRegister = 2; //GameObject
 	pRootParameters[1].Constants.RegisterSpace = 0;
 	pRootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pRootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	pRootParameters[2].Descriptor.ShaderRegister = 3; // Lights
+	pRootParameters[2].Descriptor.RegisterSpace = 0;
+	pRootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
@@ -293,6 +298,13 @@ const ComPtr<ID3D12RootSignature>& GameFramework::GetRootSignature() const {
 MeshManager& GameFramework::GetMeshManager() {
 	return meshManager;
 }
+const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
+	cout << "리턴해";
+	if (!pScenes.empty()) {
+		return pScenes.top();
+	}
+}
+
 
 void GameFramework::FrameAdvance() {
 
@@ -432,18 +444,18 @@ void GameFramework::ProcessInput() {
 		}
 		// 일시정지
 		if (keysBuffers['P'] & 0xF0) {
-
 			//PushScene(make_shared<Scene>("pause"));
 		}
 		// 재시작
 		if (keysBuffers['R'] & 0xF0) {
-			PopScene();
+			//PopScene();
 		}
 	}
 }
 
 void GameFramework::PushScene(const shared_ptr<Scene>& _pScene) {
 	pScenes.push(_pScene);
+	pScenes.top()->Init();
 }
 void GameFramework::PopScene() {
 	if (!pScenes.empty()) {

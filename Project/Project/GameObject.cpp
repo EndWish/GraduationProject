@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "GameObject.h"
+#include "Light.h"
 
 GameObject::GameObject() {
 
@@ -129,3 +130,5 @@ void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _
 	XMStoreFloat4x4(&world, XMMatrixTranspose(XMLoadFloat4x4(&worldTransform)));
 	_pCommandList->SetGraphicsRoot32BitConstants(1, 16, &world, 0);
 }
+
+

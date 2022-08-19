@@ -18,7 +18,7 @@ void Camera::Create() {
 
 	viewTransform = Matrix4x4::Identity();
 	projectionTransform = Matrix4x4::Identity();
-
+	
 	auto [width, height] = gameFramework.GetClientSize();
 	viewPort = { 0,0, (float)width, (float)height, 0, 1 };
 	scissorRect = { 0,0, width, height };
