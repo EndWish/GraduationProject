@@ -4,7 +4,7 @@ class GameObject;
 
 class Light
 {
-private:
+public:
 	// 각 항들
 	XMFLOAT4 ambient;
 	XMFLOAT4 diffuse;
@@ -14,15 +14,17 @@ private:
 	float range;
 
 	XMFLOAT3 offset;	// 빛을 내는 물체의 중심으로부터 떨어진 값
-	float theta; //cos(m_fTheta), 스포트라이트에서 사용
+	float theta; // 외부 원을 그리는 각, 스포트라이트에서 사용
 	XMFLOAT3 attenuation;
-	float phi; //cos(m_fPhi), 스포트라이트에서 사용
+	float phi; // 내부 원을 그리는 각, 스포트라이트에서 사용
 	XMFLOAT3 direction;
-	float padding;
+	float falloff;	// phi와 theta에 대한 감쇠 비율
 
 	// 이 빛을 내고 있는 오브젝트의 포인터
+private:
 	weak_ptr<GameObject> object;
 
+public:
 	// 1 = 점, 2 = 스포트, 3 = 직접
 	int lightType;
 
@@ -34,8 +36,8 @@ public:
 	Light(const shared_ptr<GameObject>& _object);
 	~Light();
 
-
 };
+
 
 struct LightsMappedFormat {
 	array<Light, MAX_LIGHTS> lights;

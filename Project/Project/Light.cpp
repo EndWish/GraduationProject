@@ -4,25 +4,25 @@
 
 
 Light::Light(const shared_ptr<GameObject>& _object) {
-	// 각 항들. 임시로 설정한것 이므로 따로 내일 Light 멤버를 set하는 함수를 만들어라
 	ambient = XMFLOAT4(0.0f, 0.0f, 0.0f, 1.0f);
 	diffuse = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 	specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
-	position = XMFLOAT3(0.5f, 0.5f, -10.0f);
-	range = 0;
+	// object에 연결 후 position값 삭제. object의 위치+offset값을 position으로 넘김
+	position = XMFLOAT3(0.5f, 0.5f, -2.0f);
+	range = 15;
 
 	offset = XMFLOAT3(0.0f, 0.0f, 0.0f);	
 	theta = 0;
 	phi = 0;
-	attenuation = XMFLOAT3(0.0f, 0.0f, 0.0f);	
+	attenuation = XMFLOAT3(1.0f, 0.05f, 0.001f);	
 	direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
-	padding = 0;
+	falloff = 0;
 
 	object = _object;
 
 	// 1 = 점, 2 = 스포트, 3 = 직접
-	lightType = 3;
+	lightType = 1;
 
 	// 이 빛이 켜져있는 상태인지 확인
 	enable = true;
@@ -31,5 +31,4 @@ Light::Light(const shared_ptr<GameObject>& _object) {
 Light::~Light() {
 
 }
-
 
