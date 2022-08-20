@@ -116,6 +116,27 @@ namespace Matrix4x4 {
 		return(result);
 	}
 
+	inline XMFLOAT4X4 RotationAxis(const XMFLOAT3& _axis, float _angle) {
+		XMFLOAT4X4 result;
+		XMMATRIX rotateMatrix = XMMatrixRotationAxis(XMLoadFloat3(&_axis), XMConvertToRadians(_angle));
+		XMStoreFloat4x4(&result, rotateMatrix);
+		return result;
+	}
+
+	inline XMFLOAT4X4 RotateQuaternion(const XMFLOAT4& _quaternion) {
+		XMFLOAT4X4 result;
+		XMMATRIX rotateMatrix = XMMatrixRotationQuaternion(XMLoadFloat4(&_quaternion));
+		XMStoreFloat4x4(&result, rotateMatrix);
+		return result;
+	}
+
+	inline XMFLOAT4X4 RotatePitchYawRoll(float _pitch, float _yaw, float _roll) {
+		XMFLOAT4X4 result;
+		XMMATRIX rotateMatrix = XMMatrixRotationRollPitchYaw(XMConvertToRadians(_pitch), XMConvertToRadians(_yaw), XMConvertToRadians(_roll));
+		XMStoreFloat4x4(&result, rotateMatrix);
+		return result;
+	}
+
 	inline XMFLOAT4X4 LookAtLH(const XMFLOAT3& _eyePosition, const XMFLOAT3& _lookAtPosition, const XMFLOAT3& _upDirection) {
 		XMFLOAT4X4 result;
 		XMStoreFloat4x4(&result, XMMatrixLookAtLH(XMLoadFloat3(&_eyePosition), XMLoadFloat3(&_lookAtPosition), XMLoadFloat3(&_upDirection)));

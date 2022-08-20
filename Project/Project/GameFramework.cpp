@@ -312,7 +312,8 @@ void GameFramework::FrameAdvance() {
 	ProcessInput();
 	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
 	if (!pScenes.empty()) {
-		pScenes.top()->FrameAdvance(gameTimer.GetTimeElapsed());
+		pScenes.top()->AnimateObjects(gameTimer.GetTimeElapsed());
+		// 씬의 오브젝트 충돌처리 [수정]
 	}
 
 
@@ -341,7 +342,7 @@ void GameFramework::FrameAdvance() {
 	//렌더 타겟 뷰(서술자)와 깊이-스텐실 뷰(서술자)를 출력-병합 단계(OM)에 연결한다. 
 	pCommandList->OMSetRenderTargets(1, &rtvCPUDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
 
-	float pClearColor[4] = {1.0f, 0.5f, 0.0f, 1.0f};
+	float pClearColor[4] = {0.0f, 0.1f, 0.3f, 1.0f};
 	pCommandList->ClearRenderTargetView(rtvCPUDescriptorHandle, pClearColor, 0, NULL);
 
 	//원하는 값으로 깊이-스텐실(뷰)을 지운다. 
@@ -435,11 +436,8 @@ void GameFramework::ProcessInput() {
 	static array<UCHAR, 256> keysBuffers;
 	bool processedByScene = false;
 
-	if (GetKeyboardState((PBYTE)keysBuffers.data())) {
-
-	}
-	if (true) {
-		if (keysBuffers['W'] & 0xF0) {
+	if (GetKeyboardState((PBYTE)keysBuffers.data())) {	// 키보드로 부터 입력데이터를 받으면
+		if (keysBuffers['F'] & 0xF0) {
 			ChangeSwapChainState();
 		}
 		// 일시정지
@@ -449,6 +447,11 @@ void GameFramework::ProcessInput() {
 		// 재시작
 		if (keysBuffers['R'] & 0xF0) {
 			//PopScene();
+		}
+
+		// 씬의 키보드입력 처리
+		if (!pScenes.empty()) {
+			pScenes.top()->ProcessKeyboardInput(keysBuffers);
 		}
 	}
 }

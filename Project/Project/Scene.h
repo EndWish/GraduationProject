@@ -12,7 +12,7 @@ public:
 
 public:
 	virtual void Init() = 0;
-	virtual void FrameAdvance(double _timeElapsed) = 0;
+	virtual void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) = 0;
 	virtual void AnimateObjects(double _timeElapsed) = 0;
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 };
@@ -33,6 +33,8 @@ private:
 	// 현재 플레이어가 있는 룸의 포인터
 	array<shared_ptr<Room> , 2> pNowRoom;
 
+	shared_ptr<GameObject> cubeObject;	//[임시]
+
 	ComPtr<ID3D12Resource> pLightsBuffer;
 	vector<weak_ptr<Light>> pLights;
 	shared_ptr<LightsMappedFormat> pMappedLights;
@@ -47,7 +49,7 @@ public:
 
 public:
 	void Init() final;
-	void FrameAdvance(double _timeElapsed) final;
+	void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) final;
 	void AnimateObjects(double _timeElapsed) final;
 	void UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;

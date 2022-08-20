@@ -48,11 +48,16 @@ public:
 	XMFLOAT3 GetWorldUpVector() const;
 	XMFLOAT3 GetWorldLookVector() const;
 
-	// 앞으로 이동하는 행령을 얻는다.
+	// 앞으로 이동하는 행렬을 얻는다.
 	XMFLOAT4X4 GetFrontMoveMatrix(float _distance) const;
-	// 옆으로 이동하는 행령을 얻는다.
+	// 옆으로 이동하는 행렬을 얻는다.
 	XMFLOAT4X4 GetRightMoveMatrix(float _distance) const;
-	// Z축을 기준으로 회전하는 행렬을 얻는다.
+	// 회전축을 기준으로 회전하는 행렬을 얻는다.
+	XMFLOAT4X4 GetRotateMatrix(const XMFLOAT3& _axis, float _angle) const;
+	// 쿼터니언으로 회전하는 행렬을 얻는다.
+	XMFLOAT4X4 GetRotateMatrix(const XMFLOAT4& _quaternion) const;
+	// pitch, yaw, roll 으로 회전하는 행렬을 얻는다.
+	XMFLOAT4X4 GetRotateMatrix(float _pitch, float _yaw, float _roll) const;
 
 	// 자신의 바운딩 박스의 래퍼런스를 리턴한다.
 	const BoundingOrientedBox& GetBoundingBox() const;
@@ -61,6 +66,8 @@ public:
 	void SetEachPosition(const XMFLOAT3& _position);
 	// 자식을 추가한다.
 	void SetChild(const shared_ptr<GameObject> _pChild);
+	// 메쉬를 설정한다.
+	void SetMesh(const shared_ptr<Mesh>& _pMesh);
 
 	// eachTransform를 가지고 worldTransform를 업데이트 한다.
 	virtual void UpdateWorldTransform();

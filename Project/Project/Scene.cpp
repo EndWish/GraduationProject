@@ -27,6 +27,12 @@ void PlayScene::Init() {
 		pPlayer[0]->Create();
 		//pPlayer[1] = make_shared<Player>();
 		//pPlayer[1]->Create();
+
+		//[임시]
+		cubeObject = make_shared<GameObject>();
+		cubeObject->Create();
+		cubeObject->SetMesh(gameFramework.GetMeshManager().GetMesh("test", gameFramework.GetDevice(), gameFramework.GetCommandList()));
+
 	}
 	// 룸 생성
 	string fileName = "Stage";
@@ -49,20 +55,28 @@ PlayScene::~PlayScene() {
 
 }
 
-void PlayScene::FrameAdvance(double _timeElapsed) {
-	GameFramework& gameFramework = GameFramework::Instance();
-
-
-	// 충돌검사를 진행할 방들을 체크.
-	AnimateObjects(_timeElapsed);
-
-	
-
-	//if (pNowRoom[0]->GetType() == "Enemy" && pNowRoom[0]->GetID() == pNowRoom[1]->GetID()) {
-		// 방 문이 닫힘
-		// 클리어까지 다른방으로 이동 불가
-	//}
-	
+void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) {
+	// 회전과 스케일링은 앞쪽에 move는 뒤쪽에 곱한다.
+	XMFLOAT4X4 transform = Matrix4x4::Identity();
+	if (_keysBuffers['E'] & 0xF0) {
+		transform = Matrix4x4::Multiply(pPlayer[0]->GetRotateMatrix(0.0f, 5.0f, 0.0f), transform);
+	}
+	if (_keysBuffers['Q'] & 0xF0) {
+		transform = Matrix4x4::Multiply(pPlayer[0]->GetRotateMatrix(0.0f, -5.0f, 0.0f), transform);
+	}
+	if (_keysBuffers['W'] & 0xF0) {
+		transform = Matrix4x4::Multiply(transform, pPlayer[0]->GetFrontMoveMatrix(1.0f));
+	}
+	if (_keysBuffers['A'] & 0xF0) {
+		transform = Matrix4x4::Multiply(transform, pPlayer[0]->GetRightMoveMatrix(-1.0f));
+	}
+	if (_keysBuffers['S'] & 0xF0) {
+		transform = Matrix4x4::Multiply(transform, pPlayer[0]->GetFrontMoveMatrix(-1.0f));
+	}
+	if (_keysBuffers['D'] & 0xF0) {
+		transform = Matrix4x4::Multiply(transform, pPlayer[0]->GetRightMoveMatrix(1.0f));
+	}
+	pPlayer[0]->ApplyTransform(transform);
 }
 
 void PlayScene::AnimateObjects(double _timeElapsed) {
@@ -90,14 +104,8 @@ void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandLis
 	}
 
 	memcpy(&pMappedLights->globalAmbient, &globalAmbient, sizeof(XMFLOAT4));
-	XMFLOAT4 tmpx;
-	memcpy(&tmpx, &pMappedLights->globalAmbient, sizeof(XMFLOAT4));
-	cout << tmpx << " , ";
 
 	memcpy(&pMappedLights->nLight, &nLight, sizeof(int));
-	int tmp;
-	memcpy(&tmp, &pMappedLights->nLight, sizeof(int));
-	cout << tmp << "\n";
 
 	D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pLightsBuffer->GetGPUVirtualAddress();
 	_pCommandList->SetGraphicsRootConstantBufferView(2, gpuVirtualAddress);
@@ -113,6 +121,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	UpdateLightShaderVariables(_pCommandList);
 
 	pPlayer[0]->Render(_pCommandList);
+	cubeObject->Render(_pCommandList);
 	// 뷰 프러스텀 내에서 걸러지므로 
 	for (const auto& room : pRooms) {
 		room->Render(_pCommandList);

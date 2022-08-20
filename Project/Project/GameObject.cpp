@@ -61,6 +61,15 @@ XMFLOAT4X4 GameObject::GetRightMoveMatrix(float _distance) const {
 	result._43 = moveVector.z;
 	return result;
 }
+XMFLOAT4X4 GameObject::GetRotateMatrix(const XMFLOAT3& _axis, float _angle) const {
+	return Matrix4x4::RotationAxis(_axis, _angle);
+}
+XMFLOAT4X4 GameObject::GetRotateMatrix(const XMFLOAT4& _quaternion) const {
+	return Matrix4x4::RotateQuaternion(_quaternion);
+}
+XMFLOAT4X4 GameObject::GetRotateMatrix(float _pitch, float _yaw, float _roll) const {
+	return Matrix4x4::RotatePitchYawRoll(_pitch, _yaw, _roll);
+}
 
 const BoundingOrientedBox& GameObject::GetBoundingBox() const {
 	return boundingBox;
@@ -86,9 +95,13 @@ void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 	_pChild->pParent = shared_from_this();
 }
 
+void GameObject::SetMesh(const shared_ptr<Mesh>& _pMesh) {
+	pMesh = _pMesh;
+}
+
 void GameObject::UpdateWorldTransform() {
 	if (auto pParentLock = pParent.lock()) {	// 부모가 있을 경우
-		worldTransform = Matrix4x4::Multiply(pParentLock->worldTransform, eachTransform);
+		worldTransform = Matrix4x4::Multiply(eachTransform, pParentLock->worldTransform);
 	}
 	else {	// 부모가 없을 경우
 		worldTransform = eachTransform;
