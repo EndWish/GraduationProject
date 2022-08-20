@@ -246,7 +246,7 @@ void GameFramework::CreateDepthStencilView() {
 
 void GameFramework::CreateGraphicsRootSignature() {
 	HRESULT hResult;
-	D3D12_ROOT_PARAMETER pRootParameters[2];
+	D3D12_ROOT_PARAMETER pRootParameters[3];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
@@ -258,6 +258,11 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[1].Constants.ShaderRegister = 2; //GameObject
 	pRootParameters[1].Constants.RegisterSpace = 0;
 	pRootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pRootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	pRootParameters[2].Descriptor.ShaderRegister = 3; // Lights
+	pRootParameters[2].Descriptor.RegisterSpace = 0;
+	pRootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
@@ -293,6 +298,13 @@ const ComPtr<ID3D12RootSignature>& GameFramework::GetRootSignature() const {
 MeshManager& GameFramework::GetMeshManager() {
 	return meshManager;
 }
+const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
+	cout << "리턴해";
+	if (!pScenes.empty()) {
+		return pScenes.top();
+	}
+}
+
 
 void GameFramework::FrameAdvance() {
 
@@ -300,7 +312,8 @@ void GameFramework::FrameAdvance() {
 	ProcessInput();
 	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
 	if (!pScenes.empty()) {
-		pScenes.top()->FrameAdvance(gameTimer.GetTimeElapsed());
+		pScenes.top()->AnimateObjects(gameTimer.GetTimeElapsed());
+		// 씬의 오브젝트 충돌처리 [수정]
 	}
 
 
@@ -329,7 +342,7 @@ void GameFramework::FrameAdvance() {
 	//렌더 타겟 뷰(서술자)와 깊이-스텐실 뷰(서술자)를 출력-병합 단계(OM)에 연결한다. 
 	pCommandList->OMSetRenderTargets(1, &rtvCPUDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
 
-	float pClearColor[4] = {1.0f, 0.5f, 0.0f, 1.0f};
+	float pClearColor[4] = {0.0f, 0.1f, 0.3f, 1.0f};
 	pCommandList->ClearRenderTargetView(rtvCPUDescriptorHandle, pClearColor, 0, NULL);
 
 	//원하는 값으로 깊이-스텐실(뷰)을 지운다. 
@@ -423,27 +436,29 @@ void GameFramework::ProcessInput() {
 	static array<UCHAR, 256> keysBuffers;
 	bool processedByScene = false;
 
-	if (GetKeyboardState((PBYTE)keysBuffers.data())) {
-
-	}
-	if (true) {
-		if (keysBuffers['W'] & 0xF0) {
+	if (GetKeyboardState((PBYTE)keysBuffers.data())) {	// 키보드로 부터 입력데이터를 받으면
+		if (keysBuffers['F'] & 0xF0) {
 			ChangeSwapChainState();
 		}
 		// 일시정지
 		if (keysBuffers['P'] & 0xF0) {
-
 			//PushScene(make_shared<Scene>("pause"));
 		}
 		// 재시작
 		if (keysBuffers['R'] & 0xF0) {
-			PopScene();
+			//PopScene();
+		}
+
+		// 씬의 키보드입력 처리
+		if (!pScenes.empty()) {
+			pScenes.top()->ProcessKeyboardInput(keysBuffers);
 		}
 	}
 }
 
 void GameFramework::PushScene(const shared_ptr<Scene>& _pScene) {
 	pScenes.push(_pScene);
+	pScenes.top()->Init();
 }
 void GameFramework::PopScene() {
 	if (!pScenes.empty()) {

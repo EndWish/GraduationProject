@@ -47,7 +47,7 @@ D3D12_SHADER_BYTECODE Shader::CompileShaderFromFile(const wstring& _fileName, co
 	D3D12_SHADER_BYTECODE shaderByteCode;
 	shaderByteCode.BytecodeLength = _pBlob->GetBufferSize();
 	shaderByteCode.pShaderBytecode = _pBlob->GetBufferPointer();
-
+	cout << shaderByteCode.BytecodeLength << "\n";
 	return shaderByteCode;
 }
 

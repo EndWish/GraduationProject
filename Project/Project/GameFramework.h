@@ -85,6 +85,7 @@ public:
 	const ComPtr<ID3D12GraphicsCommandList>& GetCommandList() const;
 	const ComPtr<ID3D12CommandQueue>& GetCommandQueue() const;
 	const ComPtr<ID3D12RootSignature>& GetRootSignature() const;
+	const shared_ptr<Scene>& GetCurrentScene() const;
 	MeshManager& GetMeshManager();
 
 	void FrameAdvance();

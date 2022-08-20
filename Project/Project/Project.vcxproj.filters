@@ -54,6 +54,12 @@
     <ClInclude Include="Shader.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Material.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Light.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Project.cpp">
@@ -89,6 +95,12 @@
     <ClCompile Include="Shader.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Material.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Light.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="Project.rc">
@@ -104,7 +116,7 @@
     </Image>
   </ItemGroup>
   <ItemGroup>
-    <None Include="Light.hlsl" />
     <None Include="Shaders.hlsl" />
+    <None Include="Light.hlsl" />
   </ItemGroup>
 </Project>
