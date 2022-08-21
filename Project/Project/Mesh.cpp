@@ -20,6 +20,11 @@ Mesh::~Mesh() {
 
 }
 
+const string& Mesh::GetName() const {
+	return name;
+}
+
+
 void Mesh::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
 	ifstream file("Model/" + _fileName, ios::binary);	// 파일을 연다
@@ -76,6 +81,7 @@ void Mesh::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pD
 		// 마테리얼 파일정보 읽기. (확장자 없음)
 		string materialName;
 		ReadStringBinary(materialName, file);
+
 		materials[i] = gameFramework.GetMaterialManager().GetMaterial(materialName, _pDevice, _pCommandList);
 	}
 }

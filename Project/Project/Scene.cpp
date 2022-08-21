@@ -88,6 +88,8 @@ void PlayScene::AnimateObjects(double _timeElapsed) {
 		pPlayer[1]->Animate(_timeElapsed);
 	}*/
 
+	//auto t = cubeObject->pChildren[0]->pChildren[8];
+
 	// 씬 내의 룸들에 대해 애니메이션을 수행
 	for (const auto& room : pRooms) {
 		room->AnimateObjects(_timeElapsed);
@@ -121,6 +123,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	pPlayer[0]->Render(_pCommandList);
 	cubeObject->Render(_pCommandList);
+	
 	// 뷰 프러스텀 내에서 걸러지므로 
 	for (const auto& room : pRooms) {
 		room->Render(_pCommandList);

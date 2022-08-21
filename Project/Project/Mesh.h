@@ -14,8 +14,8 @@ protected:
 
 
 	D3D12_PRIMITIVE_TOPOLOGY primitiveTopology;
-
 	UINT nVertex;	// 버텍스(정점과 노멀벡터)의 개수
+
 	ComPtr<ID3D12Resource> pPositionBuffer;	// 버텍스의 위치 정보
 	ComPtr<ID3D12Resource> pPositionUploadBuffer;
 	D3D12_VERTEX_BUFFER_VIEW positionBufferView;
@@ -38,6 +38,10 @@ public:		// 생성관련 멤버 함수▼
 	virtual ~Mesh();
 
 public:		// 멤버 함수▼
+
+	// get, set함수
+	const string& GetName() const;
+
 	void LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };

@@ -8,7 +8,7 @@ protected:
 	// 만약 GameObject에 변수를 추가했다면, 복사 생성자도 수정해라
 
 	string name;
-	
+
 	// 월드좌표계 기준 : eachTransform 이 바뀌면 항상 동기화 해준다.
 	XMFLOAT4X4 worldTransform;
 
@@ -25,7 +25,7 @@ protected:
 
 	weak_ptr<GameObject> pParent;
 	vector<shared_ptr<GameObject>> pChildren;
-	
+
 	weak_ptr<Mesh> pMesh;
 
 public:
@@ -37,7 +37,7 @@ public:
 	virtual void Create();
 	virtual void Create(string _ObjectName);
 
-// get set 함수
+	// get set 함수
 	const string& GetName() const;
 
 	// 오른쪽 방향의 단위벡터를 얻는다.
@@ -53,7 +53,7 @@ public:
 	XMFLOAT3 GetWorldRightVector() const;
 	XMFLOAT3 GetWorldUpVector() const;
 	XMFLOAT3 GetWorldLookVector() const;
-
+	void Get() { cout << eachTransform << "\n"; };
 	// 앞으로 이동하는 행렬을 얻는다.
 	XMFLOAT4X4 GetFrontMoveMatrix(float _distance) const;
 	// 옆으로 이동하는 행렬을 얻는다.
@@ -88,8 +88,8 @@ public:
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 	void LoadFromFile(ifstream& _file);
+	void CopyObject(const GameObject& _other);
 };
-
 
 class GameObjectManager {
 	map<string, shared_ptr<GameObject>> storage;
