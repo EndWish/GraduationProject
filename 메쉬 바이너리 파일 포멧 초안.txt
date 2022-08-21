@@ -4,4 +4,7 @@ boundingBox (float * 6)
 positions (float * 3 * nVertex)
 normals (float * 3 * nVertex)
 nSubMesh (UINT)
+{
 nSubMeshIndex (UINT) / subMeshIndex (UINT * nSubMeshIndex)    ....( * nSubMesh )
+materialNameSize(UINT) / materialName(string)	
+}

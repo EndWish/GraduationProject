@@ -26,7 +26,7 @@ void Player::Create() {
 
 	// [임시]
 	newCamera->SetEachPosition(XMFLOAT3(0.5, 0.5, -10));
-	pMesh = gameFramework.GetMeshManager().GetMesh("test", gameFramework.GetDevice(), gameFramework.GetCommandList());
+	pMesh = gameFramework.GetMeshManager().GetMesh("rect", gameFramework.GetDevice(), gameFramework.GetCommandList());
 	
 	pLight = make_shared<Light>(shared_from_this());
 	// 클래스 상속 관계에서 포인터 형 변환시 dynamic_cast(런타임 이후 동작)을 사용하자

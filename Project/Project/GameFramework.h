@@ -59,7 +59,7 @@ private:
 
 	// 메쉬 메니저
 	MeshManager meshManager;
-	
+	MaterialManager materialManager;
 	// 씬
 	stack<shared_ptr<Scene>> pScenes;
 
@@ -87,6 +87,7 @@ public:
 	const ComPtr<ID3D12RootSignature>& GetRootSignature() const;
 	const shared_ptr<Scene>& GetCurrentScene() const;
 	MeshManager& GetMeshManager();
+	MaterialManager& GetMaterialManager();
 
 	void FrameAdvance();
 	void WaitForGpuComplete();			// GPU와 동기화하기 위한 대기

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Shader.h"
+#include "Material.h"
 
 class Mesh {
 protected:
@@ -10,6 +11,7 @@ public:
 	static shared_ptr<Shader> GetShader();
 protected:
 	string name;
+
 
 	D3D12_PRIMITIVE_TOPOLOGY primitiveTopology;
 
@@ -27,6 +29,7 @@ protected:
 	vector<ComPtr<ID3D12Resource>> pSubMeshIndexUploadBuffers;
 	vector<D3D12_INDEX_BUFFER_VIEW> subMeshIndexBufferViews;
 
+	vector<shared_ptr<Material>> materials;
 	BoundingOrientedBox oobb;
 
 public:		// 생성관련 멤버 함수▼

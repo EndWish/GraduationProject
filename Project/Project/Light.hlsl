@@ -43,13 +43,18 @@ cbuffer cbLightInfo : register(b3) {
 	int	nLight;
 }
 
+cbuffer cbMaterialInfo : register(b4) {
+    float4 ambient;
+    float4 diffuse;
+    float4 specular;
+    float4 emissive;
+}
+
+
 
 float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera)
 {
-	
-    float4 Mambient = float4(0.0f, 1.0f, 0.0f, 1.0f);
-    float4 Mdiffuse = float4(0.0f, 0.0f, 1.0f, 1.0f);
-    float4 Mspecular = float4(1.0f, 0.0f, 0.0f, 10000.0f);
+
 	// 빛의 방향
 	float3 toLight = -lights[_nIndex].direction;
 	
@@ -59,19 +64,15 @@ float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera)
 	if (diffuseFactor > 0.0f)	{
 		// 반사벡터를 구해 시선벡터와 내적하여 빛의 양 계산
 		float3 reflectVector = reflect(-toLight, _normal);
-		specularFactor = pow(max(dot(reflectVector, _toCamera), 0.0f), Mspecular.a);
+		specularFactor = pow(max(dot(reflectVector, _toCamera), 0.0f), specular.a);
 	}
 	
-    return ((lights[_nIndex].ambient * Mambient) + (lights[_nIndex].diffuse * diffuseFactor * Mdiffuse) + (lights[_nIndex].specular * specularFactor * Mspecular));
+    return ((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular));
 }
 
 
 float4 PointLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera)
 {
-	
-    float4 Mambient = float4(0.0f, 1.0f, 0.0f, 1.0f);
-    float4 Mdiffuse = float4(0.0f, 0.0f, 1.0f, 1.0f);
-    float4 Mspecular = float4(1.0f, 0.0f, 0.0f, 10000.0f);
 	
 	// 빛과 정점사이 벡터로 거리 계산
 	float3 toLight = lights[_nIndex].position - _position;
@@ -84,26 +85,21 @@ float4 PointLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamer
 		
 		float diffuseFactor = dot(toLight, _normal);
 		if (diffuseFactor > 0.0f)	{
-			if (Mspecular.a != 0.0f)	{
+			if (specular.a != 0.0f)	{
 				float3 reflectVec = reflect(-toLight, _normal);
-                specularFactor = pow(max(dot(reflectVec, _toCamera), 0.0f), Mspecular.a);
+                specularFactor = pow(max(dot(reflectVec, _toCamera), 0.0f), specular.a);
             }
 		}
 		// 1/(x+y*d+z*d*d). distance = 0일 경우 1/x
 		float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, distance, distance * distance));
 
-        return (((lights[_nIndex].ambient * Mambient) + (lights[_nIndex].diffuse * diffuseFactor * Mdiffuse) + (lights[_nIndex].specular * specularFactor * Mspecular)) * attenuationFactor);
+        return (((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular)) * attenuationFactor);
     }
 	return(float4(0.0f, 0.0f, 0.0f, 0.0f));
 }
 
 
 float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera) {
-	
-	
-    float4 Mambient = float4(0.0f, 1.0f, 0.0f, 1.0f);
-    float4 Mdiffuse = float4(0.0f, 0.0f, 1.0f, 1.0f);
-    float4 Mspecular = float4(1.0f, 0.0f, 0.0f, 10000.0f);
 	
     float3 toLight = lights[_nIndex].position - _position;
     float fDistance = length(toLight);
@@ -114,9 +110,9 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
         float fDiffuseFactor = dot(toLight, _normal);
 		
         if (fDiffuseFactor > 0.0f) {
-            if (Mspecular.a != 0.0f) {
+            if (specular.a != 0.0f) {
                 float3 vReflect = reflect(-toLight, _normal);
-                fSpecularFactor = pow(max(dot(vReflect, _toCamera), 0.0f), Mspecular.a);
+                fSpecularFactor = pow(max(dot(vReflect, _toCamera), 0.0f), specular.a);
                
 				// phi = 내부 원을 그리는 각의 cos값, theta - 외부 원을 그리는 각의 cos값
 				// falloff = 감쇠비율.
@@ -129,7 +125,7 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
 				float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, fDistance, fDistance * fDistance));
 				
 				// 각 계수를 구한 빛에 대해 곱
-                return (((lights[_nIndex].ambient * Mambient) + (lights[_nIndex].diffuse * fDiffuseFactor * Mdiffuse) + (lights[_nIndex].specular * fSpecularFactor * Mspecular)) * attenuationFactor * spotFactor);
+                return (((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * fSpecularFactor * specular)) * attenuationFactor * spotFactor);
             }
         }
     }
