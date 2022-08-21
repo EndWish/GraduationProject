@@ -73,7 +73,7 @@ float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera)
 
 float4 PointLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera)
 {
-	
+    float4 color = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	// 빛과 정점사이 벡터로 거리 계산
 	float3 toLight = lights[_nIndex].position - _position;
 	float distance = length(toLight);
@@ -92,15 +92,14 @@ float4 PointLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamer
 		}
 		// 1/(x+y*d+z*d*d). distance = 0일 경우 1/x
 		float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, distance, distance * distance));
-
-        return (((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular)) * attenuationFactor);
+        color = ((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular) * attenuationFactor);
     }
-	return(float4(0.0f, 0.0f, 0.0f, 0.0f));
+	return color;
 }
 
 
 float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera) {
-	
+    float4 color = float4(0.0f, 0.0f, 0.0f, 0.0f);
     float3 toLight = lights[_nIndex].position - _position;
     float fDistance = length(toLight);
 	
@@ -113,24 +112,23 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
             if (specular.a != 0.0f) {
                 float3 vReflect = reflect(-toLight, _normal);
                 fSpecularFactor = pow(max(dot(vReflect, _toCamera), 0.0f), specular.a);
-               
-				// phi = 내부 원을 그리는 각의 cos값, theta - 외부 원을 그리는 각의 cos값
-				// falloff = 감쇠비율.
-				
-				// 빛과 점사이 각도와 빛의 방향을 내적
-                float alpha = max(dot(-toLight, lights[_nIndex].direction), 0.0f);
-				// 각에 따른 spot계수를 계산.
-                float spotFactor = pow(max(((alpha - lights[_nIndex].phi) / (lights[_nIndex].theta - lights[_nIndex].phi)), 0.0f), lights[_nIndex].falloff);
-                // 거리에 따른 감쇠계수를 계산.
-				float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, fDistance, fDistance * fDistance));
-				
-				// 각 계수를 구한 빛에 대해 곱
-                return (((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * fSpecularFactor * specular)) * attenuationFactor * spotFactor);
             }
         }
+		// phi = 내부 원을 그리는 각의 cos값, theta - 외부 원을 그리는 각의 cos값
+		// falloff = 감쇠비율.		
+		// 빛과 점사이 각도와 빛의 방향을 내적
+        float alpha = max(dot(-toLight, lights[_nIndex].direction), 0.0f);
+				// 각에 따른 spot계수를 계산.
+        float spotFactor = pow(max(((alpha - lights[_nIndex].phi) / (lights[_nIndex].theta - lights[_nIndex].phi)), 0.0f), lights[_nIndex].falloff);
+                // 거리에 따른 감쇠계수를 계산.
+        float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, fDistance, fDistance * fDistance));
+				
+				// 각 계수를 구한 빛에 대해 곱
+        color = ((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * fSpecularFactor * specular)) * attenuationFactor * spotFactor;
     }
-    return (float4(0.0f, 0.0f, 0.0f, 0.0f));
+    return color;
 }
+
 
 float4 CalculateLight(float3 _Position, float3 _Normal) {
 	
