@@ -18,10 +18,13 @@ GameObject::GameObject(const GameObject& other) {
 	boundingBox = other.boundingBox;
 	isOOBBBCover = other.isOOBBBCover;
 	pMesh = other.pMesh;
+	cout << name << "복사 완료. 자식수 = " << other.pChildren.size() << "\n";
 
 	for (int i = 0; i < other.pChildren.size(); ++i) {
-		shared_ptr<GameObject> child = make_shared<GameObject>(other.pChildren[i]);
+		shared_ptr<GameObject> child = make_shared<GameObject>(*other.pChildren[i]);
+		cout << "여기까지 됨";
 		SetChild(child);
+		cout << "여기도 됨";
 	}
 }
 
@@ -38,6 +41,10 @@ void GameObject::Create() {
 	eachTransform = Matrix4x4::Identity();
 	boundingBox = BoundingOrientedBox();
 	isOOBBBCover = false;
+}
+
+const string& GameObject::GetName() const {
+	return name;
 }
 
 XMFLOAT3 GameObject::GetEachRightVector() const {
@@ -142,7 +149,6 @@ void GameObject::ApplyTransform(const XMFLOAT4X4& _transform) {
 }
 
 void GameObject::Animate(double _timeElapsed) {
-	cout << format("GameObject({}) : 애니메이션 실행\n");
 	for (const auto& pChild : pChildren) {
 		pChild->Animate(_timeElapsed);
 	}
@@ -179,7 +185,7 @@ void GameObject::LoadFromFile(ifstream& _file) {
 
 	string meshFileName;
 	// meshNameSize(UINT) / meshName(string)
-	ReadStringBinary(name, _file);
+	ReadStringBinary(meshFileName, _file);
 
 	// 메시가 없을경우 스킵
 	if (meshFileName.size() != 0) {
@@ -209,6 +215,7 @@ shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name) {
 		// eachTransfrom에 맞게 각 계층의 오브젝트들의 worldTransform을 갱신
 		newObject->UpdateWorldTransform();
 		storage[_name] = newObject;
+		cout << storage[_name]->GetName() << "\n";
 	}
 	// 스토리지 내 오브젝트 정보와 같은 오브젝트를 복사하여 생성한다.
 	shared_ptr<GameObject> Object = make_shared<GameObject>(*storage[_name]);

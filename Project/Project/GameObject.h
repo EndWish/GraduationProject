@@ -38,7 +38,8 @@ public:
 	virtual void Create(string _ObjectName);
 
 // get set 함수
-	
+	const string& GetName() const;
+
 	// 오른쪽 방향의 단위벡터를 얻는다.
 	XMFLOAT3 GetEachRightVector() const;
 	// 위쪽 방향의 단위벡터를 얻는다.

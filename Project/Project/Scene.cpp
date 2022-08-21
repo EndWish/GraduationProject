@@ -27,6 +27,7 @@ void PlayScene::Init() {
 		pPlayer[0]->Create("dummy");
 		//pPlayer[1] = make_shared<Player>();
 		//pPlayer[1]->Create();
+		cout << "더미 성공\n";
 
 		//[임시]
 		cubeObject = make_shared<GameObject>();

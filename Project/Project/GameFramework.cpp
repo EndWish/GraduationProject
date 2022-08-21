@@ -312,7 +312,6 @@ GameObjectManager& GameFramework::GetGameObjectManager() {
 	return gameObjectManager;
 }
 const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
-	cout << "¸®ÅÏÇØ";
 	if (!pScenes.empty()) {
 		return pScenes.top();
 	}

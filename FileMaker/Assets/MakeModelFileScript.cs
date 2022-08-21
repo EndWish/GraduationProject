@@ -8,6 +8,8 @@ using UnityEditor;
 
 public class MakeModelFileScript : MonoBehaviour
 {
+    [SerializeField]
+    string fileName;
     void BinaryWriteString(string str, BinaryWriter binaryWriter)
     {
         binaryWriter.Write(str.Length);
@@ -26,10 +28,29 @@ public class MakeModelFileScript : MonoBehaviour
         binaryWriter.Write(c.b);
         binaryWriter.Write(c.a);
     }
-
-    string CreateMaterialBinaryFile(Material material)
+    void BinaryWriteMatrix(Matrix4x4 matrix, BinaryWriter binaryWriter)
     {
-        BinaryWriter binaryWriter = new BinaryWriter(File.Open(material.name + "_material", FileMode.Create));
+        binaryWriter.Write(matrix.m00);
+        binaryWriter.Write(matrix.m10);
+        binaryWriter.Write(matrix.m20);
+        binaryWriter.Write(matrix.m30);
+        binaryWriter.Write(matrix.m01);
+        binaryWriter.Write(matrix.m11);
+        binaryWriter.Write(matrix.m21);
+        binaryWriter.Write(matrix.m31);
+        binaryWriter.Write(matrix.m02);
+        binaryWriter.Write(matrix.m12);
+        binaryWriter.Write(matrix.m22);
+        binaryWriter.Write(matrix.m32);
+        binaryWriter.Write(matrix.m03);
+        binaryWriter.Write(matrix.m13);
+        binaryWriter.Write(matrix.m23);
+        binaryWriter.Write(matrix.m33);
+    }
+
+    string CreateMaterialBinaryFile(Material material, string filePath)
+    {
+        BinaryWriter binaryWriter = new BinaryWriter(File.Open(filePath + material.name + "_material", FileMode.Create));
 
         // ambient(XMFLOAT4)
         Color ambient = new Color(1.0f, 1.0f, 1.0f, 1.0f);
@@ -67,13 +88,14 @@ public class MakeModelFileScript : MonoBehaviour
             Color emission = new Color(0.0f, 0.0f, 0.0f, 1.0f);
             BinaryWriteColor(emission, binaryWriter);
         }
-
+        binaryWriter.Flush();
+        binaryWriter.Close();
         return material.name + "_material";
     }
 
-    string CreateMeshBinaryFile(Mesh mesh, MeshRenderer meshRenderer)
+    string CreateMeshBinaryFile(Mesh mesh, MeshRenderer meshRenderer, string filePath)
     {
-        BinaryWriter binaryWriter = new BinaryWriter(File.Open(mesh.name + "_mesh", FileMode.Create));
+        BinaryWriter binaryWriter = new BinaryWriter(File.Open(filePath + mesh.name + "_mesh", FileMode.Create));
 
         // nVertex(UINT)
         binaryWriter.Write((uint)mesh.vertexCount);
@@ -102,32 +124,60 @@ public class MakeModelFileScript : MonoBehaviour
             foreach (int index in subindicies)
                 binaryWriter.Write(index);
             // materialNameSize(UINT) / materialName(string)
-            BinaryWriteString(CreateMaterialBinaryFile(materials[i]), binaryWriter);
+            BinaryWriteString(CreateMaterialBinaryFile(materials[i], filePath), binaryWriter);
         }
-
-        return mesh.name + "_mesh";
-    }
-    string CreateObjectBinaryFile()
-    {
-        BinaryWriter binaryWriter = new BinaryWriter(File.Open(gameObject.name + "_gameobject", FileMode.Create));
-
-        MeshFilter meshFilter =  gameObject.GetComponent<MeshFilter>();
-        MeshRenderer meshRenderer = gameObject.GetComponent<MeshRenderer>();
-
-        if (meshFilter && meshRenderer) {   // 메쉬가 없는 경우도 처리해줘야한다.
-            CreateMeshBinaryFile(meshFilter.sharedMesh, meshRenderer);
-        }
-
         binaryWriter.Flush();
         binaryWriter.Close();
+        return mesh.name + "_mesh";
+    }
+    void CreateObjectBinaryFile(Transform curObjectTransform, BinaryWriter binaryWriter, string filePath)
+    {
+        string objectName = curObjectTransform.name + "_gameobject";
 
-        return gameObject.name + "_gameobject";
+        // nameSize (UINT) / name(string)
+        BinaryWriteString(objectName, binaryWriter);
+
+        // eachTransform (float4x4)
+        
+        Matrix4x4 eachTransform = Matrix4x4.identity;
+        eachTransform.SetTRS(curObjectTransform.localPosition, curObjectTransform.localRotation, curObjectTransform.localScale);
+        BinaryWriteMatrix(eachTransform, binaryWriter);
+
+        // meshNameSize(UINT) / meshName(string)	=> 메쉬가 없을 경우 따로 처리하자
+        MeshFilter meshFilter = curObjectTransform.GetComponent<MeshFilter>();
+        MeshRenderer meshRenderer = curObjectTransform.GetComponent<MeshRenderer>();
+
+        if (meshFilter && meshRenderer)    // 메쉬가 있는 경우
+        {
+            BinaryWriteString(CreateMeshBinaryFile(meshFilter.sharedMesh, meshRenderer, filePath), binaryWriter);
+        }
+        else  // 메쉬가 없는 경우
+        {   
+            binaryWriter.Write(0);
+        }
+
+        // nChildren(UINT)
+        binaryWriter.Write(curObjectTransform.childCount);
+        for(int i = 0; i < curObjectTransform.childCount; i++)  // 자식들을 똑같은 포멧으로 저장
+        {
+            CreateObjectBinaryFile(curObjectTransform.GetChild(i), binaryWriter, filePath);
+        }
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        CreateObjectBinaryFile();
+        
+        DirectoryInfo directoryInfo = new DirectoryInfo("ModelBinaryFile/" + fileName);
+        if (directoryInfo.Exists == false)
+        {
+            directoryInfo.Create();
+        }
+        BinaryWriter binaryWriter = new BinaryWriter(File.Open("ModelBinaryFile/" + fileName + "/" + fileName, FileMode.Create));
+        CreateObjectBinaryFile(transform, binaryWriter, "ModelBinaryFile/" + fileName + "/");
+        binaryWriter.Flush();
+        binaryWriter.Close();
+
     }
 
 }
