@@ -26,7 +26,6 @@ void Mesh::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pD
 	
 	// 버텍스의 개수 읽기
 	file.read((char*)&nVertex, sizeof(UINT));
-
 	// 모델 이름 일기
 	ReadStringBinary(name, file);
 
@@ -63,7 +62,7 @@ void Mesh::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pD
 	pSubMeshIndexUploadBuffers.assign(nSubMesh, {});
 	subMeshIndexBufferViews.assign(nSubMesh, {});
 	materials.assign(nSubMesh, {});
-	cout << nSubMesh;
+
 	for (UINT i = 0; i < nSubMesh; ++i) {
 		file.read((char*)&nSubMeshIndex[i], sizeof(UINT));
 		vector<UINT> indices(nSubMeshIndex[i]);

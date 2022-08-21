@@ -31,7 +31,7 @@ void PlayScene::Init() {
 		//[임시]
 		cubeObject = make_shared<GameObject>();
 		cubeObject->Create();
-		cubeObject->SetMesh(gameFramework.GetMeshManager().GetMesh("rect", gameFramework.GetDevice(), gameFramework.GetCommandList()));
+		cubeObject->SetMesh(gameFramework.GetMeshManager().GetMesh("plane_mesh", gameFramework.GetDevice(), gameFramework.GetCommandList()));
 
 	}
 	// 룸 생성
