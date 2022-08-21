@@ -24,15 +24,13 @@ void PlayScene::Init() {
 	// 첫 스테이지에서 플레이어 생성
 	if (nStage == 1) {
 		pPlayer[0] = make_shared<Player>();
-		pPlayer[0]->Create();
+		pPlayer[0]->Create("dummy");
 		//pPlayer[1] = make_shared<Player>();
 		//pPlayer[1]->Create();
 
 		//[임시]
 		cubeObject = make_shared<GameObject>();
-		cubeObject->Create();
-		cubeObject->SetMesh(gameFramework.GetMeshManager().GetMesh("plane_mesh", gameFramework.GetDevice(), gameFramework.GetCommandList()));
-
+		cubeObject->Create("mage");
 	}
 	// 룸 생성
 	string fileName = "Stage";

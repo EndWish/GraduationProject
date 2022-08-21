@@ -1,12 +1,35 @@
 #include "stdafx.h"
 #include "GameObject.h"
 #include "Light.h"
+#include "GameFramework.h"
 
 GameObject::GameObject() {
 
 }
 GameObject::~GameObject() {
 
+}
+
+GameObject::GameObject(const GameObject& other) {
+	
+	name = other.name;
+	worldTransform = other.worldTransform;
+	eachTransform = other.eachTransform;
+	boundingBox = other.boundingBox;
+	isOOBBBCover = other.isOOBBBCover;
+	pMesh = other.pMesh;
+
+	for (int i = 0; i < other.pChildren.size(); ++i) {
+		shared_ptr<GameObject> child = make_shared<GameObject>(other.pChildren[i]);
+		SetChild(child);
+	}
+}
+
+
+void GameObject::Create(string _ObjectName) {
+	GameFramework& gameFramework = GameFramework::Instance();
+	// 인스턴스의 자식으로 그 오브젝트의 정보를 설정
+	SetChild(gameFramework.GetGameObjectManager().GetGameObject(_ObjectName));
 }
 
 void GameObject::Create() {
@@ -145,3 +168,49 @@ void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _
 }
 
 
+void GameObject::LoadFromFile(ifstream& _file) {
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	// nameSize (UINT) / name(string)
+	ReadStringBinary(name, _file);
+
+	// eachTransform(float4x4)
+	_file.read((char*)&eachTransform, sizeof(XMFLOAT4X4));
+
+	string meshFileName;
+	// meshNameSize(UINT) / meshName(string)
+	ReadStringBinary(name, _file);
+
+	// 메시가 없을경우 스킵
+	if (meshFileName.size() != 0) {
+		pMesh = gameFramework.GetMeshManager().GetMesh(meshFileName, gameFramework.GetDevice(), gameFramework.GetCommandList());
+	}
+
+	int nChildren;
+	_file.read((char*)&nChildren, sizeof(int));
+	pChildren.reserve(nChildren);
+
+	for (int i = 0; i < nChildren; ++i) {
+		shared_ptr<GameObject> newObject = make_shared<GameObject>();
+		newObject->LoadFromFile(_file);
+		SetChild(newObject);
+	}
+
+}
+
+/////////////////////////// GameObjectManager /////////////////////
+shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name) {
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	if (!storage.contains(_name)) {	// 처음 불러온 오브젝트일 경우
+		shared_ptr<GameObject> newObject = make_shared<GameObject>();
+		ifstream file("GameObject/" + _name, ios::binary);	// 파일을 연다
+		newObject->LoadFromFile(file);
+		// eachTransfrom에 맞게 각 계층의 오브젝트들의 worldTransform을 갱신
+		newObject->UpdateWorldTransform();
+		storage[_name] = newObject;
+	}
+	// 스토리지 내 오브젝트 정보와 같은 오브젝트를 복사하여 생성한다.
+	shared_ptr<GameObject> Object = make_shared<GameObject>(*storage[_name]);
+	return Object;
+}

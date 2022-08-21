@@ -13,7 +13,7 @@ public:
 	~Player();
 
 public:
-	void Create();
+	void Create(string _ObjectName);
 	bool GetIsDead() const;
 	shared_ptr<Camera> GetCamera() const;
 

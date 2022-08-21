@@ -307,6 +307,10 @@ MeshManager& GameFramework::GetMeshManager() {
 MaterialManager& GameFramework::GetMaterialManager() {
 	return materialManager;
 }
+
+GameObjectManager& GameFramework::GetGameObjectManager() {
+	return gameObjectManager;
+}
 const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
 	cout << "¸®ÅÏÇØ";
 	if (!pScenes.empty()) {
@@ -484,3 +488,4 @@ void GameFramework::ClearScene() {
 			pScenes.pop();
 	}
 }
+

@@ -5,6 +5,8 @@ class Light;
 
 class GameObject : public enable_shared_from_this<GameObject> {
 protected:
+	// 만약 GameObject에 변수를 추가했다면, 복사 생성자도 수정해라
+
 	string name;
 	
 	// 월드좌표계 기준 : eachTransform 이 바뀌면 항상 동기화 해준다.
@@ -29,8 +31,11 @@ protected:
 public:
 	GameObject();
 	virtual ~GameObject();
+	// 게임 오브젝트 복사 생성자
+	GameObject(const GameObject& other);
 
 	virtual void Create();
+	virtual void Create(string _ObjectName);
 
 // get set 함수
 	
@@ -81,5 +86,15 @@ public:
 	// 월드 변환행렬을 쉐이더로 넘겨준다.
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
+	void LoadFromFile(ifstream& _file);
+};
+
+
+class GameObjectManager {
+	map<string, shared_ptr<GameObject>> storage;
+
+public:
+
+	shared_ptr<GameObject> GetGameObject(const string& _name);
 };
 
