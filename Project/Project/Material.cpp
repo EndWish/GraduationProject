@@ -11,10 +11,8 @@ Material::~Material() {
 }
 
 void Material::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	GameFramework& gameFramework = GameFramework::Instance();
-
 	D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pMaterialBuffer->GetGPUVirtualAddress();
-	gameFramework.GetCommandList()->SetGraphicsRootConstantBufferView(3, gpuVirtualAddress);
+	_pCommandList->SetGraphicsRootConstantBufferView(3, gpuVirtualAddress);
 }
 
 void Material::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -24,7 +22,7 @@ void Material::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>&
 	GameFramework& gameFramework = GameFramework::Instance();
 	UINT cbElementSize = (sizeof(VS_MaterialMappedFormat) + 255) & (~255);
 	ComPtr<ID3D12Resource> temp;
-	pMaterialBuffer = CreateBufferResource(gameFramework.GetDevice(), gameFramework.GetCommandList(), NULL, cbElementSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
+	pMaterialBuffer = CreateBufferResource(_pDevice, _pCommandList, NULL, cbElementSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
 	pMaterialBuffer->Map(0, NULL, (void**)&pMappedMaterial);
 	
 	ifstream file("Material/" + _fileName, ios::binary);

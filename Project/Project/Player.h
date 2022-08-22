@@ -13,7 +13,7 @@ public:
 	~Player();
 
 public:
-	void Create(string _ObjectName);
+	void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	bool GetIsDead() const;
 	shared_ptr<Camera> GetCamera() const;
 

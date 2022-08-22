@@ -22,10 +22,10 @@ public:
 	Camera();
 	virtual ~Camera();
 
-	void Create();
+	void Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
-	void SetViewPortAndScissorRect();
-	void UpdateShaderVariable();
+	void SetViewPortAndScissorRect(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void UpdateViewTransform();
 	void UpdateProjectionTransform(float _nearDistance, float _farDistance, float _aspectRatio, float _fovAngle);
 

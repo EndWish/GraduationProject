@@ -2,11 +2,10 @@
 #include "Shader.h"
 #include "GameFramework.h"
 
-Shader::Shader() {
-	GameFramework& gameFramework = GameFramework::Instance();
+Shader::Shader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 
 	ZeroMemory(&pipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-	pipelineStateDesc.pRootSignature = gameFramework.GetRootSignature().Get();
+	pipelineStateDesc.pRootSignature = _pRootSignature.Get();
 	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultVertexShader", "vs_5_1", pVSBlob);
 	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultPixelShader", "ps_5_1", pPSBlob);
 	pipelineStateDesc.RasterizerState = CreateRasterizerState();
@@ -21,7 +20,7 @@ Shader::Shader() {
 	pipelineStateDesc.SampleDesc.Count = 1;
 	pipelineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 
-	gameFramework.GetDevice()->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	_pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
 
 	pVSBlob.Reset();
 	pPSBlob.Reset();
@@ -117,7 +116,7 @@ D3D12_INPUT_LAYOUT_DESC Shader::CreateInputLayout() {
 	
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
 	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
-	inputLayoutDesc.NumElements = inputElementDescs.size();
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
 
 	return inputLayoutDesc;
 }

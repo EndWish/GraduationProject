@@ -3,6 +3,10 @@
 #include "GameFramework.h"
 
 Camera::Camera() {
+	viewTransform = Matrix4x4::Identity();
+	projectionTransform = Matrix4x4::Identity();
+	viewPort = { 0,0, 1920, 1080, 0, 1 };
+	scissorRect = { 0,0, 1920, 1080 };
 
 }
 
@@ -10,37 +14,32 @@ Camera::~Camera() {
 
 }
 
-void Camera::Create() {
+void Camera::Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameObject::Create();
 	GameFramework& gameFramework = GameFramework::Instance();	// gameFramework의 래퍼런스를 가져온다.
 
 	name = "카메라";
 
-	viewTransform = Matrix4x4::Identity();
-	projectionTransform = Matrix4x4::Identity();
-	
+
 	auto [width, height] = gameFramework.GetClientSize();
 	viewPort = { 0,0, (float)width, (float)height, 0, 1 };
 	scissorRect = { 0,0, width, height };
 
 	UINT cbElementSize = (sizeof(VS_CameraMappedFormat) + 255) & (~255);
 	ComPtr<ID3D12Resource> temp;
-	pCameraBuffer = CreateBufferResource(gameFramework.GetDevice(), gameFramework.GetCommandList(), NULL, cbElementSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
+	pCameraBuffer = CreateBufferResource(_pDevice, _pCommandList, NULL, cbElementSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
 	pCameraBuffer->Map(0, NULL, (void**)&pMappedCamera);
 
 	UpdateViewTransform();
 	UpdateProjectionTransform(0.1f, 1000.0f, 1, 75.0f);
 }
 
-void Camera::SetViewPortAndScissorRect() {
-	GameFramework& gameFramework = GameFramework::Instance();
-	const ComPtr<ID3D12GraphicsCommandList>& pCommandList = gameFramework.GetCommandList();
-	pCommandList->RSSetViewports(1, &viewPort);
-	pCommandList->RSSetScissorRects(1, &scissorRect);
+void Camera::SetViewPortAndScissorRect(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	_pCommandList->RSSetViewports(1, &viewPort);
+	_pCommandList->RSSetScissorRects(1, &scissorRect);
 }
 
-void Camera::UpdateShaderVariable() {
-	GameFramework& gameFramework = GameFramework::Instance();
+void Camera::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	XMFLOAT4X4 view;
 	XMStoreFloat4x4(&view, XMMatrixTranspose(XMLoadFloat4x4(&viewTransform)));	// 쉐이더는 열?우선 행렬이기 때문에 전치행렬로 바꾸어서 보내준다.
 	memcpy(&pMappedCamera->view, &view, sizeof(XMFLOAT4X4));
@@ -53,7 +52,7 @@ void Camera::UpdateShaderVariable() {
 	memcpy(&pMappedCamera->position, &worldPosition, sizeof(XMFLOAT3));
 
 	D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pCameraBuffer->GetGPUVirtualAddress();
-	gameFramework.GetCommandList()->SetGraphicsRootConstantBufferView(0, gpuVirtualAddress);
+	_pCommandList->SetGraphicsRootConstantBufferView(0, gpuVirtualAddress);
 }
 
 void Camera::UpdateViewTransform() {

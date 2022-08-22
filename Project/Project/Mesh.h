@@ -7,7 +7,7 @@ class Mesh {
 protected:
 	static shared_ptr<Shader> shader;
 public:
-	static void MakeShader();
+	static void MakeShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
 	static shared_ptr<Shader> GetShader();
 protected:
 	string name;

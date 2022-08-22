@@ -11,7 +11,7 @@
 
 #ifndef __D3DX12_H__
 #define __D3DX12_H__
-
+#pragma warning(disable : 6001)
 #include "d3d12.h"
 
 #if defined( __cplusplus )

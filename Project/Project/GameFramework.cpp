@@ -4,6 +4,7 @@
 
 unique_ptr<GameFramework> GameFramework::spInstance;
 
+
 void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 	
 	if (!spInstance) {		// 프레임 워크 인스턴스가 생성된적이 없을 경우 
@@ -22,7 +23,7 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 		gameFramework.CreateGraphicsRootSignature();
 
 		// 쉐이더 생성
-		Mesh::MakeShader();
+		Mesh::MakeShader(gameFramework.pDevice, gameFramework.pRootSignature);
 
 		gameFramework.pCommandList->Reset(gameFramework.pCommandAllocator.Get(), NULL);
 
@@ -54,6 +55,11 @@ GameFramework& GameFramework::Instance() {
 	return *spInstance;
 }
 
+pair<int, int> GameFramework::GetClientSize() {
+	return { clientWidth , clientHeight };
+}
+
+
 GameFramework::GameFramework() {
 	instanceHandle = NULL;
 	windowHandle = NULL;
@@ -61,6 +67,12 @@ GameFramework::GameFramework() {
 	// MSAA 다중 샘플링
 	msaa4xEnable = false;
 	msaa4xLevel = 0;
+
+	clientHeight = 1920;
+	clientWidth = 1080;
+	dsvDescriptorIncrementSize = 0;
+	fenceValues.fill(0);
+	rtvDescriptorIncrementSize = 0;
 
 	// 현재 스왑체인의 후면 버퍼의 인덱스
 	swapChainBufferCurrentIndex = 0;
@@ -285,21 +297,19 @@ void GameFramework::CreateGraphicsRootSignature() {
 }
 
 // get, set 함수
-pair<int, int> GameFramework::GetClientSize() const {
-	return { clientWidth , clientHeight };
-}
-const ComPtr<ID3D12Device>& GameFramework::GetDevice() const {
-	return pDevice;
-}
-const ComPtr<ID3D12GraphicsCommandList>& GameFramework::GetCommandList() const {
-	return pCommandList;
-}
-const ComPtr<ID3D12CommandQueue>& GameFramework::GetCommandQueue() const {
-	return pCommandQueue;
-}
-const ComPtr<ID3D12RootSignature>& GameFramework::GetRootSignature() const {
-	return pRootSignature;
-}
+
+//const ComPtr<ID3D12Device>& GameFramework::GetDevice() const {
+//	return pDevice;
+//}
+//const ComPtr<ID3D12GraphicsCommandList>& GameFramework::GetCommandList() const {
+//	return pCommandList;
+//}
+//const ComPtr<ID3D12CommandQueue>& GameFramework::GetCommandQueue() const {
+//	return pCommandQueue;
+//}
+//const ComPtr<ID3D12RootSignature>& GameFramework::GetRootSignature() const {
+//	return pRootSignature;
+//}
 MeshManager& GameFramework::GetMeshManager() {
 	return meshManager;
 }
@@ -312,9 +322,9 @@ GameObjectManager& GameFramework::GetGameObjectManager() {
 	return gameObjectManager;
 }
 const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
-	if (!pScenes.empty()) {
+	//if (!pScenes.empty()) {
 		return pScenes.top();
-	}
+	//}
 }
 
 
@@ -420,7 +430,7 @@ void GameFramework::ChangeSwapChainState() {
 
 	// 현재 모드 반전
 	pDxgiSwapChain->GetFullscreenState(&fullScreenState, NULL);
-	pDxgiSwapChain->SetFullscreenState(!fullScreenState, NULL);
+	pDxgiSwapChain->SetFullscreenState(~fullScreenState, NULL);
 
 
 	DXGI_MODE_DESC dxgiTargetParameters;
@@ -475,7 +485,7 @@ void GameFramework::ProcessInput() {
 
 void GameFramework::PushScene(const shared_ptr<Scene>& _pScene) {
 	pScenes.push(_pScene);
-	pScenes.top()->Init();
+	pScenes.top()->Init(pDevice, pCommandList);
 }
 void GameFramework::PopScene() {
 	if (!pScenes.empty()) {

@@ -32,10 +32,9 @@ public:
 	GameObject();
 	virtual ~GameObject();
 	// 게임 오브젝트 복사 생성자
-	GameObject(const GameObject& other);
-
+	//
 	virtual void Create();
-	virtual void Create(string _ObjectName);
+	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 	// get set 함수
 	const string& GetName() const;
@@ -87,7 +86,7 @@ public:
 	// 월드 변환행렬을 쉐이더로 넘겨준다.
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
-	void LoadFromFile(ifstream& _file);
+	void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void CopyObject(const GameObject& _other);
 };
 
@@ -96,6 +95,6 @@ class GameObjectManager {
 
 public:
 
-	shared_ptr<GameObject> GetGameObject(const string& _name);
+	shared_ptr<GameObject> GetGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 
