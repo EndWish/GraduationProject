@@ -8,7 +8,7 @@ Scene::Scene() {
 }
 
 Scene::~Scene() {
-
+	
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -19,19 +19,19 @@ PlayScene::PlayScene(int _stageNum) {
 	globalAmbient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
 }
 
-void PlayScene::Init() {
+void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
 	// 첫 스테이지에서 플레이어 생성
 	if (nStage == 1) {
 		pPlayer[0] = make_shared<Player>();
-		pPlayer[0]->Create("dummy");
+		pPlayer[0]->Create("dummy", _pDevice, _pCommandList);
 		//pPlayer[1] = make_shared<Player>();
 		//pPlayer[1]->Create();
 		cout << "더미 성공\n";
 
 		//[임시]
 		cubeObject = make_shared<GameObject>();
-		cubeObject->Create("mage");
+		cubeObject->Create("mage", _pDevice, _pCommandList);
 	}
 	// 룸 생성
 	string fileName = "Stage";
@@ -45,7 +45,7 @@ void PlayScene::Init() {
 	//pNowRoom[1] = pRooms[0];
 	ComPtr<ID3D12Resource> temp;
 	UINT ncbElementBytes = ((sizeof(LightsMappedFormat) + 255) & ~255); //256의 배수
-	pLightsBuffer = ::CreateBufferResource(gameFramework.GetDevice(), gameFramework.GetCommandList(), NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
+	pLightsBuffer = ::CreateBufferResource(_pDevice, _pCommandList, NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
 
 	pLightsBuffer->Map(0, NULL, (void**)&pMappedLights);
 }
@@ -97,7 +97,7 @@ void PlayScene::AnimateObjects(double _timeElapsed) {
 }
 
 void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	int nLight = pLights.size();
+	int nLight = (UINT)pLights.size();
 
 	for (int i = 0; i < nLight; ++i) {
 		
@@ -116,8 +116,8 @@ void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandLis
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
 	shared_ptr<Camera> pP1Camera = pPlayer[0]->GetCamera();
-	pP1Camera->SetViewPortAndScissorRect();
-	pP1Camera->UpdateShaderVariable();
+	pP1Camera->SetViewPortAndScissorRect(_pCommandList);
+	pP1Camera->UpdateShaderVariable(_pCommandList);
 
 	UpdateLightShaderVariables(_pCommandList);
 

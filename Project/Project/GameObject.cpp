@@ -4,30 +4,26 @@
 #include "GameFramework.h"
 
 GameObject::GameObject() {
-
-}
-GameObject::~GameObject() {
-
-}
-
-GameObject::GameObject(const GameObject& other) {
-
-}
-
-
-void GameObject::Create(string _ObjectName) {
-	GameFramework& gameFramework = GameFramework::Instance();
-	GameObject::Create();
-	// 인스턴스의 자식으로 그 오브젝트의 정보를 설정
-	SetChild(gameFramework.GetGameObjectManager().GetGameObject(_ObjectName));
-}
-
-void GameObject::Create() {
 	name = "unknown";
 	worldTransform = Matrix4x4::Identity();
 	eachTransform = Matrix4x4::Identity();
 	boundingBox = BoundingOrientedBox();
 	isOOBBBCover = false;
+}
+GameObject::~GameObject() {
+
+}
+
+
+void GameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework& gameFramework = GameFramework::Instance();
+	GameObject::Create();
+	// 인스턴스의 자식으로 그 오브젝트의 정보를 설정
+	SetChild(gameFramework.GetGameObjectManager().GetGameObject(_ObjectName, _pDevice, _pCommandList));
+}
+
+void GameObject::Create() {
+
 }
 
 const string& GameObject::GetName() const {
@@ -162,7 +158,7 @@ void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _
 }
 
 
-void GameObject::LoadFromFile(ifstream& _file) {
+void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	// nameSize (UINT) / name(string)
@@ -177,7 +173,7 @@ void GameObject::LoadFromFile(ifstream& _file) {
 
 	// 메시가 없을경우 스킵
 	if (meshFileName.size() != 0) {
-		pMesh = gameFramework.GetMeshManager().GetMesh(meshFileName, gameFramework.GetDevice(), gameFramework.GetCommandList());
+		pMesh = gameFramework.GetMeshManager().GetMesh(meshFileName, _pDevice, _pCommandList);
 	}
 
 	int nChildren;
@@ -186,7 +182,7 @@ void GameObject::LoadFromFile(ifstream& _file) {
 
 	for (int i = 0; i < nChildren; ++i) {
 		shared_ptr<GameObject> newObject = make_shared<GameObject>();
-		newObject->LoadFromFile(_file);
+		newObject->LoadFromFile(_file, _pDevice, _pCommandList);
 		SetChild(newObject);
 	}
 
@@ -208,13 +204,12 @@ void GameObject::CopyObject(const GameObject& _other) {
 }
 
 /////////////////////////// GameObjectManager /////////////////////
-shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name) {
-	GameFramework& gameFramework = GameFramework::Instance();
+shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	if (!storage.contains(_name)) {	// 처음 불러온 오브젝트일 경우
 		shared_ptr<GameObject> newObject = make_shared<GameObject>();
 		ifstream file("GameObject/" + _name, ios::binary);	// 파일을 연다
-		newObject->LoadFromFile(file);
+		newObject->LoadFromFile(file, _pDevice, _pCommandList);
 		// eachTransfrom에 맞게 각 계층의 오브젝트들의 worldTransform을 갱신
 		newObject->UpdateWorldTransform();
 		storage[_name] = newObject;

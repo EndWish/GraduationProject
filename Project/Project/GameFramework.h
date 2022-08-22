@@ -3,7 +3,7 @@
 #include "Scene.h"
 
 class GameFramework {
-// 정적 변수
+// 정적 변수 
 private:
 	static unique_ptr<GameFramework> spInstance;	// 고유 프레임워크 
 
@@ -13,11 +13,12 @@ public:
 
 	// 프레임워크 인스턴스를 전역으로 접근 하기 위한 함수
 	static GameFramework& Instance();
+
+
 private:
 	HINSTANCE instanceHandle;
 	HWND windowHandle;
-	int clientWidth;
-	int clientHeight;
+
 
 
 	ComPtr<IDXGIFactory4> pDxgiFactory;										// DXGI 팩토리 인터페이스에 대한 포인터
@@ -29,7 +30,6 @@ private:
 
 	static const UINT nSwapChainBuffer = 2;									// 스왑 체인 버퍼 개수
 	UINT swapChainBufferCurrentIndex;										// 현재 그릴 스왑체인의 후면버퍼 인덱스 
-	float t = 0;
 
 	// 렌더타겟, 깊이-스텐실 버퍼
 	array<ComPtr<ID3D12Resource>, nSwapChainBuffer> pRenderTargetBuffers;	// 렌더 타겟 버퍼(후면) 포인터를 담는 배열
@@ -57,6 +57,11 @@ private:
 	// 게임 타이머
 	Timer gameTimer;
 
+
+	///// Instance()에서 다른 함수로 접근 가능한 변수들
+
+	int clientWidth;
+	int clientHeight;
 	// 메쉬 메니저
 	MeshManager meshManager;
 	// 마테리얼 매니저
@@ -84,15 +89,17 @@ public:
 
 // get set 함수
 public:
-	pair<int,int> GetClientSize() const;
-	const ComPtr<ID3D12Device>& GetDevice() const;
-	const ComPtr<ID3D12GraphicsCommandList>& GetCommandList() const;
-	const ComPtr<ID3D12CommandQueue>& GetCommandQueue() const;
-	const ComPtr<ID3D12RootSignature>& GetRootSignature() const;
+	
+	//const ComPtr<ID3D12Device>& GetDevice() const;
+	//const ComPtr<ID3D12GraphicsCommandList>& GetCommandList() const;
+	//const ComPtr<ID3D12CommandQueue>& GetCommandQueue() const;
+	//const ComPtr<ID3D12RootSignature>& GetRootSignature() const;
+	pair<int, int> GetClientSize();
 	const shared_ptr<Scene>& GetCurrentScene() const;
 	MeshManager& GetMeshManager();
 	MaterialManager& GetMaterialManager();
 	GameObjectManager& GetGameObjectManager();
+	
 	void FrameAdvance();
 	void WaitForGpuComplete();			// GPU와 동기화하기 위한 대기
 	void MoveToNextFrame();				// 다음 후면버퍼로 변경후 WaitForGpuComplete() 수행

@@ -11,7 +11,7 @@ public:
 	virtual ~Scene();
 
 public:
-	virtual void Init() = 0;
+	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 	virtual void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) = 0;
 	virtual void AnimateObjects(double _timeElapsed) = 0;
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
@@ -48,7 +48,7 @@ public:
 	void LoadRoomsForFile(string _fileName);
 
 public:
-	void Init() final;
+	void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
 	void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) final;
 	void AnimateObjects(double _timeElapsed) final;
 	void UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);

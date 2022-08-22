@@ -5,8 +5,8 @@
 // 정적 변수 및 함수
 shared_ptr<Shader> Mesh::shader;
 
-void Mesh::MakeShader() {
-	shader = make_shared<Shader>();
+void Mesh::MakeShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	shader = make_shared<Shader>(_pDevice, _pRootSignature);
 }
 shared_ptr<Shader> Mesh::GetShader() {
 	return shader;

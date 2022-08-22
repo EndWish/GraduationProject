@@ -3,23 +3,23 @@
 #include "GameFramework.h"
 
 Player::Player() {
-
+	isDead = false;
 }
 
 Player::~Player() {
 
 }
 
-void Player::Create(string _ObjectName) {
-	GameObject::Create(_ObjectName);
+void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
+
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	name = "플레이어";
-	
-	isDead = false;
+
 
 	shared_ptr<Camera> newCamera = make_shared<Camera>();
-	newCamera->Create();
+	newCamera->Create(_pDevice, _pCommandList);
 
 	pCamera = newCamera;
 	SetChild(newCamera);

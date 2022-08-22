@@ -8,7 +8,7 @@ protected:
 
 public:
 	// 생성 관련 함수들
-	Shader();
+	Shader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
 	~Shader();
 
 	D3D12_SHADER_BYTECODE CompileShaderFromFile(const wstring& _fileName, const string& _shaderName, const string& _shaderProfile, ComPtr<ID3DBlob>& _pBlob);
