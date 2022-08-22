@@ -29,7 +29,7 @@ void Camera::Create() {
 	pCameraBuffer->Map(0, NULL, (void**)&pMappedCamera);
 
 	UpdateViewTransform();
-	UpdateProjectionTransform(0.1f, 1000.0f, (float)width / height, 75.0f);
+	UpdateProjectionTransform(0.1f, 1000.0f, 1, 75.0f);
 }
 
 void Camera::SetViewPortAndScissorRect() {

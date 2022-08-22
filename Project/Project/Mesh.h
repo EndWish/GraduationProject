@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Shader.h"
+#include "Material.h"
 
 class Mesh {
 protected:
@@ -11,9 +12,10 @@ public:
 protected:
 	string name;
 
-	D3D12_PRIMITIVE_TOPOLOGY primitiveTopology;
 
+	D3D12_PRIMITIVE_TOPOLOGY primitiveTopology;
 	UINT nVertex;	// 버텍스(정점과 노멀벡터)의 개수
+
 	ComPtr<ID3D12Resource> pPositionBuffer;	// 버텍스의 위치 정보
 	ComPtr<ID3D12Resource> pPositionUploadBuffer;
 	D3D12_VERTEX_BUFFER_VIEW positionBufferView;
@@ -27,6 +29,7 @@ protected:
 	vector<ComPtr<ID3D12Resource>> pSubMeshIndexUploadBuffers;
 	vector<D3D12_INDEX_BUFFER_VIEW> subMeshIndexBufferViews;
 
+	vector<shared_ptr<Material>> materials;
 	BoundingOrientedBox oobb;
 
 public:		// 생성관련 멤버 함수▼
@@ -35,6 +38,10 @@ public:		// 생성관련 멤버 함수▼
 	virtual ~Mesh();
 
 public:		// 멤버 함수▼
+
+	// get, set함수
+	const string& GetName() const;
+
 	void LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };

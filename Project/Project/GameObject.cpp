@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "GameObject.h"
 #include "Light.h"
+#include "GameFramework.h"
 
 GameObject::GameObject() {
 
@@ -9,12 +10,28 @@ GameObject::~GameObject() {
 
 }
 
+GameObject::GameObject(const GameObject& other) {
+
+}
+
+
+void GameObject::Create(string _ObjectName) {
+	GameFramework& gameFramework = GameFramework::Instance();
+	GameObject::Create();
+	// 인스턴스의 자식으로 그 오브젝트의 정보를 설정
+	SetChild(gameFramework.GetGameObjectManager().GetGameObject(_ObjectName));
+}
+
 void GameObject::Create() {
 	name = "unknown";
 	worldTransform = Matrix4x4::Identity();
 	eachTransform = Matrix4x4::Identity();
 	boundingBox = BoundingOrientedBox();
 	isOOBBBCover = false;
+}
+
+const string& GameObject::GetName() const {
+	return name;
 }
 
 XMFLOAT3 GameObject::GetEachRightVector() const {
@@ -114,28 +131,28 @@ void GameObject::UpdateWorldTransform() {
 }
 
 void GameObject::ApplyTransform(const XMFLOAT4X4& _transform) {
-	eachTransform = Matrix4x4::Multiply(eachTransform, _transform);
+	eachTransform = Matrix4x4::Multiply(_transform, eachTransform);
 	UpdateWorldTransform();
 }
 
 void GameObject::Animate(double _timeElapsed) {
-	cout << format("GameObject({}) : 애니메이션 실행\n");
 	for (const auto& pChild : pChildren) {
 		pChild->Animate(_timeElapsed);
 	}
 }
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	
 	if (pMesh.lock()) {	// 메쉬가 있을 경우에만 렌더링을 한다.
 		UpdateShaderVariable(_pCommandList);
 		// 사용할 쉐이더의 그래픽스 파이프라인을 설정한다 [수정요망]
 		Mesh::GetShader()->PrepareRender(_pCommandList);
-		pMesh.lock()->Render(_pCommandList);
-		for (const auto& pChild : pChildren) {
-			pChild->Render(_pCommandList);
-		}
-
+		pMesh.lock()->Render(_pCommandList);	
 	}
+	for (const auto& pChild : pChildren) {
+		pChild->Render(_pCommandList);
+	}
+
 }
 
 void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -145,3 +162,67 @@ void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _
 }
 
 
+void GameObject::LoadFromFile(ifstream& _file) {
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	// nameSize (UINT) / name(string)
+	ReadStringBinary(name, _file);
+
+	// eachTransform(float4x4)
+	_file.read((char*)&eachTransform, sizeof(XMFLOAT4X4));
+
+	string meshFileName;
+	// meshNameSize(UINT) / meshName(string)
+	ReadStringBinary(meshFileName, _file);
+
+	// 메시가 없을경우 스킵
+	if (meshFileName.size() != 0) {
+		pMesh = gameFramework.GetMeshManager().GetMesh(meshFileName, gameFramework.GetDevice(), gameFramework.GetCommandList());
+	}
+
+	int nChildren;
+	_file.read((char*)&nChildren, sizeof(int));
+	pChildren.reserve(nChildren);
+
+	for (int i = 0; i < nChildren; ++i) {
+		shared_ptr<GameObject> newObject = make_shared<GameObject>();
+		newObject->LoadFromFile(_file);
+		SetChild(newObject);
+	}
+
+}
+
+void GameObject::CopyObject(const GameObject& _other) {
+	name = _other.name;
+	worldTransform = _other.worldTransform;
+	eachTransform = _other.eachTransform;
+	boundingBox = _other.boundingBox;
+	isOOBBBCover = _other.isOOBBBCover;
+	pMesh = _other.pMesh;
+
+	for (int i = 0; i < _other.pChildren.size(); ++i) {
+		shared_ptr<GameObject> child = make_shared<GameObject>();
+		child->CopyObject(*_other.pChildren[i]);
+		SetChild(child);
+	}
+}
+
+/////////////////////////// GameObjectManager /////////////////////
+shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name) {
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	if (!storage.contains(_name)) {	// 처음 불러온 오브젝트일 경우
+		shared_ptr<GameObject> newObject = make_shared<GameObject>();
+		ifstream file("GameObject/" + _name, ios::binary);	// 파일을 연다
+		newObject->LoadFromFile(file);
+		// eachTransfrom에 맞게 각 계층의 오브젝트들의 worldTransform을 갱신
+		newObject->UpdateWorldTransform();
+		storage[_name] = newObject;
+
+
+	}
+	// 스토리지 내 오브젝트 정보와 같은 오브젝트를 복사하여 생성한다.
+	shared_ptr<GameObject> Object = make_shared<GameObject>();
+	Object->CopyObject(*storage[_name]);
+	return Object;
+}

@@ -24,15 +24,14 @@ void PlayScene::Init() {
 	// 첫 스테이지에서 플레이어 생성
 	if (nStage == 1) {
 		pPlayer[0] = make_shared<Player>();
-		pPlayer[0]->Create();
+		pPlayer[0]->Create("dummy");
 		//pPlayer[1] = make_shared<Player>();
 		//pPlayer[1]->Create();
+		cout << "더미 성공\n";
 
 		//[임시]
 		cubeObject = make_shared<GameObject>();
-		cubeObject->Create();
-		cubeObject->SetMesh(gameFramework.GetMeshManager().GetMesh("test", gameFramework.GetDevice(), gameFramework.GetCommandList()));
-
+		cubeObject->Create("mage");
 	}
 	// 룸 생성
 	string fileName = "Stage";
@@ -89,6 +88,8 @@ void PlayScene::AnimateObjects(double _timeElapsed) {
 		pPlayer[1]->Animate(_timeElapsed);
 	}*/
 
+	//auto t = cubeObject->pChildren[0]->pChildren[8];
+
 	// 씬 내의 룸들에 대해 애니메이션을 수행
 	for (const auto& room : pRooms) {
 		room->AnimateObjects(_timeElapsed);
@@ -122,6 +123,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	pPlayer[0]->Render(_pCommandList);
 	cubeObject->Render(_pCommandList);
+	
 	// 뷰 프러스텀 내에서 걸러지므로 
 	for (const auto& room : pRooms) {
 		room->Render(_pCommandList);

@@ -20,12 +20,17 @@ Mesh::~Mesh() {
 
 }
 
+const string& Mesh::GetName() const {
+	return name;
+}
+
+
 void Mesh::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework& gameFramework = GameFramework::Instance();
 	ifstream file("Model/" + _fileName, ios::binary);	// 파일을 연다
 	
 	// 버텍스의 개수 읽기
 	file.read((char*)&nVertex, sizeof(UINT));
-
 	// 모델 이름 일기
 	ReadStringBinary(name, file);
 
@@ -61,6 +66,8 @@ void Mesh::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pD
 	pSubMeshIndexBuffers.assign(nSubMesh, {});
 	pSubMeshIndexUploadBuffers.assign(nSubMesh, {});
 	subMeshIndexBufferViews.assign(nSubMesh, {});
+	materials.assign(nSubMesh, {});
+
 	for (UINT i = 0; i < nSubMesh; ++i) {
 		file.read((char*)&nSubMeshIndex[i], sizeof(UINT));
 		vector<UINT> indices(nSubMeshIndex[i]);
@@ -70,6 +77,12 @@ void Mesh::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pD
 		subMeshIndexBufferViews[i].BufferLocation = pSubMeshIndexBuffers[i]->GetGPUVirtualAddress();
 		subMeshIndexBufferViews[i].Format = DXGI_FORMAT_R32_UINT;
 		subMeshIndexBufferViews[i].SizeInBytes = sizeof(UINT) * nSubMeshIndex[i];
+		
+		// 마테리얼 파일정보 읽기. (확장자 없음)
+		string materialName;
+		ReadStringBinary(materialName, file);
+
+		materials[i] = gameFramework.GetMaterialManager().GetMaterial(materialName, _pDevice, _pCommandList);
 	}
 }
 
@@ -79,6 +92,7 @@ void Mesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	_pCommandList->IASetVertexBuffers(0, 2, vertexBuffersViews);
 	for (int i = 0; i < nSubMeshIndex.size(); ++i) {
 		// 해당 서브매쉬와 매칭되는 메테리얼을 Set 해준다.
+		materials[i]->UpdateShaderVariable(_pCommandList);
 		_pCommandList->IASetIndexBuffer(&subMeshIndexBufferViews[i]);
 		_pCommandList->DrawIndexedInstanced(nSubMeshIndex[i], 1, 0, 0, 0);
 	}

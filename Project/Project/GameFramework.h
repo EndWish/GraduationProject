@@ -59,7 +59,11 @@ private:
 
 	// 메쉬 메니저
 	MeshManager meshManager;
-	
+	// 마테리얼 매니저
+	MaterialManager materialManager;
+	// 게임 오브젝트 매니저
+	GameObjectManager gameObjectManager;
+
 	// 씬
 	stack<shared_ptr<Scene>> pScenes;
 
@@ -87,7 +91,8 @@ public:
 	const ComPtr<ID3D12RootSignature>& GetRootSignature() const;
 	const shared_ptr<Scene>& GetCurrentScene() const;
 	MeshManager& GetMeshManager();
-
+	MaterialManager& GetMaterialManager();
+	GameObjectManager& GetGameObjectManager();
 	void FrameAdvance();
 	void WaitForGpuComplete();			// GPU와 동기화하기 위한 대기
 	void MoveToNextFrame();				// 다음 후면버퍼로 변경후 WaitForGpuComplete() 수행

@@ -22,7 +22,7 @@ Light::Light(const shared_ptr<GameObject>& _object) {
 	object = _object;
 
 	// 1 = 점, 2 = 스포트, 3 = 직접
-	lightType = 1;
+	lightType = 3;
 
 	// 이 빛이 켜져있는 상태인지 확인
 	enable = true;
