@@ -103,6 +103,15 @@ namespace Vector3 {
 
 }
 
+namespace Vector4 {
+	inline XMFLOAT4 QuaternionRotationAxis(const XMFLOAT3& _vector, float _degree) {
+		XMFLOAT4 result;
+		XMStoreFloat4(&result, XMQuaternionRotationAxis(XMLoadFloat3(&_vector), XMConvertToRadians(_degree)));
+		return result;
+	}
+}
+
+
 namespace Matrix4x4 {
 	inline XMFLOAT4X4 Identity() {
 		XMFLOAT4X4 result;
