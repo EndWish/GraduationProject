@@ -433,6 +433,11 @@ void GameFramework::ChangeSwapChainState() {
 	dxgiTargetParameters.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 
 	pDxgiSwapChain->ResizeTarget(&dxgiTargetParameters);
+	for (int i = 0; i < nSwapChainBuffer; i++) {
+		if (pRenderTargetBuffers[i]) {
+			pRenderTargetBuffers[i].Reset();
+		}
+	}
 
 	DXGI_SWAP_CHAIN_DESC dxgiSwapChainDesc;
 	pDxgiSwapChain->GetDesc(&dxgiSwapChainDesc);
