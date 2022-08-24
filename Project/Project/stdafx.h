@@ -101,14 +101,33 @@ namespace Vector3 {
 		return result;
 	}
 
+	inline XMFLOAT3 Transform(const XMFLOAT3& _vector, const XMFLOAT4X4& _matrix) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMVector3Transform(XMLoadFloat3(&_vector), XMLoadFloat4x4(&_matrix)));
+		return result;
+	}
+
 }
 
 namespace Vector4 {
-	inline XMFLOAT4 QuaternionRotationAxis(const XMFLOAT3& _vector, float _degree) {
+	inline XMFLOAT4 QuaternionMultiply(const XMFLOAT4& _quaternion1, const XMFLOAT4& _quaternion2) {
 		XMFLOAT4 result;
-		XMStoreFloat4(&result, XMQuaternionRotationAxis(XMLoadFloat3(&_vector), XMConvertToRadians(_degree)));
+		XMStoreFloat4(&result, XMQuaternionMultiply(XMLoadFloat4(&_quaternion1), XMLoadFloat4(&_quaternion2)));
 		return result;
 	}
+
+	inline XMFLOAT4 QuaternionRotation(const XMFLOAT3& _axis, float _angle) {
+		XMFLOAT4 result;
+		XMStoreFloat4(&result, XMQuaternionRotationAxis(XMLoadFloat3(&_axis), XMConvertToRadians(_angle)));
+		return result;
+	}
+
+	inline XMFLOAT4 Transform(const XMFLOAT4& _vector, const XMFLOAT4X4& _matrix) {
+		XMFLOAT4 result;
+		XMStoreFloat4(&result, XMVector4Transform(XMLoadFloat4(&_vector), XMLoadFloat4x4(&_matrix)));
+		return result;
+	}
+
 }
 
 

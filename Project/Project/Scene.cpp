@@ -24,7 +24,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	// 첫 스테이지에서 플레이어 생성
 	if (nStage == 1) {
 		pPlayer[0] = make_shared<Player>();
-		pPlayer[0]->Create("dummy", _pDevice, _pCommandList);
+		pPlayer[0]->Create("mage", _pDevice, _pCommandList);
 		//pPlayer[1] = make_shared<Player>();
 		//pPlayer[1]->Create();
 		cout << "더미 성공\n";
@@ -33,7 +33,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 		cubeObject = make_shared<GameObject>();
 		cubeObject->Create("mage", _pDevice, _pCommandList);
-		cubeObject->eachTransform._41 = 10;
+		cubeObject->UpdateLocalTransform();
 		cubeObject->UpdateWorldTransform();
 	}
 	// 룸 생성
@@ -44,7 +44,9 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	camera = make_shared<Camera>();
 	camera->Create(_pDevice, _pCommandList);
 
-	camera->SetEachPosition(XMFLOAT3(0, 0, -10));
+	camera->SetLocalPosition(XMFLOAT3(0, 0, -10));
+	camera->UpdateLocalTransform();
+	camera->UpdateWorldTransform();
 
 	// 현재 두 플레이어가 있는 방을 첫방으로 설정
 	//pNowRoom[0] = pRooms[0];
@@ -62,28 +64,36 @@ PlayScene::~PlayScene() {
 
 void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) {
 	// 회전과 스케일링은 앞쪽에 move는 뒤쪽에 곱한다.
-	XMFLOAT4X4 transform = Matrix4x4::Identity();
+	//XMFLOAT4X4 transform = Matrix4x4::Identity();
+	//if (_keysBuffers['E'] & 0xF0) {
+	//	transform = Matrix4x4::Multiply(pPlayer[0]->GetRotateMatrix(0.0f, 5.0f, 0.0f), transform);
+	//}
+	//if (_keysBuffers['Q'] & 0xF0) {
+	//	transform = Matrix4x4::Multiply(pPlayer[0]->GetRotateMatrix(0.0f, -5.0f, 0.0f), transform);
+	//}
 	if (_keysBuffers['E'] & 0xF0) {
-		transform = Matrix4x4::Multiply(pPlayer[0]->GetRotateMatrix(0.0f, 5.0f, 0.0f), transform);
+		pPlayer[0]->Rotate(XMFLOAT3(0, 1, 0), 30.0f);
 	}
 	if (_keysBuffers['Q'] & 0xF0) {
-		transform = Matrix4x4::Multiply(pPlayer[0]->GetRotateMatrix(0.0f, -5.0f, 0.0f), transform);
+		pPlayer[0]->Rotate(XMFLOAT3(0, 1, 0), -30.0f);
 	}
-	pPlayer[0]->ApplyTransform(transform);
-	transform = Matrix4x4::Identity();
 	if (_keysBuffers['W'] & 0xF0) {
-		transform = Matrix4x4::Multiply(transform, pPlayer[0]->GetFrontMoveMatrix(1.0f));
-	}
-	if (_keysBuffers['A'] & 0xF0) {
-		transform = Matrix4x4::Multiply(transform, pPlayer[0]->GetRightMoveMatrix(-1.0f));
+		pPlayer[0]->MoveFront(1.0f);
 	}
 	if (_keysBuffers['S'] & 0xF0) {
-		transform = Matrix4x4::Multiply(transform, pPlayer[0]->GetFrontMoveMatrix(-1.0f));
+		pPlayer[0]->MoveFront(-1.0f);
 	}
 	if (_keysBuffers['D'] & 0xF0) {
-		transform = Matrix4x4::Multiply(transform, pPlayer[0]->GetRightMoveMatrix(1.0f));
+		pPlayer[0]->MoveRight(1.0f);
+		
 	}
-	pPlayer[0]->ApplyTransform(transform, false);
+	if (_keysBuffers['A'] & 0xF0) {
+		pPlayer[0]->MoveRight(-1.0f);
+	}
+	//pPlayer[0]->ApplyTransform(transform, false);
+	pPlayer[0]->UpdateLocalTransform();
+	pPlayer[0]->UpdateWorldTransform();
+
 }
 
 void PlayScene::AnimateObjects(double _timeElapsed) {
@@ -95,10 +105,6 @@ void PlayScene::AnimateObjects(double _timeElapsed) {
 	/*if (!pPlayer[1]->GetIsDead()) {
 		pPlayer[1]->Animate(_timeElapsed);
 	}*/
-
-	auto t = cubeObject->pChildren[0]->pChildren[5];
-	t->ApplyTransform(t->GetRotateMatrix(Vector4::QuaternionRotationAxis(XMFLOAT3(0, 0,1), 10.0f)));
-	//auto t = cubeObject->pChildren[0]->pChildren[8];
 
 	// 씬 내의 룸들에 대해 애니메이션을 수행
 	for (const auto& room : pRooms) {
