@@ -30,15 +30,21 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 		cout << "더미 성공\n";
 
 		//[임시]
+
 		cubeObject = make_shared<GameObject>();
 		cubeObject->Create("mage", _pDevice, _pCommandList);
+		cubeObject->eachTransform._41 = 10;
+		cubeObject->UpdateWorldTransform();
 	}
 	// 룸 생성
 	string fileName = "Stage";
 	fileName += (to_string(nStage) + ".bin");
 	LoadRoomsForFile(fileName);
 
+	camera = make_shared<Camera>();
+	camera->Create(_pDevice, _pCommandList);
 
+	camera->SetEachPosition(XMFLOAT3(0, 0, -10));
 
 	// 현재 두 플레이어가 있는 방을 첫방으로 설정
 	//pNowRoom[0] = pRooms[0];
@@ -63,6 +69,8 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) {
 	if (_keysBuffers['Q'] & 0xF0) {
 		transform = Matrix4x4::Multiply(pPlayer[0]->GetRotateMatrix(0.0f, -5.0f, 0.0f), transform);
 	}
+	pPlayer[0]->ApplyTransform(transform);
+	transform = Matrix4x4::Identity();
 	if (_keysBuffers['W'] & 0xF0) {
 		transform = Matrix4x4::Multiply(transform, pPlayer[0]->GetFrontMoveMatrix(1.0f));
 	}
@@ -75,7 +83,7 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) {
 	if (_keysBuffers['D'] & 0xF0) {
 		transform = Matrix4x4::Multiply(transform, pPlayer[0]->GetRightMoveMatrix(1.0f));
 	}
-	pPlayer[0]->ApplyTransform(transform);
+	pPlayer[0]->ApplyTransform(transform, false);
 }
 
 void PlayScene::AnimateObjects(double _timeElapsed) {
@@ -88,6 +96,8 @@ void PlayScene::AnimateObjects(double _timeElapsed) {
 		pPlayer[1]->Animate(_timeElapsed);
 	}*/
 
+	auto t = cubeObject->pChildren[0]->pChildren[5];
+	t->ApplyTransform(t->GetRotateMatrix(Vector4::QuaternionRotationAxis(XMFLOAT3(0, 0,1), 10.0f)));
 	//auto t = cubeObject->pChildren[0]->pChildren[8];
 
 	// 씬 내의 룸들에 대해 애니메이션을 수행
@@ -115,9 +125,9 @@ void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandLis
 
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
-	shared_ptr<Camera> pP1Camera = pPlayer[0]->GetCamera();
-	pP1Camera->SetViewPortAndScissorRect(_pCommandList);
-	pP1Camera->UpdateShaderVariable(_pCommandList);
+	//shared_ptr<Camera> pP1Camera = pPlayer[0]->GetCamera();
+	camera->SetViewPortAndScissorRect(_pCommandList);
+	camera->UpdateShaderVariable(_pCommandList);
 
 	UpdateLightShaderVariables(_pCommandList);
 

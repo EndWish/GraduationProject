@@ -40,7 +40,7 @@ private:
 	shared_ptr<LightsMappedFormat> pMappedLights;
 
 	XMFLOAT4 globalAmbient;
-
+	shared_ptr<Camera> camera;
 public:
 	PlayScene(int _stageNum);
 	~PlayScene() final;

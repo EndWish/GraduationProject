@@ -126,8 +126,9 @@ void GameObject::UpdateWorldTransform() {
 	}
 }
 
-void GameObject::ApplyTransform(const XMFLOAT4X4& _transform) {
-	eachTransform = Matrix4x4::Multiply(_transform, eachTransform);
+void GameObject::ApplyTransform(const XMFLOAT4X4& _transform, bool front) {
+	if(front) eachTransform = Matrix4x4::Multiply(_transform, eachTransform);
+	else eachTransform = Matrix4x4::Multiply(eachTransform, _transform);
 	UpdateWorldTransform();
 }
 

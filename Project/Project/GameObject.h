@@ -8,7 +8,7 @@ protected:
 	// 만약 GameObject에 변수를 추가했다면, 복사 생성자도 수정해라
 
 	string name;
-
+public:
 	// 월드좌표계 기준 : eachTransform 이 바뀌면 항상 동기화 해준다.
 	XMFLOAT4X4 worldTransform;
 
@@ -17,7 +17,6 @@ protected:
 
 	// 물체가 가지고 있는 빛의 포인터
 	shared_ptr<Light> pLight;
-
 
 	BoundingOrientedBox boundingBox;
 	// true일경우 하위 오브젝트들을 모두 포함하는 바운딩박스 객체임
@@ -77,7 +76,7 @@ public:
 	// eachTransform를 가지고 worldTransform를 업데이트 한다.
 	virtual void UpdateWorldTransform();
 	// 변환행렬을 적용하고 worldTransform을 업데이트 한다.
-	void ApplyTransform(const XMFLOAT4X4& _transform);
+	void ApplyTransform(const XMFLOAT4X4& _transform, bool front = true);
 
 	// 애니메이션
 	virtual void Animate(double _timeElapsed);
