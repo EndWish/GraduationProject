@@ -6,7 +6,10 @@
 GameObject::GameObject() {
 	name = "unknown";
 	worldTransform = Matrix4x4::Identity();
-	eachTransform = Matrix4x4::Identity();
+	localTransform = Matrix4x4::Identity();
+	localPosition = XMFLOAT3(0, 0, 0);
+	localRotation = XMFLOAT4(0, 0, 0, 1);
+	localScale = XMFLOAT3(1,1,1);
 	boundingBox = BoundingOrientedBox();
 	isOOBBBCover = false;
 }
@@ -30,17 +33,46 @@ const string& GameObject::GetName() const {
 	return name;
 }
 
-XMFLOAT3 GameObject::GetEachRightVector() const {
-	return Vector3::Normalize(eachTransform._11, eachTransform._12, eachTransform._13);
+XMFLOAT3 GameObject::GetLocalRightVector() const {
+	XMFLOAT3 rightVector = XMFLOAT3(1, 0, 0);
+	rightVector = Vector3::Transform(rightVector, Matrix4x4::RotateQuaternion(localRotation));
+	return rightVector;
 }
-XMFLOAT3 GameObject::GetEachUpVector() const {
-	return Vector3::Normalize(eachTransform._21, eachTransform._22, eachTransform._23);
+XMFLOAT3 GameObject::GetLocalUpVector() const {
+	XMFLOAT3 rightVector = XMFLOAT3(0, 1, 0);
+	rightVector = Vector3::Transform(rightVector, Matrix4x4::RotateQuaternion(localRotation));
+	return rightVector;
 }
-XMFLOAT3 GameObject::GetEachLookVector() const {
-	return Vector3::Normalize(eachTransform._31, eachTransform._32, eachTransform._33);
+XMFLOAT3 GameObject::GetLocalLookVector() const {
+	XMFLOAT3 rightVector = XMFLOAT3(0, 0, 1);
+	rightVector = Vector3::Transform(rightVector, Matrix4x4::RotateQuaternion(localRotation));
+	return rightVector;
 }
-XMFLOAT3 GameObject::GetEachPosition() const {
-	return XMFLOAT3(eachTransform._41, eachTransform._42, eachTransform._43);
+XMFLOAT3 GameObject::GetLocalPosition() const {
+	return localPosition;
+}
+
+void GameObject::MoveRight(float distance) {
+	XMFLOAT3 moveVector = GetLocalRightVector();	// RightVector를 가져와서
+	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
+	moveVector = Vector3::ScalarProduct(moveVector, distance);	// 이동거리만큼 곱해준다.
+	localPosition = Vector3::Add(localPosition, moveVector);
+}
+void GameObject::MoveUp(float distance) {
+	XMFLOAT3 moveVector = GetLocalUpVector();	// UpVector를 가져와서
+	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
+	moveVector = Vector3::ScalarProduct(moveVector, distance);	// 이동거리만큼 곱해준다.
+	localPosition = Vector3::Add(localPosition, moveVector);
+}
+void GameObject::MoveFront(float distance) {
+	XMFLOAT3 moveVector = GetLocalLookVector();	// LookVector를 가져와서
+	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
+	moveVector = Vector3::ScalarProduct(moveVector, distance);	// 이동거리만큼 곱해준다.
+	localPosition = Vector3::Add(localPosition, moveVector);
+}
+void GameObject::Rotate(const XMFLOAT3& _axis, float _angle) {
+	localRotation = Vector4::QuaternionMultiply(localRotation, Vector4::QuaternionRotation(_axis, _angle));
+	cout << localRotation << "\n";
 }
 
 XMFLOAT3 GameObject::GetWorldRightVector() const {
@@ -56,43 +88,12 @@ XMFLOAT3 GameObject::GetWorldPosition() const {
 	return XMFLOAT3(worldTransform._41, worldTransform._42, worldTransform._43);
 }
 
-XMFLOAT4X4 GameObject::GetFrontMoveMatrix(float _distance) const {
-	// 이동할 벡터 = look단위 벡터에 거리를 곱한값
-	XMFLOAT3 moveVector = Vector3::ScalarProduct(GetEachLookVector(), _distance);
-	XMFLOAT4X4 result = Matrix4x4::Identity();
-	result._41 = moveVector.x;
-	result._42 = moveVector.y;
-	result._43 = moveVector.z;
-	return result;
-}
-XMFLOAT4X4 GameObject::GetRightMoveMatrix(float _distance) const {
-	// 이동할 벡터 = look단위 벡터에 거리를 곱한값
-	XMFLOAT3 moveVector = Vector3::ScalarProduct(GetEachRightVector(), _distance);
-	XMFLOAT4X4 result = Matrix4x4::Identity();
-	result._41 = moveVector.x;
-	result._42 = moveVector.y;
-	result._43 = moveVector.z;
-	return result;
-}
-XMFLOAT4X4 GameObject::GetRotateMatrix(const XMFLOAT3& _axis, float _angle) const {
-	return Matrix4x4::RotationAxis(_axis, _angle);
-}
-XMFLOAT4X4 GameObject::GetRotateMatrix(const XMFLOAT4& _quaternion) const {
-	return Matrix4x4::RotateQuaternion(_quaternion);
-}
-XMFLOAT4X4 GameObject::GetRotateMatrix(float _pitch, float _yaw, float _roll) const {
-	return Matrix4x4::RotatePitchYawRoll(_pitch, _yaw, _roll);
-}
-
 const BoundingOrientedBox& GameObject::GetBoundingBox() const {
 	return boundingBox;
 }
 
-void GameObject::SetEachPosition(const XMFLOAT3& _position) {
-	eachTransform._41 = _position.x;
-	eachTransform._42 = _position.y;
-	eachTransform._43 = _position.z;
-	UpdateWorldTransform();
+void GameObject::SetLocalPosition(const XMFLOAT3& _position) {
+	localPosition = _position;
 }
 
 void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
@@ -112,12 +113,30 @@ void GameObject::SetMesh(const shared_ptr<Mesh>& _pMesh) {
 	pMesh = _pMesh;
 }
 
+void GameObject::UpdateLocalTransform() {
+	localTransform = Matrix4x4::Identity();
+	// S
+
+	localTransform._11 = localScale.x;
+	localTransform._22 = localScale.y;
+	localTransform._33 = localScale.z;
+	// SxR
+	localTransform = Matrix4x4::Multiply(localTransform, Matrix4x4::RotateQuaternion(localRotation));
+	// xT
+	localTransform._41 = localPosition.x;
+	localTransform._42 = localPosition.y;
+	localTransform._43 = localPosition.z;
+	//cout << name << " : \n" << localTransform << "\n";
+	//cout << "후:\n" << localTransform << "\n";
+}
 void GameObject::UpdateWorldTransform() {
+	//UpdateLocalTransform();
+
 	if (auto pParentLock = pParent.lock()) {	// 부모가 있을 경우
-		worldTransform = Matrix4x4::Multiply(eachTransform, pParentLock->worldTransform);
+		worldTransform = Matrix4x4::Multiply(localTransform, pParentLock->worldTransform);
 	}
 	else {	// 부모가 없을 경우
-		worldTransform = eachTransform;
+		worldTransform = localTransform;
 	}
 
 	// 자식들도 worldTransform을 업데이트 시킨다.
@@ -127,8 +146,8 @@ void GameObject::UpdateWorldTransform() {
 }
 
 void GameObject::ApplyTransform(const XMFLOAT4X4& _transform, bool front) {
-	if(front) eachTransform = Matrix4x4::Multiply(_transform, eachTransform);
-	else eachTransform = Matrix4x4::Multiply(eachTransform, _transform);
+	if(front) localTransform = Matrix4x4::Multiply(_transform, localTransform);
+	else localTransform = Matrix4x4::Multiply(localTransform, _transform);
 	UpdateWorldTransform();
 }
 
@@ -165,8 +184,11 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 	// nameSize (UINT) / name(string)
 	ReadStringBinary(name, _file);
 
-	// eachTransform(float4x4)
-	_file.read((char*)&eachTransform, sizeof(XMFLOAT4X4));
+	// localTransform(float4x4)
+	_file.read((char*)&localPosition, sizeof(XMFLOAT3));
+	_file.read((char*)&localScale, sizeof(XMFLOAT3));
+	_file.read((char*)&localRotation, sizeof(XMFLOAT4));
+	UpdateLocalTransform();
 
 	string meshFileName;
 	// meshNameSize(UINT) / meshName(string)
@@ -192,9 +214,12 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 void GameObject::CopyObject(const GameObject& _other) {
 	name = _other.name;
 	worldTransform = _other.worldTransform;
-	eachTransform = _other.eachTransform;
+	localTransform = _other.localTransform;
 	boundingBox = _other.boundingBox;
 	isOOBBBCover = _other.isOOBBBCover;
+	localPosition = _other.localPosition;
+	localScale = _other.localScale;
+	localRotation = _other.localRotation;
 	pMesh = _other.pMesh;
 
 	for (int i = 0; i < _other.pChildren.size(); ++i) {

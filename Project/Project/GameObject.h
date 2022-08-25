@@ -13,7 +13,10 @@ public:
 	XMFLOAT4X4 worldTransform;
 
 	// 부모좌표계 기준
-	XMFLOAT4X4 eachTransform;
+	XMFLOAT4X4 localTransform;
+	XMFLOAT3 localPosition;
+	XMFLOAT3 localScale;
+	XMFLOAT4 localRotation;
 
 	// 물체가 가지고 있는 빛의 포인터
 	shared_ptr<Light> pLight;
@@ -38,41 +41,33 @@ public:
 	// get set 함수
 	const string& GetName() const;
 
-	// 오른쪽 방향의 단위벡터를 얻는다.
-	XMFLOAT3 GetEachRightVector() const;
-	// 위쪽 방향의 단위벡터를 얻는다.
-	XMFLOAT3 GetEachUpVector() const;
-	// 바라보고 있는 방향의 단위벡터를 얻는다.
-	XMFLOAT3 GetEachLookVector() const;
-	// 부모좌표계 기준 자신의 위치를 리턴한다.
-	XMFLOAT3 GetEachPosition() const;
+	// 부모좌표계기준 벡터들을 얻는다.
+	XMFLOAT3 GetLocalRightVector() const;
+	XMFLOAT3 GetLocalUpVector() const;
+	XMFLOAT3 GetLocalLookVector() const;
+	XMFLOAT3 GetLocalPosition() const;
+	// 로컬 이동
+	void MoveRight(float distance);
+	void MoveUp(float distance);
+	void MoveFront(float distance);
+	void Rotate(const XMFLOAT3& _axis, float _angle);
 	// 월드좌표계 기준 자신의 위치를 리턴한다.
 	XMFLOAT3 GetWorldPosition() const;
 	XMFLOAT3 GetWorldRightVector() const;
 	XMFLOAT3 GetWorldUpVector() const;
 	XMFLOAT3 GetWorldLookVector() const;
-	void Get() { cout << eachTransform << "\n"; };
-	// 앞으로 이동하는 행렬을 얻는다.
-	XMFLOAT4X4 GetFrontMoveMatrix(float _distance) const;
-	// 옆으로 이동하는 행렬을 얻는다.
-	XMFLOAT4X4 GetRightMoveMatrix(float _distance) const;
-	// 회전축을 기준으로 회전하는 행렬을 얻는다.
-	XMFLOAT4X4 GetRotateMatrix(const XMFLOAT3& _axis, float _angle) const;
-	// 쿼터니언으로 회전하는 행렬을 얻는다.
-	XMFLOAT4X4 GetRotateMatrix(const XMFLOAT4& _quaternion) const;
-	// pitch, yaw, roll 으로 회전하는 행렬을 얻는다.
-	XMFLOAT4X4 GetRotateMatrix(float _pitch, float _yaw, float _roll) const;
 
 	// 자신의 바운딩 박스의 래퍼런스를 리턴한다.
 	const BoundingOrientedBox& GetBoundingBox() const;
 
 	// 위치를 강제로 이동시킨다.
-	void SetEachPosition(const XMFLOAT3& _position);
+	void SetLocalPosition(const XMFLOAT3& _position);
 	// 자식을 추가한다.
 	void SetChild(const shared_ptr<GameObject> _pChild);
 	// 메쉬를 설정한다.
 	void SetMesh(const shared_ptr<Mesh>& _pMesh);
 
+	void UpdateLocalTransform();
 	// eachTransform를 가지고 worldTransform를 업데이트 한다.
 	virtual void UpdateWorldTransform();
 	// 변환행렬을 적용하고 worldTransform을 업데이트 한다.
