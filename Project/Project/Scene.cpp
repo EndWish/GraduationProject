@@ -21,32 +21,17 @@ PlayScene::PlayScene(int _stageNum) {
 
 void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
-	// 첫 스테이지에서 플레이어 생성
-	if (nStage == 1) {
-		pPlayer[0] = make_shared<Player>();
-		pPlayer[0]->Create("mage", _pDevice, _pCommandList);
-		//pPlayer[1] = make_shared<Player>();
-		//pPlayer[1]->Create();
-		cout << "더미 성공\n";
-
-		//[임시]
-
-		cubeObject = make_shared<GameObject>();
-		cubeObject->Create("mage", _pDevice, _pCommandList);
-		cubeObject->UpdateLocalTransform();
-		cubeObject->UpdateWorldTransform();
-	}
-	// 룸 생성
-	string fileName = "Stage";
-	fileName += (to_string(nStage) + ".bin");
-	LoadRoomsForFile(fileName);
+	// 스테이지 생성
+	LoadStage(_pDevice, _pCommandList);
 
 	camera = make_shared<Camera>();
 	camera->Create(_pDevice, _pCommandList);
 
-	camera->SetLocalPosition(XMFLOAT3(0, 0, -10));
+	camera->SetLocalPosition(XMFLOAT3(0, 1.6, 0.1));
 	camera->UpdateLocalTransform();
 	camera->UpdateWorldTransform();
+
+	pPlayer[0]->SetChild(camera);
 
 	// 현재 두 플레이어가 있는 방을 첫방으로 설정
 	//pNowRoom[0] = pRooms[0];
@@ -138,27 +123,12 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	UpdateLightShaderVariables(_pCommandList);
 
 	pPlayer[0]->Render(_pCommandList);
-	cubeObject->Render(_pCommandList);
-	
+
 	// 뷰 프러스텀 내에서 걸러지므로 
 	for (const auto& room : pRooms) {
 		room->Render(_pCommandList);
 	}
 	
-}
-
-void PlayScene::LoadRoomsForFile(string _fileName) {
-
-	// 스테이지 내 룸의 개수만큼 룸 배열의 공간 할당
-	// pRooms.resize(룸 크기);
-
-	// 스테이지 파일 내에 룸 파일의 이름이 있음
-
-	// 룸의 월드좌표 기준 좌표(Center), 방의 넓이(Extent)를 불러옴
-
-	// 룸 내 오브젝트들을 로드
-
-	// 룸과 인접한 룸들을 담음
 }
 
 void PlayScene::AddLight(const shared_ptr<Light>& _pLight) {
@@ -178,4 +148,33 @@ void PlayScene::CheckCurrentRoom(const BoundingOrientedBox& _playerOOBB, int _pl
 			}
 		}
 	}
+}
+
+void PlayScene::LoadStage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	
+	vector<vector<int>> sideRooms;
+
+	for (int i = 0; ; ++i) {
+		// 해당 스테이지 룸 파일들을 모두 읽는다.
+		ifstream file("Room/Room" + to_string(nStage*100 + i), ios::binary);	
+
+		if (file.fail()) break;
+		
+		// Room파일을 읽은 후 pRooms에 저장
+		shared_ptr<Room> newRoom = make_shared<Room>();
+		sideRooms.push_back(newRoom->LoadRoom(file, _pDevice, _pCommandList));
+		pRooms.push_back(newRoom);
+	}
+	// 각 방마다 인접한 방의 주소들을 넣어준다. 
+	for (int i = 0; i < sideRooms.size(); ++i) {
+		for (auto rooms : sideRooms[i]) {
+			pRooms[i]->GetPSideRooms().push_back(pRooms[rooms]);
+		}
+	}
+	// 플레이어의 위치는 항상 RoomNum = 0인 방의 위치(x=0, z=0)를 기준으로 설정
+
+	pPlayer[0] = make_shared<Player>();
+	pPlayer[0]->Create("Mage", _pDevice, _pCommandList);
+	//pPlayer[1] = make_shared<Player>();
+	//pPlayer[1]->Create("mage", _pDevice, _pCommandList);
 }

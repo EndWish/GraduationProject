@@ -2,6 +2,8 @@
 #include "GameObject.h"
 
 class Room {
+public:
+	
 private:
 	// 방의 고유 번호
 	int id;
@@ -30,6 +32,7 @@ public:
 public:
 	int GetID() const;
 	string GetType() const;
+	vector<weak_ptr<Room>>& GetPSideRooms();
 	const BoundingOrientedBox& GetBoundingBox() const;
 	const vector<weak_ptr<Room>>& GetSideRooms() const;
 
@@ -37,6 +40,7 @@ public:
 
 	void AnimateObjects(double _timeElapsed);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-
+	vector<int> LoadRoom(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	shared_ptr<GameObject> LoadObjectFromRoom(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 

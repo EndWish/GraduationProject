@@ -30,8 +30,10 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 	pLight = make_shared<Light>(shared_from_this());
 	// 클래스 상속 관계에서 포인터 형 변환시 dynamic_cast(런타임 이후 동작)을 사용하자
 	auto playScene = dynamic_pointer_cast<PlayScene>(gameFramework.GetCurrentScene());
-
 	playScene->AddLight(pLight);
+
+	UpdateLocalTransform();
+	UpdateWorldTransform();
 }
 
 bool Player::GetIsDead() const {

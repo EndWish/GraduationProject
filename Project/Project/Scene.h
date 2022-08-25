@@ -45,8 +45,6 @@ public:
 	PlayScene(int _stageNum);
 	~PlayScene() final;
 
-	void LoadRoomsForFile(string _fileName);
-
 public:
 	void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
 	void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) final;
@@ -58,5 +56,5 @@ public:
 
 	// 현재 플레이어가 속해있는 방 ( 충돌검사를 진행할 방 ) 을 찾는 함수
 	void CheckCurrentRoom(const BoundingOrientedBox& _playerOOBB, int _playerNum);
-	
+	void LoadStage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };

@@ -96,6 +96,15 @@ void GameObject::SetLocalPosition(const XMFLOAT3& _position) {
 	localPosition = _position;
 }
 
+void GameObject::SetLocalRotation(const XMFLOAT4& _rotation) {
+	localRotation = _rotation;
+}
+
+void GameObject::SetLocalScale(const XMFLOAT3& _scale) {
+	localScale = _scale;
+}
+
+
 void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 	// 입양할 아이가, 부모가 있을 경우 부모로 부터 독립시킨다.
 	if (auto pPreParent = _pChild->pParent.lock()) {
@@ -108,6 +117,8 @@ void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 	// 자식의 부모를 나로 지정
 	_pChild->pParent = shared_from_this();
 }
+
+
 
 void GameObject::SetMesh(const shared_ptr<Mesh>& _pMesh) {
 	pMesh = _pMesh;

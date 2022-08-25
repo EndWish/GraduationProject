@@ -6,6 +6,7 @@ class Player : public GameObject {
 private:
 	// 플레이어가 죽은지를 판단
 	bool isDead;
+	float speed;
 	weak_ptr<Camera> pCamera;
 
 public:

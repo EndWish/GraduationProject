@@ -27,7 +27,7 @@ const string& Mesh::GetName() const {
 
 void Mesh::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
-	ifstream file("Model/" + _fileName, ios::binary);	// 파일을 연다
+	ifstream file("Mesh/" + _fileName, ios::binary);	// 파일을 연다
 	
 	// 버텍스의 개수 읽기
 	file.read((char*)&nVertex, sizeof(UINT));

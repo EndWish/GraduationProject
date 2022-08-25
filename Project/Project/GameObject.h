@@ -1,6 +1,7 @@
 #pragma once
 #include "Mesh.h"
 
+
 class Light;
 
 class GameObject : public enable_shared_from_this<GameObject> {
@@ -62,6 +63,12 @@ public:
 
 	// 위치를 강제로 이동시킨다.
 	void SetLocalPosition(const XMFLOAT3& _position);
+	// 특정 회전값을 대입한다.
+	void SetLocalRotation(const XMFLOAT4& _rotation);
+	// 특정 Scale값을 대입한다.
+	void SetLocalScale(const XMFLOAT3& _scale);
+
+
 	// 자식을 추가한다.
 	void SetChild(const shared_ptr<GameObject> _pChild);
 	// 메쉬를 설정한다.
