@@ -11,6 +11,10 @@ Scene::~Scene() {
 	
 }
 
+void Scene::CheckCollision() {
+
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// PlayScene
 PlayScene::PlayScene(int _stageNum) {
@@ -85,16 +89,20 @@ void PlayScene::AnimateObjects(double _timeElapsed) {
 	// 플레이어가 살아있는 경우 애니메이션을 수행
 	if (!pPlayer[0]->GetIsDead()) {
 		pPlayer[0]->Animate(_timeElapsed);
-	}
-	
+	}	
 	/*if (!pPlayer[1]->GetIsDead()) {
 		pPlayer[1]->Animate(_timeElapsed);
 	}*/
+	// 현재 플레이어가 있는 방, 그 방과 인접한 방만 수행
+	// 각 플레이어가 있는 방이 다를 경우 따로 처리
+	pNowRoom[0]->AnimateObjects(_timeElapsed);
 
-	// 씬 내의 룸들에 대해 애니메이션을 수행
-	for (const auto& room : pRooms) {
-		room->AnimateObjects(_timeElapsed);
+	for (const auto& nextRoom : pNowRoom[0]->GetSideRooms()) {
+		nextRoom.lock()->AnimateObjects(_timeElapsed);
 	}
+}
+void PlayScene::CheckCollision() {
+	pNowRoom[0]->CheckCollision();
 }
 
 void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -122,7 +130,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	UpdateLightShaderVariables(_pCommandList);
 
-	pPlayer[0]->Render(_pCommandList);
+	//pPlayer[0]->Render(_pCommandList);
 
 	// 뷰 프러스텀 내에서 걸러지므로 
 	for (const auto& room : pRooms) {
@@ -168,13 +176,15 @@ void PlayScene::LoadStage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3
 	// 각 방마다 인접한 방의 주소들을 넣어준다. 
 	for (int i = 0; i < sideRooms.size(); ++i) {
 		for (auto rooms : sideRooms[i]) {
-			pRooms[i]->GetPSideRooms().push_back(pRooms[rooms]);
+			pRooms[i]->GetSideRooms().push_back(pRooms[rooms]);
 		}
 	}
 	// 플레이어의 위치는 항상 RoomNum = 0인 방의 위치(x=0, z=0)를 기준으로 설정
 
 	pPlayer[0] = make_shared<Player>();
 	pPlayer[0]->Create("Mage", _pDevice, _pCommandList);
+	pNowRoom[0] = pRooms[0];
+	pNowRoom[1] = pRooms[0];
 	//pPlayer[1] = make_shared<Player>();
 	//pPlayer[1]->Create("mage", _pDevice, _pCommandList);
 }

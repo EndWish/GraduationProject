@@ -22,14 +22,21 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 		gameFramework.CreateDepthStencilView();
 		gameFramework.CreateGraphicsRootSignature();
 
-		// 쉐이더 생성
-		Mesh::MakeShader(gameFramework.pDevice, gameFramework.pRootSignature);
 
 		gameFramework.pCommandList->Reset(gameFramework.pCommandAllocator.Get(), NULL);
 
 		// 최초씬 생성
 		shared_ptr<Scene> startScene = make_shared<PlayScene>(1);
 		gameFramework.PushScene(startScene);
+
+		// 쉐이더 생성
+		Mesh::MakeShader(gameFramework.pDevice, gameFramework.pRootSignature);
+		HitBoxMesh::MakeShader(gameFramework.pDevice, gameFramework.pRootSignature);
+
+		// 히트박스용 메쉬 생성
+		gameFramework.meshManager.GetHitBoxMesh().Create(gameFramework.pDevice, gameFramework.pCommandList);
+
+
 
 		gameFramework.pCommandList->Close();
 		vector<ComPtr<ID3D12CommandList>> pCommandLists = { gameFramework.pCommandList.Get() };
@@ -335,6 +342,7 @@ void GameFramework::FrameAdvance() {
 	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
 	if (!pScenes.empty()) {
 		pScenes.top()->AnimateObjects(gameTimer.GetTimeElapsed());
+		pScenes.top()->CheckCollision();
 		// 씬의 오브젝트 충돌처리 [수정]
 	}
 

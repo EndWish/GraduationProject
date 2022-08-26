@@ -7,5 +7,6 @@ public:
 	Obstacle();
 	virtual ~Obstacle();
 
+	void Animate(double _timeElapsed) final;
 };
 

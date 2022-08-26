@@ -32,13 +32,14 @@ public:
 public:
 	int GetID() const;
 	string GetType() const;
-	vector<weak_ptr<Room>>& GetPSideRooms();
+
 	const BoundingOrientedBox& GetBoundingBox() const;
-	const vector<weak_ptr<Room>>& GetSideRooms() const;
+	vector<weak_ptr<Room>>& GetSideRooms();
 
 	void SetType(string _type);
 
 	void AnimateObjects(double _timeElapsed);
+	void CheckCollision();
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	vector<int> LoadRoom(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	shared_ptr<GameObject> LoadObjectFromRoom(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);

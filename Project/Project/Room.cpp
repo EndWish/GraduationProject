@@ -37,6 +37,10 @@ void Room::AnimateObjects(double _timeElapsed) {
 
 }
 
+void Room::CheckCollision() {
+	
+}
+
 int Room::GetID() const {
 	return id;
 }
@@ -45,15 +49,11 @@ string Room::GetType() const {
 	return type;
 }
 
-vector<weak_ptr<Room>>& Room::GetPSideRooms() {
-	return pSideRooms;
-}
-
 const BoundingOrientedBox& Room::GetBoundingBox() const {
 	return boundingBox;
 }
 
-const vector<weak_ptr<Room>>& Room::GetSideRooms() const {
+vector<weak_ptr<Room>>& Room::GetSideRooms() {
 	return pSideRooms;
 }
 
@@ -152,10 +152,12 @@ shared_ptr<GameObject> Room::LoadObjectFromRoom(ifstream& _file, const ComPtr<ID
 
 	// worldRotation (float4)
 	_file.read((char*)&bufferQ, sizeof(XMFLOAT4));
+
 	newObject->SetLocalRotation(bufferQ);
 
 	newObject->UpdateLocalTransform();
 	newObject->UpdateWorldTransform();
 
+	newObject->UpdateOOBB();
 	return newObject;
 }

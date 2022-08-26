@@ -14,6 +14,7 @@ public:
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 	virtual void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) = 0;
 	virtual void AnimateObjects(double _timeElapsed) = 0;
+	virtual void CheckCollision();
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 };
 
@@ -49,6 +50,7 @@ public:
 	void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
 	void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) final;
 	void AnimateObjects(double _timeElapsed) final;
+	void CheckCollision() final;
 	void UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
 

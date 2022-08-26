@@ -73,6 +73,8 @@ std::ostream& operator<<(std::ostream& os, const XMFLOAT3& f3);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4& f4);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4X4& f4x4);
 
+
+
 namespace Vector3 {
 	inline XMFLOAT3 Normalize(const XMFLOAT3& _vector) {
 		XMFLOAT3 result;
@@ -173,6 +175,11 @@ namespace Matrix4x4 {
 	inline XMFLOAT4X4 PerspectiveFovLH(float _fovAngleY, float _aspectRatio, float _nearZ, float _farZ) {
 		XMFLOAT4X4 result;
 		XMStoreFloat4x4(&result, XMMatrixPerspectiveFovLH(_fovAngleY, _aspectRatio, _nearZ, _farZ));
+		return result;
+	}
+	inline XMFLOAT4X4 ScaleTransform(const XMFLOAT3& scale) {
+		XMFLOAT4X4 result;
+		XMStoreFloat4x4(&result, XMMatrixScaling(scale.x, scale.y, scale.z));
 		return result;
 	}
 }

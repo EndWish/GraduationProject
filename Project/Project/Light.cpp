@@ -9,7 +9,7 @@ Light::Light(const shared_ptr<GameObject>& _object) {
 	specular = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	// object에 연결 후 position값 삭제. object의 위치+offset값을 position으로 넘김
-	position = XMFLOAT3(0.5f, 0.5f, -2.0f);
+	position = XMFLOAT3(0.0f, 0.5f, -0.0f);
 	range = 15;
 
 	offset = XMFLOAT3(0.0f, 0.0f, 0.0f);	
@@ -22,7 +22,7 @@ Light::Light(const shared_ptr<GameObject>& _object) {
 	object = _object;
 
 	// 1 = 점, 2 = 스포트, 3 = 직접
-	lightType = 3;
+	lightType = 1;
 
 	// 이 빛이 켜져있는 상태인지 확인
 	enable = true;
