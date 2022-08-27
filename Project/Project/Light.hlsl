@@ -7,7 +7,7 @@
 #define SPOT_LIGHT			2
 #define DIRECTIONAL_LIGHT	3
 
-
+#define EPSILON				1.0e-5
 
 struct LIGHT
 {
@@ -61,7 +61,7 @@ float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera)
 	// 빛의 방향과 정점의 법선으로 각도 계산
 	float diffuseFactor = dot(toLight, _normal);
 	float specularFactor = 0.0f;
-	if (diffuseFactor > 0.0f)	{
+	if (diffuseFactor > EPSILON)	{
 		// 반사벡터를 구해 시선벡터와 내적하여 빛의 양 계산
 		float3 reflectVector = reflect(-toLight, _normal);
 		specularFactor = pow(max(dot(reflectVector, _toCamera), 0.0f), specular.a);
@@ -84,15 +84,15 @@ float4 PointLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamer
 		toLight /= distance;
 		
 		float diffuseFactor = dot(toLight, _normal);
-		if (diffuseFactor > 0.0f)	{
+        if (diffuseFactor > EPSILON) {
 			if (specular.a != 0.0f)	{
 				float3 reflectVec = reflect(-toLight, _normal);
                 specularFactor = pow(max(dot(reflectVec, _toCamera), 0.0f), specular.a);
             }
 		}
 		// 1/(x+y*d+z*d*d). distance = 0일 경우 1/x
-		float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, distance, distance * distance));
-        color = ((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular) * attenuationFactor);
+        float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, distance, distance*distance));
+        color = ((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular)) * attenuationFactor;
     }
 	return color;
 }
@@ -108,7 +108,7 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
         toLight /= fDistance;
         float fDiffuseFactor = dot(toLight, _normal);
 		
-        if (fDiffuseFactor > 0.0f) {
+        if (fDiffuseFactor > EPSILON) {
             if (specular.a != 0.0f) {
                 float3 vReflect = reflect(-toLight, _normal);
                 fSpecularFactor = pow(max(dot(vReflect, _toCamera), 0.0f), specular.a);

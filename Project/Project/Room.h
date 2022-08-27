@@ -1,7 +1,9 @@
 #pragma once
 #include "GameObject.h"
-
+#include "Player.h"
 class Room {
+public:
+	
 private:
 	// 방의 고유 번호
 	int id;
@@ -17,6 +19,7 @@ private:
 	vector<weak_ptr<Room>> pSideRooms;
 
 	// 각종 오브젝트들
+	array <weak_ptr<Player>, 2> pPlayers;
 	vector<shared_ptr<GameObject>> pItems;
 	vector<shared_ptr<GameObject>> pEffects;
 	vector<shared_ptr<GameObject>> pPlayerAttacks;
@@ -30,13 +33,19 @@ public:
 public:
 	int GetID() const;
 	string GetType() const;
+
 	const BoundingOrientedBox& GetBoundingBox() const;
-	const vector<weak_ptr<Room>>& GetSideRooms() const;
+	vector<weak_ptr<Room>>& GetSideRooms();
 
 	void SetType(string _type);
-
+	void SetPlayer(array<shared_ptr<Player>, 2>& _pPlayers);
 	void AnimateObjects(double _timeElapsed);
-	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
+	void CheckCollision();
+	void CheckCollisionPlayerAndObstacle();
+	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox);
+	vector<int> LoadRoom(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	shared_ptr<GameObject> LoadObjectFromRoom(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 

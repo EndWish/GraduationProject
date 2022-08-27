@@ -60,6 +60,7 @@ private:
 
 	///// Instance()에서 다른 함수로 접근 가능한 변수들
 
+	bool drawHitBox;
 	int clientWidth;
 	int clientHeight;
 	// 메쉬 메니저
@@ -95,10 +96,12 @@ public:
 	//const ComPtr<ID3D12CommandQueue>& GetCommandQueue() const;
 	//const ComPtr<ID3D12RootSignature>& GetRootSignature() const;
 	pair<int, int> GetClientSize();
+	bool GetDrawHitBox() const;
 	const shared_ptr<Scene>& GetCurrentScene() const;
 	MeshManager& GetMeshManager();
 	MaterialManager& GetMaterialManager();
 	GameObjectManager& GetGameObjectManager();
+
 	
 	void FrameAdvance();
 	void WaitForGpuComplete();			// GPU와 동기화하기 위한 대기

@@ -3,6 +3,11 @@
 #include "Light.h"
 #include "GameFramework.h"
 
+
+
+
+//////////////////////////////////////////
+
 GameObject::GameObject() {
 	name = "unknown";
 	worldTransform = Matrix4x4::Identity();
@@ -72,7 +77,6 @@ void GameObject::MoveFront(float distance) {
 }
 void GameObject::Rotate(const XMFLOAT3& _axis, float _angle) {
 	localRotation = Vector4::QuaternionMultiply(localRotation, Vector4::QuaternionRotation(_axis, _angle));
-	cout << localRotation << "\n";
 }
 
 XMFLOAT3 GameObject::GetWorldRightVector() const {
@@ -96,6 +100,15 @@ void GameObject::SetLocalPosition(const XMFLOAT3& _position) {
 	localPosition = _position;
 }
 
+void GameObject::SetLocalRotation(const XMFLOAT4& _rotation) {
+	localRotation = _rotation;
+}
+
+void GameObject::SetLocalScale(const XMFLOAT3& _scale) {
+	localScale = _scale;
+}
+
+
 void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 	// 입양할 아이가, 부모가 있을 경우 부모로 부터 독립시킨다.
 	if (auto pPreParent = _pChild->pParent.lock()) {
@@ -108,6 +121,8 @@ void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 	// 자식의 부모를 나로 지정
 	_pChild->pParent = shared_from_this();
 }
+
+
 
 void GameObject::SetMesh(const shared_ptr<Mesh>& _pMesh) {
 	pMesh = _pMesh;
@@ -145,24 +160,63 @@ void GameObject::UpdateWorldTransform() {
 	}
 }
 
-void GameObject::ApplyTransform(const XMFLOAT4X4& _transform, bool front) {
-	if(front) localTransform = Matrix4x4::Multiply(_transform, localTransform);
-	else localTransform = Matrix4x4::Multiply(localTransform, _transform);
+
+
+void GameObject::UpdateOOBB() {
+	shared_ptr<Mesh> mesh = pMesh.lock();
+	if (mesh) {
+		// Mesh의 OOBB를 현재 오브젝트의 transform값으로 변환
+		mesh->GetOOBB().Transform(boundingBox, XMLoadFloat4x4(&worldTransform));
+		// OOBB의 회전값을 정규화
+		XMStoreFloat4(&boundingBox.Orientation, XMQuaternionNormalize(XMLoadFloat4(&boundingBox.Orientation)));
+	}
+	for (const auto& pChild : pChildren) {
+		pChild->UpdateOOBB();
+	}
+}
+
+void GameObject::UpdateObject() {
+	UpdateLocalTransform();
 	UpdateWorldTransform();
+	UpdateOOBB();
+}
+
+bool GameObject::CheckCollision(const GameObject& _other) {
+	//cout << name << "과 " << _other.name << "의 충돌 검사 진행\n";
+
+	if (pMesh.lock()) {
+		if (_other.pMesh.lock() && boundingBox.Intersects(_other.boundingBox)) {
+			cout << pMesh.lock()->GetName() << ", " << _other.pMesh.lock()->GetName() << "충돌!!\n";
+			return true;
+		}
+		
+	}
+	for (const auto& pChild : _other.pChildren) {
+		if (CheckCollision(*pChild)) {
+			return true;
+		}
+	}
+	for (const auto& pChild : pChildren) {
+		if (pChild->CheckCollision(_other)) {
+			return true;
+		}
+	}
+	return false;
 }
 
 void GameObject::Animate(double _timeElapsed) {
+
+
 	for (const auto& pChild : pChildren) {
 		pChild->Animate(_timeElapsed);
 	}
 }
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	
 	if (pMesh.lock()) {	// 메쉬가 있을 경우에만 렌더링을 한다.
 		UpdateShaderVariable(_pCommandList);
 		// 사용할 쉐이더의 그래픽스 파이프라인을 설정한다 [수정요망]
-		Mesh::GetShader()->PrepareRender(_pCommandList);
+		
 		pMesh.lock()->Render(_pCommandList);	
 	}
 	for (const auto& pChild : pChildren) {
@@ -171,11 +225,42 @@ void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) 
 
 }
 
+void GameObject::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox) {
+	
+	if (pMesh.lock()) {	// 메쉬가 있을 경우에만 렌더링을 한다.
+		UpdateHitboxShaderVariable(_pCommandList);
+		// 사용할 쉐이더의 그래픽스 파이프라인을 설정한다 [수정요망]
+		_hitBox.Render(_pCommandList);
+	}
+	for (const auto& pChild : pChildren) {
+		pChild->RenderHitBox(_pCommandList, _hitBox);
+	}
+}
+
+
 void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	XMFLOAT4X4 world;
 	XMStoreFloat4x4(&world, XMMatrixTranspose(XMLoadFloat4x4(&worldTransform)));
 	_pCommandList->SetGraphicsRoot32BitConstants(1, 16, &world, 0);
 }
+
+
+
+void GameObject::UpdateHitboxShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	if (pMesh.lock()) {
+		BoundingOrientedBox boundingBox = pMesh.lock()->GetOOBB();
+		XMFLOAT4X4 world = Matrix4x4::ScaleTransform(Vector3::ScalarProduct(pMesh.lock()->GetOOBB().Extents, 2.0f));
+		XMFLOAT4X4 translate = Matrix4x4::Identity();
+		translate._41 += boundingBox.Center.x;
+		translate._42 += boundingBox.Center.y;
+		translate._43 += boundingBox.Center.z;
+		world = Matrix4x4::Multiply(Matrix4x4::Multiply(world, worldTransform), translate);
+		XMStoreFloat4x4(&world, XMMatrixTranspose(XMLoadFloat4x4(&world)));
+		//world = Matrix4x4::Identity();
+		_pCommandList->SetGraphicsRoot32BitConstants(1, 16, &world, 0);
+	}
+}
+
 
 
 void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -236,8 +321,8 @@ shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, con
 		shared_ptr<GameObject> newObject = make_shared<GameObject>();
 		ifstream file("GameObject/" + _name, ios::binary);	// 파일을 연다
 		newObject->LoadFromFile(file, _pDevice, _pCommandList);
+
 		// eachTransfrom에 맞게 각 계층의 오브젝트들의 worldTransform을 갱신
-		newObject->UpdateWorldTransform();
 		storage[_name] = newObject;
 
 

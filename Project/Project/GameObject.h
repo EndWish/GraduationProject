@@ -3,14 +3,17 @@
 
 class Light;
 
+
 class GameObject : public enable_shared_from_this<GameObject> {
 protected:
 	// 만약 GameObject에 변수를 추가했다면, 복사 생성자도 수정해라
 
 	string name;
-public:
+
+
 	// 월드좌표계 기준 : eachTransform 이 바뀌면 항상 동기화 해준다.
 	XMFLOAT4X4 worldTransform;
+	
 
 	// 부모좌표계 기준
 	XMFLOAT4X4 localTransform;
@@ -20,6 +23,7 @@ public:
 
 	// 물체가 가지고 있는 빛의 포인터
 	shared_ptr<Light> pLight;
+
 
 	BoundingOrientedBox boundingBox;
 	// true일경우 하위 오브젝트들을 모두 포함하는 바운딩박스 객체임
@@ -40,7 +44,6 @@ public:
 
 	// get set 함수
 	const string& GetName() const;
-
 	// 부모좌표계기준 벡터들을 얻는다.
 	XMFLOAT3 GetLocalRightVector() const;
 	XMFLOAT3 GetLocalUpVector() const;
@@ -62,6 +65,12 @@ public:
 
 	// 위치를 강제로 이동시킨다.
 	void SetLocalPosition(const XMFLOAT3& _position);
+	// 특정 회전값을 대입한다.
+	void SetLocalRotation(const XMFLOAT4& _rotation);
+	// 특정 Scale값을 대입한다.
+	void SetLocalScale(const XMFLOAT3& _scale);
+
+
 	// 자식을 추가한다.
 	void SetChild(const shared_ptr<GameObject> _pChild);
 	// 메쉬를 설정한다.
@@ -71,18 +80,29 @@ public:
 	// eachTransform를 가지고 worldTransform를 업데이트 한다.
 	virtual void UpdateWorldTransform();
 	// 변환행렬을 적용하고 worldTransform을 업데이트 한다.
-	void ApplyTransform(const XMFLOAT4X4& _transform, bool front = true);
+
+	//  OOBB 갱신
+	void UpdateOOBB();
+
+	// 오브젝트 내용 전체적으로 갱신
+	void UpdateObject();
+
+	// 충돌 체크
+	bool CheckCollision(const GameObject& _other);
 
 	// 애니메이션
 	virtual void Animate(double _timeElapsed);
+
 	// 렌더
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox);
 	// 월드 변환행렬을 쉐이더로 넘겨준다.
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-
+	void UpdateHitboxShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void CopyObject(const GameObject& _other);
 };
+
 
 class GameObjectManager {
 	map<string, shared_ptr<GameObject>> storage;

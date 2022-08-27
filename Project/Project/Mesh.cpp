@@ -4,9 +4,10 @@
 
 // 정적 변수 및 함수
 shared_ptr<Shader> Mesh::shader;
+shared_ptr<Shader> HitBoxMesh::shader;
 
 void Mesh::MakeShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
-	shader = make_shared<Shader>(_pDevice, _pRootSignature);
+	shader = make_shared<BasicShader>(_pDevice, _pRootSignature);
 }
 shared_ptr<Shader> Mesh::GetShader() {
 	return shader;
@@ -24,10 +25,13 @@ const string& Mesh::GetName() const {
 	return name;
 }
 
+const BoundingOrientedBox& Mesh::GetOOBB() const {
+	return oobb;
+}
 
 void Mesh::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
-	ifstream file("Model/" + _fileName, ios::binary);	// 파일을 연다
+	ifstream file("Mesh/" + _fileName, ios::binary);	// 파일을 연다
 	
 	// 버텍스의 개수 읽기
 	file.read((char*)&nVertex, sizeof(UINT));
@@ -39,6 +43,9 @@ void Mesh::LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pD
 	file.read((char*)&oobbCenter, sizeof(XMFLOAT3));
 	file.read((char*)&oobbExtents, sizeof(XMFLOAT3));
 	oobb = BoundingOrientedBox(oobbCenter, oobbExtents, XMFLOAT4A(0.0f, 0.0f, 0.0f, 1.0f));
+	if (_fileName == "Mesh_Floor01_Floor01") {
+		cout << oobbCenter << ", " << oobbExtents << "\n";
+	}
 
 	// 포지션값 읽기
 	vector<float> positions(3 * nVertex);
@@ -98,8 +105,87 @@ void Mesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	}
 }
 
+
+
+void HitBoxMesh::MakeShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	shader = make_shared<HitBoxShader>(_pDevice, _pRootSignature);
+}
+
+shared_ptr<Shader> HitBoxMesh::GetShader() {
+	return shader;
+}
+
+HitBoxMesh::HitBoxMesh() {
+
+}
+
+HitBoxMesh::~HitBoxMesh() {
+
+}
+
+void HitBoxMesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[1] = { positionBufferView };
+	_pCommandList->IASetVertexBuffers(0, 1, vertexBuffersViews);
+	_pCommandList->IASetIndexBuffer(&indexBufferView);
+	_pCommandList->DrawIndexedInstanced(24, 1, 0, 0, 0);
+}
+
+void HitBoxMesh::Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	
+	XMFLOAT3 c(0,0,0);
+	XMFLOAT3 e(0.5, 0.5, 0.5);
+	primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+	vector<XMFLOAT3> positions{
+		XMFLOAT3(c.x - e.x, c.y - e.y, c.z - e.z),
+		XMFLOAT3(c.x - e.x, c.y - e.y, c.z + e.z),
+		XMFLOAT3(c.x + e.x, c.y - e.y, c.z + e.z),
+		XMFLOAT3(c.x + e.x, c.y - e.y, c.z - e.z),
+		XMFLOAT3(c.x - e.x, c.y + e.y, c.z - e.z),
+		XMFLOAT3(c.x - e.x, c.y + e.y, c.z + e.z),
+		XMFLOAT3(c.x + e.x, c.y + e.y, c.z + e.z),
+		XMFLOAT3(c.x + e.x, c.y + e.y, c.z - e.z),
+	};
+
+	pPositionBuffer = CreateBufferResource(_pDevice, _pCommandList, positions.data(), sizeof(XMFLOAT3) * 8, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pPositionUploadBuffer);
+	positionBufferView.BufferLocation = pPositionBuffer->GetGPUVirtualAddress();
+	positionBufferView.StrideInBytes = sizeof(XMFLOAT3);
+	positionBufferView.SizeInBytes = sizeof(XMFLOAT3) * 8;
+
+	vector<UINT> indices{
+		0,1,1,2,
+		2,3,3,0,
+		4,5,5,6,
+		6,7,7,4,
+		0,4,1,5,
+		2,6,3,7
+	};
+
+	pIndexBuffers = CreateBufferResource(_pDevice, _pCommandList, indices.data(), sizeof(UINT) * 24, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_INDEX_BUFFER, pIndexUploadBuffers);
+	indexBufferView.BufferLocation = pIndexBuffers->GetGPUVirtualAddress();
+	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+	indexBufferView.SizeInBytes = sizeof(UINT) * 24;
+	cout << "만들어짐";
+}
+
+
+
+
+
 /////////////////////////////////////////////////////////////////////////////////////
 ///	MeshManager
+MeshManager::MeshManager() {
+	
+}
+
+MeshManager::~MeshManager() {
+
+}
+
+HitBoxMesh& MeshManager::GetHitBoxMesh() {
+	return hitBoxMesh;
+}
+
 shared_ptr<Mesh> MeshManager::GetMesh(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	if(!storage.contains(_name)) {	// 처음 불러온 메쉬일 경우
 		shared_ptr<Mesh> newMesh = make_shared<Mesh>();

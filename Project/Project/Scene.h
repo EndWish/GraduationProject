@@ -14,6 +14,7 @@ public:
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 	virtual void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) = 0;
 	virtual void AnimateObjects(double _timeElapsed) = 0;
+	virtual void CheckCollision();
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 };
 
@@ -28,10 +29,10 @@ private:
 
 	// 플레이어의 포인터. 첫 플레이 씬 생성 시에 플레이어가 생성되어 저장
 	// 스테이지(씬) 전환 시에 그 씬으로 플레이어 포인터를	넘겨줌
-	array<shared_ptr<Player>, 2> pPlayer;
+	array<shared_ptr<Player>, 2> pPlayers;
 
 	// 현재 플레이어가 있는 룸의 포인터
-	array<shared_ptr<Room> , 2> pNowRoom;
+	array<shared_ptr<Room> , 2> pNowRooms;
 
 	shared_ptr<GameObject> cubeObject;	//[임시]
 
@@ -45,12 +46,11 @@ public:
 	PlayScene(int _stageNum);
 	~PlayScene() final;
 
-	void LoadRoomsForFile(string _fileName);
-
 public:
 	void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
 	void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) final;
 	void AnimateObjects(double _timeElapsed) final;
+	void CheckCollision() final;
 	void UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
 
@@ -58,5 +58,5 @@ public:
 
 	// 현재 플레이어가 속해있는 방 ( 충돌검사를 진행할 방 ) 을 찾는 함수
 	void CheckCurrentRoom(const BoundingOrientedBox& _playerOOBB, int _playerNum);
-	
+	void LoadStage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };

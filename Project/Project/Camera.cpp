@@ -25,6 +25,8 @@ void Camera::Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gra
 	viewPort = { 0,0, (float)width, (float)height, 0, 1 };
 	scissorRect = { 0,0, width, height };
 
+
+
 	UINT cbElementSize = (sizeof(VS_CameraMappedFormat) + 255) & (~255);
 	ComPtr<ID3D12Resource> temp;
 	pCameraBuffer = CreateBufferResource(_pDevice, _pCommandList, NULL, cbElementSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);

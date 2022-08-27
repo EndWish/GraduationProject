@@ -2,16 +2,25 @@
 #include "Shader.h"
 #include "GameFramework.h"
 
-Shader::Shader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+Shader::Shader() {
+
+}
+
+
+Shader::~Shader() {
+
+}
+
+
+void Shader::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 
 	ZeroMemory(&pipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 	pipelineStateDesc.pRootSignature = _pRootSignature.Get();
-	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultVertexShader", "vs_5_1", pVSBlob);
-	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultPixelShader", "ps_5_1", pPSBlob);
 	pipelineStateDesc.RasterizerState = CreateRasterizerState();
 	pipelineStateDesc.BlendState = CreateBlendState();
-	pipelineStateDesc.DepthStencilState = CreateDepthStencilState();
 	pipelineStateDesc.InputLayout = CreateInputLayout();
+	pipelineStateDesc.DepthStencilState = CreateDepthStencilState();
+	
 	pipelineStateDesc.SampleMask = UINT_MAX;
 	pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
 	pipelineStateDesc.NumRenderTargets = 1;
@@ -19,17 +28,6 @@ Shader::Shader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSign
 	pipelineStateDesc.DSVFormat = DXGI_FORMAT_D24_UNORM_S8_UINT;
 	pipelineStateDesc.SampleDesc.Count = 1;
 	pipelineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
-
-	_pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
-
-	pVSBlob.Reset();
-	pPSBlob.Reset();
-
-	inputElementDescs.clear();
-}
-
-Shader::~Shader() {
-
 }
 
 D3D12_SHADER_BYTECODE Shader::CompileShaderFromFile(const wstring& _fileName, const string& _shaderName, const string& _shaderProfile, ComPtr<ID3DBlob>& _pBlob) {
@@ -49,24 +47,7 @@ D3D12_SHADER_BYTECODE Shader::CompileShaderFromFile(const wstring& _fileName, co
 	return shaderByteCode;
 }
 
-D3D12_RASTERIZER_DESC Shader::CreateRasterizerState() {
-	D3D12_RASTERIZER_DESC rasterizerDesc;
-	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
-	//	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
-	rasterizerDesc.FrontCounterClockwise = FALSE;
-	rasterizerDesc.DepthBias = 0;
-	rasterizerDesc.DepthBiasClamp = 0.0f;
-	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
-	rasterizerDesc.DepthClipEnable = TRUE;
-	rasterizerDesc.MultisampleEnable = FALSE;
-	rasterizerDesc.AntialiasedLineEnable = FALSE;
-	rasterizerDesc.ForcedSampleCount = 0;
-	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
 
-	return rasterizerDesc;
-}
 
 D3D12_DEPTH_STENCIL_DESC Shader::CreateDepthStencilState() {
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
@@ -108,12 +89,57 @@ D3D12_BLEND_DESC Shader::CreateBlendState() {
 	return blendDesc;
 }
 
-D3D12_INPUT_LAYOUT_DESC Shader::CreateInputLayout() {
+
+void Shader::PrepareRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	if (pPipelineState) {
+		_pCommandList->SetPipelineState(pPipelineState.Get());
+	}
+}
+
+//////////////////// Basic Shader
+BasicShader::BasicShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+
+	Init(_pDevice, _pRootSignature);
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultPixelShader", "ps_5_1", pPSBlob);
+
+	_pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+
+	inputElementDescs.clear();
+}
+
+BasicShader::~BasicShader() {
+
+}
+
+D3D12_RASTERIZER_DESC BasicShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	//	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+
+D3D12_INPUT_LAYOUT_DESC BasicShader::CreateInputLayout() {
 	inputElementDescs.assign(2, {});
 
-	inputElementDescs[0] = {"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0};
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
 	inputElementDescs[1] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
-	
+
 	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
 	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
 	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
@@ -121,8 +147,52 @@ D3D12_INPUT_LAYOUT_DESC Shader::CreateInputLayout() {
 	return inputLayoutDesc;
 }
 
-void Shader::PrepareRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	if (pPipelineState) {
-		_pCommandList->SetPipelineState(pPipelineState.Get());
-	}
+/////////////////// HitBox Shader
+
+HitBoxShader::HitBoxShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+
+	Init(_pDevice, _pRootSignature);
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "HitboxVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "HitboxPixelShader", "ps_5_1", pPSBlob);
+
+	_pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+
+	inputElementDescs.clear();
+}
+
+HitBoxShader::~HitBoxShader() {
+
+}
+
+D3D12_RASTERIZER_DESC HitBoxShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+
+D3D12_INPUT_LAYOUT_DESC HitBoxShader::CreateInputLayout() {
+	inputElementDescs.assign(1, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
 }

@@ -41,21 +41,51 @@ public:		// 멤버 함수▼
 
 	// get, set함수
 	const string& GetName() const;
-
+	const BoundingOrientedBox& GetOOBB() const;
 	void LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 
 // 조명까지 계산 하는 메쉬
+
 // boundingBox 메쉬
+class HitBoxMesh {
+private:
+	static shared_ptr<Shader> shader;
+public:
+	static void MakeShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	static shared_ptr<Shader> GetShader();
+private:
+	D3D12_PRIMITIVE_TOPOLOGY primitiveTopology;
+	ComPtr<ID3D12Resource> pPositionBuffer;	// 버텍스의 위치 정보
+	ComPtr<ID3D12Resource> pPositionUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW positionBufferView;
+	
+	ComPtr<ID3D12Resource> pIndexBuffers;	// subMesh들의 인덱스 정보
+	ComPtr<ID3D12Resource> pIndexUploadBuffers;
+	D3D12_INDEX_BUFFER_VIEW indexBufferView;
+public:
+	HitBoxMesh();
+	~HitBoxMesh();
+	void Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+};
+
+
+
 
 /////////////////////////////////////////////////////////////////////////////////////
 ///	MeshManager
 class MeshManager {
+public:
+	MeshManager();
+	~MeshManager();
 
 protected:
 	map<string, shared_ptr<Mesh>> storage;
-
+	HitBoxMesh hitBoxMesh;
 public:
+	HitBoxMesh& GetHitBoxMesh();
 	shared_ptr<Mesh> GetMesh(const string& _name,const ComPtr<ID3D12Device>& _pDevice,const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
 };

@@ -28,6 +28,8 @@ struct VS_OUTPUT
 	float3 normal : NORMAL;
 };
 
+
+
 VS_OUTPUT DefaultVertexShader(VS_INPUT input)
 {
 	VS_OUTPUT output;
@@ -46,4 +48,25 @@ float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET
 {
 	float4 color = CalculateLight(input.positionW, input.normal);
 	return color;
+}
+
+
+struct VS_HITBOX_INPUT {
+    float3 position : POSITION;
+};
+
+struct VS_HITBOX_OUTPUT {
+    float4 position : SV_POSITION;
+};
+
+
+VS_HITBOX_OUTPUT HitboxVertexShader(VS_HITBOX_INPUT input) {
+    VS_HITBOX_OUTPUT output;
+    output.position = mul(mul(mul(float4(input.position, 1.0f), worldTransform), view), projection);
+    return output;
+}
+
+float4 HitboxPixelShader(VS_HITBOX_OUTPUT input) : SV_TARGET {
+    float4 color = float4(1.0f, 0.0f, 0.0f, 1.0f);
+    return color;
 }

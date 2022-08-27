@@ -8,6 +8,7 @@
 #include "targetver.h"
 #define WIN32_LEAN_AND_MEAN             // 거의 사용되지 않는 내용을 Windows 헤더에서 제외합니다.
 #define MAX_LIGHTS 100
+#define GRAVITY 9.8
 //#define DEBUG
 
 // Windows 헤더 파일
@@ -72,6 +73,8 @@ ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice
 std::ostream& operator<<(std::ostream& os, const XMFLOAT3& f3);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4& f4);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4X4& f4x4);
+
+
 
 namespace Vector3 {
 	inline XMFLOAT3 Normalize(const XMFLOAT3& _vector) {
@@ -173,6 +176,11 @@ namespace Matrix4x4 {
 	inline XMFLOAT4X4 PerspectiveFovLH(float _fovAngleY, float _aspectRatio, float _nearZ, float _farZ) {
 		XMFLOAT4X4 result;
 		XMStoreFloat4x4(&result, XMMatrixPerspectiveFovLH(_fovAngleY, _aspectRatio, _nearZ, _farZ));
+		return result;
+	}
+	inline XMFLOAT4X4 ScaleTransform(const XMFLOAT3& scale) {
+		XMFLOAT4X4 result;
+		XMStoreFloat4x4(&result, XMMatrixScaling(scale.x, scale.y, scale.z));
 		return result;
 	}
 }
