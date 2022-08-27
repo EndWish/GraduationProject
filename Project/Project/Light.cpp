@@ -15,7 +15,7 @@ Light::Light(const shared_ptr<GameObject>& _object) {
 	offset = XMFLOAT3(0.0f, 0.0f, 0.0f);	
 	theta = 0;
 	phi = 0;
-	attenuation = XMFLOAT3(1.0f, 0.05f, 0.001f);	
+	attenuation = XMFLOAT3(2.0f, 0.05f, 0.01f);	
 	direction = XMFLOAT3(0.0f, 0.0f, 1.0f);
 	falloff = 0;
 

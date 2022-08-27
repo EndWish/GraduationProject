@@ -72,6 +72,9 @@
     <ClInclude Include="Obstacle.h">
       <Filter>헤더 파일\GameObjects</Filter>
     </ClInclude>
+    <ClInclude Include="Status.h">
+      <Filter>헤더 파일\GameObjects</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Project.cpp">
@@ -117,6 +120,9 @@
       <Filter>소스 파일\GameObjects</Filter>
     </ClCompile>
     <ClCompile Include="Obstacle.cpp">
+      <Filter>소스 파일\GameObjects</Filter>
+    </ClCompile>
+    <ClCompile Include="Status.cpp">
       <Filter>소스 파일\GameObjects</Filter>
     </ClCompile>
   </ItemGroup>

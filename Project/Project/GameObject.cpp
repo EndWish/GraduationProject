@@ -3,6 +3,11 @@
 #include "Light.h"
 #include "GameFramework.h"
 
+
+
+
+//////////////////////////////////////////
+
 GameObject::GameObject() {
 	name = "unknown";
 	worldTransform = Matrix4x4::Identity();
@@ -72,7 +77,6 @@ void GameObject::MoveFront(float distance) {
 }
 void GameObject::Rotate(const XMFLOAT3& _axis, float _angle) {
 	localRotation = Vector4::QuaternionMultiply(localRotation, Vector4::QuaternionRotation(_axis, _angle));
-	cout << localRotation << "\n";
 }
 
 XMFLOAT3 GameObject::GetWorldRightVector() const {
@@ -178,20 +182,22 @@ void GameObject::UpdateObject() {
 }
 
 bool GameObject::CheckCollision(const GameObject& _other) {
+	//cout << name << "과 " << _other.name << "의 충돌 검사 진행\n";
+
 	if (pMesh.lock()) {
 		if (_other.pMesh.lock() && boundingBox.Intersects(_other.boundingBox)) {
-			cout << pMesh.lock()->GetName() << ", " << _other.pMesh.lock() << "충돌!!\n";
+			cout << pMesh.lock()->GetName() << ", " << _other.pMesh.lock()->GetName() << "충돌!!\n";
 			return true;
 		}
-		for (const auto& pChild : _other.pChildren) {
-			if (pChild->pMesh.lock() && CheckCollision(*pChild)) {
-				return true;
-			}
+		
+	}
+	for (const auto& pChild : _other.pChildren) {
+		if (CheckCollision(*pChild)) {
+			return true;
 		}
 	}
-
 	for (const auto& pChild : pChildren) {
-		if (pChild->pMesh.lock() && pChild->CheckCollision(_other)) {
+		if (pChild->CheckCollision(_other)) {
 			return true;
 		}
 	}
@@ -207,19 +213,10 @@ void GameObject::Animate(double _timeElapsed) {
 }
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-
 	if (pMesh.lock()) {	// 메쉬가 있을 경우에만 렌더링을 한다.
-		HitBoxMesh& hitBoxMesh = GameFramework::Instance().GetMeshManager().GetHitBoxMesh();
-
-		// [수정 요망]
-		// 임시로 만든 상태, 한번에 같은 셰이더로 다 그린후 다른 셰이더로 그려야 한다
-		UpdateHitboxShaderVariable(_pCommandList);
-		hitBoxMesh.GetShader()->PrepareRender(_pCommandList);
-		hitBoxMesh.Render(_pCommandList);
-
 		UpdateShaderVariable(_pCommandList);
 		// 사용할 쉐이더의 그래픽스 파이프라인을 설정한다 [수정요망]
-		Mesh::GetShader()->PrepareRender(_pCommandList);
+		
 		pMesh.lock()->Render(_pCommandList);	
 	}
 	for (const auto& pChild : pChildren) {
@@ -227,6 +224,19 @@ void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) 
 	}
 
 }
+
+void GameObject::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox) {
+	
+	if (pMesh.lock()) {	// 메쉬가 있을 경우에만 렌더링을 한다.
+		UpdateHitboxShaderVariable(_pCommandList);
+		// 사용할 쉐이더의 그래픽스 파이프라인을 설정한다 [수정요망]
+		_hitBox.Render(_pCommandList);
+	}
+	for (const auto& pChild : pChildren) {
+		pChild->RenderHitBox(_pCommandList, _hitBox);
+	}
+}
+
 
 void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	XMFLOAT4X4 world;
@@ -239,7 +249,6 @@ void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _
 void GameObject::UpdateHitboxShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	if (pMesh.lock()) {
 		BoundingOrientedBox boundingBox = pMesh.lock()->GetOOBB();
-		cout << pMesh.lock()->GetName() << " : " << boundingBox.Extents << "\n";
 		XMFLOAT4X4 world = Matrix4x4::ScaleTransform(Vector3::ScalarProduct(pMesh.lock()->GetOOBB().Extents, 2.0f));
 		XMFLOAT4X4 translate = Matrix4x4::Identity();
 		translate._41 += boundingBox.Center.x;

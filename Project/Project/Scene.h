@@ -29,10 +29,10 @@ private:
 
 	// 플레이어의 포인터. 첫 플레이 씬 생성 시에 플레이어가 생성되어 저장
 	// 스테이지(씬) 전환 시에 그 씬으로 플레이어 포인터를	넘겨줌
-	array<shared_ptr<Player>, 2> pPlayer;
+	array<shared_ptr<Player>, 2> pPlayers;
 
 	// 현재 플레이어가 있는 룸의 포인터
-	array<shared_ptr<Room> , 2> pNowRoom;
+	array<shared_ptr<Room> , 2> pNowRooms;
 
 	shared_ptr<GameObject> cubeObject;	//[임시]
 

@@ -1,8 +1,9 @@
 #include "stdafx.h"
-#include "Room.h"
-#include "Player.h"
+#include "GameFramework.h"
 #include "Door.h"
 #include "Obstacle.h"
+
+class GameFramework;
 
 Room::Room() {
 	id = 0;
@@ -38,7 +39,20 @@ void Room::AnimateObjects(double _timeElapsed) {
 }
 
 void Room::CheckCollision() {
-	
+	CheckCollisionPlayerAndObstacle();
+}
+
+void Room::CheckCollisionPlayerAndObstacle() {
+
+	for (auto playerWeakPtr : pPlayers) {
+		shared_ptr<Player> player = playerWeakPtr.lock();
+		for (auto obstacle : pObstacles) {
+			// 플레이어와 Obstacle과 부딪혔을 경우
+			if (player->CheckCollision(*obstacle)) {
+
+			}
+		}
+	}
 }
 
 int Room::GetID() const {
@@ -58,9 +72,18 @@ vector<weak_ptr<Room>>& Room::GetSideRooms() {
 }
 
 
+
 void Room::SetType(string _type) {
 	type = _type;
 }
+
+void Room::SetPlayer(array<shared_ptr<Player>, 2>& _pPlayers) {
+	for (int i = 0; i < pPlayers.size(); ++i) {
+		pPlayers[i] = _pPlayers[i];
+	}
+}
+
+
 
 void Room::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
@@ -83,6 +106,28 @@ void Room::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	for (const auto& pObstacle : pObstacles) {
 		pObstacle->Render(_pCommandList);
+	}
+}
+
+void Room::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox) {
+	for (const auto& pItem : pItems) {
+		pItem->RenderHitBox(_pCommandList, _hitBox);
+	}
+
+	for (const auto& pEffect : pEffects) {
+		pEffect->RenderHitBox(_pCommandList, _hitBox);
+	}
+
+	for (const auto& pPlayerAttack : pPlayerAttacks) {
+		pPlayerAttack->RenderHitBox(_pCommandList, _hitBox);
+	}
+
+	for (const auto& pEnemyAttack : pEnemyAttacks) {
+		pEnemyAttack->RenderHitBox(_pCommandList, _hitBox);
+	}
+
+	for (const auto& pObstacle : pObstacles) {
+		pObstacle->RenderHitBox(_pCommandList, _hitBox);
 	}
 }
 

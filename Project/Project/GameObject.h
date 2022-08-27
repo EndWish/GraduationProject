@@ -1,17 +1,19 @@
 #pragma once
 #include "Mesh.h"
 
-
 class Light;
+
 
 class GameObject : public enable_shared_from_this<GameObject> {
 protected:
 	// 만약 GameObject에 변수를 추가했다면, 복사 생성자도 수정해라
 
 	string name;
-public:
+
+
 	// 월드좌표계 기준 : eachTransform 이 바뀌면 항상 동기화 해준다.
 	XMFLOAT4X4 worldTransform;
+	
 
 	// 부모좌표계 기준
 	XMFLOAT4X4 localTransform;
@@ -90,15 +92,16 @@ public:
 
 	// 애니메이션
 	virtual void Animate(double _timeElapsed);
+
 	// 렌더
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox);
 	// 월드 변환행렬을 쉐이더로 넘겨준다.
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void UpdateHitboxShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void CopyObject(const GameObject& _other);
 };
-
 
 
 class GameObjectManager {

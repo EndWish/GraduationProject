@@ -66,6 +66,9 @@ pair<int, int> GameFramework::GetClientSize() {
 	return { clientWidth , clientHeight };
 }
 
+bool GameFramework::GetDrawHitBox() const {
+	return drawHitBox;
+}
 
 GameFramework::GameFramework() {
 	instanceHandle = NULL;
@@ -75,6 +78,7 @@ GameFramework::GameFramework() {
 	msaa4xEnable = false;
 	msaa4xLevel = 0;
 
+	drawHitBox = true;
 	clientHeight = 1920;
 	clientWidth = 1080;
 	dsvDescriptorIncrementSize = 0;
@@ -337,7 +341,7 @@ const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
 
 void GameFramework::FrameAdvance() {
 
-	gameTimer.Tick(60.0f);
+	gameTimer.Tick(.0f);
 	ProcessInput();
 	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
 	if (!pScenes.empty()) {
