@@ -56,6 +56,9 @@ XMFLOAT3 GameObject::GetLocalLookVector() const {
 XMFLOAT3 GameObject::GetLocalPosition() const {
 	return localPosition;
 }
+XMFLOAT4 GameObject::GetLocalRotate() const {
+	return localRotation;
+}
 
 void GameObject::MoveRight(float distance) {
 	XMFLOAT3 moveVector = GetLocalRightVector();	// RightVector를 가져와서
@@ -63,6 +66,11 @@ void GameObject::MoveRight(float distance) {
 	moveVector = Vector3::ScalarProduct(moveVector, distance);	// 이동거리만큼 곱해준다.
 	localPosition = Vector3::Add(localPosition, moveVector);
 }
+
+void GameObject::Move(const XMFLOAT3& _moveVector) {
+	localPosition = Vector3::Add(localPosition, _moveVector);
+}
+
 void GameObject::MoveUp(float distance) {
 	XMFLOAT3 moveVector = GetLocalUpVector();	// UpVector를 가져와서
 	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
@@ -77,6 +85,10 @@ void GameObject::MoveFront(float distance) {
 }
 void GameObject::Rotate(const XMFLOAT3& _axis, float _angle) {
 	localRotation = Vector4::QuaternionMultiply(localRotation, Vector4::QuaternionRotation(_axis, _angle));
+}
+
+void GameObject::Rotate(const XMFLOAT4& _quat) {
+	localRotation = Vector4::QuaternionMultiply(localRotation, _quat);
 }
 
 XMFLOAT3 GameObject::GetWorldRightVector() const {
@@ -181,27 +193,30 @@ void GameObject::UpdateObject() {
 	UpdateOOBB();
 }
 
-bool GameObject::CheckCollision(const GameObject& _other) {
+pair<shared_ptr<GameObject>, shared_ptr<GameObject>> GameObject::CheckCollision(const shared_ptr<GameObject>& _other) {
 	//cout << name << "과 " << _other.name << "의 충돌 검사 진행\n";
 
 	if (pMesh.lock()) {
-		if (_other.pMesh.lock() && boundingBox.Intersects(_other.boundingBox)) {
-			cout << pMesh.lock()->GetName() << ", " << _other.pMesh.lock()->GetName() << "충돌!!\n";
-			return true;
+		if (_other->pMesh.lock() && boundingBox.Intersects(_other->boundingBox)) {
+			cout << pMesh.lock()->GetName() << ", " << _other->pMesh.lock()->GetName() << "충돌!!\n";
+			return { shared_from_this(), _other };
 		}
-		
+
 	}
-	for (const auto& pChild : _other.pChildren) {
-		if (CheckCollision(*pChild)) {
-			return true;
+	for (const auto& pChild : _other->pChildren) {
+		auto result = CheckCollision(pChild);
+		// 충돌 했을 경우 nullptr이 아닌 포인터 pair가 리턴된다.
+		if (result.first && result.second) {
+			return result;
 		}
 	}
 	for (const auto& pChild : pChildren) {
-		if (pChild->CheckCollision(_other)) {
-			return true;
+		auto result = pChild->CheckCollision(_other);
+		if (result.first && result.second) {
+			return result;
 		}
 	}
-	return false;
+	return {nullptr, nullptr};
 }
 
 void GameObject::Animate(double _timeElapsed) {

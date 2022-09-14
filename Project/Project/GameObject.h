@@ -48,12 +48,16 @@ public:
 	XMFLOAT3 GetLocalRightVector() const;
 	XMFLOAT3 GetLocalUpVector() const;
 	XMFLOAT3 GetLocalLookVector() const;
+	XMFLOAT4 GetLocalRotate() const;
 	XMFLOAT3 GetLocalPosition() const;
 	// 로컬 이동
 	void MoveRight(float distance);
+	void Move(const XMFLOAT3& _moveVector);
 	void MoveUp(float distance);
 	void MoveFront(float distance);
+
 	void Rotate(const XMFLOAT3& _axis, float _angle);
+	void Rotate(const XMFLOAT4& _quat);
 	// 월드좌표계 기준 자신의 위치를 리턴한다.
 	XMFLOAT3 GetWorldPosition() const;
 	XMFLOAT3 GetWorldRightVector() const;
@@ -88,7 +92,7 @@ public:
 	void UpdateObject();
 
 	// 충돌 체크
-	bool CheckCollision(const GameObject& _other);
+	pair<shared_ptr<GameObject>, shared_ptr<GameObject>> CheckCollision(const shared_ptr<GameObject>& _other);
 
 	// 애니메이션
 	virtual void Animate(double _timeElapsed);

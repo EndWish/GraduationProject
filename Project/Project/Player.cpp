@@ -4,7 +4,7 @@
 
 Player::Player() {
 	isDead = false;
-	rigid.vSpeed = 0;
+	moveSpeed = 0.05f;
 }
 
 Player::~Player() {
@@ -15,6 +15,8 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
 	SetLocalPosition(XMFLOAT3(0, 5, 0));
 	GameFramework& gameFramework = GameFramework::Instance();
+	
+	self = shared_from_this();
 
 	name = "플레이어";
 
@@ -39,10 +41,16 @@ bool Player::GetIsDead() const {
 	return isDead;
 }
 
-void Player::Animate(double _timeElapsed) {
-	rigid.GravityAnimate(_timeElapsed, *this);
-}
 
 shared_ptr<Camera> Player::GetCamera() const {
 	return pCamera.lock();
+}
+
+void Player::Animate(double _timeElapsed) {
+	GravityAnimate(_timeElapsed, *this);
+	cout << moveVector << ", " << rotateVector << "\n";
+	Move(moveVector);
+	Rotate(rotateVector);
+
+	UpdateObject();
 }

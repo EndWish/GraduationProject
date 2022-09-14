@@ -31,11 +31,12 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	camera = make_shared<Camera>();
 	camera->Create(_pDevice, _pCommandList);
 
-	camera->SetLocalPosition(XMFLOAT3(0, 1.6, 0.1));
+	camera->SetLocalPosition(XMFLOAT3(0, 10.0, 0.1));
+	camera->SetLocalRotation(Vector4::QuaternionRotation(XMFLOAT3(1, 0, 0), 90.0f));
 	camera->UpdateLocalTransform();
 	camera->UpdateWorldTransform();
 
-	pPlayers[0]->SetChild(camera);
+	//pPlayers[0]->SetChild(camera);
 
 	// 현재 두 플레이어가 있는 방을 첫방으로 설정
 	//pNowRooms[0] = pRooms[0];
@@ -61,31 +62,30 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers) {
 	//	transform = Matrix4x4::Multiply(pPlayers[0]->GetRotateMatrix(0.0f, -5.0f, 0.0f), transform);
 	//}
 	if (_keysBuffers['E'] & 0xF0) {
-		pPlayers[0]->Rotate(XMFLOAT3(0, 1, 0), 6.0f);
+		pPlayers[0]->RotateRigid(XMFLOAT3(0, 1, 0), 6.0f);
 	}
 	if (_keysBuffers['Q'] & 0xF0) {
-		pPlayers[0]->Rotate(XMFLOAT3(0, 1, 0), -6.0f);
+		pPlayers[0]->RotateRigid(XMFLOAT3(0, 1, 0), -6.0f);
 	}
 	if (_keysBuffers['W'] & 0xF0) {
-		pPlayers[0]->MoveFront(0.2f);
+		pPlayers[0]->MoveFrontRigid(true);
 	}
 	if (_keysBuffers['S'] & 0xF0) {
-		pPlayers[0]->MoveFront(-0.2f);
+		pPlayers[0]->MoveFrontRigid(false);
 	}
 	if (_keysBuffers['D'] & 0xF0) {
-		pPlayers[0]->MoveRight(0.2f);
-		
+		pPlayers[0]->MoveRightRigid(true);
 	}
 	if (_keysBuffers['A'] & 0xF0) {
-		pPlayers[0]->MoveRight(-0.2f);
+		pPlayers[0]->MoveRightRigid(false);
 	}
 	if (_keysBuffers['J'] & 0xF0) {
 		if (pPlayers[0]->GetWorldPosition().y == 0) {
-			pPlayers[0]->GetRigid().vSpeed = 10;
+			pPlayers[0]->Jump(10.0f);
 		}
 	}
 	//pPlayers[0]->ApplyTransform(transform, false);
-	pPlayers[0]->UpdateObject();
+	
 
 }
 
@@ -93,7 +93,7 @@ void PlayScene::AnimateObjects(double _timeElapsed) {
 	// 플레이어가 살아있는 경우 애니메이션을 수행
 	if (!pPlayers[0]->GetIsDead()) {
 		pPlayers[0]->Animate(_timeElapsed);
-	}	
+	}		
 	/*if (!pPlayers[1]->GetIsDead()) {
 		pPlayers[1]->Animate(_timeElapsed);
 	}*/
@@ -107,6 +107,8 @@ void PlayScene::AnimateObjects(double _timeElapsed) {
 }
 void PlayScene::CheckCollision() {
 	pNowRooms[0]->CheckCollision();
+
+	pPlayers[0]->InitVector();
 }
 
 void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -145,6 +147,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	
 	HitBoxMesh::GetShader()->PrepareRender(_pCommandList);
 	HitBoxMesh& hitBoxMesh = GameFramework::Instance().GetMeshManager().GetHitBoxMesh();
+	pPlayers[0]->RenderHitBox(_pCommandList, hitBoxMesh);
 	if (gameFramework.GetDrawHitBox()) {
 		for (const auto& room : pRooms) {
 			room->RenderHitBox(_pCommandList, hitBoxMesh);

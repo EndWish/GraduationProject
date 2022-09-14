@@ -48,12 +48,15 @@ void Room::CheckCollisionPlayerAndObstacle() {
 		shared_ptr<Player> player = playerWeakPtr.lock();
 		for (auto obstacle : pObstacles) {
 			// 플레이어와 Obstacle과 부딪혔을 경우
-			if (player->CheckCollision(*obstacle)) {
-
+			// 플레이어의 부딪힌 부분의 오브젝트와 장애물의 부딪힌 부분의 오브젝트를 반환
+			auto [playerObj, obsObj] = player->CheckCollision(obstacle);
+			if (playerObj && obsObj) {
+				player->ComeBack(playerObj, obsObj);
 			}
 		}
 	}
 }
+
 
 int Room::GetID() const {
 	return id;
