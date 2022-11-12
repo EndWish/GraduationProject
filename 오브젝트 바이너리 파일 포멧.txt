@@ -1,7 +1,0 @@
-nameSize (UINT) / name(string)
-eachTransform (float4x4)
-meshNameSize(UINT) / meshName(string)	=> 메쉬가 없을 경우 따로 처리하자
-nChildren(UINT)
-{
-	자식오브젝트 재귀
-}
