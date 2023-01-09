@@ -38,6 +38,9 @@
 
 #include <mmsystem.h>
 
+// 서버와 약속한 프로토콜
+#include "../protocol.h"
+
 // com_error 디버그용
 #include <comdef.h>
 
@@ -78,7 +81,12 @@ extern UINT cbvSrvDescriptorIncrementSize;
 extern UINT	rtvDescriptorIncrementSize;
 extern UINT dsvDescriptorIncrementSize;
 
+// 서버에 대한 소켓
+extern SOCKET server_sock;
+
 using Microsoft::WRL::ComPtr;
+
+
 
 // float 난수 생성
 float random(float min, float max);
@@ -97,6 +105,10 @@ std::ostream& operator<<(std::ostream& os, const XMFLOAT4X4& f4x4);
 ComPtr<ID3D12Resource> CreateTextureResourceFromDDSFile(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, const wchar_t* pszFileName, ID3D12Resource** ppd3dUploadBuffer, D3D12_RESOURCE_STATES d3dResourceStates);
 ComPtr<ID3D12Resource> CreateTexture2DResource(ID3D12Device* pd3dDevice, UINT nWidth, UINT nHeight, UINT nElements, UINT nMipLevels, DXGI_FORMAT dxgiFormat, D3D12_RESOURCE_FLAGS d3dResourceFlags, D3D12_RESOURCE_STATES d3dResourceStates, D3D12_CLEAR_VALUE* pd3dClearValue);
 
+// 소켓 함수 오류 출력
+void SockErrorQuit(const char* msg);
+void SockErrorDisplay(const char* msg);
+void SockErrorDisplay(int errcode);
 
 namespace Vector3 {
 	inline XMFLOAT3 Normalize(const XMFLOAT3& _vector) {
@@ -252,4 +264,3 @@ namespace Matrix4x4 {
 		return result;
 	}
 }
-

@@ -4,6 +4,17 @@
 
 
 Shader::Shader() {
+	srvCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+	srvGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
+	srvCPUDescriptorNextHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+	srvGPUDescriptorNextHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
+	cbvCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+	cbvGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+	pipelineStateDesc = D3D12_GRAPHICS_PIPELINE_STATE_DESC();
+
+
 }
 
 

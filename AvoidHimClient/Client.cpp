@@ -8,6 +8,7 @@
 HINSTANCE hInst;                                
 WCHAR szTitle[MAX_LOADSTRING];                  
 WCHAR szWindowClass[MAX_LOADSTRING];            
+HWND hWnd;
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -16,6 +17,9 @@ INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
+
+    int result = 0;
+
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
@@ -32,6 +36,32 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CLIENT));
 
     MSG msg;
+
+    // 윈속 초기화
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+        return 1;
+    
+    server_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (server_sock == INVALID_SOCKET) SockErrorQuit("socket()");
+
+    string serverIP;
+    cin >> serverIP;
+    // connect()
+    struct sockaddr_in serveraddr;
+    memset(&serveraddr, 0, sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    inet_pton(AF_INET, serverIP.c_str(), &serveraddr.sin_addr);
+    serveraddr.sin_port = htons(SERVERPORT);
+
+
+    int retval = connect(server_sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+    if (retval == SOCKET_ERROR) SockErrorQuit("connect()");
+
+    // WSAAsyncSelect()
+    result = WSAAsyncSelect(server_sock, hWnd, WM_SOCKET, FD_READ | FD_CLOSE);
+    if (result == SOCKET_ERROR) SockErrorQuit("WSAAsyncSelect()");
+
 
     // 기본 메시지 루프입니다:
     while (true)
@@ -86,7 +116,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     RECT windowSize = { 0, 0, 1920, 1080 };
     AdjustWindowRect(&windowSize, dwStyle, FALSE);
 
-    HWND hWnd = CreateWindow(szWindowClass, szTitle, dwStyle, CW_USEDEFAULT,
+    hWnd = CreateWindow(szWindowClass, szTitle, dwStyle, CW_USEDEFAULT,
         CW_USEDEFAULT, windowSize.right - windowSize.left, windowSize.bottom - windowSize.top, NULL, NULL, hInstance,
         NULL);
 
@@ -106,29 +136,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
-    case WM_COMMAND:
-    {
-        int wmId = LOWORD(wParam);
-        switch (wmId)
-        {
-        case IDM_ABOUT:
-            DialogBox(hInst, MAKEINTRESOURCE(IDD_ABOUTBOX), hWnd, About);
-            break;
-        case IDM_EXIT:
-            DestroyWindow(hWnd);
-            break;
-        default:
-            return DefWindowProc(hWnd, message, wParam, lParam);
-        }
-    }
-    break;
-    case WM_PAINT:
-    {
-        PAINTSTRUCT ps;
-        HDC hdc = BeginPaint(hWnd, &ps);
-        EndPaint(hWnd, &ps);
-    }
-    break;
+    case WM_SOCKET:
+        GameFramework::Instance().ProcessSocketMessage(hWnd, message, wParam, lParam);
+        break;
     case WM_DESTROY:
         PostQuitMessage(0);
         break;

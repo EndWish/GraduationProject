@@ -19,8 +19,8 @@ Timer::~Timer() {
 
 }
 
-double Timer::GetTimeElapsed() const {
-	return timeElapsed;
+float Timer::GetTimeElapsed() const {
+	return (float)timeElapsed;
 }
 
 int Timer::GetFPS() const {

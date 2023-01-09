@@ -57,9 +57,14 @@ void Scene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _t
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	// 회전과 스케일링은 앞쪽에 move는 뒤쪽에 곱한다.
-	if (_keysBuffers['O'] & 0xF0) {
-
+	TEST_PACKET t;
+	t.cid = 0;
+	if (_keysBuffers['A'] & 0xF0) {
+		t.letter = 'a';
+		send(server_sock, (char*)&t, sizeof(t), 0);
+		cout << "보냈다\n";
 	}
+
 }
 
 void Scene::AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -72,6 +77,19 @@ void Scene::AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDe
 			pLight->UpdateLight();
 		}
 	}
+}
+
+void Scene::ProcessSocketMessage()
+{
+	char* buf = new char[256];
+	recv(server_sock, buf, 1, 0);
+	if (buf[0] == 0) {
+		recv(server_sock, buf + 1, sizeof(TEST_PACKET) - 1, 0);
+		TEST_PACKET* t = reinterpret_cast<TEST_PACKET*>(buf);
+		cout << t->cid << " : 글자 - " << t->letter << "\n";
+	}
+
+	else cout << "나머지 패킷\n";
 }
 
 void Scene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {

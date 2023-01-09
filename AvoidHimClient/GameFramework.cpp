@@ -76,6 +76,31 @@ GameFramework& GameFramework::Instance() {
 	return *spInstance;
 }
 
+void GameFramework::ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam)
+{
+	/// wParam : 소켓, lParam : select의 필드
+
+	// 데이터 통신에 사용할 변수
+	int result;
+	if (WSAGETSELECTERROR(_lParam)) {
+		SockErrorDisplay(WSAGETSELECTERROR(_lParam));
+		return;
+	}
+	// 메시지 처리
+	switch (WSAGETSELECTEVENT(_lParam)) {
+	case FD_READ:
+		if (pScenes.top()) pScenes.top()->ProcessSocketMessage();
+		break;
+	case FD_WRITE:
+		break;
+	case FD_CLOSE:
+		cout << "서버가 종료되었습니다.\n";
+		break;
+	}
+
+}
+
+
 pair<int, int> GameFramework::GetClientSize() {
 	return { clientWidth , clientHeight };
 }
@@ -571,9 +596,9 @@ void GameFramework::ProcessInput() {
 		}
 		// 재시작
 		if (keysBuffers['R'] & 0xF0) {
-			//PopScene();
+			cout << "!";
 		}
-
+		
 		// 씬의 키보드입력 처리
 		if (!pScenes.empty()) {
 			pScenes.top()->ProcessKeyboardInput(keysBuffers, gameTimer.GetTimeElapsed(), pDevice, pCommandList);

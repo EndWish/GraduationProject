@@ -301,33 +301,6 @@ void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) 
 	}
 }
 
-void GameObject::RenderInstancing(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, list<shared_ptr<GameObject>>& _objList, const D3D12_VERTEX_BUFFER_VIEW& _instanceBV) {
-	// 미사용
-
-	// 각 프레임마다 그 프레임이 가진 월드변환 행렬을 갱신해준다.
-
-	if (pMesh.lock()) {
-		// UpdateShaderVariable로 월드행렬을 전달하는것이 아닌, 리소스로 전달 (IA)
-
-		/*int i = 0;
-		for (auto& pObj : _objList) {
-			shared_ptr<GameObject> cur_frame = pObj->FindFrame(name);
-			cout << cur_frame->GetName() << "\n";
-			cur_frame->UpdateShaderVariableInstance(_pCommandList, i++);
-		}*/
-
-		// 각 서브메쉬에 대한 DP call을 한번씩 해준다.
-		for (int i = 0; i < materials.size(); ++i) {
-			materials[i]->UpdateShaderVariable(_pCommandList);
-			pMesh.lock()->RenderInstancing(_pCommandList, i, _instanceBV, _objList.size());
-		}
-	}
-	for (const auto& pChild : pChildren) {
-		pChild->RenderInstancing(_pCommandList, _objList, _instanceBV);
-	}
-}
-
-
 void GameObject::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox) {
 
 	if (isOOBBCover) {	// 메쉬가 있을 경우에만 렌더링을 한다.

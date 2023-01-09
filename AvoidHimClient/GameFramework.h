@@ -73,7 +73,6 @@ private:
 	ShaderManager shaderManager;
 	// 애니메이션 매니저 ? 
 	
-	
 	// 루트 시그니처 Get
 	ComPtr<ID3D12RootSignature> GetRootSignature() { return pRootSignature; }
 
@@ -102,6 +101,7 @@ protected:
 	// get set 함수
 public:
 
+	void ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam);
 	pair<int, int> GetClientSize();
 
 	const shared_ptr<Scene>& GetCurrentScene() const;
