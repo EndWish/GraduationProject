@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClInclude Include="AvoidHimServer.h" />
     <ClInclude Include="Client.h" />
+    <ClInclude Include="Room.h" />
     <ClInclude Include="ServerFramework.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Resource.h" />
@@ -145,6 +146,7 @@
   <ItemGroup>
     <ClCompile Include="AvoidHimServer.cpp" />
     <ClCompile Include="Client.cpp" />
+    <ClCompile Include="Room.cpp" />
     <ClCompile Include="ServerFramework.cpp" />
     <ClCompile Include="stdafx.cpp" />
   </ItemGroup>
