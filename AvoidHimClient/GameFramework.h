@@ -56,6 +56,8 @@ private:
 	// 게임 타이머
 	Timer gameTimer;
 
+	// 현재 왼쪽 마우스가 눌리고 있는지를 판단
+	bool isClick;
 
 	///// 아래는 Instance()에서 다른 함수로 접근 가능한 변수들
 	
@@ -79,6 +81,9 @@ private:
 	// 씬
 	stack<shared_ptr<Scene>> pScenes;
 
+	// 서버로부터 부여받은 클라이언트 고유 id
+	UINT cid;
+
 	// 생성, 소멸자
 private:
 	GameFramework();
@@ -101,6 +106,7 @@ protected:
 	// get set 함수
 public:
 
+	void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);
 	void ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam);
 	pair<int, int> GetClientSize();
 
@@ -109,6 +115,8 @@ public:
 	TextureManager& GetTextureManager();
 	GameObjectManager& GetGameObjectManager();
 	shared_ptr<Shader> GetShader(const string& _name);
+	UINT Getcid();
+	void Setcid(UINT _cid) { cid = _cid; };
 
 	void FrameAdvance();
 	void WaitForGpuComplete();			// GPU와 동기화하기 위한 대기

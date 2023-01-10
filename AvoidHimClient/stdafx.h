@@ -84,6 +84,9 @@ extern UINT dsvDescriptorIncrementSize;
 // 서버에 대한 소켓
 extern SOCKET server_sock;
 
+// 현재 클라이언트 크기
+extern RECT clientRect;
+
 using Microsoft::WRL::ComPtr;
 
 
@@ -98,6 +101,7 @@ void SynchronizeResourceTransition(ID3D12GraphicsCommandList* pd3dCommandList, I
 ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* _pData, UINT _byteSize, D3D12_HEAP_TYPE _heapType, D3D12_RESOURCE_STATES _resourceStates, ComPtr<ID3D12Resource>& _pUploadBuffer);
 
 //xmfloat 출력하기
+std::ostream& operator<<(std::ostream& os, const XMFLOAT2& f2);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT3& f3);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4& f4);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4X4& f4x4);
@@ -109,6 +113,10 @@ ComPtr<ID3D12Resource> CreateTexture2DResource(ID3D12Device* pd3dDevice, UINT nW
 void SockErrorQuit(const char* msg);
 void SockErrorDisplay(const char* msg);
 void SockErrorDisplay(int errcode);
+
+// 마우스 클릭시 해당 좌표를 뷰포트 좌표계로 변경
+XMFLOAT2 GetViewportCoord(POINT _point);
+
 
 namespace Vector3 {
 	inline XMFLOAT3 Normalize(const XMFLOAT3& _vector) {

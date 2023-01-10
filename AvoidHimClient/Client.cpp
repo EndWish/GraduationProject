@@ -45,8 +45,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock == INVALID_SOCKET) SockErrorQuit("socket()");
 
-    string serverIP;
-    cin >> serverIP;
+    string serverIP = "127.0.0.1";
     // connect()
     struct sockaddr_in serveraddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
@@ -126,6 +125,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     }
 
     GameFramework::Create(hInst, hWnd);
+    GetClientRect(hWnd, &clientRect);
     ShowWindow(hWnd, nCmdShow);
     UpdateWindow(hWnd);
 
@@ -134,8 +134,15 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
 LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+    POINT p;
     switch (message)
     {
+    case WM_LBUTTONDOWN:
+    case WM_LBUTTONUP:
+        GetCursorPos(&p);   // 현재 커서위치를 구함
+        ScreenToClient(hWnd, &p);   // 현재 윈도우의 클라이언트 영역으로 좌표를 바꿈
+        GameFramework::Instance().ProcessMouseInput(message, GetViewportCoord(p));  // 뷰포트 좌표계로 변환
+        break;
     case WM_SOCKET:
         GameFramework::Instance().ProcessSocketMessage(hWnd, message, wParam, lParam);
         break;

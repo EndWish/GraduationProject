@@ -34,7 +34,7 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 		}
 		
 		// 최초씬 생성
-		shared_ptr<Scene> startScene = make_shared<Scene>();
+		shared_ptr<Scene> startScene = make_shared<LobbyScene>();
 		gameFramework.PushScene(startScene);
 
 		// 히트박스용 메쉬 생성
@@ -76,12 +76,24 @@ GameFramework& GameFramework::Instance() {
 	return *spInstance;
 }
 
+void GameFramework::ProcessMouseInput(UINT _type, XMFLOAT2 _pos)
+{
+	switch (_type) {
+	case WM_LBUTTONDOWN:
+		if (isClick) return; // 처음 한번 마우스를 클릭 했을때만 수행
+		break;
+	case WM_LBUTTONUP:
+		if (!isClick) return;
+		break;
+	}
+	isClick = !isClick;	// 클릭 상태를 바꾸어준다.
+	if (pScenes.top()) pScenes.top()->ProcessMouseInput(_type, _pos);
+}
+
 void GameFramework::ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam)
 {
 	/// wParam : 소켓, lParam : select의 필드
 
-	// 데이터 통신에 사용할 변수
-	int result;
 	if (WSAGETSELECTERROR(_lParam)) {
 		SockErrorDisplay(WSAGETSELECTERROR(_lParam));
 		return;
@@ -121,6 +133,9 @@ GameFramework::GameFramework() {
 	fenceValues.fill(0);
 	rtvDescriptorIncrementSize = 0;
 
+	cid = -1;
+	isClick = false;
+	rtvCPUDescriptorHandles.fill(D3D12_CPU_DESCRIPTOR_HANDLE());
 	// 현재 스왑체인의 후면 버퍼의 인덱스
 	swapChainBufferCurrentIndex = 0;
 	fenceEvent = NULL;
@@ -439,7 +454,7 @@ void GameFramework::FrameAdvance() {
 
 	if (pScenes.empty()) {
 		// 최초씬 생성
-		shared_ptr<Scene> startScene = make_shared<Scene>();
+		shared_ptr<Scene> startScene = make_shared<LobbyScene>();
 		PushScene(startScene);
 	}
 
@@ -544,6 +559,11 @@ void GameFramework::WaitForGpuComplete() {
 void GameFramework::MoveToNextFrame() {
 	swapChainBufferCurrentIndex = pDxgiSwapChain->GetCurrentBackBufferIndex(); // 다음 후면 버퍼로 변경
 	WaitForGpuComplete();
+}
+
+UINT GameFramework::Getcid()
+{
+	return cid;
 }
 
 void GameFramework::ChangeSwapChainState() {

@@ -3,23 +3,159 @@
 #include "Timer.h"
 #include "GameFramework.h"
 
-Scene::Scene() {
-	globalAmbient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+
+Scene::Scene()	{
 }
 
-Scene::~Scene() {
-	pLightsBuffer->Unmap(0, NULL);
+Scene::~Scene()	 {
+}
+
+
+void Scene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos)
+{
+	switch (_type) {
+	case WM_LBUTTONDOWN:
+
+		for (auto [name, pButton] : pButtons) {
+			if (pButton->CheckEnable() && pButton->CheckClick(_pos)) { // 버튼이 클릭되었을 경우
+				pButton->Press(true, _pos);
+
+				break;
+			}
+		}
+		break;
+	case WM_LBUTTONUP:
+		for (auto [name, pButton] : pButtons) {
+			if (pButton->CheckEnable()) {
+				// 떼지면서 버튼이 눌린것인지 확인. 아니라면 pressed를 false로 바꿔줌
+				if (pButton->Press(false, _pos)) {
+					ReActButton(name);	// 플레이어가 버튼을 눌렀다면 버튼에 대한 동작 수행
+				}
+			}
+		}
+		break;
+	}
 }
 
 void Scene::CheckCollision() {
+}
+
+//////////////////////////
+
+void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	viewPort = { 0,0, 1920, 1080, 0, 1 };
+	scissorRect = { 0,0, 1920, 1080 };
+
+	
+
+	string name = "2DUI_title";
+	shared_ptr<Image2D> title = make_shared<Image2D>(name, XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList);
+	pUIs[name] = title;
+
+	name = "2DUI_startButton";
+	shared_ptr<Button> pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.2f), ButtonType::start, _pDevice, _pCommandList);
+	pButtons[name] = pButton;
+
+	name = "2DUI_optionButton";
+	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.4f), ButtonType::option, _pDevice, _pCommandList);
+	pButtons[name] = pButton;
+
+	name = "2DUI_exitButton";
+	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.6f), ButtonType::exit, _pDevice, _pCommandList);
+	pButtons[name] = pButton;
+}
+
+void LobbyScene::ReleaseUploadBuffers() {
+
+}
+
+void LobbyScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+
+}
+
+void LobbyScene::AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)  {
+
+}
+
+void LobbyScene::ProcessSocketMessage() {
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	SC_PACKET_TYPE packetType;
+	recv(server_sock, (char*)&packetType, sizeof(SC_PACKET_TYPE), 0);
+
+	if (packetType == SC_PACKET_TYPE::giveClientID) {
+		SC_GIVE_CLIENT_ID packet;
+		recv(server_sock, (char*)&packet + sizeof(SC_PACKET_TYPE), sizeof(SC_GIVE_CLIENT_ID) - sizeof(SC_PACKET_TYPE), 0);
+		gameFramework.Setcid(packet.clientID);
+		cout << gameFramework.Getcid() << " 입니다.\n";
+	}
+
+	else cout << "나머지 패킷\n";
+
+}
+
+void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	_pCommandList->RSSetViewports(1, &viewPort);
+	_pCommandList->RSSetScissorRects(1, &scissorRect);
+
+	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);
+	for (auto [name, pUI] : pUIs) {
+		pUI->Render(_pCommandList);
+	}
+	for (auto [name, pButton] : pButtons) {
+		pButton->Render(_pCommandList);
+	}
+}
+
+void LobbyScene::ReActButton(string _name)
+{
+	// 시작 버튼을 누른 경우
+	if (_name == "2DUI_startButton")
+	{
+		pButtons["2DUI_startButton"]->SetEnable(false);
+		pButtons["2DUI_optionButton"]->SetEnable(false);
+		pButtons["2DUI_exitButton"]->SetEnable(false);
+		pUIs["2DUI_title"]->SetEnable(false);
+	}
+}
+
+/////////////////////////
+
+PlayScene::PlayScene() {
+	globalAmbient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+}
+
+PlayScene::~PlayScene() {
+	pLightsBuffer->Unmap(0, NULL);
+}
+
+void PlayScene::CheckCollision() {
 
 }
 
 
-void Scene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
 	// 스테이지 생성
-	LoadStage(_pDevice, _pCommandList);
+	// 씬에 그려질 오브젝트들을 전부 빌드.
+	gameFramework.GetGameObjectManager().GetGameObject("Gunship", _pDevice, _pCommandList);
+
+	pPlayer = make_shared<Player>();
+	pPlayer->Create("Gunship", _pDevice, _pCommandList);
+	pPlayer->SetLocalScale(XMFLOAT3(2.0f, 2.0f, 2.0f));
+	//pPlayer->SetLocalScale(XMFLOAT3(20.0f, 20.0f, 20.0f));
+	pPlayer->UpdateObject();
+
+
+	shared_ptr<Light> baseLight = make_shared<Light>();
+	baseLight->lightType = 3;
+	baseLight->position = XMFLOAT3(0, 500, 0);
+	baseLight->direction = XMFLOAT3(0, -1, 0);
+	baseLight->diffuse = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.f);
+	AddLight(baseLight);
+
 	camera = make_shared<Camera>();
 	camera->Create(_pDevice, _pCommandList);
 
@@ -44,30 +180,22 @@ void Scene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Graphi
 
 }
 
-void Scene::ReleaseUploadBuffers() {
+void PlayScene::ReleaseUploadBuffers() {
 	GameFramework& gameFramework = GameFramework::Instance();
 	gameFramework.GetMeshManager().ReleaseUploadBuffers();
 	gameFramework.GetTextureManager().ReleaseUploadBuffers();
 }
 
 
-void Scene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 
 	GameFramework& gameFramework = GameFramework::Instance();
 
-	// 회전과 스케일링은 앞쪽에 move는 뒤쪽에 곱한다.
-	TEST_PACKET t;
-	t.cid = 0;
-	if (_keysBuffers['A'] & 0xF0) {
-		t.letter = 'a';
-		send(server_sock, (char*)&t, sizeof(t), 0);
-		cout << "보냈다\n";
-	}
 
 }
 
-void Scene::AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void PlayScene::AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	pPlayer->Animate(_timeElapsed);
 	camera->SetPlayerPos(pPlayer->GetWorldPosition());
@@ -79,20 +207,12 @@ void Scene::AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDe
 	}
 }
 
-void Scene::ProcessSocketMessage()
+void PlayScene::ProcessSocketMessage()
 {
-	char* buf = new char[256];
-	recv(server_sock, buf, 1, 0);
-	if (buf[0] == 0) {
-		recv(server_sock, buf + 1, sizeof(TEST_PACKET) - 1, 0);
-		TEST_PACKET* t = reinterpret_cast<TEST_PACKET*>(buf);
-		cout << t->cid << " : 글자 - " << t->letter << "\n";
-	}
 
-	else cout << "나머지 패킷\n";
 }
 
-void Scene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	int nLight = (UINT)pLights.size();
 	for (int i = 0; i < nLight; ++i) {
 
@@ -107,13 +227,16 @@ void Scene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& 
 
 }
 
+void PlayScene::ReActButton(string _name)
+{
 
-void Scene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
+}
+
+
+void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
-
-	float timeElapsed = _timeElapsed;
-
+	
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
 	camera->SetViewPortAndScissorRect(_pCommandList);
 	camera->UpdateShaderVariable(_pCommandList);
@@ -124,27 +247,7 @@ void Scene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float
 	pPlayer->Render(_pCommandList);
 }
 
-void Scene::AddLight(const shared_ptr<Light>& _pLight) {
+void PlayScene::AddLight(const shared_ptr<Light>& _pLight) {
 	pLights.push_back(_pLight);
 }
 
-void Scene::LoadStage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	// 씬에 그려질 오브젝트들을 전부 빌드.
-
-	GameFramework& gameFramework = GameFramework::Instance();
-	gameFramework.GetGameObjectManager().GetGameObject("Gunship", _pDevice, _pCommandList);
-
-	pPlayer = make_shared<Player>();
-	pPlayer->Create("Gunship", _pDevice, _pCommandList);
-	pPlayer->SetLocalScale(XMFLOAT3(2.0f, 2.0f, 2.0f));
-	//pPlayer->SetLocalScale(XMFLOAT3(20.0f, 20.0f, 20.0f));
-	pPlayer->UpdateObject();
-
-	shared_ptr<Light> baseLight = make_shared<Light>();
-	baseLight->lightType = 3;
-	baseLight->position = XMFLOAT3(0, 500, 0);
-	baseLight->direction = XMFLOAT3(0, -1, 0);
-	baseLight->diffuse = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.f);
-	AddLight(baseLight);
-
-}

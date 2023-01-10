@@ -67,7 +67,7 @@ void ServerFramework::ProcessSocketMessage(HWND _hWnd, UINT _message, WPARAM _wP
         // 클라이언트에게 자신이 부여받은 clientID를 알려준다.
         SC_GIVE_CLIENT_ID sendPacket;
         sendPacket.clientID = pNewClient->GetClientID();
-        send(_wParam, (char*)&sendPacket, sizeof(SC_GIVE_CLIENT_ID), 0);
+        send(clientSocket, (char*)&sendPacket, sizeof(SC_GIVE_CLIENT_ID), 0);
         break;
     }
     case FD_READ:

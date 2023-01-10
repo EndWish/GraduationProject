@@ -72,3 +72,54 @@ float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET {
 
     return color;
 }
+
+
+
+struct VS_2D_IN {
+    float2 position : POSITION;
+};
+
+struct VS_2D_OUT {
+    float4 position : SV_POSITION;
+    float2 uv : TEXCOORD;
+};
+
+VS_2D_OUT Vertex2DShader(VS_2D_IN input) {
+    VS_2D_OUT output;
+    
+    float2 startpos = float2(worldTransform._11, worldTransform._22);
+    float2 startuv = float2(worldTransform._41, worldTransform._43);
+
+    //startpos = float2(0,0);
+    
+    // 2DUI는 항상 z = 0 (맨 앞)에 그려지고, depth값도 쓴다.
+    output.position = float4(input.position.x + startpos.x, input.position.y + startpos.y, 0, 1);
+    
+    float x, y;
+    if (input.position.x == 0)
+        output.uv.x = startuv.x;
+    else
+        output.uv.x = startuv.x + 1;
+    
+    if (input.position.y == 0)
+        output.uv.y = startuv.y;
+    else
+        output.uv.y = startuv.y - 1;
+
+    return output;
+}
+
+float4 Pixel2DShader(VS_2D_OUT input) : SV_TARGET {
+    float2 startuv = float2(worldTransform._41, worldTransform._43);
+    float2 sizeuv = float2(worldTransform._42, worldTransform._44);
+    if (sizeuv.x + startuv.x < input.uv.x) 
+        discard;
+    if (sizeuv.y - startuv.y < input.uv.y) 
+        discard;
+    float4 color = albedoMap.Sample(gssWrap, input.uv);
+    if (color.a < 0.01f)
+        discard;
+    if (worldTransform._14 > 0.1f)
+        color.rgb *= 0.3f;
+    return color;
+}

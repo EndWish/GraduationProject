@@ -8,6 +8,7 @@ UINT cbvSrvDescriptorIncrementSize = 0;
 
 SOCKET server_sock = 0;
 
+RECT clientRect;
 random_device rd;
 mt19937 gen;
 
@@ -94,7 +95,10 @@ ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice
 }
 
 //xmfloat 출력하기
-
+std::ostream& operator<<(std::ostream& os, const XMFLOAT2& f2) {
+	os << "(" << f2.x << " " << f2.y << ")";
+	return os;
+}
 std::ostream& operator<<(std::ostream& os, const XMFLOAT3& f3) {
 	os << "(" << f3.x << " " << f3.y << " " << f3.z << ")";
 	return os;
@@ -252,4 +256,12 @@ void SockErrorDisplay(int errcode) {
 		(char*)&lpMsgBuf, 0, NULL);
 	printf("[오류] %s\n", (char*)lpMsgBuf);
 	LocalFree(lpMsgBuf);
+}
+
+XMFLOAT2 GetViewportCoord(POINT _point)
+{
+	XMFLOAT2 pf;
+	pf.x = _point.x / (float)clientRect.right * 2 - 1;
+	pf.y = _point.y / (float)clientRect.bottom * 2 - 1;
+	return pf;
 }
