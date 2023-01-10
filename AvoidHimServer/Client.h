@@ -1,5 +1,7 @@
 #pragma once
 
+class Room;
+
 enum class ClientState : unsigned int {
 	lobby,				// 로비일경우
 	roomWait,
@@ -10,11 +12,11 @@ enum class ClientState : unsigned int {
 
 class Client {
 private:
-	int clientID;
+	UINT clientID;
 	SOCKET socket;
 	string name;
 	ClientState state;
-	int currentRoom;	// 룸이 아닌경우 -1
+	Room* pCurrentRoom;	// 룸이 아닌경우 -1
 
 public:
 	// 생성자 및 소멸자
@@ -30,8 +32,11 @@ public:
 	void SetClientState(ClientState _state) { state = _state; }
 	ClientState GetClientState() const { return state; }
 
-	int GetClientID() const { return clientID; }
-	void SetClientID(int _clientID) { clientID = _clientID; }
+	UINT GetClientID() const { return clientID; }
+	void SetClientID(UINT _clientID) { clientID = _clientID; }
+
+	Room* GetCurrentRoom() const { return pCurrentRoom; }
+	void SetCurrentRoom(Room* _pRoom) { pCurrentRoom = _pRoom; }
 
 	// 일반 함수
 
