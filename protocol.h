@@ -15,11 +15,22 @@ const int maxParticipant = 5;
 ///////////////////////////////
 
 enum class CS_PACKET_TYPE : char {
-	makeRoom, queryRoomlistInfo, visitRoom, outRoom
+	makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, unready, loadComplete
 };
 
 enum class SC_PACKET_TYPE : char {
-	giveClientID, roomInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, roomVisitFail
+	giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail, 
+	ready, unready, 
+
+};
+
+enum class SC_FAIL_TYPE : int {
+	unknown,	//  초기값
+	noExistRoom,	// 방이 존재하지 않을때
+	roomOvercapacity,	// 방에 정원이 초과했을때
+	lackOfParticipants,	// 방에 참가자가 부족할때
+	notAllReady,	// 준비하지 않은 인원이 존재할때
+	roomGameStarted,	// 이미 게임이 시작되었을 경우
 };
 
 #pragma pack(push, 1)
@@ -42,6 +53,18 @@ struct CS_QUERY_OUT_ROOM {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::outRoom;
 	UINT cid = 0;
 };
+struct CS_READY {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::ready;
+	UINT cid = 0;
+};
+struct CS_UNREADY {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::unready;
+	UINT cid = 0;
+};
+struct CS_LOAD_COMPLETE {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::loadComplete;
+	UINT cid = 0;
+};
 
 /// 서버->클라
 struct SC_GIVE_CLIENT_ID {
@@ -51,10 +74,11 @@ struct SC_GIVE_CLIENT_ID {
 struct SC_SUB_ROOMLIST_INFO {
 	UINT roomID = 0;
 	UINT nParticipant = 0;
+	bool started = false;
 	// array<char, 50> roomName;
 };
 struct SC_ROOMLIST_INFO {	// 로비에서 볼때 필요한 방들에 대한 정보를 보내는 패킷
-	SC_PACKET_TYPE type = SC_PACKET_TYPE::roomInfo;
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::roomListInfo;
 	UINT nRoom = 0;
 	// nRoom 개수만큼 "SC_SUB_ROOMLIST_INFO"를 전송한다.
 };
@@ -82,10 +106,18 @@ struct SC_ROOM_OUT_PLAYER_INFO {
 	UINT cid = 0;
 };
 
-struct SC_ROOM_VISIT_FAIL {		// 방 입장에 실패했을 경우 보내주는 패킷
-	SC_PACKET_TYPE type = SC_PACKET_TYPE::roomVisitFail;
-	int cause = -1;	// 원인 (0 : 방이 존재하지 않음, 1 : 인원초과)
+struct SC_FAIL {		// 방 입장에 실패했을 경우 보내주는 패킷
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::fail;
+	SC_FAIL_TYPE cause = SC_FAIL_TYPE::unknown;
 };
 
+struct SC_READY {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::ready;
+	UINT readyClientID = 0;
+};
+struct SC_UNREADY {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::unready;
+	UINT unreadyClientID = 0;
+};
 
 #pragma pack(pop)

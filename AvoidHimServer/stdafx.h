@@ -13,27 +13,26 @@
 #include <memory.h>
 #include <tchar.h>
 
-#include "../protocol.h"
+#include "../protocol.h"	// 서버 관련 헤더파일을 포함하고 있다.
 
-//// 서버 관련 헤더파일
-//#define _CRT_SECURE_NO_WARNINGS // 구형 C 함수 사용 시 경고 끄기
-//#define _WINSOCK_DEPRECATED_NO_WARNINGS // 구형 소켓 API 사용 시 경고 끄기
-//#include <winsock2.h> // 윈속2 메인 헤더
-//#include <ws2tcpip.h> // 윈속2 확장 헤더
-//#pragma comment(lib, "ws2_32") // ws2_32.lib 링크
-//
-//// 추가로 필요한 헤더파일
-//#define SERVERPORT 9000
-//#define WM_SOCKET  (WM_USER+1)
+// directX 관련 헤더파일
+#include <DirectXMath.h>
+#include <DirectXCollision.h>
+using namespace DirectX;
+
 #include <stdio.h>
 #include <iostream>
 #include <format> // c++ lastest
 #include <vector>
 #include <string>
 #include <array>
+#include <queue>
+#include <random>
 #include <unordered_map>
-
 using namespace std;
+
+// 전역 변수
+extern random_device rd;
 
 /// 전역 함수
 // 소켓 함수 오류 출력

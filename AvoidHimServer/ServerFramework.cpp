@@ -109,18 +109,26 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         
         // 방이 존재하지 않은 경우
         if (!pRooms.contains(recvPacket.visitRoomID)) { 
-            SC_ROOM_VISIT_FAIL sendPacket;
-            sendPacket.cause = 0;
-            send(_socket, (char*)&sendPacket, sizeof(SC_ROOM_VISIT_FAIL), 0);
+            SC_FAIL sendPacket;
+            sendPacket.cause = SC_FAIL_TYPE::noExistRoom;
+            send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
             break;
         }
 
         // 인원이 꽉 찼을 경우
         Room* pRoom = pRooms[recvPacket.visitRoomID];
         if (pRoom->GetNumOfParticipants() == maxParticipant ) {
-            SC_ROOM_VISIT_FAIL sendPacket;
-            sendPacket.cause = 1;
-            send(_socket, (char*)&sendPacket, sizeof(SC_ROOM_VISIT_FAIL), 0);
+            SC_FAIL sendPacket;
+            sendPacket.cause = SC_FAIL_TYPE::roomOvercapacity;
+            send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
+            break;
+        }
+
+        // 게임이 시작되었을 경우
+        if (pRoom->IsGameRunning()) {
+            SC_FAIL sendPacket;
+            sendPacket.cause = SC_FAIL_TYPE::roomGameStarted;
+            send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
             break;
         }
 
@@ -170,6 +178,70 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         CreateRoomlistInfo();
         send(_socket, buffer.data(), (int)buffer.size(), 0);
 
+        break;
+    }
+    case CS_PACKET_TYPE::ready: {
+        CS_READY recvPacket;
+        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_READY) - sizeof(CS_PACKET_TYPE), 0);
+
+        Client* pClient = pClients[recvPacket.cid];
+        Room* pRoom = pClient->GetCurrentRoom();
+        // 1. ready패킷을 보낸 플레이어가 방장일 경우
+        if (pRoom->GetHostID() == pClient->GetClientID()) {
+            // 1-2. 다른 플레이어들이 모두 레디인지 확인하고 모두 레디한 상태라면 게임을 시작한다.
+            
+            if (pRoom->GetNumOfParticipants() >= 3) {
+                bool success = true;
+                for (UINT participant : pRoom->GetParticipants()) {
+                    if (participant == pRoom->GetHostID())  // 방장은 제외하고
+                        continue;
+                    if (pClients[participant]->GetClientState() != ClientState::roomReady) {
+                        success = false;
+                        break;
+                    }
+                }
+                if (success) {  // 게임시작
+                    pRoom->GameStart();
+                }
+                else {  // 시작불가 - 레디하지않은 인원이 존재한다.
+                    SC_FAIL sendPacket;
+                    sendPacket.cause = SC_FAIL_TYPE::notAllReady;
+                    send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
+                }
+            }
+            else {  // 시작불가 - 인원부족
+                SC_FAIL sendPacket;
+                sendPacket.cause = SC_FAIL_TYPE::lackOfParticipants;
+                send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
+            }
+        }
+        // 2. ready패킷을 보낸 플레이어가 방장이 아닐 경우
+        else {
+            if (pClient->GetClientState() == ClientState::roomWait) {
+                pClient->SetClientState(ClientState::roomReady);
+                SC_READY sendPacket;
+                sendPacket.readyClientID = pClient->GetClientID();
+                //해당플레이어가 레디했다는 것을 알린다. [진행중]
+                for (UINT participant : pRoom->GetParticipants())
+                    send(pClients[participant]->GetSocket(), (char*)&sendPacket, sizeof(SC_READY), 0);
+            }
+        }
+        break;
+    }
+    case CS_PACKET_TYPE::unready: {
+        CS_UNREADY recvPacket;
+        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_UNREADY) - sizeof(CS_PACKET_TYPE), 0);
+        Client* pClient = pClients[recvPacket.cid];
+        Room* pRoom = pClient->GetCurrentRoom();
+
+        if (pClient->GetClientState() == ClientState::roomReady) {
+            pClient->SetClientState(ClientState::roomWait);
+            SC_UNREADY sendPacket;
+            sendPacket.unreadyClientID = pClient->GetClientID();
+            //해당플레이어가 준비해제 했다는 것을 알린다.
+            for (UINT participant : pRoom->GetParticipants())
+                send(pClients[participant]->GetSocket(), (char*)&sendPacket, sizeof(SC_UNREADY), 0);
+        }
         break;
     }
     default:
@@ -230,18 +302,41 @@ bool ServerFramework::RemoveRoom(UINT roomID) {
 }
 
 void ServerFramework::CreateRoomlistInfo() {
-    // 보낼 데이터를 만든다.
-    buffer.clear();
+    //// 보낼 데이터를 만든다.
+    //buffer.clear();
 
+    //SC_ROOMLIST_INFO sendPacket;
+    //sendPacket.nRoom = (UINT)pRooms.size();
+    //// 1. 방의 개수에 대한 정보 삽입
+    //buffer.insert(buffer.end(), (char*)&sendPacket, (char*)&sendPacket + sizeof(SC_ROOMLIST_INFO));
+    //// 2. 각 방에 대한 정보를 삽입
+    //for (auto [roomID, pRoom] : pRooms) {
+    //    SC_SUB_ROOMLIST_INFO sendSubPacket;
+    //    sendSubPacket.nParticipant = pRoom->GetNumOfParticipants();
+    //    sendSubPacket.roomID = roomID;
+    //    sendSubPacket.started = pRoom->IsGameRunning();
+    //    buffer.insert(buffer.end(), (char*)&sendSubPacket, (char*)&sendSubPacket + sizeof(SC_SUB_ROOMLIST_INFO));
+    //}
+
+
+
+
+    ///////////////////////////////////////////////////// 테스트
+    // 보낼 데이터를 만든다.
+    uniform_int_distribution<int> uid0(10,10), uid1(1, 5), uid2(0, 1);
+
+    buffer.clear();
     SC_ROOMLIST_INFO sendPacket;
-    sendPacket.nRoom = (UINT)pRooms.size();
+    sendPacket.nRoom = (UINT)uid0(rd);
     // 1. 방의 개수에 대한 정보 삽입
     buffer.insert(buffer.end(), (char*)&sendPacket, (char*)&sendPacket + sizeof(SC_ROOMLIST_INFO));
-    // 2. 각 방에 대한 정보를 삽입
-    for (auto [roomID, pRoom] : pRooms) {
+    for (UINT i = 0; i < sendPacket.nRoom; ++i) {
         SC_SUB_ROOMLIST_INFO sendSubPacket;
-        sendSubPacket.nParticipant = pRoom->GetNumOfParticipants();
-        sendSubPacket.roomID = roomID;
+        sendSubPacket.nParticipant = uid1(rd);
+        sendSubPacket.roomID = i;
+        sendSubPacket.started = uid2(rd);
         buffer.insert(buffer.end(), (char*)&sendSubPacket, (char*)&sendSubPacket + sizeof(SC_SUB_ROOMLIST_INFO));
     }
+    ////////////////////////////////////////////////////////
+
 }

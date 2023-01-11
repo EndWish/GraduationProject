@@ -68,7 +68,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     result = WSAAsyncSelect(listen_sock, hWnd, WM_SOCKET, FD_ACCEPT | FD_CLOSE);
     if (result == SOCKET_ERROR) SockErrorQuit("WSAAsyncSelect()");
 
-    // 기본 메시지 루프입니다:
+    // 기본 메시지 루프입니다
     while (true) {
         if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
             // 메시지받아 처리하기

@@ -1,5 +1,7 @@
 #include "stdafx.h"
 
+random_device rd;
+
 // 소켓 함수 오류 출력
 void SockErrorQuit(const char* msg) {
 	LPVOID lpMsgBuf;

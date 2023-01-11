@@ -135,6 +135,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\AvoidHimClient\Timer.h" />
+    <ClInclude Include="..\protocol.h" />
     <ClInclude Include="AvoidHimServer.h" />
     <ClInclude Include="Client.h" />
     <ClInclude Include="Room.h" />
@@ -144,6 +146,7 @@
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\AvoidHimClient\Timer.cpp" />
     <ClCompile Include="AvoidHimServer.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="Room.cpp" />
