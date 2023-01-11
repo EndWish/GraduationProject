@@ -74,15 +74,12 @@ private:
 	
 	ShaderManager shaderManager;
 	// 애니메이션 매니저 ? 
-	
+
 	// 루트 시그니처 Get
 	ComPtr<ID3D12RootSignature> GetRootSignature() { return pRootSignature; }
 
 	// 씬
 	stack<shared_ptr<Scene>> pScenes;
-
-	// 서버로부터 부여받은 클라이언트 고유 id
-	UINT cid;
 
 	// 생성, 소멸자
 private:
@@ -115,8 +112,7 @@ public:
 	TextureManager& GetTextureManager();
 	GameObjectManager& GetGameObjectManager();
 	shared_ptr<Shader> GetShader(const string& _name);
-	UINT Getcid();
-	void Setcid(UINT _cid) { cid = _cid; };
+	UINT GetCurrentSwapChainIndex() { return swapChainBufferCurrentIndex; };
 
 	void FrameAdvance();
 	void WaitForGpuComplete();			// GPU와 동기화하기 위한 대기

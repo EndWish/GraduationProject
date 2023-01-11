@@ -2,6 +2,8 @@
 #include "Image2D.h"
 #include "GameFramework.h"
 
+unique_ptr<TextLayer> TextLayer::spInstance;
+
 Image2D::Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XMFLOAT2 _uvsize, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)
 {
 	GameFramework& gameFramework = GameFramework::Instance();
@@ -65,3 +67,135 @@ void Image2D::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	_pCommandList->IASetVertexBuffers(0, 1, &vertexBuffersViews);
 	_pCommandList->DrawInstanced(6, 1, 0, 0);
 }
+
+
+TextBox::TextBox(WCHAR* _fontName, D2D1::ColorF _color, float _fontSize, D2D1_RECT_F& _rect) {
+	TextLayer& textLayer = TextLayer::Instance();
+
+	rect = _rect;
+	brush = textLayer.CreateBrush(_color);
+	format = textLayer.CreateTextFormat(_fontName, _fontSize);
+
+}
+
+TextBox::~TextBox() {
+	
+}
+
+void TextBox::SetText(wstring _text) {
+	text = _text;
+}
+
+void TextBox::Render()
+{
+	TextLayer& textLayer = TextLayer::Instance();
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	// 현재 스왑체인의 인덱스
+	UINT currIndex = gameFramework.GetCurrentSwapChainIndex();
+
+	ComPtr<ID3D11DeviceContext> pD3D11DeviceContext = textLayer.GetD3D11DeviceContext();
+	ComPtr<ID3D11On12Device> pD3D11On12Device = textLayer.GetD3D11On12Device();
+	ComPtr<ID2D1DeviceContext2> pD2DDeviceContext = textLayer.GetD2DDeviceContext();
+
+	ID3D11Resource* ppResources[] = { (textLayer.GetWrappedRenderTargets())[currIndex].Get() };
+
+	pD2DDeviceContext->SetTarget(textLayer.GetRenderTargets()[currIndex].Get());
+	pD3D11On12Device->AcquireWrappedResources(ppResources, _countof(ppResources));
+
+	pD2DDeviceContext->BeginDraw();
+	pD2DDeviceContext->DrawText(text.c_str(), text.size(), format.Get(), rect, brush.Get());
+	pD2DDeviceContext->EndDraw();
+	pD3D11On12Device->ReleaseWrappedResources(ppResources, _countof(ppResources));
+	pD3D11DeviceContext->Flush();
+
+}
+
+
+TextLayer::TextLayer() {
+	fWidth = 0.f;
+	fHeight = 0.f;
+}
+
+void TextLayer::Create(UINT _nFrames, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12CommandQueue>& _pCommandQueue, array<ComPtr<ID3D12Resource>, 2> _renderTargets, UINT _nWidth, UINT _nHeight)
+{
+	if (!spInstance) {
+		spInstance.reset(new TextLayer());
+		TextLayer& TextLayer = *spInstance;
+
+		TextLayer.fWidth = static_cast<float>(_nWidth);
+		TextLayer.fHeight = static_cast<float>(_nHeight);
+		TextLayer.nRenderTargets = _nFrames;
+		TextLayer.pD3d11WrappedRenderTargets.resize(_nFrames);
+		TextLayer.pD2dRenderTargets.resize(_nFrames);
+
+		TextLayer.Init(_pDevice, _pCommandQueue, _renderTargets);
+
+	}
+}
+
+TextLayer& TextLayer::Instance()
+{
+	return *spInstance;
+}
+
+TextLayer::~TextLayer()
+{
+
+}
+
+ComPtr<ID2D1SolidColorBrush> TextLayer::CreateBrush(D2D1::ColorF _color)
+{
+	ComPtr<ID2D1SolidColorBrush> colorBrush;
+	pD2dDeviceContext->CreateSolidColorBrush(_color, colorBrush.GetAddressOf());
+	return colorBrush;
+
+}
+
+ComPtr<IDWriteTextFormat> TextLayer::CreateTextFormat(WCHAR* _fontName, float _fontSize)
+{
+	ComPtr<IDWriteTextFormat> textFormat;
+	pWriteFactory->CreateTextFormat(_fontName, nullptr, DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, _fontSize, L"en-us", &textFormat);
+	textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+	textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
+	return textFormat;
+}
+
+void TextLayer::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12CommandQueue>& _pCommandQueue, array<ComPtr<ID3D12Resource>, 2> _renderTargets)
+{
+	HRESULT hr;
+	UINT d3d11DeviceFlags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+	D2D1_FACTORY_OPTIONS d2dFactoryOptions = { };
+	ID3D11Device* pd3d11Device = NULL;
+	ID3D12CommandQueue* ppd3dCommandQueues[] = { _pCommandQueue.Get() };
+	hr = ::D3D11On12CreateDevice(_pDevice.Get(), d3d11DeviceFlags, nullptr, 0, reinterpret_cast<IUnknown**>(ppd3dCommandQueues), _countof(ppd3dCommandQueues), 0, (ID3D11Device**)&pd3d11Device, (ID3D11DeviceContext**)pD3d11DeviceContext.GetAddressOf(), nullptr);
+	//  ID3D11On12Device 객체 생성
+
+	hr = pd3d11Device->QueryInterface(__uuidof(ID3D11On12Device), (void**)&pD3d11On12Device);
+	pd3d11Device->Release();	
+
+	IDXGIDevice* pdxgiDevice = NULL;
+	hr = pD3d11On12Device->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdxgiDevice);
+
+	hr = ::D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory3), &d2dFactoryOptions, (void**)&pD2dFactory);
+	hr = pD2dFactory->CreateDevice(pdxgiDevice, (ID2D1Device2**)&pD2dDevice);
+	hr = pD2dDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, (ID2D1DeviceContext2**)&pD2dDeviceContext);
+
+	pD2dDeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
+
+	hr = ::DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), (IUnknown**)&pWriteFactory);
+	pdxgiDevice->Release();
+
+	D2D1_BITMAP_PROPERTIES1 d2dBitmapProperties = D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW, D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED));
+
+	for (UINT i = 0; i < nRenderTargets; i++)
+	{
+		D3D11_RESOURCE_FLAGS d3d11Flags = { D3D11_BIND_RENDER_TARGET };
+		pD3d11On12Device->CreateWrappedResource(_renderTargets[i].Get(), &d3d11Flags, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT, IID_PPV_ARGS(&pD3d11WrappedRenderTargets[i]));
+		IDXGISurface* pdxgiSurface = NULL;
+		pD3d11WrappedRenderTargets[i]->QueryInterface(__uuidof(IDXGISurface), (void**)&pdxgiSurface);
+		pD2dDeviceContext->CreateBitmapFromDxgiSurface(pdxgiSurface, &d2dBitmapProperties, &pD2dRenderTargets[i]);
+		pdxgiSurface->Release();
+	}
+}
+

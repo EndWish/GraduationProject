@@ -1,11 +1,63 @@
 #pragma once
 #include "GameObject.h"
 
+class TextBox  {
+	wstring text;	// 텍스트 내용
+	D2D1_RECT_F  rect; // 범위
+	ComPtr<IDWriteTextFormat> format;	// 텍스트 포맷
+	ComPtr<ID2D1SolidColorBrush> brush;
+
+public:
+	TextBox(WCHAR* _fontName, D2D1::ColorF _color, float _fontSize, D2D1_RECT_F& _rect);
+	~TextBox();
+	void SetText(wstring _text);
+	void Render();
+};
+
+
+
+class TextLayer {
+private:
+	static unique_ptr<TextLayer> spInstance;
+public:
+	static void Create(UINT _nFrames, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12CommandQueue>& _pCommandQueue, array<ComPtr<ID3D12Resource>, 2> _renderTargets, UINT _nWidth, UINT _nHeight);
+	static TextLayer& Instance();
+
+private:
+	float                           fWidth;
+	float                           fHeight;
+
+	ComPtr<ID3D11DeviceContext> pD3d11DeviceContext = NULL;
+	ComPtr<ID3D11On12Device> pD3d11On12Device = NULL;
+	ComPtr<IDWriteFactory> pWriteFactory = NULL;
+	ComPtr<ID2D1Factory3> pD2dFactory = NULL;
+	ComPtr<ID2D1Device2> pD2dDevice = NULL;
+	ComPtr<ID2D1DeviceContext2> pD2dDeviceContext = NULL;
+
+	UINT nRenderTargets = 0;
+	vector<ComPtr<ID3D11Resource>> pD3d11WrappedRenderTargets;
+	vector< ComPtr< ID2D1Bitmap1>> pD2dRenderTargets;
+public:
+	TextLayer();
+	~TextLayer();
+
+	void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12CommandQueue>& _pCommandQueue, array<ComPtr<ID3D12Resource>, 2> _renderTargets);
+	ComPtr<ID2D1SolidColorBrush> CreateBrush(D2D1::ColorF _color);
+	ComPtr<IDWriteTextFormat> CreateTextFormat(WCHAR* _fontName, float _fontSize);	
+	
+	// Get 함수
+	ComPtr<ID3D11DeviceContext> GetD3D11DeviceContext() { return pD3d11DeviceContext; };
+	ComPtr< ID3D11On12Device> GetD3D11On12Device() { return pD3d11On12Device; };
+	ComPtr<ID2D1DeviceContext2> GetD2DDeviceContext() { return pD2dDeviceContext; };
+	vector<ComPtr<ID3D11Resource>> GetWrappedRenderTargets() { return pD3d11WrappedRenderTargets; };
+	vector< ComPtr< ID2D1Bitmap1>> GetRenderTargets() {	return pD2dRenderTargets; };
+};
 
 class Image2D {
 private:
 	// -1 ~ 1
 	string name;
+
 	bool pressed;	// 버튼에 있는 이미지가 눌렸을 경우
 	bool enable;	// 해당 이미지가 그려지는지
 	XMFLOAT2 startuv;	// 이미지의 시작 uv좌표

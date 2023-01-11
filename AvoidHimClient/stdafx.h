@@ -26,7 +26,11 @@
 #include <shellapi.h>
 
 // directX 헤더 파일
+#include <d3d11.h>
 #include <d3d12.h>
+#include <d3d11on12.h>
+#include <dwrite.h>
+#include <d2d1_3.h>
 #include "d3dx12.h"
 #include <dxgi1_4.h>
 #include <dxgidebug.h>
@@ -45,9 +49,12 @@
 #include <comdef.h>
 
 #pragma comment(lib, "d3dcompiler.lib")
+#pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "dxguid.lib")
+#pragma comment(lib, "d2d1.lib")
+#pragma comment(lib, "dwrite.lib")
 
 #include <SDKDDKVer.h>
 
@@ -83,6 +90,9 @@ extern UINT dsvDescriptorIncrementSize;
 
 // 서버에 대한 소켓
 extern SOCKET server_sock;
+
+// 현재 클라이언트가 서버에게 부여받은 고유 클라이언트 id
+extern UINT cid;
 
 // 현재 클라이언트 크기
 extern RECT clientRect;

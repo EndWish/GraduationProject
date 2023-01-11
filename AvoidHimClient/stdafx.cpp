@@ -8,6 +8,8 @@ UINT cbvSrvDescriptorIncrementSize = 0;
 
 SOCKET server_sock = 0;
 
+UINT cid = 0;
+
 RECT clientRect;
 random_device rd;
 mt19937 gen;

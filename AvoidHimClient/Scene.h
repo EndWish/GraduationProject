@@ -11,8 +11,6 @@ public:
 	Scene();
 	virtual ~Scene();
 
-	
-
 public:
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 	virtual void ReleaseUploadBuffers() = 0;
@@ -25,22 +23,24 @@ public:
 	virtual void CheckCollision();
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
+	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 
-struct Room {
-	UINT host;
-	vector<UINT> participant;
-	static const int maxParticipant = 5;
-};
+
 
 class LobbyScene : public Scene {
 private:
+	static const int maxParticipant = 5;
 	D3D12_VIEWPORT viewPort;
 	D3D12_RECT scissorRect;
 	unordered_map<string, shared_ptr<Image2D>> pUIs;
-	vector<Room> roomList;
+	vector<SC_SUB_ROOMLIST_INFO> roomList;
+	UINT roomPage;	// 1페이지부터 시작
+
 
 public:
+	LobbyScene();
+	~LobbyScene();
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ReleaseUploadBuffers();
 	virtual void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -48,7 +48,10 @@ public:
 	virtual void ProcessSocketMessage();
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
+	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ReActButton(string _name);
+
+	void UpdateRoomText();
 };
 class PlayScene : public Scene {
 public:

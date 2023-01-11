@@ -32,7 +32,10 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 		if (!gameFramework.InitShader(gameFramework.pDevice, gameFramework.pRootSignature)) {
 			cout << "쉐이더 생성 실패\n";
 		}
-		
+
+		// 텍스처 출력을 위한 TextLayer 인스턴스 초기화
+		TextLayer::Create(nSwapChainBuffer, gameFramework.pDevice, gameFramework.pCommandQueue, gameFramework.pRenderTargetBuffers, gameFramework.clientWidth, gameFramework.clientHeight);
+
 		// 최초씬 생성
 		shared_ptr<Scene> startScene = make_shared<LobbyScene>();
 		gameFramework.PushScene(startScene);
@@ -54,7 +57,6 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 
 		gameFramework.WaitForGpuComplete();
 		//startScene->ReleaseUploadBuffers();
-
 
 
 
@@ -458,7 +460,6 @@ void GameFramework::FrameAdvance() {
 		PushScene(startScene);
 	}
 
-
 	if (!pScenes.empty()) {	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
 		pScenes.top()->AnimateObjects(gameTimer.GetTimeElapsed(), pDevice, pCommandList);
 		pScenes.top()->CheckCollision();
@@ -468,9 +469,7 @@ void GameFramework::FrameAdvance() {
 	// 명령 할당자와 명령 리스트를 리셋한다.
 	HRESULT hResult = pCommandAllocator->Reset();
 
-
 	hResult = pCommandList->Reset(pCommandAllocator.Get(), NULL);
-
 
 	// 현재 렌더 타겟에 대한 Present가 끝나기를 기다림.  (PRESENT = 프리젠트 상태, RENDER_TARGET = 렌더 타겟 상태
 	D3D12_RESOURCE_BARRIER resourceBarrier;
@@ -518,7 +517,6 @@ void GameFramework::FrameAdvance() {
 	resourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
 	pCommandList->ResourceBarrier(1, &resourceBarrier);
 
-
 	//명령 리스트를 닫힌 상태로 만든다. 
 	hResult = pCommandList->Close();
 	//명령 리스트를 명령 큐에 추가하여 실행한다. 
@@ -529,6 +527,10 @@ void GameFramework::FrameAdvance() {
 	//GPU가 모든 명령 리스트를 실행할 때 까지 기다린다. 
 	WaitForGpuComplete();
 
+	if (!pScenes.empty()) {
+		pScenes.top()->PostRender(pCommandList);
+	}
+
 	//	스왑체인을 프리젠트한다.
 	DXGI_PRESENT_PARAMETERS dxgiPresentParameters;
 	dxgiPresentParameters.DirtyRectsCount = 0;
@@ -536,8 +538,6 @@ void GameFramework::FrameAdvance() {
 	dxgiPresentParameters.pScrollRect = NULL;
 	dxgiPresentParameters.pScrollOffset = NULL;
 	pDxgiSwapChain->Present1(1, 0, &dxgiPresentParameters);
-
-
 
 	// 다음 프레임으로 이동, (다음 버퍼로 이동)
 	MoveToNextFrame();
@@ -559,11 +559,6 @@ void GameFramework::WaitForGpuComplete() {
 void GameFramework::MoveToNextFrame() {
 	swapChainBufferCurrentIndex = pDxgiSwapChain->GetCurrentBackBufferIndex(); // 다음 후면 버퍼로 변경
 	WaitForGpuComplete();
-}
-
-UINT GameFramework::Getcid()
-{
-	return cid;
 }
 
 void GameFramework::ChangeSwapChainState() {
