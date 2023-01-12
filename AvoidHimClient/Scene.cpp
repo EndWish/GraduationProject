@@ -189,7 +189,7 @@ void LobbyScene::ProcessSocketMessage() {
 		roomInfo.nParticipant = packet.nParticipant;
 
 		for (int i = 0; i < roomInfo.nParticipant; ++i) {
-			Player_Info pi{ packet.participantInfos[i].cid, packet.participantInfos[i].ready };
+			Player_Info pi{ packet.participantInfos[i].clientID, packet.participantInfos[i].ready };
 			roomInfo.players.push_back(pi);
 		}
 
@@ -217,17 +217,16 @@ void LobbyScene::ProcessSocketMessage() {
 	case SC_PACKET_TYPE::roomVisitPlayerInfo: {	// 누가 방에 들어온 경우
 		SC_ROOM_VISIT_PLAYER_INFO packet;
 		RecvContents(packet);
-		Player_Info pi{ packet.cid, false };
+		Player_Info pi{ packet.visitClientID, false };
 		roomInfo.players.push_back(pi);
 		roomInfo.nParticipant++;
 		UpdateReadyState();
 		break;
 	}
 	case SC_PACKET_TYPE::roomOutPlayerInfo: { // 누가 방에서 나간 경우
-		cout << "누가 나감..\n";
 		SC_ROOM_OUT_PLAYER_INFO packet;
 		RecvContents(packet);
-		auto pindex = roomInfo.findPlayerIndex(packet.cid);
+		auto pindex = roomInfo.findPlayerIndex(packet.outClientID);
 		roomInfo.players.erase(pindex);
 		roomInfo.nParticipant--;
 		UpdateReadyState();
@@ -296,7 +295,7 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 	case  ButtonType::quitRoom: {
 		// 나간 후 방에서 나갔다는 사실을 알려주는 패킷을 전송.
 	// 서버에서 알아서 이 패킷을 받아 룸 리스트를 다시 보내준다.
-		CS_QUERY_OUT_ROOM sPacket;
+		CS_OUT_ROOM sPacket;
 		sPacket.cid = cid;
 		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_ROOMLIST_INFO), 0);
 
@@ -329,7 +328,7 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 void LobbyScene::NoticeCloseToServer() {
 	if (currState == LobbyState::inRoom) {
 		// 방 안에 있을때 클라이언트 종료 시 방 나가기 버튼을 눌렀을때와 같은 동작 수행
-		CS_QUERY_OUT_ROOM sPacket;
+		CS_OUT_ROOM sPacket;
 		sPacket.cid = cid;
 		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_ROOMLIST_INFO), 0);
 	}
@@ -415,11 +414,11 @@ void LobbyScene::UpdateReadyState() {
 	}
 	for (int i = 0; i < roomInfo.nParticipant; ++i) {
 		// 방장일 경우
-		if (roomInfo.host == roomInfo.players[i].cid) {
+		if (roomInfo.host == roomInfo.players[i].clientID) {
 			pUIs["2DUI_ready_" + to_string(i + 1)]->SetTexture("2DUI_host");
 			pUIs["2DUI_ready_" + to_string(i + 1)]->SetEnable(true);
 			// 본인이 방장일 경우
-			if (cid == roomInfo.players[i].cid) {
+			if (cid == roomInfo.players[i].clientID) {
 				pButtons["gameStartButton"]->SetTexture("2DUI_startButton");
 				bChange = true;
 			}
@@ -429,7 +428,7 @@ void LobbyScene::UpdateReadyState() {
 			pUIs["2DUI_ready_" + to_string(i + 1)]->SetTexture("2DUI_ready");
 			pUIs["2DUI_ready_" + to_string(i + 1)]->SetEnable(true);
 			// 본인이 준비상태일 경우
-			if (cid == roomInfo.players[i].cid) {
+			if (cid == roomInfo.players[i].clientID) {
 				pButtons["gameStartButton"]->SetTexture("2DUI_readyCancelButton");
 				bChange = true;
 			}

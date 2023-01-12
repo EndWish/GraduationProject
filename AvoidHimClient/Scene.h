@@ -40,7 +40,7 @@ struct RoomInfo {
 	UINT nParticipant;
 	vector<Player_Info> players;
 	auto findPlayerIndex(UINT _cid) {
-		return ranges::find(players, _cid, &Player_Info::cid);
+		return ranges::find(players, _cid, &Player_Info::clientID);
 	}
 	void ClearRoom() {
 		host = -1;

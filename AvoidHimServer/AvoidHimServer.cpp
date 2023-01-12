@@ -57,6 +57,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     serveraddr.sin_family = AF_INET;
     serveraddr.sin_addr.s_addr = htonl(INADDR_ANY);
     serveraddr.sin_port = htons(SERVERPORT);
+
+
     result = bind(listen_sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
     if (result == SOCKET_ERROR) SockErrorQuit("bind()");
 
@@ -67,6 +69,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     // WSAAsyncSelect()
     result = WSAAsyncSelect(listen_sock, hWnd, WM_SOCKET, FD_ACCEPT | FD_CLOSE);
     if (result == SOCKET_ERROR) SockErrorQuit("WSAAsyncSelect()");
+
 
     // 기본 메시지 루프입니다
     while (true) {

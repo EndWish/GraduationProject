@@ -20,6 +20,7 @@ ServerFramework::ServerFramework() {
     buffer.reserve(1024);
 	clientIDCount = 1;
     roomIDCount = 1;
+    playInfoIDCount = 1;
 }
 ServerFramework::~ServerFramework() {
 }
@@ -71,8 +72,9 @@ void ServerFramework::ProcessSocketMessage(HWND _hWnd, UINT _message, WPARAM _wP
         break;
     }
     case FD_READ:
-    case FD_WRITE:
         ProcessRecv((SOCKET)_wParam);
+        break;
+    case FD_WRITE:  // https://m.blog.naver.com/PostView.naver?isHttpsRedirect=true&blogId=kkum04&logNo=150048096101
         break;
     case FD_CLOSE:
         RemoveClient(SocketToID((SOCKET)_wParam));
@@ -107,8 +109,11 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         CS_QUERY_VISIT_ROOM recvPacket;
         recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_QUERY_VISIT_ROOM) - sizeof(CS_PACKET_TYPE), 0);
         
+        cout << recvPacket.cid << "번 클라이언트 - visitRoom 패킷 받음 : ";
+
         // 방이 존재하지 않은 경우
         if (!pRooms.contains(recvPacket.visitRoomID)) { 
+            cout << recvPacket.visitRoomID << "번 방은 존재하지 않음\n";
             SC_FAIL sendPacket;
             sendPacket.cause = SC_FAIL_TYPE::noExistRoom;
             send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
@@ -118,6 +123,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         // 인원이 꽉 찼을 경우
         Room* pRoom = pRooms[recvPacket.visitRoomID];
         if (pRoom->GetNumOfParticipants() == maxParticipant ) {
+            cout << recvPacket.visitRoomID << "번 방은 인원이 가득 찼다.\n";
             SC_FAIL sendPacket;
             sendPacket.cause = SC_FAIL_TYPE::roomOvercapacity;
             send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
@@ -126,6 +132,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
 
         // 게임이 시작되었을 경우
         if (pRoom->IsGameRunning()) {
+            cout << recvPacket.visitRoomID << "번 방은 게임이 시작되었다.\n";
             SC_FAIL sendPacket;
             sendPacket.cause = SC_FAIL_TYPE::roomGameStarted;
             send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
@@ -135,48 +142,55 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         // 입장이 가능한 경우
         // 1. 플레이어를 입장시킨다.
         pRoom->EnterUser(recvPacket.cid);
+        cout << recvPacket.visitRoomID << "번 방에 접속 성공.\n";
         // 2. 입장하는 플레이어에게 정보를 전송한다.
         SC_ROOM_PLAYERS_INFO sendPacket1;
         sendPacket1.hostID = pRoom->GetHostID();
         sendPacket1.nParticipant = pRoom->GetNumOfParticipants();
         for (UINT i = 0; UINT clientID : pRoom->GetParticipants()) {
-            sendPacket1.participantInfos[i].cid = clientID;
+            sendPacket1.participantInfos[i].clientID = clientID;
             sendPacket1.participantInfos[i].ready = pClients[clientID]->GetClientState() == ClientState::roomReady;
             ++i;
         }
         send(_socket, (char*)&sendPacket1, sizeof(SC_ROOM_PLAYERS_INFO), 0);
+        cout << "입장하는 플레이어에게 정보를 전송한다.\n";
         // 3. 기존에 접속해 있는 플레이어 에게 정보를 전송한다.
         SC_ROOM_VISIT_PLAYER_INFO sendPacket2;
-        sendPacket2.cid = recvPacket.cid;
+        sendPacket2.visitClientID = recvPacket.cid;
         for (UINT clientID : pRoom->GetParticipants()) {
             if (clientID == recvPacket.cid)  // 입장한 플레이어의 경우 제외한다.
                 continue;
             send(pClients[clientID]->GetSocket(), (char*)&sendPacket2, sizeof(SC_ROOM_VISIT_PLAYER_INFO), 0);
+            cout << "기존에 접속해 있는 플레이어 에게 정보를 전송한다.\n";
         }
         break;
     }
     case CS_PACKET_TYPE::outRoom: {
         // 데이터 받기
-        CS_QUERY_OUT_ROOM recvPacket;
-        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_QUERY_OUT_ROOM) - sizeof(CS_PACKET_TYPE), 0);
+        CS_OUT_ROOM recvPacket;
+        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_OUT_ROOM) - sizeof(CS_PACKET_TYPE), 0);
 
         // 1. 플레이어를 방에서 내보낸다.
         Room* pRoom = pClients[recvPacket.cid]->GetCurrentRoom();
         int roomID = pRoom->GetID();
         pRoom->LeaveUser(recvPacket.cid);
 
-        // 2. 방에 존재하는 플레이에게 나간 플레이어의 정보를 전송한다.
-        if (pRooms.contains(roomID)) {
-            SC_ROOM_OUT_PLAYER_INFO sendPacket;
-            sendPacket.cid = recvPacket.cid;
-            for (UINT clientID : pRoom->GetParticipants()) {
-                send(pClients[clientID]->GetSocket(), (char*)&sendPacket, sizeof(SC_ROOM_OUT_PLAYER_INFO), 0);
-            }
-        }
+        SendRoomOutPlayerAndRoomList(pRoom, pClients[recvPacket.cid]);
 
-        // 3. 나간 플레이어에게 방의 리스트 정보를 보낸다.
-        CreateRoomlistInfo();
-        send(_socket, buffer.data(), (int)buffer.size(), 0);
+        //// 2. 방에 존재하는 플레이에게 나간 플레이어의 정보를 전송한다.
+        //if (pRooms.contains(roomID)) {
+        //    SC_ROOM_OUT_PLAYER_INFO sendPacket;
+        //    sendPacket.outClientID = recvPacket.cid;
+        //    sendPacket.newHostID = pRoom->GetHostID();
+        //    for (UINT clientID : pRoom->GetParticipants()) {
+        //        cout << clientID << "플레이어에게 " << sendPacket.outClientID << "플레이어가 나갔다고 패킷 전송함\n";
+        //        send(pClients[clientID]->GetSocket(), (char*)&sendPacket, sizeof(SC_ROOM_OUT_PLAYER_INFO), 0);
+        //    }
+        //}
+
+        //// 3. 나간 플레이어에게 방의 리스트 정보를 보낸다.
+        //CreateRoomlistInfo();
+        //send(_socket, buffer.data(), (int)buffer.size(), 0);
 
         break;
     }
@@ -217,42 +231,36 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         }
         // 2. ready패킷을 보낸 플레이어가 방장이 아닐 경우
         else {
-            if (pClient->GetClientState() == ClientState::roomWait) {
+            if (pClient->GetClientState() == ClientState::roomWait)
                 pClient->SetClientState(ClientState::roomReady);
-                SC_READY sendPacket;
-                sendPacket.readyClientID = pClient->GetClientID();
-                //해당플레이어가 레디했다는 것을 알린다. [진행중]
-                for (UINT participant : pRoom->GetParticipants())
-                    send(pClients[participant]->GetSocket(), (char*)&sendPacket, sizeof(SC_READY), 0);
-            }
+            else if (pClient->GetClientState() == ClientState::roomReady)
+                pClient->SetClientState(ClientState::roomWait);
+
+            SC_READY sendPacket;
+            sendPacket.readyClientID = pClient->GetClientID();
+            //해당플레이어가 레디했다는 것을 알린다. [진행중]
+            for (UINT participant : pRoom->GetParticipants())
+                send(pClients[participant]->GetSocket(), (char*)&sendPacket, sizeof(SC_READY), 0);
         }
         break;
     }
-    case CS_PACKET_TYPE::unready: {
-        CS_UNREADY recvPacket;
-        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_UNREADY) - sizeof(CS_PACKET_TYPE), 0);
-        Client* pClient = pClients[recvPacket.cid];
-        Room* pRoom = pClient->GetCurrentRoom();
+    case CS_PACKET_TYPE::loadingComplete: {
+        CS_LOADING_COMPLETE recvPacket;
+        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_LOADING_COMPLETE) - sizeof(CS_PACKET_TYPE), 0);
 
-        if (pClient->GetClientState() == ClientState::roomReady) {
-            pClient->SetClientState(ClientState::roomWait);
-            SC_UNREADY sendPacket;
-            sendPacket.unreadyClientID = pClient->GetClientID();
-            //해당플레이어가 준비해제 했다는 것을 알린다.
-            for (UINT participant : pRoom->GetParticipants())
-                send(pClients[participant]->GetSocket(), (char*)&sendPacket, sizeof(SC_UNREADY), 0);
-        }
+        PlayInfo* pPlayInfo = pPlayInfos[recvPacket.cid];
+        pPlayInfo->LoadingComplete(recvPacket.cid);
         break;
     }
     default:
+        cout << (int)packetType << "이 왔다.\n";
         break;
     }
-
-
 }
 
 void ServerFramework::FrameAdvance() {
 	// 게임을 진행시키면서 필요에 따라 메시지를 전송한다.
+    
 }
 void ServerFramework::AddClient(Client* _pClient) {
 	if (_pClient) {
@@ -267,13 +275,23 @@ void ServerFramework::RemoveClient(UINT _clientID) {
     if (pClients.contains(_clientID)) {
         cout << format("<- 클라이언트 종료 : clientID - {0}\n", pClients[_clientID]->GetClientID());
         
-        // 클라이언트가 방에 있었을 경우 방을 나간다.
-        ClientState clientState = pClients[_clientID]->GetClientState();
-        if (clientState == ClientState::roomReady || clientState == ClientState::roomWait || clientState == ClientState::roomWaitComeback || clientState == ClientState::roomPlay) {
-            Room* room = pClients[_clientID]->GetCurrentRoom();
-            room->LeaveUser(_clientID);
+        Client* pClient = pClients[_clientID];
+
+        // 클라이언트가 게임중이었을 경우 표시를 해두고 게임이 끝나면 종료시킨다.
+        PlayInfo* pPlayInfo = pClient->GetCurrentPlayInfo();
+        if (pPlayInfo != NULL) {
+            pClient->SetDisconnected(true);
         }
-        socketAndIdTable.erase(pClients[_clientID]->GetSocket());   // socket-id table에서 제거한다.
+
+        // 클라이언트가 방에 있었을 경우 방을 나간다.
+        Room* room = pClient->GetCurrentRoom();
+        if (room != NULL) {
+            room->LeaveUser(_clientID);
+            SendRoomOutPlayerAndRoomList(room, pClient);
+        }
+
+        // 메모리해제 및 컨테이너에서 삭제
+        socketAndIdTable.erase(pClient->GetSocket());   // socket-id table에서 제거한다.
         delete pClients[_clientID];
         pClients.erase(_clientID);
     }
@@ -286,6 +304,7 @@ UINT ServerFramework::SocketToID(SOCKET _socket) {
 }
 
 void ServerFramework::AddRoom(UINT hostID) {
+    cout << roomIDCount << "번 방을 추가합니다.\n";
     Room* pNewRoom = new Room(roomIDCount);
     pRooms[roomIDCount] = pNewRoom;
     pNewRoom->EnterUser(hostID);
@@ -294,6 +313,8 @@ void ServerFramework::AddRoom(UINT hostID) {
 }
 bool ServerFramework::RemoveRoom(UINT roomID) {
     if (pRooms.contains(roomID) && pRooms[roomID]->GetNumOfParticipants() == 0) {    // 참가자가 한명도 없을 경우
+        cout << roomID << "번 방을 삭제합니다.\n";
+
         delete pRooms[roomID];
         pRooms.erase(roomID);
         return true;
@@ -302,41 +323,43 @@ bool ServerFramework::RemoveRoom(UINT roomID) {
 }
 
 void ServerFramework::CreateRoomlistInfo() {
-    //// 보낼 데이터를 만든다.
-    //buffer.clear();
-
-    //SC_ROOMLIST_INFO sendPacket;
-    //sendPacket.nRoom = (UINT)pRooms.size();
-    //// 1. 방의 개수에 대한 정보 삽입
-    //buffer.insert(buffer.end(), (char*)&sendPacket, (char*)&sendPacket + sizeof(SC_ROOMLIST_INFO));
-    //// 2. 각 방에 대한 정보를 삽입
-    //for (auto [roomID, pRoom] : pRooms) {
-    //    SC_SUB_ROOMLIST_INFO sendSubPacket;
-    //    sendSubPacket.nParticipant = pRoom->GetNumOfParticipants();
-    //    sendSubPacket.roomID = roomID;
-    //    sendSubPacket.started = pRoom->IsGameRunning();
-    //    buffer.insert(buffer.end(), (char*)&sendSubPacket, (char*)&sendSubPacket + sizeof(SC_SUB_ROOMLIST_INFO));
-    //}
-
-
-
-
-    ///////////////////////////////////////////////////// 테스트
     // 보낼 데이터를 만든다.
-    uniform_int_distribution<int> uid0(10,10), uid1(1, 5), uid2(0, 1);
-
     buffer.clear();
+
     SC_ROOMLIST_INFO sendPacket;
-    sendPacket.nRoom = (UINT)uid0(rd);
+    sendPacket.nRoom = (UINT)pRooms.size();
     // 1. 방의 개수에 대한 정보 삽입
     buffer.insert(buffer.end(), (char*)&sendPacket, (char*)&sendPacket + sizeof(SC_ROOMLIST_INFO));
-    for (UINT i = 0; i < sendPacket.nRoom; ++i) {
+    // 2. 각 방에 대한 정보를 삽입
+    for (auto [roomID, pRoom] : pRooms) {
         SC_SUB_ROOMLIST_INFO sendSubPacket;
-        sendSubPacket.nParticipant = uid1(rd);
-        sendSubPacket.roomID = i;
-        sendSubPacket.started = uid2(rd);
+        sendSubPacket.nParticipant = pRoom->GetNumOfParticipants();
+        sendSubPacket.roomID = roomID;
+        sendSubPacket.started = pRoom->IsGameRunning();
         buffer.insert(buffer.end(), (char*)&sendSubPacket, (char*)&sendSubPacket + sizeof(SC_SUB_ROOMLIST_INFO));
     }
-    ////////////////////////////////////////////////////////
 
+}
+
+void ServerFramework::AddPlayInfo(UINT _roomID) {
+    PlayInfo* pPlayInfo = new PlayInfo(playInfoIDCount);
+    pPlayInfos[playInfoIDCount] = pPlayInfo;
+    pPlayInfo->Init(_roomID);
+
+    ++playInfoIDCount;
+}
+
+void ServerFramework::SendRoomOutPlayerAndRoomList(Room* pRoom, Client* pOutClient) {
+    // 2. 방에 존재하는 플레이에게 나간 플레이어의 정보를 전송한다.
+    SC_ROOM_OUT_PLAYER_INFO sendPacket;
+    sendPacket.outClientID = pOutClient->GetClientID();
+    sendPacket.newHostID = pRoom->GetHostID();
+    for (UINT clientID : pRoom->GetParticipants()) {
+        cout << clientID << "플레이어에게 " << sendPacket.outClientID << "플레이어가 나갔다고 패킷 전송함\n";
+        send(pClients[clientID]->GetSocket(), (char*)&sendPacket, sizeof(SC_ROOM_OUT_PLAYER_INFO), 0);
+    }
+
+    // 3. 나간 플레이어에게 방의 리스트 정보를 보낸다.
+    CreateRoomlistInfo();
+    send(pOutClient->GetSocket(), buffer.data(), (int)buffer.size(), 0);
 }

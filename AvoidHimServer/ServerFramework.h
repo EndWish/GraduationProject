@@ -1,6 +1,7 @@
 #pragma once
 #include "Client.h"
 #include "Room.h"
+#include "PlayInfo.h"
 
 class ServerFramework {
 private:
@@ -19,6 +20,8 @@ private:
 	unordered_map<SOCKET, UINT> socketAndIdTable;
 	UINT roomIDCount;
 	unordered_map<UINT, Room*> pRooms;
+	UINT playInfoIDCount;
+	unordered_map<UINT, PlayInfo*> pPlayInfos;
 
 public:
 	// 생성자 및 소멸자
@@ -26,7 +29,8 @@ public:
 	~ServerFramework();
 
 	// Get + Set 함수
-	Client& GetClient(int _clientID) { return *pClients[_clientID]; }
+	Client* GetClient(int _clientID) { return pClients.contains(_clientID) ? pClients[_clientID] : NULL; }
+	Room* GetRoom(int _roomID) { return pRooms.contains(_roomID) ? pRooms[_roomID] : NULL; }
 
 	// 일반 함수
 	void ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam);
@@ -40,7 +44,11 @@ public:
 
 	void AddRoom(UINT hostID);
 	bool RemoveRoom(UINT roomID);
-
 	void CreateRoomlistInfo();	// 방리스트에 대한 정보를 buffer에 저장한다.
+
+	void AddPlayInfo(UINT _roomID);	// PlayInfo를 생성과 초기화를 하고 컨테이너에 추가한다.
+
+	void SendRoomOutPlayerAndRoomList(Room* pRoom, Client* pOutClient);
+
 };
 
