@@ -8,6 +8,8 @@
 
 #define MAX_LIGHTS 100 // 조명의 최대 갯수
 #define GRAVITY 9.8f
+#define C_WIDTH 800
+#define C_HEIGHT 600
 
 //#define DEBUG
 
@@ -99,6 +101,12 @@ extern RECT clientRect;
 
 using Microsoft::WRL::ComPtr;
 
+
+// 패킷의 크기만큼에서 패킷의 타입 크기만큼을 제외한 실제 패킷의 내용만 Recv하는 함수
+template <class Packet>
+void RecvContents(Packet& _packet) {
+	recv(server_sock, (char*)&_packet + sizeof(SC_PACKET_TYPE), sizeof(Packet) - sizeof(SC_PACKET_TYPE), 0);
+}
 
 
 // float 난수 생성

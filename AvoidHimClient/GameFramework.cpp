@@ -129,8 +129,8 @@ GameFramework::GameFramework() {
 	msaa4xEnable = false;
 	msaa4xLevel = 0;
 	
-	clientHeight = 1920;
-	clientWidth = 1080;
+	clientHeight = C_WIDTH;
+	clientWidth = C_HEIGHT;
 	dsvDescriptorIncrementSize = 0;
 	fenceValues.fill(0);
 	rtvDescriptorIncrementSize = 0;
@@ -424,6 +424,10 @@ void GameFramework::CreateGraphicsRootSignature() {
 bool GameFramework::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature)
 {
 	return shaderManager.InitShader(_pDevice, _pRootSignature);
+}
+
+void GameFramework::NoticeCloseToServer() {
+	if (pScenes.top()) pScenes.top()->NoticeCloseToServer();
 }
 
 // get, set ÇÔ¼ö

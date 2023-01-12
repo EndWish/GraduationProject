@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Texture.h"
 #include "GameObject.h"
-
+#include "GameFramework.h"
 
 Texture::Texture(int _nTexture, UINT _textureType, int _nSampler, int _nRootParameter) {
 
@@ -171,13 +171,27 @@ D3D12_SHADER_RESOURCE_VIEW_DESC Texture::GetShaderResourceViewDesc(int _index)
 shared_ptr<Texture> TextureManager::GetTexture(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	if (!storage.contains(_name)) {	// 처음 불러온 텍스처일 경우
+		GameFramework& gameFramework = GameFramework::Instance();
 		shared_ptr<Texture> newTexture = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 
 		bool result = newTexture->LoadFromFile(_name, _pDevice, _pCommandList, RESOURCE_TEXTURE2D, 0, 4);
 
 		if (!result) return nullptr;
+
+		shared_ptr<Shader> pUIShader = gameFramework.GetShader("UIShader");
+		pUIShader->CreateShaderResourceViews(_pDevice, newTexture, 0, 4);
 		storage[_name] = newTexture;
 	}
+	return storage[_name];
+}
+
+shared_ptr<Texture> TextureManager::GetExistTexture(const string& _name)
+{
+	if (!storage.contains(_name)) {	// 처음 불러온 텍스처일 경우
+		cout << "텍스처가 없습니다!!\n";
+		return nullptr;
+	}
+	cout << _name << "으로 변경\n";
 	return storage[_name];
 }
 

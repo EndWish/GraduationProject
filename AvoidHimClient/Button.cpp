@@ -17,6 +17,7 @@ Button::Button(string _imgName, XMFLOAT2 _size, XMFLOAT2 _position, ButtonType _
 	
 	
 	if (type == ButtonType::room) {
+		
 		D2D1_RECT_F rect = D2D1::RectF(_position.x * ratio.x + _size.x * ratio.x / 2, _position.y * ratio.y + _size.y * ratio.y / 2, _position.x * ratio.x + _size.x * ratio.x, _position.y * ratio.y + _size.y * ratio.y);
 		shared_ptr<TextBox> newText = make_shared<TextBox>((WCHAR*)L"ÈÞ¸Õµ¸¿òÃ¼", D2D1::ColorF(1,1,1,1), 40.0f, rect);
 		newText->SetText(L"1/5");
@@ -99,5 +100,6 @@ void RoomButton::UpdateState(UINT _roomID, UINT _participant, RoomState _state) 
 	}
 
 	texts[1]->SetText(L"#" + to_wstring(_roomID));
+	SetRoomIndex(_roomID);
 }
 

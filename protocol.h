@@ -104,6 +104,7 @@ struct SC_ROOM_VISIT_PLAYER_INFO {
 struct SC_ROOM_OUT_PLAYER_INFO {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::roomOutPlayerInfo;
 	UINT cid = 0;
+	UINT newHostID = 0;
 };
 
 struct SC_FAIL {		// 방 입장에 실패했을 경우 보내주는 패킷

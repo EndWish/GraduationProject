@@ -4,14 +4,13 @@
 
 unique_ptr<TextLayer> TextLayer::spInstance;
 
-Image2D::Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XMFLOAT2 _uvsize, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)
+Image2D::Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XMFLOAT2 _uvsize, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _enable)
 {
 	GameFramework& gameFramework = GameFramework::Instance();
-	enable = true;
-	pTexture = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
-
-	pTexture->LoadFromFile(_fileName, _pDevice, _pCommandList, RESOURCE_TEXTURE2D, 0, 4);
-	cout << _fileName << "\n";
+	enable = _enable;
+	pTexture = gameFramework.GetTextureManager().GetTexture(_fileName, _pDevice, _pCommandList);
+	
+	name = _fileName;
 	position = XMFLOAT2(_position.x - 1, -_position.y + 1 - _size.y);
 	startuv = XMFLOAT2(0, 0);
 	sizeuv = _uvsize;
@@ -31,8 +30,7 @@ Image2D::Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XM
 	positionBufferView.StrideInBytes = sizeof(XMFLOAT2);
 	positionBufferView.SizeInBytes = sizeof(XMFLOAT2) * 6;
 
-	shared_ptr<Shader> pUIShader = gameFramework.GetShader("UIShader");
-	pUIShader->CreateShaderResourceViews(_pDevice, pTexture, 0, 4);
+	
 }
 
 Image2D::~Image2D() {
@@ -66,6 +64,12 @@ void Image2D::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews = { positionBufferView };
 	_pCommandList->IASetVertexBuffers(0, 1, &vertexBuffersViews);
 	_pCommandList->DrawInstanced(6, 1, 0, 0);
+}
+
+
+void Image2D::SetTexture(const string& _name) {
+	GameFramework& gameFramework = GameFramework::Instance();
+	pTexture = gameFramework.GetTextureManager().GetExistTexture(_name);
 }
 
 

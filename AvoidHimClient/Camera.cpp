@@ -5,8 +5,8 @@
 Camera::Camera() {
 	viewTransform = Matrix4x4::Identity();
 	projectionTransform = Matrix4x4::Identity();
-	viewPort = { 0,0, 1920, 1080, 0, 1 };
-	scissorRect = { 0,0, 1920, 1080 };
+	viewPort = { 0,0, C_WIDTH, C_HEIGHT, 0, 1 };
+	scissorRect = { 0,0, C_WIDTH, C_HEIGHT };
 
 }
 

@@ -75,7 +75,7 @@ private:
 
 public:
 
-	Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XMFLOAT2 _uvsize, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XMFLOAT2 _uvsize, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _enable = true);
 	~Image2D();
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void ReleaseUploadBuffers() { pPositionUploadBuffer.Reset(); };
@@ -84,4 +84,7 @@ public:
 	void SetStartUV(XMFLOAT2 _startuv) { startuv = _startuv; };
 	void SetSizeUV(XMFLOAT2 _sizeuv) { sizeuv = _sizeuv; };
 	void SetPress(bool _isClick) { pressed = _isClick; };
+	void SetTexture(const string& _name);
 };
+
+/////////////////////////////////////

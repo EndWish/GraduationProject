@@ -74,10 +74,6 @@ private:
 	
 	ShaderManager shaderManager;
 	// 애니메이션 매니저 ? 
-
-	// 루트 시그니처 Get
-	ComPtr<ID3D12RootSignature> GetRootSignature() { return pRootSignature; }
-
 	// 씬
 	stack<shared_ptr<Scene>> pScenes;
 
@@ -103,10 +99,13 @@ protected:
 	// get set 함수
 public:
 
+	void NoticeCloseToServer();
 	void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);
 	void ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam);
 	pair<int, int> GetClientSize();
 
+	// 루트 시그니처 Get
+	ComPtr<ID3D12RootSignature> GetRootSignature() { return pRootSignature; }
 	const shared_ptr<Scene>& GetCurrentScene() const;
 	MeshManager& GetMeshManager();
 	TextureManager& GetTextureManager();

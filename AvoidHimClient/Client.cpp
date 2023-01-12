@@ -45,7 +45,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock == INVALID_SOCKET) SockErrorQuit("socket()");
 
-    string serverIP = "127.0.0.1";
+    string serverIP = "172.30.1.49";
     // connect()
     struct sockaddr_in serveraddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
@@ -112,7 +112,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU |
         WS_BORDER;
 
-    RECT windowSize = { 0, 0, 1920, 1080 };
+    RECT windowSize = { 0, 0, C_WIDTH, C_HEIGHT };
     AdjustWindowRect(&windowSize, dwStyle, FALSE);
 
     hWnd = CreateWindow(szWindowClass, szTitle, dwStyle, CW_USEDEFAULT,
@@ -147,7 +147,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_SOCKET:
         GameFramework::Instance().ProcessSocketMessage(hWnd, message, wParam, lParam);
         break;
+        // 클라이언트가 종료할 때 서버에게 종료사실을 알려준다.
+    case WM_CLOSE:
     case WM_DESTROY:
+        GameFramework::Instance().NoticeCloseToServer();
         PostQuitMessage(0);
         break;
     default:

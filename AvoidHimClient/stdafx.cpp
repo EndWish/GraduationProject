@@ -14,7 +14,6 @@ RECT clientRect;
 random_device rd;
 mt19937 gen;
 
-
 float random(float min, float max) {
 	uniform_real_distribution<float> dis(min, max);
 	return dis(rd);

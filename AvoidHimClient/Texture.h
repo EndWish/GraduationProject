@@ -53,5 +53,6 @@ class TextureManager {
 	unordered_map<string, shared_ptr<Texture>> storage;
 public:
 	shared_ptr<Texture> GetTexture(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	shared_ptr<Texture> GetExistTexture(const string& _name);
 	void ReleaseUploadBuffers();
 };
