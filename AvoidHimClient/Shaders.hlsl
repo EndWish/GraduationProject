@@ -93,30 +93,40 @@ VS_2D_OUT Vertex2DShader(VS_2D_IN input) {
     //startpos = float2(0,0);
     
     // 2DUI는 항상 z = 0 (맨 앞)에 그려지고, depth값도 쓴다.
+    // 이미지를 그릴 기본 사각형 좌표에 이미지의 좌표값을 쉐이더단계에서 더한다. 
     output.position = float4(input.position.x + startpos.x, input.position.y + startpos.y, 0, 1);
     
     float x, y;
+    
+    // 
     if (input.position.x == 0)
         output.uv.x = startuv.x;
-    else
+    else  
         output.uv.x = startuv.x + 1;
     
+    // 윗부분을 1, 아래를 0으로 
     if (input.position.y == 0)
-        output.uv.y = startuv.y;
+        output.uv.y = startuv.y + 1;
     else
-        output.uv.y = startuv.y - 1;
+        output.uv.y = startuv.y;
 
     return output;
 }
 
 float4 Pixel2DShader(VS_2D_OUT input) : SV_TARGET {
+    
+    float2 uv = input.uv;
     float2 startuv = float2(worldTransform._41, worldTransform._43);
     float2 sizeuv = float2(worldTransform._42, worldTransform._44);
+    if (worldTransform._14 > 0.1f) {
+        uv.x -= 0.05f;
+        uv.y -= 0.05f;     
+    }
     if (sizeuv.x + startuv.x < input.uv.x) 
         discard;
     if (sizeuv.y - startuv.y < input.uv.y) 
         discard;
-    float4 color = albedoMap.Sample(gssWrap, input.uv);
+    float4 color = albedoMap.Sample(gssClamp, uv);
     if (color.a < 0.01f)
         discard;
     if (worldTransform._14 > 0.1f)

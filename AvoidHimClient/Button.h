@@ -13,6 +13,10 @@ enum class ButtonType : unsigned char { //
 	readyCancel,
 	quitRoom,
 	title,
+
+	nextRoomPage,
+	prevRoomPage,
+	refreshRoomList,
 };
 
 enum class RoomState : unsigned char {
@@ -31,7 +35,7 @@ protected:
 	shared_ptr<Image2D> img;	// 버튼을 그릴 이미지
 	XMFLOAT2 position;			// 버튼의 뷰포트 좌표계 기준 위치
 	XMFLOAT2 size;				// 버튼의 크기
-	vector<shared_ptr<TextBox>> texts;	// 버튼 내의 텍스트들의 벡터
+	vector<shared_ptr<TextBox>> pTexts;	// 버튼 내의 텍스트들의 벡터
 
 public:
 	Button(string _imgName, XMFLOAT2 _size, XMFLOAT2 _position, ButtonType _type, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _enable = true);

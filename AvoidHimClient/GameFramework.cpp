@@ -37,8 +37,8 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 		TextLayer::Create(nSwapChainBuffer, gameFramework.pDevice, gameFramework.pCommandQueue, gameFramework.pRenderTargetBuffers, gameFramework.clientWidth, gameFramework.clientHeight);
 
 		// 최초씬 생성
-		shared_ptr<Scene> startScene = make_shared<LobbyScene>();
-		gameFramework.PushScene(startScene);
+		shared_ptr<Scene> pScene = make_shared<LobbyScene>();
+		gameFramework.PushScene(pScene);
 
 		// 히트박스용 메쉬 생성
 		gameFramework.meshManager.GetHitBoxMesh().Create(gameFramework.pDevice, gameFramework.pCommandList);
@@ -403,7 +403,6 @@ void GameFramework::CreateGraphicsRootSignature() {
 	samplerDesc[1].RegisterSpace = 0;
 	samplerDesc[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
-
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
 	::ZeroMemory(&rootSignatureDesc, sizeof(D3D12_ROOT_SIGNATURE_DESC));
@@ -458,11 +457,6 @@ void GameFramework::FrameAdvance() {
 
 	gameTimer.Tick(.0f);
 
-	if (pScenes.empty()) {
-		// 최초씬 생성
-		shared_ptr<Scene> startScene = make_shared<LobbyScene>();
-		PushScene(startScene);
-	}
 
 	if (!pScenes.empty()) {	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
 		pScenes.top()->AnimateObjects(gameTimer.GetTimeElapsed(), pDevice, pCommandList);
@@ -501,7 +495,7 @@ void GameFramework::FrameAdvance() {
 //렌더 타겟 뷰(서술자)와 깊이-스텐실 뷰(서술자)를 출력-병합 단계(OM)에 연결한다. 
 	pCommandList->OMSetRenderTargets(1, &rtvCPUDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
 
-	float pClearColor[4] = { 0.0f, 0.1f, 0.3f, 1.0f };
+	float pClearColor[4] = { 0.0f, 0.4f, 0.1f, 1.0f };
 	pCommandList->ClearRenderTargetView(rtvCPUDescriptorHandle, pClearColor, 0, NULL);
 
 	//원하는 값으로 깊이-스텐실(뷰)을 지운다. 
@@ -626,18 +620,31 @@ void GameFramework::ProcessInput() {
 }
 
 void GameFramework::PushScene(const shared_ptr<Scene>& _pScene) {
+	GameFramework& gameFramework = *spInstance;
+	gameFramework.pCommandList->Reset(gameFramework.pCommandAllocator.Get(), NULL);
+
+
 	pScenes.push(_pScene);
 	pScenes.top()->Init(pDevice, pCommandList);
+
+	gameFramework.pCommandList->Close();
+
+	vector<ComPtr<ID3D12CommandList>> pCommandLists = { gameFramework.pCommandList.Get() };
+	gameFramework.pCommandQueue->ExecuteCommandLists(1, pCommandLists.data()->GetAddressOf());
+	gameFramework.WaitForGpuComplete();
 }
+
 void GameFramework::PopScene() {
 	if (!pScenes.empty()) {
 		pScenes.pop();
 	}
 }
+ 
 void GameFramework::ChangeScene(const shared_ptr<Scene>& _pScene) {
 	PopScene();
 	PushScene(_pScene);
 }
+
 void GameFramework::ClearScene() {
 
 	while (!pScenes.empty()) {

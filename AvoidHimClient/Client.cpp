@@ -4,7 +4,6 @@
 #include "GameFramework.h"
 
 #define MAX_LOADSTRING 100
-
 HINSTANCE hInst;                                
 WCHAR szTitle[MAX_LOADSTRING];                  
 WCHAR szWindowClass[MAX_LOADSTRING];            
@@ -39,13 +38,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
     // 윈속 초기화
     WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0) 
         return 1;
     
     server_sock = socket(AF_INET, SOCK_STREAM, 0);
     if (server_sock == INVALID_SOCKET) SockErrorQuit("socket()");
 
     string serverIP = "172.30.1.49";
+    //string serverIP = "127.0.0.1";
     // connect()
     struct sockaddr_in serveraddr;
     memset(&serveraddr, 0, sizeof(serveraddr));

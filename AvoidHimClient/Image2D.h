@@ -6,12 +6,13 @@ class TextBox  {
 	D2D1_RECT_F  rect; // 범위
 	ComPtr<IDWriteTextFormat> format;	// 텍스트 포맷
 	ComPtr<ID2D1SolidColorBrush> brush;
-
+	bool enable;
 public:
-	TextBox(WCHAR* _fontName, D2D1::ColorF _color, float _fontSize, D2D1_RECT_F& _rect);
+	TextBox(WCHAR* _fontName, D2D1::ColorF _color, XMFLOAT2 _position, XMFLOAT2 _size, float _fontSize, bool _enable = true);
 	~TextBox();
 	void SetText(wstring _text);
 	void Render();
+	void SetEnable(bool _enable) { enable = _enable; };
 };
 
 

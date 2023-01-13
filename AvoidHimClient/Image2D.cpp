@@ -73,13 +73,14 @@ void Image2D::SetTexture(const string& _name) {
 }
 
 
-TextBox::TextBox(WCHAR* _fontName, D2D1::ColorF _color, float _fontSize, D2D1_RECT_F& _rect) {
+TextBox::TextBox(WCHAR* _fontName, D2D1::ColorF _color, XMFLOAT2 _position, XMFLOAT2 _size, float _fontSize, bool _enable) {
 	TextLayer& textLayer = TextLayer::Instance();
 
-	rect = _rect;
+	D2D1_RECT_F rc{ _position.x * C_WIDTH / 2, _position.y * C_HEIGHT / 2, _position.x * C_WIDTH / 2 + _size.x * C_WIDTH / 2, _position.y * C_HEIGHT / 2 + _size.y * C_WIDTH / 2 };
+	rect = rc;
 	brush = textLayer.CreateBrush(_color);
 	format = textLayer.CreateTextFormat(_fontName, _fontSize);
-
+	enable = _enable;
 }
 
 TextBox::~TextBox() {
@@ -92,6 +93,8 @@ void TextBox::SetText(wstring _text) {
 
 void TextBox::Render()
 {
+	if (!enable) return;
+
 	TextLayer& textLayer = TextLayer::Instance();
 	GameFramework& gameFramework = GameFramework::Instance();
 

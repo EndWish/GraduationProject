@@ -57,9 +57,9 @@ private:
 	D3D12_RECT scissorRect;
 	unordered_map<string, shared_ptr<Image2D>> pUIs;
 	vector<SC_SUB_ROOMLIST_INFO> roomList;
+	unordered_map<string, shared_ptr<TextBox>> pTexts;
 	UINT roomPage;	// 1페이지부터 시작
 	RoomInfo roomInfo;
-
 	LobbyState currState;
 
 public:

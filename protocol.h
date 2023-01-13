@@ -20,7 +20,7 @@ enum class CS_PACKET_TYPE : char {
 
 enum class SC_PACKET_TYPE : char {
 	giveClientID = 1, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail, 
-	ready, allPlayerLoadingComplete
+	ready, gameStart, allPlayerLoadingComplete
 
 };
 
@@ -89,6 +89,11 @@ struct SC_ROOM_PLAYERS_INFO {	// 방에 입장했을때 존재하는 플레이어들의 정보를 보
 	UINT hostID = 0;
 	UINT nParticipant = 0;
 	SC_SUB_ROOM_PLAYERS_INFO participantInfos[maxParticipant];
+};
+
+struct SC_GAME_START {	// 방장이 시작을 눌렀을 떄 시작 가능한 상태인지 확인하여 보내줌
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::gameStart;
+	UINT professorClientID;
 };
 
 struct SC_ROOM_VISIT_PLAYER_INFO {

@@ -89,6 +89,17 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	shared_ptr<Button> pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.2f), ButtonType::start, _pDevice, _pCommandList);
 	pButtons["startButton"] = pButton;
 
+	name = "2DUI_optionButton";
+	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.4f), ButtonType::option, _pDevice, _pCommandList);
+	pButtons["optionButton"] = pButton;
+
+	name = "2DUI_exitButton";
+	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.6f), ButtonType::exit, _pDevice, _pCommandList);
+	pButtons["exitButton"] = pButton;
+
+	/////////////////////////////////
+
+
 	name = "2DUI_title";
 	pButton = make_shared<RoomButton>(name, XMFLOAT2(0.4f, 0.2f), XMFLOAT2(0.5f, 0.4f), ButtonType::room, _pDevice, _pCommandList, false);
 	pButtons["RoomButton_1"] = pButton;
@@ -103,14 +114,17 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	pButton = make_shared<RoomButton>(name, XMFLOAT2(0.4f, 0.2f), XMFLOAT2(1.1f, 1.0f), ButtonType::room, _pDevice, _pCommandList, false);
 	pButtons["RoomButton_6"] = pButton;
 
+	name = "2DUI_refreshRoomButton";
+	pButton = make_shared<Button>(name, XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.7f, 0.1f), ButtonType::refreshRoomList, _pDevice, _pCommandList, false);
+	pButtons["refreshRoomButton"] = pButton;
 
-	name = "2DUI_optionButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.4f), ButtonType::option, _pDevice, _pCommandList);
-	pButtons["optionButton"] = pButton;
+	name = "2DUI_leftArrowButton";
+	pButton = make_shared<Button>(name, XMFLOAT2(0.2f, 0.1f), XMFLOAT2(0.7f, 1.3f), ButtonType::prevRoomPage, _pDevice, _pCommandList, false);
+	pButtons["prevRoomButton"] = pButton;
 
-	name = "2DUI_exitButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.6f), ButtonType::exit, _pDevice, _pCommandList);
-	pButtons["exitButton"] = pButton;
+	name = "2DUI_rightArrowButton";
+	pButton = make_shared<Button>(name, XMFLOAT2(0.2f, 0.1f), XMFLOAT2(1.1f, 1.3f), ButtonType::nextRoomPage, _pDevice, _pCommandList, false);
+	pButtons["nextRoomButton"] = pButton;
 
 	name = "2DUI_titleButton";
 	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::title, _pDevice, _pCommandList, false);
@@ -119,7 +133,13 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	name = "2DUI_makeRoom";
 	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::makeRoom, _pDevice, _pCommandList, false);
 	pButtons["makeRoom"] = pButton;
-	
+
+	shared_ptr<TextBox> pText = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 1.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, false);
+	pTexts["pageNum"] = pText;
+
+	////////////////////////////////////
+
+
 	name = "2DUI_startButton";
 	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::gameStart, _pDevice, _pCommandList, false);
 	pButtons["gameStartButton"] = pButton;
@@ -144,14 +164,7 @@ void LobbyScene::ReleaseUploadBuffers() {
 }
 
 void LobbyScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	if (_keysBuffers['A'] & 0xF0) {
-		if (roomPage > 1) roomPage--;
-		UpdateRoomText();
-	}
-	if (_keysBuffers['D'] & 0xF0) {
-		 roomPage++;
-		 UpdateRoomText();
-	}
+
 }
 
 void LobbyScene::AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)  {
@@ -229,7 +242,13 @@ void LobbyScene::ProcessSocketMessage() {
 		auto pindex = roomInfo.findPlayerIndex(packet.outClientID);
 		roomInfo.players.erase(pindex);
 		roomInfo.nParticipant--;
+		roomInfo.host = packet.newHostID;
 		UpdateReadyState();
+		break;
+	}
+	case SC_PACKET_TYPE::gameStart: {
+		shared_ptr<Scene> pScene = make_shared<PlayScene>();
+		gameFramework.PushScene(pScene);	// 실제 플레이 씬을 적재한다.
 		break;
 	}
 	default:
@@ -257,6 +276,9 @@ void LobbyScene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLi
 	for (auto [name, pButton] : pButtons) {
 		pButton->PostRender();
 	}
+	for (auto [name, pText] : pTexts) {
+		pText->Render();
+	}
 }
 
 void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 경우
@@ -272,7 +294,7 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		changeUI(LobbyState::roomList, true);
 		break;
 	}
-	case  ButtonType::makeRoom: {
+	case ButtonType::makeRoom: {
 
 		// 패킷을 보낸 후, 방 생성은 항상 성공하므로 서버에게 따로 패킷을 받지 않고
 		// 본인이 만든 방으로 입장한다.
@@ -292,7 +314,7 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		UpdateReadyState();
 		break;
 	}
-	case  ButtonType::quitRoom: {
+	case ButtonType::quitRoom: {
 		// 나간 후 방에서 나갔다는 사실을 알려주는 패킷을 전송.
 	// 서버에서 알아서 이 패킷을 받아 룸 리스트를 다시 보내준다.
 		CS_OUT_ROOM sPacket;
@@ -322,6 +344,21 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		send(server_sock, (char*)&sPacket, sizeof(CS_READY), 0);
 		break;
 	}
+	case ButtonType::prevRoomPage: {
+			if (roomPage > 1) roomPage--;
+			UpdateRoomText();
+			break;
+	}
+	case ButtonType::nextRoomPage: {
+			roomPage++;
+			UpdateRoomText();
+	}
+	case ButtonType::refreshRoomList: {
+		CS_QUERY_ROOMLIST_INFO sPacket;
+		sPacket.cid = cid;
+		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_ROOMLIST_INFO), 0);
+	}
+
 	}
 }
 
@@ -354,8 +391,15 @@ void LobbyScene::changeUI(LobbyState _state, bool _active) {
 		pButtons["RoomButton_6"]->SetEnable(_active);
 		pButtons["makeRoom"]->SetEnable(_active);
 		pButtons["titleButton"]->SetEnable(_active);
-
-		if (_active) pBackGround->SetEnable(false);
+		pButtons["prevRoomButton"]->SetEnable(_active);
+		pButtons["nextRoomButton"]->SetEnable(_active);
+		pButtons["refreshRoomButton"]->SetEnable(_active);
+		pTexts["pageNum"]->SetEnable(_active); 
+		
+		if (_active) {
+			pBackGround->SetEnable(false);
+			roomPage = 1;
+		}
 	}
 	if (_state == LobbyState::inRoom) {
 		pButtons["gameStartButton"]->SetEnable(_active);
@@ -375,6 +419,7 @@ void LobbyScene::changeUI(LobbyState _state, bool _active) {
 }
 
 void LobbyScene::UpdateRoomText() {
+	pTexts["pageNum"]->SetText(to_wstring(roomPage));
 	// 현재 페이지 기준 방 리스트의 정보로 갱신 해준다.
 	bool lastRoom = false;
 	UINT startIndex = 1 + (roomPage - 1) * 6;
@@ -382,7 +427,7 @@ void LobbyScene::UpdateRoomText() {
 
 		UINT participant = 0;
 		RoomState state = RoomState::none;
-		string baseName = "RoomButton_" + to_string(i);
+		string baseName = "RoomButton_" + to_string(i - startIndex + 1);
 
 		// 방 정보가 없는 칸일 경우 
 		if (roomList.size() < i) {
@@ -408,6 +453,8 @@ void LobbyScene::UpdateRoomText() {
 }
 
 void LobbyScene::UpdateReadyState() {
+
+	// 현재 방에 ui, 버튼 상태등을 갱신
 	bool bChange = false;
 	for (int i = 0; i < 5; ++i) {
 		pUIs["2DUI_ready_" + to_string(i + 1)]->SetEnable(false);
@@ -497,7 +544,6 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pLightsBuffer = ::CreateBufferResource(_pDevice, _pCommandList, NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
 	
 	pLightsBuffer->Map(0, NULL, (void**)&pMappedLights);
-
 }
 
 void PlayScene::ReleaseUploadBuffers() {
@@ -556,7 +602,6 @@ void PlayScene::ReActButton(shared_ptr<Button> _pButton)
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
-	
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
 	camera->SetViewPortAndScissorRect(_pCommandList);
 	camera->UpdateShaderVariable(_pCommandList);
