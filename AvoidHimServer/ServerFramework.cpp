@@ -238,7 +238,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
 
             SC_READY sendPacket;
             sendPacket.readyClientID = pClient->GetClientID();
-            //해당플레이어가 레디했다는 것을 알린다. [진행중]
+            //해당플레이어가 레디했다는 것을 알린다.
             for (UINT participant : pRoom->GetParticipants())
                 send(pClients[participant]->GetSocket(), (char*)&sendPacket, sizeof(SC_READY), 0);
         }

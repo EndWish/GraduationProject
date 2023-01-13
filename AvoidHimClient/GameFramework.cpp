@@ -597,18 +597,34 @@ void GameFramework::ChangeSwapChainState() {
 void GameFramework::ProcessInput() {
 
 	static array<UCHAR, 256> keysBuffers;
+	static array<bool, 256> keysDownStateBuffers;	// 키를 누른상태인지 확인한는 변수, 
+	static array<bool, 256> keysDownBuffers;		// 현재 키가 눌린 순간인지 저장하는 변수
+	static array<bool, 256> keysUpBuffers;		// 현재 키가 눌린 순간인지 저장하는 변수
 	bool processedByScene = false;
 
+	keysDownBuffers.fill(false);
+	keysUpBuffers.fill(false);
 	if (GetKeyboardState((PBYTE)keysBuffers.data())) {	// 키보드로 부터 입력데이터를 받으면
-		if (keysBuffers['F'] & 0xF0) {
+		for (int i = 0; i < 256; ++i) {
+			if ((keysBuffers[i] & 0xF0) && !keysDownStateBuffers[i]) {	// 키를 누르는 순간
+				keysDownStateBuffers[i] = true;
+				keysDownBuffers[i] = true;
+			}
+			else if (!(keysBuffers[i] & 0xF0) && keysDownStateBuffers[i]) {	// 키를 떼는 순간.
+				keysDownStateBuffers[i] = false;
+				keysUpBuffers[i] = true;
+			}
+		}
+		
+		if (keysDownBuffers['F']) {
 			//ChangeSwapChainState();
 		}
 		// 일시정지
-		if (keysBuffers['P'] & 0xF0) {
+		if (keysDownBuffers['P']) {
 			//PushScene(make_shared<Scene>("pause"));
 		}
 		// 재시작
-		if (keysBuffers['R'] & 0xF0) {
+		if (keysDownBuffers['R']) {
 			cout << "!";
 		}
 		
