@@ -6,7 +6,7 @@ PlayInfo::PlayInfo(UINT _playInfoID) : playInfoID{ _playInfoID } {
 	allPlayerLoadingComplete = false;
 	professorID = 0;
 
-	zone = ZONE<int>(XMFLOAT3(100, 100, 100), XMUINT3(10, 10, 10));
+	zone = ZONE<vector<int>, int>(XMFLOAT3(100, 100, 100), XMINT3(10, 10, 10));
 	timer = Timer();
 	professorID = 0;
 }

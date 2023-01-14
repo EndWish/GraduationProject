@@ -59,7 +59,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     serveraddr.sin_port = htons(SERVERPORT);
 
 
-    result = bind(listen_sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
+    result = ::bind(listen_sock, (struct sockaddr*)&serveraddr, sizeof(serveraddr));
     if (result == SOCKET_ERROR) SockErrorQuit("bind()");
 
     // listen()
