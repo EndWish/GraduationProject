@@ -548,7 +548,6 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 void PlayScene::ReleaseUploadBuffers() {
 	GameFramework& gameFramework = GameFramework::Instance();
-	gameFramework.GetMeshManager().ReleaseUploadBuffers();
 	gameFramework.GetTextureManager().ReleaseUploadBuffers();
 }
 

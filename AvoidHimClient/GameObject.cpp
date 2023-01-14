@@ -202,28 +202,6 @@ void GameObject::UpdateOOBB() {
 	}
 }
 
-void GameObject::MergeOOBB(const shared_ptr<GameObject>& _coverObject) {
-	if (!isOOBBCover) {
-
-		BoundingOrientedBox& coverBox = _coverObject->baseOrientedBox;
-		if (GetName() == "GameObject_Gunship") {
-			// gunship의 경우 boundingBox의 중심이 원점이 아닌 0 1.012005 -4.939685이므로 조정해줌
-			coverBox.Center = pMesh.lock()->GetOOBB().Center;
-		}
-		// 두 OOBB의 거리차를 구함
-		XMFLOAT3 gapPosition = Vector3::Subtract(_coverObject->GetWorldPosition(), GetWorldPosition());
-
-		XMFLOAT3 worldCenter = Vector3::Add(baseOrientedBox.Center, gapPosition);
-		XMFLOAT3 distance = Vector3::Subtract(worldCenter, coverBox.Center);
-
-		coverBox.Extents.x = max(abs(distance.x) + baseOrientedBox.Extents.x, coverBox.Extents.x);
-		coverBox.Extents.y = max(abs(distance.y) + baseOrientedBox.Extents.y, coverBox.Extents.y);
-		coverBox.Extents.z = max(abs(distance.z) + baseOrientedBox.Extents.z, coverBox.Extents.z);
-	}
-	for (const auto& pChild : pChildren) {
-		pChild->MergeOOBB(_coverObject);
-	}
-}
 
 void GameObject::UpdateObject() {
 	UpdateLocalTransform();
@@ -285,7 +263,7 @@ bool GameObject::CheckRemove() const {
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
-	if (pMesh.lock()) {	// 메쉬가 있을 경우에만 렌더링을 한다.
+	if (pMesh) {	// 메쉬가 있을 경우에만 렌더링을 한다.
 		UpdateShaderVariable(_pCommandList);
 
 		// 각 마테리얼에 맞는 서브메쉬를 그린다.
@@ -293,7 +271,7 @@ void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) 
 			// 해당 서브매쉬와 매칭되는 마테리얼을 Set 해준다.
 
 			materials[i]->UpdateShaderVariable(_pCommandList);
-			pMesh.lock()->Render(_pCommandList, i);
+			pMesh->Render(_pCommandList, i);
 		}
 	}
 	for (const auto& pChild : pChildren) {
@@ -350,14 +328,17 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 	_file.read((char*)&localRotation, sizeof(XMFLOAT4));
 	UpdateLocalTransform();
 
-	string meshFileName;
-	// meshNameSize(UINT) / meshName(string)
-	ReadStringBinary(meshFileName, _file);
+	cout << name << " : " << localPosition << " , " << localScale << " , " << localRotation << "\n";
+	int haveMesh;
+	// haveMesh(bool)
+
+	_file.read((char*)&haveMesh, sizeof(int));
 
 	// 메시가 없을경우 스킵
-	if (meshFileName.size() != 0) {
+	if (haveMesh) {
 
-		pMesh = gameFramework.GetMeshManager().GetMesh(meshFileName, _pDevice, _pCommandList, shared_from_this());
+		pMesh = make_shared<Mesh>();
+		pMesh->LoadFromFile(_file, _pDevice, _pCommandList, shared_from_this());
 
 		// 마테리얼 정보
 		// nMaterial (UINT)
@@ -371,10 +352,11 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 			mat->LoadMaterial(_file, _pDevice, _pCommandList);
 		}
 	}
-	int nChildren;
-	_file.read((char*)&nChildren, sizeof(int));
+	UINT nChildren;
+	_file.read((char*)&nChildren, sizeof(UINT));
 	pChildren.reserve(nChildren);
-
+	cout << nChildren << "\n";
+		
 	for (int i = 0; i < nChildren; ++i) {
 		shared_ptr<GameObject> newObject = make_shared<GameObject>();
 		newObject->LoadFromFile(_file, _pDevice, _pCommandList, _coverObject);
@@ -419,9 +401,11 @@ shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, con
 			return nullptr;
 		}
 
+		// 최상위 오브젝트를 커버 OOBB로 설정
 		newObject->SetOOBBCover(true);
 		newObject->LoadFromFile(file, _pDevice, _pCommandList, newObject);
 
+		// 최상위 오브젝트는 따로 파일에서 읽어옴
 		BoundingOrientedBox box;
 		file.read((char*)&box.Center, sizeof(XMFLOAT3));
 		file.read((char*)&box.Extents, sizeof(XMFLOAT3));

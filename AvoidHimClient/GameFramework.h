@@ -63,8 +63,6 @@ private:
 	
 	int clientWidth;
 	int clientHeight;
-	// 메쉬 메니저
-	MeshManager meshManager;
 	
 	// 마테리얼 매니저
 	TextureManager textureManager;
@@ -107,7 +105,7 @@ public:
 	// 루트 시그니처 Get
 	ComPtr<ID3D12RootSignature> GetRootSignature() { return pRootSignature; }
 	const shared_ptr<Scene>& GetCurrentScene() const;
-	MeshManager& GetMeshManager();
+
 	TextureManager& GetTextureManager();
 	GameObjectManager& GetGameObjectManager();
 	shared_ptr<Shader> GetShader(const string& _name);

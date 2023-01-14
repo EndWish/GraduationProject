@@ -33,7 +33,7 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 	string textureName;
 	ReadStringBinary(textureName, _file);
 
-
+		
 	// 해당 이름을 가진 텍스처를 가져옴
 	if (textureName != "null") {
 		pTexture = gameFramework.GetTextureManager().GetTexture(textureName, _pDevice, _pCommandList);
@@ -43,7 +43,6 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 		}
 		else {
 			nType = 1;
-			cout << textureName << "," << pTexture->GetnRootParameter() << " , " << pTexture->GetnTexture() << "\n";
 			auto pShader = gameFramework.GetShader("BasicShader");
 			pShader->CreateShaderResourceViews(_pDevice, pTexture, 0, 4);
 		}

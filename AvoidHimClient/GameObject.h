@@ -51,7 +51,7 @@ protected:
 	weak_ptr<GameObject> pParent;
 	vector<shared_ptr<GameObject>> pChildren;
 
-	weak_ptr<Mesh> pMesh;
+	shared_ptr<Mesh> pMesh;
 
 
 	vector<shared_ptr<Material>> materials;
@@ -117,7 +117,6 @@ public:
 
 	//  OOBB 갱신
 	void UpdateOOBB();
-	void MergeOOBB(const shared_ptr<GameObject>& _coverObject);
 
 	// 오브젝트 내용 전체적으로 갱신
 	void UpdateObject();
@@ -151,6 +150,5 @@ class GameObjectManager {
 
 public:
 	shared_ptr<GameObject> GetGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-
 };
 

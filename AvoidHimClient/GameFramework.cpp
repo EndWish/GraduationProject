@@ -41,7 +41,7 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 		gameFramework.PushScene(pScene);
 
 		// 히트박스용 메쉬 생성
-		gameFramework.meshManager.GetHitBoxMesh().Create(gameFramework.pDevice, gameFramework.pCommandList);
+		//gameFramework.meshManager.GetHitBoxMesh().Create(gameFramework.pDevice, gameFramework.pCommandList);
 
 
 
@@ -430,10 +430,6 @@ void GameFramework::NoticeCloseToServer() {
 }
 
 // get, set 함수
-
-MeshManager& GameFramework::GetMeshManager() {
-	return meshManager;
-}
 
 TextureManager& GameFramework::GetTextureManager() {
 	return textureManager;

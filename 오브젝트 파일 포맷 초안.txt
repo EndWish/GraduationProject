@@ -1,0 +1,44 @@
+
+nameSize (UINT) / name(string) ( 실제 storage에 들어갈 최상위 오브젝트 )
+localPosition, Scale, Rotation(float3, float3, float4)
+haveMesh(bool) 0일경우 메쉬 정보가 없음. 없다면 아래 메쉬, 마테리얼 스킵. 메쉬 있을경우 1
+메쉬 정보
+마테리얼 정보. 각 서브메시는 순서대로 다른 마테리얼을 사용 
+
+nChildren(UINT)
+{
+	nameSize (UINT) / name(string)
+	eachTransform (float4x4)
+	메쉬 정보 ( 없다면 스킵 )
+	nChildren(UINT)
+}
+
+coverOOBB
+
+/////////////////////////////////////////////////////////////////
+
+
+메쉬 정보
+nVertex(UINT)
+boundingBox (float * 6)
+positions (float * 3 * nVertex)
+normals (float * 3 * nVertex)
+nTexcoord (UINT) 	- 0일경우 텍스처를 사용하지 않는 메쉬
+texcoord (float * 3 * nVertex)
+nSubMesh (UINT)
+nSubMeshIndex (UINT) / subMeshIndex (UINT * nSubMeshIndex)    ....( * nSubMesh )
+
+
+/////////////////////////////////////////////////////////////////
+마테리얼 정보
+nMaterial(UINT)
+{
+	ambient(float * 4)
+	diffuse(float * 4)
+	specular(float * 4)
+	emissive(float * 4)
+	텍스처 정보
+}
+
+
+

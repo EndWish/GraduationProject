@@ -44,7 +44,7 @@ public:		// 멤버 함수▼
 	// get, set함수
 	const string& GetName() const;
 	const BoundingOrientedBox& GetOOBB() const;
-	void LoadFromFile(const string& _fileName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj);
+	void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj);
 	void ReleaseUploadBuffers();
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex);
 	virtual void RenderInstancing(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex, const D3D12_VERTEX_BUFFER_VIEW& _instanceBufferView, int _numInstance);
@@ -68,20 +68,4 @@ public:
 	~HitBoxMesh();
 	void Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-};
-
-/////////////////////////////////////////////////////////////////////////////////////
-///	MeshManager
-class MeshManager {
-public:
-	MeshManager();
-	~MeshManager();
-
-protected:
-	unordered_map<string, shared_ptr<Mesh>> storage;
-	HitBoxMesh hitBoxMesh;
-public:
-	HitBoxMesh& GetHitBoxMesh();
-	shared_ptr<Mesh> GetMesh(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj);
-	void ReleaseUploadBuffers();
 };
