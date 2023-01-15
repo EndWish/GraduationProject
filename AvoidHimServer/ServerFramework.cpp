@@ -204,7 +204,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         if (pRoom->GetHostID() == pClient->GetClientID()) {
             // 1-2. 다른 플레이어들이 모두 레디인지 확인하고 모두 레디한 상태라면 게임을 시작한다.
             
-            if (pRoom->GetNumOfParticipants() >= 3) {
+            if (pRoom->GetNumOfParticipants() >= 1) {
                 bool success = true;
                 for (UINT participant : pRoom->GetParticipants()) {
                     if (participant == pRoom->GetHostID())  // 방장은 제외하고

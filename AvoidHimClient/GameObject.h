@@ -16,17 +16,9 @@ class Player;
 class TerrainMap;
 class Camera;
 
-// 테스트 용
-static int guid = 0;
-
-struct INSTANCING_FORMAT {
-	XMFLOAT4X4 transform;
-};
-
 class GameObject : public enable_shared_from_this<GameObject> {
 
 protected:
-	int gid;
 	string name;
 
 	XMFLOAT4X4 worldTransform;
@@ -122,8 +114,6 @@ public:
 	void UpdateObject();
 
 	// 충돌 체크
-	void CheckCollision(const shared_ptr<GameObject>& _other);
-	//bool CheckCollisionWithTerrain(shared_ptr<TerrainMap> _pTerrain, XMFLOAT3 _moveVector);
 	// 애니메이션
 	shared_ptr<GameObject> FindFrame(const string& _name);
 	virtual void PrepareAnimate();

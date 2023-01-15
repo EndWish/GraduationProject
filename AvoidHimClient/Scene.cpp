@@ -52,14 +52,16 @@ void Scene::NoticeCloseToServer() {
 LobbyScene::LobbyScene()
 {
 	roomPage = 1;
+	currState = LobbyState::title;
+	viewPort = { 0,0, C_WIDTH, C_HEIGHT, 0, 1 };
+	scissorRect = { 0,0, C_WIDTH, C_HEIGHT };
 }
 
 LobbyScene::~LobbyScene()
 {
 }
 void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	viewPort = { 0,0, C_WIDTH, C_HEIGHT, 0, 1 };
-	scissorRect = { 0,0, C_WIDTH, C_HEIGHT };
+
 
 	GameFramework& gameFramework = GameFramework::Instance();
 	gameFramework.GetTextureManager().GetTexture("2DUI_readyButton", _pDevice, _pCommandList);
@@ -352,11 +354,13 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 	case ButtonType::nextRoomPage: {
 			roomPage++;
 			UpdateRoomText();
+			break;
 	}
 	case ButtonType::refreshRoomList: {
 		CS_QUERY_ROOMLIST_INFO sPacket;
 		sPacket.cid = cid;
 		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_ROOMLIST_INFO), 0);
+		break;
 	}
 
 	}
@@ -507,10 +511,9 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	GameFramework& gameFramework = GameFramework::Instance();
 	// 스테이지 생성
 	// 씬에 그려질 오브젝트들을 전부 빌드.
-	gameFramework.GetGameObjectManager().GetGameObject("Gunship", _pDevice, _pCommandList);
 
 	pPlayer = make_shared<Player>();
-	pPlayer->Create("Gunship", _pDevice, _pCommandList);
+	pPlayer->Create("TRChair_Low", _pDevice, _pCommandList);
 	pPlayer->SetLocalScale(XMFLOAT3(2.0f, 2.0f, 2.0f));
 	//pPlayer->SetLocalScale(XMFLOAT3(20.0f, 20.0f, 20.0f));
 	pPlayer->UpdateObject();
@@ -519,15 +522,16 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	shared_ptr<Light> baseLight = make_shared<Light>();
 	baseLight->lightType = 3;
 	baseLight->position = XMFLOAT3(0, 500, 0);
-	baseLight->direction = XMFLOAT3(0, -1, 0);
-	baseLight->diffuse = XMFLOAT4(0.2f, 0.2f, 0.2f, 1.f);
+	baseLight->direction = XMFLOAT3(0, -1, 1);
+	baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
 	AddLight(baseLight);
+
 
 	camera = make_shared<Camera>();
 	camera->Create(_pDevice, _pCommandList);
 
 	//camera->SetLocalPosition(XMFLOAT3(0.0, 0.0, 0.0));
-	camera->SetLocalPosition(XMFLOAT3(0.0, 10.0, -20));
+	camera->SetLocalPosition(XMFLOAT3(0.0, 1.0, -1.0));
 
 	camera->SetLocalRotation(Vector4::QuaternionRotation(XMFLOAT3(0, 1, 0), 0.0f));
 

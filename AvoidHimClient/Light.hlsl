@@ -54,7 +54,7 @@ cbuffer cbMaterialInfo : register(b4) {
 
 
 
-float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera)
+float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera, float4 _color)
 {
 
 	// 빛의 방향
@@ -68,12 +68,12 @@ float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera)
 		float3 reflectVector = reflect(-toLight, _normal);
 		specularFactor = pow(max(dot(reflectVector, _toCamera), 0.0f), specular.a);
 	}
-	
-    return ((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular));
+
+    return ((lights[_nIndex].ambient * ambient) + _color * (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular));
 }
 
 
-float4 PointLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera)
+float4 PointLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera, float4 _color)
 {
     float4 color = float4(0.0f, 0.0f, 0.0f, 0.0f);
 	// 빛과 정점사이 벡터로 거리 계산
@@ -94,13 +94,13 @@ float4 PointLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamer
 		}
 		// 1/(x+y*d+z*d*d). distance = 0일 경우 1/x
         float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, distance, distance*distance));
-        color = ((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular)) * attenuationFactor;
+        color = ((lights[_nIndex].ambient * ambient) + _color * (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular)) * attenuationFactor;
     }
 	return color;
 }
 
 
-float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera) {
+float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera, float4 _color) {
     float4 color = float4(0.0f, 0.0f, 0.0f, 0.0f);
     float3 toLight = lights[_nIndex].position - _position;
     float fDistance = length(toLight);
@@ -126,7 +126,7 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
         float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, fDistance, fDistance * fDistance));
 				
 				// 각 계수를 구한 빛에 대해 곱
-        color = ((lights[_nIndex].ambient * ambient) + (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * fSpecularFactor * specular)) * attenuationFactor * spotFactor;
+        color = ((lights[_nIndex].ambient * ambient) + _color * (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * fSpecularFactor * specular)) * attenuationFactor * spotFactor;
     }
     return color;
 }
@@ -134,6 +134,7 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
 
 float4 CalculateLight(float4 color, float3 _Position, float3 _Normal) {
     float alpha = color.a;
+    float4 newColor = float4(0, 0, 0, 1);
     float3 toCamera = normalize(cameraPosition - _Position);
 	 //float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
 	//color = float4(1.0f, 1.0f, 1.0f, 0.0f);
@@ -143,19 +144,19 @@ float4 CalculateLight(float4 color, float3 _Position, float3 _Normal) {
     for (int i = 0; i < nLight; i++) {
             if (lights[i].enable) {
                 if (lights[i].lightType == DIRECTIONAL_LIGHT) {
-                    color += DirectionalLight(i, _Normal, toCamera);
-                }
+                newColor += DirectionalLight(i, _Normal, toCamera, color);
+            }
                 else if (lights[i].lightType == POINT_LIGHT) {
-                    color += PointLight(i, _Position, _Normal, toCamera);
-                }
+                newColor += PointLight(i, _Position, _Normal, toCamera, color);
+            }
                 else if (lights[i].lightType == SPOT_LIGHT) {
-                    color += SpotLight(i, _Position, _Normal, toCamera);
-                }
+                newColor += SpotLight(i, _Position, _Normal, toCamera, color);
+            }
             }
     }
 
-    color += globalAmbient;
-    color.a = alpha;
-    return color;
+    newColor += color * globalAmbient;
+    newColor.a = 0.5;
+    return newColor;
 }
 

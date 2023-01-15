@@ -15,7 +15,6 @@ GameObject::GameObject() {
 	localScale = XMFLOAT3(1, 1, 1);
 	boundingBox = BoundingOrientedBox();
 	isOOBBCover = false;
-	gid = guid++;
 }
 GameObject::~GameObject() {
 
@@ -190,13 +189,11 @@ void GameObject::UpdateWorldTransform() {
 void GameObject::UpdateOOBB() {
 
 	if (isOOBBCover) {
-		XMFLOAT3 tmp = baseOrientedBox.Center;
 		baseOrientedBox.Transform(boundingBox, XMLoadFloat4x4(&worldTransform));
 
 		XMStoreFloat4(&boundingBox.Orientation, XMQuaternionNormalize(XMLoadFloat4(&boundingBox.Orientation)));
-
-
 	}
+
 	for (const auto& pChild : pChildren) {
 		pChild->UpdateOOBB();
 	}
@@ -209,26 +206,6 @@ void GameObject::UpdateObject() {
 	UpdateOOBB();
 }
 
-void GameObject::CheckCollision(const shared_ptr<GameObject>& _other) {
-	// 미사용
-	if (isOOBBCover) {
-		if (_other->isOOBBCover)
-		{
-			if (boundingBox.Intersects(_other->boundingBox)) {
-				//CollideReact(shared_from_this(), _other);
-			}
-			return;
-		}
-	}
-
-	// 둘다 Cover일때까지 내려감
-	for (const auto& pChild : _other->pChildren) {
-		CheckCollision(pChild);
-	}
-	for (const auto& pChild : pChildren) {
-		pChild->CheckCollision(_other);
-	}
-}
 
 shared_ptr<GameObject> GameObject::FindFrame(const string& _name) {
 	if (name == _name) {
@@ -328,12 +305,10 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 	_file.read((char*)&localRotation, sizeof(XMFLOAT4));
 	UpdateLocalTransform();
 
-	cout << name << " : " << localPosition << " , " << localScale << " , " << localRotation << "\n";
 	int haveMesh;
 	// haveMesh(bool)
 
 	_file.read((char*)&haveMesh, sizeof(int));
-
 	// 메시가 없을경우 스킵
 	if (haveMesh) {
 
@@ -355,7 +330,7 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 	UINT nChildren;
 	_file.read((char*)&nChildren, sizeof(UINT));
 	pChildren.reserve(nChildren);
-	cout << nChildren << "\n";
+	cout << name << " 의 자식 수는 " << nChildren << "\n";
 		
 	for (int i = 0; i < nChildren; ++i) {
 		shared_ptr<GameObject> newObject = make_shared<GameObject>();

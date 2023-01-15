@@ -115,20 +115,7 @@ public:
 		return sectors;
 	}
 
-	// 모든 오브젝트에게 함수수행
-	void Play(function<void(float)> func, float _timeElapsed) {
-		for (int x = _index.x - 1; x <= _index.x + 1; ++x) {
-			for (int y = _index.y - 1; y <= _index.y + 1; ++y) {
-				for (int z = _index.z - 1; z <= _index.z + 1; ++z) {
-					UINT3 index = UINT3(x, y, z);
-					for (_T* pObject : GetSector(index)) {
-						pObject->func(_timeElapsed);
-					}
-				}
-			}
-		}
-	}
-
+	
 };
 
 class PlayInfo {

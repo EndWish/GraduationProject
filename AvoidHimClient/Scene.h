@@ -36,8 +36,8 @@ enum class LobbyState : unsigned char {
 };
 
 struct RoomInfo {
-	UINT host;
-	UINT nParticipant;
+	UINT host = 0;
+	UINT nParticipant = 0;
 	vector<Player_Info> players;
 	auto findPlayerIndex(UINT _cid) {
 		return ranges::find(players, _cid, &Player_Info::clientID);

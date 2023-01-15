@@ -21,7 +21,6 @@ const BoundingOrientedBox& Mesh::GetOOBB() const {
 
 void Mesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj) {
 	GameFramework& gameFramework = GameFramework::Instance();
-	cout << "시작\n";
 	if (!_file) {
 		cout << "Mesh Load Failed" << "\n";
 		return;
@@ -30,20 +29,19 @@ void Mesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, c
 	_file.read((char*)&nVertex, sizeof(UINT));
 
 	name = _obj->GetName();
-
+	cout << nVertex << " :  nVertex\n";
 	// boundingBox (float * 6)
 	XMFLOAT3 oobbCenter, oobbExtents;
 	_file.read((char*)&oobbCenter, sizeof(XMFLOAT3));
 	_file.read((char*)&oobbExtents, sizeof(XMFLOAT3));
 	oobb = BoundingOrientedBox(oobbCenter, oobbExtents, XMFLOAT4A(0.0f, 0.0f, 0.0f, 1.0f));
 	_obj->SetBoundingBox(oobb);
-
+	cout << oobbCenter << " :  oobbCenter\n";
+	cout << oobbExtents << " :  oobbExtents\n";
 	// positions (float * 3 * nVertex)
 	vector<XMFLOAT3> positions(nVertex);
 	_file.read((char*)positions.data(), sizeof(float) * 3 * nVertex);
-	for (auto t : positions)
-		cout << t << " ";
-	cout << "\n";
+
 
 	// positions를 리소스로 만드는 과정
 	pPositionBuffer = CreateBufferResource(_pDevice, _pCommandList, positions.data(), sizeof(float) * 3 * nVertex, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pPositionUploadBuffer);
@@ -60,15 +58,11 @@ void Mesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, c
 	normalBufferView.StrideInBytes = sizeof(XMFLOAT3);
 	normalBufferView.SizeInBytes = sizeof(XMFLOAT3) * nVertex;
 
-	for (auto t : normals) 
-		cout << t << " ";
-	cout << "\n";
 
 	// 텍스처좌표값 읽기
 	int nTexCoord = 0;
 	_file.read((char*)&nTexCoord, sizeof(int));
 	vector<float> texcoords;
-	cout << nTexCoord << " \n";
 
 	if (nTexCoord > 0) {
 		// texcoord (float * 2 * nVertex)
