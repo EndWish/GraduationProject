@@ -6,7 +6,7 @@ PlayInfo::PlayInfo(UINT _playInfoID) : playInfoID{ _playInfoID } {
 	allPlayerLoadingComplete = false;
 	professorID = 0;
 
-	zone = ZONE<vector<int>, int>(XMFLOAT3(100, 100, 100), XMINT3(10, 10, 10));
+	zone = Zone(XMFLOAT3(100, 100, 100), XMINT3(10, 10, 10));
 	timer = Timer();
 	professorID = 0;
 }
@@ -75,18 +75,3 @@ void PlayInfo::ProcessLoadingComplete() {
 		send(ServerFramework::Instance().GetClient(participant)->GetSocket(), (char*)&sendPacket, sizeof(SC_All_PLAYER_LOADING_COMPLETE), 0);
 }
 
-//void PlayInfo::Escape(UINT _clientID) {
-//	Client* pClient = ServerFramework::Instance().GetClient(_clientID);
-//
-//	// loading 단계에서 탈주한 경우
-//	if (!allPlayerLoadingComplete) {
-//		if()
-//
-//	}
-//
-//	// 플레이 도중 탈주한 경우
-//	else {
-//
-//	}
-//
-//}
