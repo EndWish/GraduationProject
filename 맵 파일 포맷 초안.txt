@@ -1,0 +1,6 @@
+nInstance(UINT)
+{
+	nameSize(UINT) / fileName (string)
+	objectType(char)
+	position(float * 3) / scale(float * 3) / rotation(float * 3)
+}

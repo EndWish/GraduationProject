@@ -179,7 +179,39 @@ namespace Vector3 {
 		XMStoreFloat3(&xmf3Result, XMVector3Dot(XMLoadFloat3(&_vector1), XMLoadFloat3(&_vector2)));
 		return(xmf3Result.x);
 	}
-
+	// 벡터 나누기
+	inline XMFLOAT3 Division(const XMFLOAT3& _vector1, const  XMFLOAT3& _vector2) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMLoadFloat3(&_vector1) / XMLoadFloat3(&_vector2));
+		return result;
+	}
+	inline XMFLOAT3 Division(const XMFLOAT3& _vector1, const  XMINT3& _vector2) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMLoadFloat3(&_vector1) / XMLoadSInt3(&_vector2));
+		return result;
+	}
+	// 벡터 원소 곱
+	inline XMFLOAT3 Multiple(const XMFLOAT3& _vector1, const  XMFLOAT3& _vector2) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMLoadFloat3(&_vector1) * XMLoadFloat3(&_vector2));
+		return result;
+	}
+	inline XMFLOAT3 Multiple(const XMFLOAT3& _vector1, const  XMINT3& _vector2) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMLoadFloat3(&_vector1) * XMLoadSInt3(&_vector2));
+		return result;
+	}
+	// 집게
+	inline XMFLOAT3 Clamp(const XMFLOAT3& _vector, const  XMFLOAT3& _min, const  XMFLOAT3& _max) {
+		XMFLOAT3 result;
+		XMStoreFloat3(&result, XMVectorClamp(XMLoadFloat3(&_vector), XMLoadFloat3(&_min), XMLoadFloat3(&_max)));
+		return result;
+	}
+	inline XMINT3 Clamp(const XMINT3& _vector, const  XMINT3& _min, const  XMINT3& _max) {
+		XMINT3 result;
+		XMStoreSInt3(&result, XMVectorClamp(XMLoadSInt3(&_vector), XMLoadSInt3(&_min), XMLoadSInt3(&_max)));
+		return result;
+	}
 	inline XMFLOAT3 CrossProduct(XMFLOAT3& _vector1, XMFLOAT3& _vector2, bool bNormalize = true)
 	{
 		XMFLOAT3 xmf3Result;

@@ -33,7 +33,7 @@ enum class SC_FAIL_TYPE : int {
 	roomGameStarted,	// 이미 게임이 시작되었을 경우
 };
 
-enum class SectorLayer {
+enum class SectorLayer : char {
 	player,
 	obstacle,
 	attack,

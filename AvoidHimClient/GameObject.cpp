@@ -15,6 +15,7 @@ GameObject::GameObject() {
 	localScale = XMFLOAT3(1, 1, 1);
 	boundingBox = BoundingOrientedBox();
 	isOOBBCover = false;
+	instanceID = 0;
 }
 GameObject::~GameObject() {
 
@@ -239,7 +240,6 @@ bool GameObject::CheckRemove() const {
 }
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-
 	if (pMesh) {	// 메쉬가 있을 경우에만 렌더링을 한다.
 		UpdateShaderVariable(_pCommandList);
 

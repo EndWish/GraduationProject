@@ -33,11 +33,12 @@ nSubMeshIndex (UINT) / subMeshIndex (UINT * nSubMeshIndex)    ....( * nSubMesh )
 마테리얼 정보
 nMaterial(UINT)
 {
+        	albedoNameSize(UINT) / albedoName(string) -> 알베도 텍스처 이름
+            bumpNameSize(UINT) / bumpName(string) -> 노말맵 텍스처 이름
 	ambient(float * 4)
 	diffuse(float * 4)
 	specular(float * 4)
 	emissive(float * 4)
-	텍스처 정보
 }
 
 

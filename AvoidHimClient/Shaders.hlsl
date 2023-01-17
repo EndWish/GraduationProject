@@ -17,13 +17,14 @@ cbuffer cbGameObjectInfo : register(b2) {
 #define WATER_HEIGHT 150.0f
 
 #define MATERIAL_ALBEDO_MAP		0x01
-
+#define MATERIAL_NORMAL_MAP      0x02
 #define CWIDTH 1920
 #define CHEIGHT 1080
 
 
 // 텍스처
 Texture2D albedoMap : register(t5);
+Texture2D normalMap : register(t6);
 
 // 샘플러
 SamplerState gssWrap : register(s0);
@@ -61,9 +62,13 @@ VS_OUTPUT DefaultVertexShader(VS_INPUT input)
 
 [earlydepthstencil]
 float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET {
-    float4 cColor;
+    float4 cColor = float4(0, 0, 0, 1);
     if (drawMask & MATERIAL_ALBEDO_MAP) {
         cColor = albedoMap.Sample(gssWrap, input.uv);
+    }
+    if (drawMask & MATERIAL_NORMAL_MAP)
+    {
+        // 노말 매핑 수행
     }
     else {
         cColor = diffuse;

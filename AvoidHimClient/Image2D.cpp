@@ -6,9 +6,11 @@ unique_ptr<TextLayer> TextLayer::spInstance;
 
 Image2D::Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XMFLOAT2 _uvsize, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _enable)
 {
+
 	GameFramework& gameFramework = GameFramework::Instance();
+	auto pShader = gameFramework.GetShader("UIShader");
 	enable = _enable;
-	pTexture = gameFramework.GetTextureManager().GetTexture(_fileName, _pDevice, _pCommandList);
+	pTexture = gameFramework.GetTextureManager().GetTexture(_fileName, _pDevice, pShader, _pCommandList);
 	
 	name = _fileName;
 	position = XMFLOAT2(_position.x - 1, -_position.y + 1 - _size.y);

@@ -9,7 +9,7 @@ Texture::Texture(int _nTexture, UINT _textureType, int _nSampler, int _nRootPara
 	// nTextureType : 텍스처의 타입
 	// nSamplers : 샘플러의 개수. 정적 샘플러를 사용시 여기는 사용하지 않는다
 	// nRootParameters : 루트 파라미터의 개수
-	// 현재 코드에서는 알베도 맵 하나만 사용하므로 Texture(1,RESOURCE_TEXTURE2D,0,1);이 될것이다.
+	// 알베도, 노말맵을 사용하게 된다면 Texture(2, RESOURCE_TEXTURE2DARRAY, 0, 1);이 될것이다.
 	textureType = _textureType;
 
 	nTexture = _nTexture;
@@ -168,18 +168,16 @@ D3D12_SHADER_RESOURCE_VIEW_DESC Texture::GetShaderResourceViewDesc(int _index)
 /////////////////////////// TextureManager ////////////////////////
 
 
-shared_ptr<Texture> TextureManager::GetTexture(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-
+shared_ptr<Texture> TextureManager::GetTexture(const string& _name, const ComPtr<ID3D12Device>& _pDevice, shared_ptr<Shader> _pShader, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _rootParameterIndex) {
 	if (!storage.contains(_name)) {	// 처음 불러온 텍스처일 경우
 		GameFramework& gameFramework = GameFramework::Instance();
 		shared_ptr<Texture> newTexture = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 
-		bool result = newTexture->LoadFromFile(_name, _pDevice, _pCommandList, RESOURCE_TEXTURE2D, 0, 4);
+		bool result = newTexture->LoadFromFile(_name, _pDevice, _pCommandList, RESOURCE_TEXTURE2D, 0, _rootParameterIndex);
 
 		if (!result) return nullptr;
 
-		shared_ptr<Shader> pUIShader = gameFramework.GetShader("UIShader");
-		pUIShader->CreateShaderResourceViews(_pDevice, newTexture, 0, 4);
+		_pShader->CreateShaderResourceViews(_pDevice, newTexture, 0, _rootParameterIndex);
 		storage[_name] = newTexture;
 	}
 	return storage[_name];
@@ -191,7 +189,6 @@ shared_ptr<Texture> TextureManager::GetExistTexture(const string& _name)
 		cout << "텍스처가 없습니다!!\n";
 		return nullptr;
 	}
-	cout << _name << "으로 변경\n";
 	return storage[_name];
 }
 

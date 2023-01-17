@@ -51,7 +51,6 @@ GameObject* Sector::FindObject(SectorLayer _sectorLayer, UINT _objectID) {
 		cout << "찾으려는 오브젝트가 없습니다.\n";
 		return NULL;
 	}
-
 }
 
 

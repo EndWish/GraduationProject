@@ -16,9 +16,11 @@ class Player;
 class TerrainMap;
 class Camera;
 
+
 class GameObject : public enable_shared_from_this<GameObject> {
 
 protected:
+	UINT instanceID;
 	string name;
 
 	XMFLOAT4X4 worldTransform;
@@ -49,7 +51,6 @@ protected:
 	vector<shared_ptr<Material>> materials;
 
 public:
-	//friend RigidBody;
 
 	GameObject();
 	virtual ~GameObject();

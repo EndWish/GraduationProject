@@ -3,7 +3,7 @@
 #include "GameFramework.h"
 
 Material::Material() {
-
+	nType = 0;
 }
 
 Material::~Material() {
@@ -17,11 +17,13 @@ void Material::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pC
 		D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pMaterialBuffer->GetGPUVirtualAddress();
 		_pCommandList->SetGraphicsRootConstantBufferView(3, gpuVirtualAddress);
 	}
+	vector<shared_ptr<Texture>> pTextures{ pTexture, pBumpTexture };
+	for (auto& pTex : pTextures) {
 
-	if (pTexture) {
-		// 여기서 텍스처 정보를 쉐이더에 올림
-
-		pTexture->UpdateShaderVariable(_pCommandList);
+		if (pTex) {
+			// 여기서 텍스처 정보를 쉐이더에 올림
+			pTex->UpdateShaderVariable(_pCommandList);
+		}
 	}
 }
 
@@ -30,23 +32,26 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 
 	GameFramework& gameFramework = GameFramework::Instance();
 
+	// albedoNameSize(UINT) / albedoName(string) -> 알베도 텍스처 이름
+	// bumpNameSize(UINT) / bumpName(string) -> 노말맵 텍스처 이름
+	auto pShader = gameFramework.GetShader("BasicShader");
+	vector<shared_ptr<Texture>> pTextures(2);
 	string textureName;
-	ReadStringBinary(textureName, _file);
+	int i = 0;
 
-		
-	// 해당 이름을 가진 텍스처를 가져옴
-	if (textureName != "null") {
-		pTexture = gameFramework.GetTextureManager().GetTexture(textureName, _pDevice, _pCommandList);
-		if (!pTexture) {
-			nType = 0;
-			cout << textureName << "\n";
-		}
-		else {
-			nType = 1;
-			auto pShader = gameFramework.GetShader("BasicShader");
-			pShader->CreateShaderResourceViews(_pDevice, pTexture, 0, 4);
+	for (auto& pTex : pTextures) {
+
+		ReadStringBinary(textureName, _file);
+		if (textureName != "null") {
+			pTex = gameFramework.GetTextureManager().GetTexture(textureName, _pDevice, pShader,  _pCommandList, 4 + i);
+
+			if (pTex) {
+				nType += 1 << i++;
+			}
 		}
 	}
+	pTexture = pTextures[0];
+	pBumpTexture = pTextures[1];
 
 	shared_ptr<VS_MaterialMappedFormat> pMappedMaterial;
 

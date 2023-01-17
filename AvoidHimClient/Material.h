@@ -11,7 +11,9 @@ struct VS_MaterialMappedFormat {
 
 class Material {
 private:
-	shared_ptr<Texture> pTexture;
+	shared_ptr<Texture> pTexture;	// 알베도맵에 대한 텍스처
+	shared_ptr<Texture> pBumpTexture; // 노말맵에 대한 텍스처 
+
 	ComPtr<ID3D12Resource> pMaterialBuffer;
 	UINT nType = 0;			// 쉐이더 내에서 mask값을 위한 변수
 

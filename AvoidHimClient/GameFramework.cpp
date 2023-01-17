@@ -333,7 +333,7 @@ void GameFramework::CreateDepthStencilView() {
 void GameFramework::CreateGraphicsRootSignature() {
 	HRESULT hResult;
 
-	D3D12_DESCRIPTOR_RANGE pDescriptorRanges[1];
+	D3D12_DESCRIPTOR_RANGE pDescriptorRanges[2];
 
 	pDescriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[0].NumDescriptors = 1;
@@ -341,9 +341,14 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pDescriptorRanges[0].RegisterSpace = 0;
 	pDescriptorRanges[0].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
+	pDescriptorRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	pDescriptorRanges[1].NumDescriptors = 1;
+	pDescriptorRanges[1].BaseShaderRegister = 6;	// t6 = normalMap
+	pDescriptorRanges[1].RegisterSpace = 0;
+	pDescriptorRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 	// 루트 시그니처는 이후 계속 수정 
 	
-	D3D12_ROOT_PARAMETER pRootParameters[5];
+	D3D12_ROOT_PARAMETER pRootParameters[6];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
@@ -369,7 +374,12 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	pRootParameters[4].DescriptorTable.NumDescriptorRanges = 1;
 	pRootParameters[4].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[0];
-	pRootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// Texture
+	pRootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// Albedo Texture
+
+	pRootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	pRootParameters[5].DescriptorTable.NumDescriptorRanges = 1;
+	pRootParameters[5].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[1];
+	pRootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// Normal Texture
 
 	// 정적 샘플러
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[2];

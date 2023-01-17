@@ -61,14 +61,14 @@ LobbyScene::~LobbyScene()
 {
 }
 void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-
-
 	GameFramework& gameFramework = GameFramework::Instance();
-	gameFramework.GetTextureManager().GetTexture("2DUI_readyButton", _pDevice, _pCommandList);
-	gameFramework.GetTextureManager().GetTexture("2DUI_readyCancelButton", _pDevice, _pCommandList);
-	gameFramework.GetTextureManager().GetTexture("2DUI_ready", _pDevice, _pCommandList);
-	gameFramework.GetTextureManager().GetTexture("2DUI_host", _pDevice, _pCommandList);
-	gameFramework.GetTextureManager().GetTexture("2DUI_roomInfo", _pDevice, _pCommandList);
+
+	auto pShader = gameFramework.GetShader("UIShader");
+	gameFramework.GetTextureManager().GetTexture("2DUI_readyButton", _pDevice, pShader,_pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_readyCancelButton", _pDevice, pShader, _pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_ready", _pDevice, pShader, _pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_host", _pDevice, pShader, _pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_roomInfo", _pDevice, pShader, _pCommandList);
 	
 	string name = "2DUI_title";
 	pBackGround = make_shared<Image2D>(name, XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList);
@@ -362,7 +362,6 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_ROOMLIST_INFO), 0);
 		break;
 	}
-
 	}
 }
 
@@ -502,6 +501,10 @@ PlayScene::~PlayScene() {
 	pLightsBuffer->Unmap(0, NULL);
 }
 
+void PlayScene::SetPlayer(shared_ptr<Player> _pPlayer) {
+	pPlayer = _pPlayer;
+}
+
 void PlayScene::CheckCollision() {
 
 }
@@ -512,12 +515,9 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	// 스테이지 생성
 	// 씬에 그려질 오브젝트들을 전부 빌드.
 
-	pPlayer = make_shared<Player>();
-	pPlayer->Create("TRChair_Low", _pDevice, _pCommandList);
-	pPlayer->SetLocalScale(XMFLOAT3(2.0f, 2.0f, 2.0f));
-	//pPlayer->SetLocalScale(XMFLOAT3(20.0f, 20.0f, 20.0f));
-	pPlayer->UpdateObject();
-
+	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10));
+	
+	pZone->LoadZoneFromFile(_pDevice, _pCommandList);
 
 	shared_ptr<Light> baseLight = make_shared<Light>();
 	baseLight->lightType = 3;
@@ -531,7 +531,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	camera->Create(_pDevice, _pCommandList);
 
 	//camera->SetLocalPosition(XMFLOAT3(0.0, 0.0, 0.0));
-	camera->SetLocalPosition(XMFLOAT3(0.0, 1.0, -1.0));
+	camera->SetLocalPosition(XMFLOAT3(0.0, 2.0, -2.0));
 
 	camera->SetLocalRotation(Vector4::QuaternionRotation(XMFLOAT3(0, 1, 0), 0.0f));
 
@@ -612,7 +612,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	UpdateLightShaderVariables(_pCommandList);
 
 	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
-	pPlayer->Render(_pCommandList);
+	pZone->Render(_pCommandList);
 }
 
 void PlayScene::AddLight(const shared_ptr<Light>& _pLight) {

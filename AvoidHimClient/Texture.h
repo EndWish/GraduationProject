@@ -1,4 +1,7 @@
 #pragma once
+
+class Shader;
+
 class Texture : public enable_shared_from_this<Texture>
 {
 public:
@@ -52,7 +55,8 @@ public:
 class TextureManager {
 	unordered_map<string, shared_ptr<Texture>> storage;
 public:
-	shared_ptr<Texture> GetTexture(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	// 기본 루트 파라미터 인덱스는 4. (알베도 맵)
+	shared_ptr<Texture> GetTexture(const string& _name, const ComPtr<ID3D12Device>& _pDevice, shared_ptr<Shader> _pShader, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _rootParameterIndex = 4);
 	shared_ptr<Texture> GetExistTexture(const string& _name);
 	void ReleaseUploadBuffers();
 };

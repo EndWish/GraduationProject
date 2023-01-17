@@ -26,6 +26,7 @@ void ReadStringBinary(string& _dest, ifstream& _file){
 	_file.read((char*)&len, sizeof(len));
 	_dest.assign(len, ' ');
 	_file.read((char*)_dest.data(), sizeof(char) * len);
+	cout << len << " , " << _dest << "\n";
 }
 
 ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* _pData, UINT _byteSize, D3D12_HEAP_TYPE _heapType, D3D12_RESOURCE_STATES _resourceStates, ComPtr<ID3D12Resource>& _pUploadBuffer) {
