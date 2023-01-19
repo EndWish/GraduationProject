@@ -32,7 +32,9 @@ void Camera::Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gra
 	pCameraBuffer->Map(0, NULL, (void**)&pMappedCamera);
 
 	//UpdateViewTransform();
-	UpdateProjectionTransform(0.1f, 10000.0f, float(width) / height, 90.0f);
+	UpdateProjectionTransform(0.1f, 10.0f, float(width) / height, 90.0f);
+	pBoundingFrustum = make_shared<BoundingFrustum>(XMLoadFloat4x4(&projectionTransform));
+
 }
 
 void Camera::SetViewPortAndScissorRect(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -74,4 +76,21 @@ void Camera::UpdateProjectionTransform(float _nearDistance, float _farDistance, 
 void Camera::UpdateWorldTransform() {
 	GameObject::UpdateWorldTransform();
 	UpdateViewTransform();
+}
+void Camera::UpdateObject() {
+
+	// 미터 단위
+	float bias = 5.0f;
+
+	GameObject::UpdateObject();
+
+	// 현재 투영 행렬로 바운딩 프러스텀을 만든다.
+	BoundingFrustum b(XMLoadFloat4x4(&projectionTransform));
+
+	// 현재 카메라의 이동, 회전을 프러스텀에 적용한다.
+	b.Transform(*pBoundingFrustum, XMLoadFloat4x4(&worldTransform));
+
+	// 여러 섹터에 걸치는 오브젝트들이 그려지지 않는 것을 막기 위해 기존 프러스텀보다 살짝 더 크게 만든다.
+	pBoundingFrustum->Origin = Vector3::Subtract(pBoundingFrustum->Origin, Vector3::ScalarProduct(GetWorldLookVector(), bias));
+	pBoundingFrustum->Far += bias * 2.f;
 }

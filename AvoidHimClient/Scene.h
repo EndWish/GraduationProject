@@ -85,6 +85,9 @@ public:
 class PlayScene : public Scene {
 
 private:
+
+	shared_ptr<FrustumMesh> pFrustumMesh;
+
 	shared_ptr<Player> pPlayer;
 	// 다른 플레이어들도 추가
 	shared_ptr<Zone> pZone;

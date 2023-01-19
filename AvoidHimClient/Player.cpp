@@ -34,8 +34,18 @@ shared_ptr<Camera> Player::GetCamera() const {
 	return pCamera.lock();
 }
 
+void Player::SetCamera(shared_ptr<Camera> _pCamera) {
+	SetChild(_pCamera);
+	pCamera = _pCamera;
+}
+
 void Player::Animate(double _timeElapsed) {
 
 	if (pChildren[0]) pChildren[0]->Animate(_timeElapsed);
 
+}
+
+void Player::UpdateObject() {
+	GameObject::UpdateObject();
+	if(pCamera.lock()) pCamera.lock()->UpdateObject();
 }

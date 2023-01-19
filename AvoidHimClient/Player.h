@@ -18,7 +18,8 @@ public:
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
 	shared_ptr<Camera> GetCamera() const;
-
+	void SetCamera(shared_ptr<Camera> _pCamera);
 	void Animate(double _timeElapsed);
+	virtual void UpdateObject();
 
 };

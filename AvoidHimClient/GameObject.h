@@ -112,7 +112,7 @@ public:
 	void UpdateOOBB();
 
 	// 오브젝트 내용 전체적으로 갱신
-	void UpdateObject();
+	virtual void UpdateObject();
 
 	// 충돌 체크
 	// 애니메이션

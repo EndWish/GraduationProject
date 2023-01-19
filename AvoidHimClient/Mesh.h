@@ -69,3 +69,29 @@ public:
 	void Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
+
+struct FRUSTUM_POSITION_FORMAT {
+	XMFLOAT3 origin;
+	XMFLOAT3 nearPoint[4];
+	XMFLOAT3 farPoint[4];
+};
+
+class FrustumMesh {
+private:
+	D3D12_PRIMITIVE_TOPOLOGY primitiveTopology;
+	ComPtr<ID3D12Resource> pPositionBuffer;	// 버텍스의 위치 정보. Upload상태
+	ComPtr<ID3D12Resource> pPositionUploadBuffer;	// 버텍스의 위치 정보. Upload상태
+	D3D12_VERTEX_BUFFER_VIEW positionBufferView;
+	
+	shared_ptr<FRUSTUM_POSITION_FORMAT> pMappedFrustumMesh;
+
+	ComPtr<ID3D12Resource> pIndexBuffer;	// 인덱스 정보
+	ComPtr<ID3D12Resource> pIndexUploadBuffer;
+	D3D12_INDEX_BUFFER_VIEW indexBufferView;
+public:
+	FrustumMesh();
+	~FrustumMesh();
+	void Create(shared_ptr< BoundingFrustum> _pBoundingFrustum, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void UpdateMesh(shared_ptr< BoundingFrustum> _pBoundingFrustum);
+};

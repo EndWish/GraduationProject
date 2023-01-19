@@ -21,6 +21,7 @@ protected:
 
 	ComPtr<ID3D12Resource> pCameraBuffer;
 	shared_ptr<VS_CameraMappedFormat> pMappedCamera;
+	shared_ptr<BoundingFrustum> pBoundingFrustum;
 
 public:
 	Camera();
@@ -34,4 +35,7 @@ public:
 	void UpdateProjectionTransform(float _nearDistance, float _farDistance, float _aspectRatio, float _fovAngle);
 	void SetPlayerPos(XMFLOAT3 _playerPos) { playerPosition = _playerPos; };
 	virtual void UpdateWorldTransform();
+	virtual void UpdateObject();
+
+	shared_ptr<BoundingFrustum> GetBoundingFrustum() { return pBoundingFrustum; };
 };

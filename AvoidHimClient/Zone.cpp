@@ -150,35 +150,36 @@ vector<Sector*> Zone::GetAroundSectors(const XMINT3& _index) {
 // 뷰프러스텀과 충돌하는 섹터 얻기
 vector<Sector*> Zone::GetFrustumSectors(const BoundingFrustum& _frustum) {
 	// 분할정복을 이용하면 개선가능
-	vector<Sector*> sectors;
+	vector<Sector*> result;
 	for (int x = 0; x < div.x; ++x) {
 		for (int y = 0; y < div.y; ++y) {
 			for (int z = 0; z < div.z; ++z) {
 				XMINT3 index = XMINT3(x, y, z);
 				XMFLOAT3 extents = Vector3::ScalarProduct(sectorSize, 0.5f);
-				//center = startPoint + index * sectorSize - extend;
-				XMFLOAT3 center = Vector3::Subtract(Vector3::Add(startPoint, Vector3::Multiple(sectorSize, index)), extents);
+				//center = startPoint + index * sectorSize + extent;
+				XMFLOAT3 center = Vector3::Add(Vector3::Add(startPoint, Vector3::Multiple(sectorSize, index)), extents);
 
 				BoundingBox boundingBox(center, extents);
 				if (_frustum.Intersects(boundingBox)) {
-					sectors.push_back(GetSector(index));
+					result.push_back(GetSector(index));
 				}
 			}
 		}
 	}
-	return sectors;
+	return result;
 }
 
-void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	//  뷰 프러스텀과 충돌하는 섹터만 렌더하도록 수정
-	for (auto& zdiv : sectors) {
-		for (auto& ydiv : zdiv) {
-			for (auto& sector : ydiv) {
-				sector.Render(_pCommandList);
-			}
-		}
+void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum) {
+
+	int i = 0;
+	for (auto& t : GetFrustumSectors(*_pBoundingFrustum)) {
+		t->Render(_pCommandList);
+		i++;
 	}
+
+	//cout << i << "\n";
 }
+
 
 void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework gameFramework = GameFramework::Instance();
@@ -199,7 +200,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 	
 	// nInstance (UINT)
 	file.read((char*)&nInstance, sizeof(UINT));
-	cout << nInstance << "개가 있다.\n";
+
 	for (UINT objectID = 1; objectID <= nInstance; ++objectID) {
 		// nameSize(UINT) / fileName (string)
 		ReadStringBinary(objName, file);
@@ -212,8 +213,6 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		file.read((char*)&scale, sizeof(XMFLOAT3));
 		file.read((char*)&rotation, sizeof(XMFLOAT4));	
 
-		cout << objName << "의 타입 : " << (int)objType << " \n";
-		cout << position << " , " << scale << " , " << rotation << "\n";
 		switch (objType) {
 		case SectorLayer::player: {
 			shared_ptr<Player> pPlayer = make_shared<Player>();
@@ -224,7 +223,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pPlayer->UpdateObject();
 			pScene->SetPlayer(pPlayer);
 
-			AddObject(objType, objectID, pPlayer, GetIndex(position));
+			//AddObject(objType, objectID, pPlayer, GetIndex(position));
 			break;
 		}
 		case SectorLayer::obstacle: {
@@ -241,8 +240,6 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		}
 		cout << "로드 완료.\n";
 	}
-
-
 }
 
 

@@ -187,3 +187,59 @@ void HitBoxMesh::Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D1
 	indexBufferView.SizeInBytes = sizeof(UINT) * 24;
 
 }
+
+FrustumMesh::FrustumMesh() {
+}
+
+FrustumMesh::~FrustumMesh() {
+}
+
+void FrustumMesh::Create(shared_ptr< BoundingFrustum> _pBoundingFrustum, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	
+	BoundingFrustum& frustum = *_pBoundingFrustum;
+	frustum.Near += 2.0f;
+	frustum.Far -= 0.1f;
+	frustum.Orientation = Vector4::QuaternionIdentity();
+	FRUSTUM_POSITION_FORMAT positions;
+	positions.origin = frustum.Origin;
+	XMFLOAT3* pCorner = &positions.nearPoint[0];
+	frustum.GetCorners(pCorner);
+	primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+
+	pPositionBuffer = CreateBufferResource(_pDevice, _pCommandList, &positions, sizeof(XMFLOAT3) * 9, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pPositionUploadBuffer);
+	positionBufferView.BufferLocation = pPositionBuffer->GetGPUVirtualAddress();
+	positionBufferView.StrideInBytes = sizeof(XMFLOAT3);
+	positionBufferView.SizeInBytes = sizeof(XMFLOAT3) * 9;
+
+
+	vector<UINT> indices{
+		0,5,0,6,
+		0,7,0,8,
+		1,2,2,3,
+		3,4,4,1,
+		5,6,6,7,
+		7,8,8,5,
+	};
+
+	pIndexBuffer = CreateBufferResource(_pDevice, _pCommandList, indices.data(), sizeof(UINT) * 24, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_INDEX_BUFFER, pIndexUploadBuffer);
+	indexBufferView.BufferLocation = pIndexBuffer->GetGPUVirtualAddress();
+	indexBufferView.Format = DXGI_FORMAT_R32_UINT;
+	indexBufferView.SizeInBytes = sizeof(UINT) * 24;
+
+}
+
+void FrustumMesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[1] = { positionBufferView };
+	_pCommandList->IASetVertexBuffers(0, 1, vertexBuffersViews);
+	_pCommandList->IASetIndexBuffer(&indexBufferView);
+	_pCommandList->DrawIndexedInstanced(24, 1, 0, 0, 0);
+}
+
+void FrustumMesh::UpdateMesh(shared_ptr<BoundingFrustum> _pBoundingFrustum) {
+	pPositionBuffer->Map(0, NULL, (void**)&pMappedFrustumMesh);
+	pMappedFrustumMesh->origin = _pBoundingFrustum->Origin;
+	XMFLOAT3* pCorner = &pMappedFrustumMesh->nearPoint[0];
+	_pBoundingFrustum->GetCorners(pCorner);
+	pPositionBuffer->Unmap(0, NULL);
+}

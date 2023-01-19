@@ -138,3 +138,30 @@ float4 Pixel2DShader(VS_2D_OUT input) : SV_TARGET {
         color.rgb *= 0.3f;
     return color;
 }
+
+
+struct VS_BOUNDING_INPUT
+{
+    float3 position : POSITION;
+
+};
+
+struct VS_BOUNDING_OUTPUT
+{
+    float4 position : SV_POSITION;
+};
+
+
+VS_BOUNDING_OUTPUT BoundingVertexShader(VS_BOUNDING_INPUT input)
+{
+    // 현재 프러스텀은 정점에 월드변환이 적용되어 오기 때문에 임시로 world를 뺀 상태이다.
+    VS_BOUNDING_OUTPUT output;
+    output.position = mul(mul(float4(input.position, 1.0f), view), projection);
+    return output;
+}
+
+float4 BoundingPixelShader(VS_BOUNDING_OUTPUT input) : SV_TARGET
+{
+    float4 color = float4(1.0f, 0.0f, 0.0f, 1.0f);
+    return color;
+}

@@ -336,7 +336,7 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		// 누른 방 번호를 서버로 보내 입장 가능한지 물어본다.
 		CS_QUERY_VISIT_ROOM sPacket;
 		sPacket.cid = cid;
-		sPacket.visitRoomID = reinterpret_cast<RoomButton*>(_pButton.get())->GetRoomIndex();
+		sPacket.visitRoomID = reinterpret_pointer_cast<RoomButton>(_pButton)->GetRoomIndex();
 		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_VISIT_ROOM), 0);
 		break;
 	}
@@ -531,7 +531,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	camera->Create(_pDevice, _pCommandList);
 
 	//camera->SetLocalPosition(XMFLOAT3(0.0, 0.0, 0.0));
-	camera->SetLocalPosition(XMFLOAT3(0.0, 2.0, -2.0));
+	//camera->SetLocalPosition(XMFLOAT3(0.0, 1.0, -2.0));
 
 	camera->SetLocalRotation(Vector4::QuaternionRotation(XMFLOAT3(0, 1, 0), 0.0f));
 
@@ -540,13 +540,15 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	camera->UpdateLocalTransform();
 	camera->UpdateWorldTransform();
 
-	pPlayer->SetChild(camera);
+	pPlayer->SetCamera(camera);
 	pPlayer->UpdateObject();
+
+	pFrustumMesh = make_shared<FrustumMesh>();
+	pFrustumMesh->Create(camera->GetBoundingFrustum(), _pDevice, _pCommandList);
 
 	ComPtr<ID3D12Resource> temp;
 	UINT ncbElementBytes = ((sizeof(LightsMappedFormat) + 255) & ~255); //256의 배수
 	pLightsBuffer = ::CreateBufferResource(_pDevice, _pCommandList, NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
-	
 	pLightsBuffer->Map(0, NULL, (void**)&pMappedLights);
 }
 
@@ -560,8 +562,30 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, floa
 
 
 	GameFramework& gameFramework = GameFramework::Instance();
-
-
+	if (_keysBuffers['A'] & 0xF0) {
+		pPlayer->Rotate(XMFLOAT3(0, 1, 0), 90.0f, _timeElapsed);
+		pPlayer->UpdateObject();
+	}
+	if (_keysBuffers['D'] & 0xF0) {
+		pPlayer->Rotate(XMFLOAT3(0, 1, 0), -90.0f, _timeElapsed);
+		pPlayer->UpdateObject();
+	}
+	if (_keysBuffers['W'] & 0xF0) {
+		pPlayer->MoveFront(0.1f);
+		pPlayer->UpdateObject();
+	}
+	if (_keysBuffers['S'] & 0xF0) {
+		pPlayer->MoveFront(-0.1f);
+		pPlayer->UpdateObject();
+	}
+	if (_keysBuffers['1'] & 0xF0) {
+		pPlayer->MoveUp(-0.1f);
+		pPlayer->UpdateObject();
+	}
+	if (_keysBuffers['2'] & 0xF0) {
+		pPlayer->MoveUp(0.1f);
+		pPlayer->UpdateObject();
+	}
 }
 
 void PlayScene::AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -612,7 +636,12 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	UpdateLightShaderVariables(_pCommandList);
 
 	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
-	pZone->Render(_pCommandList);
+	auto t = pPlayer->GetCamera();
+	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
+
+	gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
+	pFrustumMesh->UpdateMesh(camera->GetBoundingFrustum());
+	pFrustumMesh->Render(_pCommandList);
 }
 
 void PlayScene::AddLight(const shared_ptr<Light>& _pLight) {

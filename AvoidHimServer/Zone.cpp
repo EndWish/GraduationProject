@@ -143,8 +143,8 @@ vector<Sector*> Zone::GetFrustumSectors(const BoundingFrustum& _frustum) {
 			for (int z = 0; z < div.z; ++z) {
 				XMINT3 index = XMINT3(x, y, z);
 				XMFLOAT3 extents = Vector3::ScalarProduct(sectorSize, 0.5f);
-				//center = startPoint + index * sectorSize - extend;
-				XMFLOAT3 center = Vector3::Subtract(Vector3::Add(startPoint, Vector3::Multiple(sectorSize, index)), extents);
+				//center = startPoint + index * sectorSize + extent;
+				XMFLOAT3 center = Vector3::Add(Vector3::Add(startPoint, Vector3::Multiple(sectorSize, index)), extents);
 
 				BoundingBox boundingBox(center, extents);
 				if (_frustum.Intersects(boundingBox)) {

@@ -269,6 +269,11 @@ namespace Vector4 {
 		XMStoreFloat4(&result, _scalar * XMLoadFloat4(&_vector));
 		return result;
 	}
+	inline XMFLOAT4 QuaternionIdentity() {
+		XMFLOAT4 result;
+		XMStoreFloat4(&result, XMQuaternionIdentity());
+		return result;
+	}
 }
 
 
