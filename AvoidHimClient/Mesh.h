@@ -3,12 +3,14 @@
 #include "Shader.h"
 #include "Material.h"
 
+struct Instancing_Data;
 class GameObject;
 class Particle;
 
 class Mesh {
 
 protected:
+	UINT refCount;
 	string name;
 
 
@@ -46,11 +48,11 @@ public:		// 멤버 함수▼
 	const BoundingOrientedBox& GetOOBB() const;
 	void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj);
 	void ReleaseUploadBuffers();
+	void AddRef();
+	UINT GetRef();
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex);
-	virtual void RenderInstancing(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex, const D3D12_VERTEX_BUFFER_VIEW& _instanceBufferView, int _numInstance);
+	virtual void RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex, Instancing_Data& _instanceData);
 };
-
-// 조명까지 계산 하는 메쉬
 
 // boundingBox 메쉬
 class HitBoxMesh {

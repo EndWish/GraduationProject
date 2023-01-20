@@ -364,6 +364,8 @@ D3D12_BLEND_DESC UIShader::CreateBlendState() {
 	return blendDesc;
 }
 
+//////////////// Bounding Mesh Shader ///////////////////
+
 BoundingMeshShader::BoundingMeshShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	Init(_pDevice, _pRootSignature);
 
@@ -413,6 +415,66 @@ D3D12_INPUT_LAYOUT_DESC BoundingMeshShader::CreateInputLayout() {
 	return inputLayoutDesc;
 }
 
+//////////////////// Instancing Shader ///////////////////////
+
+InstancingShader::InstancingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	CreateCbvSrvDescriptorHeaps(_pDevice, 0, 50);
+
+	Init(_pDevice, _pRootSignature);
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC envPipelineStateDesc;
+	ZeroMemory(&envPipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "InstanceVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "InstancePixelShader", "ps_5_1", pPSBlob);
+
+	HRESULT _hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (_hr == S_OK) cout << "InstancingShader 생성 성공\n";
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+	inputElementDescs.clear();
+}
+
+InstancingShader::~InstancingShader() {
+
+}
+
+D3D12_RASTERIZER_DESC InstancingShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	//	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	//rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+
+D3D12_INPUT_LAYOUT_DESC InstancingShader::CreateInputLayout() {
+	inputElementDescs.assign(7, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[1] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[2] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[3] = { "WORLDMAT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
+	inputElementDescs[4] = { "WORLDMAT", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 3, 16, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
+	inputElementDescs[5] = { "WORLDMAT", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 3, 32, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
+	inputElementDescs[6] = { "WORLDMAT", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 3, 48, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
+}
 
 /////////////////////////    Shader Manager   ////////////////////////////////
 
@@ -428,6 +490,10 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 	
 	shared_ptr<Shader> boundingShader = make_shared<BoundingMeshShader>(_pDevice, _pRootSignature);
 	if (boundingShader) storage["BoundingMeshShader"] = boundingShader;
+	else return false;
+
+	shared_ptr<Shader> instancingShader = make_shared<InstancingShader>(_pDevice, _pRootSignature);
+	if (instancingShader) storage["InstancingShader"] = instancingShader;
 	else return false;
 	// 이후에 계속 추가
 

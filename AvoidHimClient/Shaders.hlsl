@@ -30,23 +30,20 @@ Texture2D normalMap : register(t6);
 SamplerState gssWrap : register(s0);
 SamplerState gssClamp : register(s1);
 
-struct VS_INPUT
-{
+struct VS_INPUT {
 	float3 position : POSITION;
 	float3 normal : NORMAL;
     float2 uv : TEXCOORD;
 };
 
-struct VS_OUTPUT
-{
+struct VS_OUTPUT {
     float4 position : SV_POSITION;
     float3 positionW : POSITION;
     float3 normal : NORMAL;
     float2 uv : TEXCOORD;
 };
 
-VS_OUTPUT DefaultVertexShader(VS_INPUT input)
-{
+VS_OUTPUT DefaultVertexShader(VS_INPUT input) {
     VS_OUTPUT output;
 
     output.normal = mul(input.normal, (float3x3) worldTransform);
@@ -140,28 +137,68 @@ float4 Pixel2DShader(VS_2D_OUT input) : SV_TARGET {
 }
 
 
-struct VS_BOUNDING_INPUT
-{
+struct VS_BOUNDING_INPUT {
     float3 position : POSITION;
-
 };
 
-struct VS_BOUNDING_OUTPUT
-{
+struct VS_BOUNDING_OUTPUT {
     float4 position : SV_POSITION;
 };
 
 
-VS_BOUNDING_OUTPUT BoundingVertexShader(VS_BOUNDING_INPUT input)
-{
+VS_BOUNDING_OUTPUT BoundingVertexShader(VS_BOUNDING_INPUT input) {
     // 현재 프러스텀은 정점에 월드변환이 적용되어 오기 때문에 임시로 world를 뺀 상태이다.
     VS_BOUNDING_OUTPUT output;
     output.position = mul(mul(float4(input.position, 1.0f), view), projection);
     return output;
 }
 
-float4 BoundingPixelShader(VS_BOUNDING_OUTPUT input) : SV_TARGET
-{
+float4 BoundingPixelShader(VS_BOUNDING_OUTPUT input) : SV_TARGET {
     float4 color = float4(1.0f, 0.0f, 0.0f, 1.0f);
+    return color;
+}
+
+/////////////////////////////////////////
+
+struct VS_INSTANCING_INPUT {
+    float3 position : POSITION;
+    float3 normal : NORMAL;
+    float2 uv : TEXCOORD;
+    float4x4 worldMatrix : WORLDMAT;
+};
+
+VS_OUTPUT InstanceVertexShader(VS_INSTANCING_INPUT input) {
+    VS_OUTPUT output;
+    
+    output.normal = mul(input.normal, (float3x3) input.worldMatrix);
+    output.normal = normalize(output.normal);
+
+	// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
+    output.positionW = (float3) mul(float4(input.position, 1.0f), input.worldMatrix);
+
+    output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
+    output.uv = input.uv;
+    return output;
+}
+
+[earlydepthstencil]
+float4 InstancePixelShader(VS_OUTPUT input) : SV_TARGET
+{
+    float4 cColor = float4(1, 0, 0, 1);
+    if (drawMask & MATERIAL_ALBEDO_MAP)
+    {
+        cColor = albedoMap.Sample(gssWrap, input.uv);
+    }
+    if (drawMask & MATERIAL_NORMAL_MAP)
+    {
+        // 노말 매핑 수행
+    }
+    else
+    {
+
+    }
+    float4 color = CalculateLight(cColor, input.positionW, input.normal);
+    //color = cColor;
+
     return color;
 }

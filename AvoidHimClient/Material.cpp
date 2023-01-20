@@ -14,6 +14,7 @@ void Material::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pC
 
 	// 기본값들을 쓰지 않는다면 보내지 않는다.
 	if (pMaterialBuffer) {
+
 		D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pMaterialBuffer->GetGPUVirtualAddress();
 		_pCommandList->SetGraphicsRootConstantBufferView(3, gpuVirtualAddress);
 	}
@@ -34,7 +35,11 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 
 	// albedoNameSize(UINT) / albedoName(string) -> 알베도 텍스처 이름
 	// bumpNameSize(UINT) / bumpName(string) -> 노말맵 텍스처 이름
+#ifdef USING_INSTANCING
+	auto pShader = gameFramework.GetShader("InstancingShader");
+#else
 	auto pShader = gameFramework.GetShader("BasicShader");
+#endif
 	vector<shared_ptr<Texture>> pTextures(2);
 	string textureName;
 	int i = 0;

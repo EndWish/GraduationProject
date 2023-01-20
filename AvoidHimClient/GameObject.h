@@ -16,9 +16,21 @@ class Player;
 class TerrainMap;
 class Camera;
 
+struct Instancing_Data {
+	UINT activeInstanceCount;
+	ComPtr<ID3D12Resource> resource;
+	D3D12_VERTEX_BUFFER_VIEW bufferView;
+	XMFLOAT4X4* mappedResource;
+};
 
 class GameObject : public enable_shared_from_this<GameObject> {
-
+protected:
+	static unordered_map<string, Instancing_Data> instanceDatas;
+	static unordered_map<string, UINT> drawInstanceCount;
+public:
+	static unordered_map<string, Instancing_Data>& GetInstanceDatas() { return instanceDatas; };
+	static void RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	static void InitInstanceData();
 protected:
 	UINT instanceID;
 	string name;
@@ -80,6 +92,7 @@ public:
 	XMFLOAT3 GetWorldRightVector() const;
 	XMFLOAT3 GetWorldUpVector() const;
 	XMFLOAT3 GetWorldLookVector() const;
+	XMFLOAT4X4 GetWorldTransform() const;
 
 	// 자신의 바운딩 박스의 래퍼런스를 리턴한다.
 	const BoundingOrientedBox& GetBoundingBox() const;
@@ -95,6 +108,10 @@ public:
 	// 해당 오브젝트 프레임을 최상위 부모 ( 바운딩박스 커버 )로 설정
 	void SetOOBBCover(bool _isCover);
 
+	// 해당 메쉬의 참조 카운트를 1 증가시킨다.
+	void AddRef();
+	// 메쉬의 참조 카운트를 가져온다.
+	UINT GetRef();
 
 	// 자식을 추가한다.
 	void SetChild(const shared_ptr<GameObject> _pChild);
@@ -126,7 +143,8 @@ public:
 
 	// 렌더
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-
+	virtual void RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, Instancing_Data& _instanceData);
+	void InputInstanceData();
 	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox);
 	// 월드 변환행렬을 쉐이더로 넘겨준다.
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -136,10 +154,14 @@ public:
 };
 
 
+
 class GameObjectManager {
 	unordered_map<string, shared_ptr<GameObject>> storage;
 
+
 public:
 	shared_ptr<GameObject> GetGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	shared_ptr<GameObject> GetExistGameObject(const string& _name);
+	void InitInstanceResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 

@@ -6,6 +6,7 @@
 // 생성자, 소멸자
 Mesh::Mesh() {
 	primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	refCount = 0;
 }
 Mesh::~Mesh() {
 
@@ -29,15 +30,14 @@ void Mesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, c
 	_file.read((char*)&nVertex, sizeof(UINT));
 
 	name = _obj->GetName();
-	cout << nVertex << " :  nVertex\n";
+
 	// boundingBox (float * 6)
 	XMFLOAT3 oobbCenter, oobbExtents;
 	_file.read((char*)&oobbCenter, sizeof(XMFLOAT3));
 	_file.read((char*)&oobbExtents, sizeof(XMFLOAT3));
 	oobb = BoundingOrientedBox(oobbCenter, oobbExtents, XMFLOAT4A(0.0f, 0.0f, 0.0f, 1.0f));
 	_obj->SetBoundingBox(oobb);
-	cout << oobbCenter << " :  oobbCenter\n";
-	cout << oobbExtents << " :  oobbExtents\n";
+
 	// positions (float * 3 * nVertex)
 	vector<XMFLOAT3> positions(nVertex);
 	_file.read((char*)positions.data(), sizeof(float) * 3 * nVertex);
@@ -108,27 +108,33 @@ void Mesh::ReleaseUploadBuffers() {
 	}
 }
 
+void Mesh::AddRef() {
+	refCount++;
+}
+
+UINT Mesh::GetRef() {
+	return refCount;
+}
+
 void Mesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex) {
 
 	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
 	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[3] = { positionBufferView , normalBufferView, texCoord0BufferView };
 	_pCommandList->IASetVertexBuffers(0, 3, vertexBuffersViews);
 
-
 	_pCommandList->IASetIndexBuffer(&subMeshIndexBufferViews[_subMeshIndex]);
 	_pCommandList->DrawIndexedInstanced(nSubMeshIndex[_subMeshIndex], 1, 0, 0, 0);
 }
 
-void Mesh::RenderInstancing(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex, const D3D12_VERTEX_BUFFER_VIEW& _instanceBufferView, int _numInstance) {
-
+void Mesh::RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex, Instancing_Data& _instanceData) {
+	UINT numInstance = _instanceData.activeInstanceCount;
 	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
-
 	// 인자로 들어온 인스턴스 정보를 이용하여 갯수만큼 한꺼번에 그린다.
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[4] = { positionBufferView , normalBufferView, texCoord0BufferView, _instanceBufferView };
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[4] = { positionBufferView , normalBufferView, texCoord0BufferView, _instanceData.bufferView };
 	_pCommandList->IASetVertexBuffers(0, 4, vertexBuffersViews);
-
+	  
 	_pCommandList->IASetIndexBuffer(&subMeshIndexBufferViews[_subMeshIndex]);
-	_pCommandList->DrawIndexedInstanced(nSubMeshIndex[_subMeshIndex], _numInstance, 0, 0, 0);
+	_pCommandList->DrawIndexedInstanced(nSubMeshIndex[_subMeshIndex], numInstance, 0, 0, 0);
 }
 
 //////////////// HitBoxMesh ///////////////////
@@ -143,7 +149,6 @@ HitBoxMesh::~HitBoxMesh() {
 }
 
 void HitBoxMesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-
 	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
 	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[1] = { positionBufferView };
 	_pCommandList->IASetVertexBuffers(0, 1, vertexBuffersViews);
@@ -197,8 +202,7 @@ FrustumMesh::~FrustumMesh() {
 void FrustumMesh::Create(shared_ptr< BoundingFrustum> _pBoundingFrustum, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	
 	BoundingFrustum& frustum = *_pBoundingFrustum;
-	frustum.Near += 2.0f;
-	frustum.Far -= 0.1f;
+
 	frustum.Orientation = Vector4::QuaternionIdentity();
 	FRUSTUM_POSITION_FORMAT positions;
 	positions.origin = frustum.Origin;
@@ -210,7 +214,6 @@ void FrustumMesh::Create(shared_ptr< BoundingFrustum> _pBoundingFrustum, const C
 	positionBufferView.BufferLocation = pPositionBuffer->GetGPUVirtualAddress();
 	positionBufferView.StrideInBytes = sizeof(XMFLOAT3);
 	positionBufferView.SizeInBytes = sizeof(XMFLOAT3) * 9;
-
 
 	vector<UINT> indices{
 		0,5,0,6,

@@ -82,7 +82,17 @@ public:
 
 	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+};
 
+class InstancingShader : public Shader {
+private:
+
+public:
+	InstancingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~InstancingShader();
+
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
 };
 /////////////////////////    Shader Manager   ////////////////////////////////
 

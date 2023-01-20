@@ -3,8 +3,37 @@
 #include "Light.h"
 #include "GameFramework.h"
 
+
+unordered_map<string, Instancing_Data> GameObject::instanceDatas;
+unordered_map<string, UINT> GameObject::drawInstanceCount;
+
 //////////////////////////////////////////
 
+
+void GameObject::RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework& gameFramework = GameFramework::Instance();
+	GameObjectManager& gameObjManager = gameFramework.GetGameObjectManager();
+
+	for (auto& [name, instanceData] : instanceDatas) {
+		// 해당 인스턴스의 오브젝트 정보를 가져온다.
+		shared_ptr<GameObject> pGameObject = gameObjManager.GetExistGameObject(name);
+		
+		// 그려지는 오브젝트가 있을 경우
+		if (instanceData.activeInstanceCount > 0) {
+			if(pGameObject) pGameObject->RenderInstance(_pCommandList, instanceData);
+		}
+	}
+}
+
+void GameObject::InitInstanceData() {
+	// 오브젝트 종류 별 현재 그려지는 오브젝트의 카운트를 초기화 해준다.
+	for (auto& [name, data] : instanceDatas) {
+		data.activeInstanceCount = 0;
+	}
+	for (auto& [name, count] : drawInstanceCount) {
+		count = 0;
+	}
+}
 
 GameObject::GameObject() {
 	name = "unknown";
@@ -133,6 +162,15 @@ void GameObject::SetOOBBCover(bool _isCover) {
 	isOOBBCover = _isCover;
 }
 
+void GameObject::AddRef() {
+	if(pMesh) pMesh->AddRef();
+}
+
+UINT GameObject::GetRef() {
+	if (pMesh) return pMesh->GetRef();
+	else return 0;
+}
+
 void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 	// 입양할 아이가, 부모가 있을 경우 부모로 부터 독립시킨다.
 	if (auto pPreParent = _pChild->pParent.lock()) {
@@ -256,6 +294,32 @@ void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) 
 	}
 }
 
+void GameObject::RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, Instancing_Data& _instanceData) {
+	if (pMesh) {
+		// 월드행렬을 IA단계로 직접 보낸다.
+		for (int i = 0; i < materials.size(); ++i) {
+			// 해당 서브매쉬와 매칭되는 마테리얼을 Set 해준다.
+
+			materials[i]->UpdateShaderVariable(_pCommandList);
+			pMesh->RenderInstance(_pCommandList, i, _instanceData);
+		}
+	}
+}
+
+void GameObject::InputInstanceData() {
+	// 현재 리소스에 들어간 같은 인스턴스의 수
+	string objName = pChildren[0]->GetName();
+
+	UINT count = drawInstanceCount[objName]++;
+
+	XMFLOAT4X4 world;
+	XMStoreFloat4x4(&world, XMMatrixTranspose(XMLoadFloat4x4(&worldTransform)));
+
+	memcpy((instanceDatas[objName].mappedResource) + count, &world, sizeof(XMFLOAT4X4));
+
+	instanceDatas[objName].activeInstanceCount = count + 1;
+}
+
 void GameObject::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox) {
 
 	if (isOOBBCover) {	// 메쉬가 있을 경우에만 렌더링을 한다.
@@ -330,7 +394,6 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 	UINT nChildren;
 	_file.read((char*)&nChildren, sizeof(UINT));
 	pChildren.reserve(nChildren);
-	cout << name << " 의 자식 수는 " << nChildren << "\n";
 		
 	for (int i = 0; i < nChildren; ++i) {
 		shared_ptr<GameObject> newObject = make_shared<GameObject>();
@@ -390,10 +453,41 @@ shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, con
 		storage[_name] = newObject;
 		newObject->UpdateObject();
 	}
+
 	// 스토리지 내 오브젝트 정보와 같은 오브젝트를 복사하여 생성한다.
 	shared_ptr<GameObject> Object;
 	Object = make_shared<GameObject>();
 
 	Object->CopyObject(*storage[_name]);
+	Object->AddRef();
+
 	return Object;
+}
+
+shared_ptr<GameObject> GameObjectManager::GetExistGameObject(const string& _name) {
+	if (!storage.contains(_name)) {	// 처음 불러온 오브젝트일 경우
+		cout << _name << " 오브젝트가 없습니다!!\n";
+		return nullptr;
+	}
+	return storage[_name];
+}
+
+void GameObjectManager::InitInstanceResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	UINT refCount = 0;
+	ComPtr<ID3D12Resource> temp;
+	auto& instanceDatas = GameObject::GetInstanceDatas();
+	for (auto& [name, pObject] : storage) {
+		Instancing_Data data;
+		refCount = pObject->GetRef();
+		
+		data.resource = CreateBufferResource(_pDevice, _pCommandList, NULL, sizeof(XMFLOAT4X4) * refCount, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
+		data.bufferView.BufferLocation = data.resource->GetGPUVirtualAddress();
+		data.bufferView.StrideInBytes = sizeof(XMFLOAT4X4);
+		data.bufferView.SizeInBytes = sizeof(XMFLOAT4X4) * refCount;
+
+		instanceDatas[name] = data;
+		instanceDatas[name].resource->Map(0, NULL, (void**)&instanceDatas[name].mappedResource);
+		cout << name << " 인스턴스는 최대 " << refCount << "개가 있습니다\n";
+	}
+	cout << instanceDatas.size() << "개입니다.\n";
 }

@@ -629,14 +629,20 @@ void PlayScene::ReActButton(shared_ptr<Button> _pButton)
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
+
+
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
 	camera->SetViewPortAndScissorRect(_pCommandList);
 	camera->UpdateShaderVariable(_pCommandList);
 
 	UpdateLightShaderVariables(_pCommandList);
 
+#ifdef USING_INSTANCING
+	GameObject::InitInstanceData();
+	gameFramework.GetShader("InstancingShader")->PrepareRender(_pCommandList);
+#else
 	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
-	auto t = pPlayer->GetCamera();
+#endif
 	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
 
 	gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);

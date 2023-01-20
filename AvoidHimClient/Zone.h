@@ -32,6 +32,7 @@ private:
 	XMFLOAT3 sectorSize;
 	vector<vector<vector<Sector>>> sectors;
 	shared_ptr<PlayScene> pScene;
+	unordered_map<string, vector<XMFLOAT4X4>> initVector;
 public:
 	// 持失切, 社瑚切
 	Zone();

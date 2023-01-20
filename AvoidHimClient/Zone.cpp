@@ -53,14 +53,23 @@ shared_ptr<GameObject> Sector::FindObject(SectorLayer _sectorLayer, UINT _object
 		cout << "찾으려는 오브젝트가 없습니다.\n";
 		return NULL;
 	}
-}
+} 
 
 void Sector::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+#ifdef USING_INSTANCING
+	for (auto pGameObjectLayer : pGameObjectLayers) {
+		for (auto [gid, pGameObject] : pGameObjectLayer) {
+			pGameObject->InputInstanceData();
+	}
+}
+#else
 	for (auto pGameObjectLayer : pGameObjectLayers) {
 		for (auto [gid, pGameObject] : pGameObjectLayer) {
 			pGameObject->Render(_pCommandList);
 		}
 	}
+#endif
+
 }
 
 
@@ -72,7 +81,7 @@ Zone::Zone() {
 
 }
 Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div) : size(_size), div(_div) {
-	GameFramework gameFramework = GameFramework::Instance();
+	GameFramework& gameFramework = GameFramework::Instance();
 	pScene = reinterpret_pointer_cast<PlayScene>(gameFramework.GetCurrentScene());
 	sectors.assign(div.x, vector<vector<Sector>>(div.y, vector<Sector>(div.z, Sector())));
 	sectorSize = Vector3::Division(size, div);
@@ -171,19 +180,21 @@ vector<Sector*> Zone::GetFrustumSectors(const BoundingFrustum& _frustum) {
 
 void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum) {
 
-	int i = 0;
-	for (auto& t : GetFrustumSectors(*_pBoundingFrustum)) {
-		t->Render(_pCommandList);
-		i++;
+	for (auto& sector : GetFrustumSectors(*_pBoundingFrustum)) {
+		sector->Render(_pCommandList);
 	}
+#ifdef USING_INSTANCING
+	GameObject::RenderInstanceObjects(_pCommandList);
+
+#endif
 
 	//cout << i << "\n";
 }
 
 
 void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	GameFramework gameFramework = GameFramework::Instance();
-	
+	GameFramework& gameFramework = GameFramework::Instance();
+
 	ifstream file("Map", ios::binary);
 
 	if (!file) {
@@ -197,7 +208,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 
 	XMFLOAT3 position, scale;
 	XMFLOAT4 rotation;
-	
+
 	// nInstance (UINT)
 	file.read((char*)&nInstance, sizeof(UINT));
 
@@ -211,7 +222,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		// position(float * 3) / scale(float * 3) / rotation(float * 3)
 		file.read((char*)&position, sizeof(XMFLOAT3));
 		file.read((char*)&scale, sizeof(XMFLOAT3));
-		file.read((char*)&rotation, sizeof(XMFLOAT4));	
+		file.read((char*)&rotation, sizeof(XMFLOAT4));
 
 		switch (objType) {
 		case SectorLayer::player: {
@@ -238,8 +249,12 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			break;
 		}
 		}
-		cout << "로드 완료.\n";
+
 	}
+#ifdef USING_INSTANCING
+	gameFramework.GetGameObjectManager().InitInstanceResource(_pDevice, _pCommandList);
+#endif
+
 }
 
 
