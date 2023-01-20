@@ -61,6 +61,9 @@ private:
 	unordered_map<string, shared_ptr<Image2D>> pUIs;
 	vector<SC_SUB_ROOMLIST_INFO> roomList;
 
+	// 미리 로딩을 해놓은 후 게임이 시작되었을 때 push 한다.
+	shared_ptr<PlayScene> loadingScene;
+	
 	UINT roomPage;	// 1페이지부터 시작
 	RoomInfo roomInfo;
 	LobbyState currState;
@@ -82,7 +85,7 @@ public:
 	void UpdateReadyState();
 	void UpdateRoomText();
 };
-class PlayScene : public Scene {
+class PlayScene : public Scene, public enable_shared_from_this<PlayScene> {
 
 private:
 
@@ -111,7 +114,7 @@ public:
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void ReActButton(shared_ptr<Button> _pButton);
 
-	void SetPlayer(shared_ptr<Player> _pPlayer);
+	void SetPlayer(shared_ptr<Player>& _pPlayer);
 	void CheckCollision();
 	void AddLight(const shared_ptr<Light>& _pLight);
 	void UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);

@@ -36,7 +36,7 @@ private:
 public:
 	// 생성자, 소멸자
 	Zone();
-	Zone(const XMFLOAT3& _size, const XMINT3& _div);
+	Zone(const XMFLOAT3& _size, const XMINT3& _div, shared_ptr<PlayScene> _pScene);
 	~Zone();
 
 	// get, set 함수

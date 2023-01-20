@@ -223,6 +223,7 @@ void LobbyScene::ProcessSocketMessage() {
 	case SC_PACKET_TYPE::ready: {	// 누군가 준비를 눌렀을 경우 
 		SC_READY packet;
 		RecvContents(packet);
+
 		// 해당 cid를 가진 플레이어를 찾아 레디상태를 반대로 바꾸어준다.
 		auto pindex = roomInfo.findPlayerIndex(packet.readyClientID);
 		pindex->ready = !pindex->ready;
@@ -232,6 +233,8 @@ void LobbyScene::ProcessSocketMessage() {
 	case SC_PACKET_TYPE::roomVisitPlayerInfo: {	// 누가 방에 들어온 경우
 		SC_ROOM_VISIT_PLAYER_INFO packet;
 		RecvContents(packet);
+
+		// 방 정보에 해당 플레이어의 정보를 추가한다.
 		Player_Info pi{ packet.visitClientID, false };
 		roomInfo.players.push_back(pi);
 		roomInfo.nParticipant++;
@@ -241,6 +244,8 @@ void LobbyScene::ProcessSocketMessage() {
 	case SC_PACKET_TYPE::roomOutPlayerInfo: { // 누가 방에서 나간 경우
 		SC_ROOM_OUT_PLAYER_INFO packet;
 		RecvContents(packet);
+
+		// 해당 클라이언트를 찾아 지우고 방장이 바뀌었다면 새로 임명한다.
 		auto pindex = roomInfo.findPlayerIndex(packet.outClientID);
 		roomInfo.players.erase(pindex);
 		roomInfo.nParticipant--;
@@ -249,9 +254,22 @@ void LobbyScene::ProcessSocketMessage() {
 		break;
 	}
 	case SC_PACKET_TYPE::gameStart: {
-		shared_ptr<Scene> pScene = make_shared<PlayScene>();
-		gameFramework.PushScene(pScene);	// 실제 플레이 씬을 적재한다.
+		loadingScene = make_shared<PlayScene>();
+
+		// 게임이 시작된 경우 먼저 게임에서 사용될 인스턴스 정보, 메쉬, 애니메이션, 텍스처 등의 정보를 로드한다.
+		gameFramework.LoadingScene(loadingScene);
+
+		// 플레이 씬 로딩이 모두 완료된 경우 서버에게 로딩 완료 패킷을 보낸다. 
+		CS_LOADING_COMPLETE packet;
+		packet.cid = cid;
+		send(server_sock, (char*)&packet, sizeof(CS_LOADING_COMPLETE), 0);
+		
 		break;
+	}
+	case SC_PACKET_TYPE::allPlayerLoadingComplete: {
+		gameFramework.PushScene(loadingScene);
+		break;
+
 	}
 	default:
 		cout << "나머지 패킷\n";
@@ -278,6 +296,7 @@ void LobbyScene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLi
 	for (auto [name, pButton] : pButtons) {
 		pButton->PostRender();
 	}
+	// 글자는 Render과정이 전부 끝난 후에 가능
 	for (auto [name, pText] : pTexts) {
 		pText->Render();
 	}
@@ -501,7 +520,7 @@ PlayScene::~PlayScene() {
 	pLightsBuffer->Unmap(0, NULL);
 }
 
-void PlayScene::SetPlayer(shared_ptr<Player> _pPlayer) {
+void PlayScene::SetPlayer(shared_ptr<Player>& _pPlayer) {
 	pPlayer = _pPlayer;
 }
 
@@ -515,8 +534,10 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	// 스테이지 생성
 	// 씬에 그려질 오브젝트들을 전부 빌드.
 
-	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10));
+	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
 	
+	cout << "!";
+
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList);
 
 	shared_ptr<Light> baseLight = make_shared<Light>();
@@ -638,7 +659,6 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	UpdateLightShaderVariables(_pCommandList);
 
 #ifdef USING_INSTANCING
-	GameObject::InitInstanceData();
 	gameFramework.GetShader("InstancingShader")->PrepareRender(_pCommandList);
 #else
 	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);

@@ -72,6 +72,7 @@ D3D12_DEPTH_STENCIL_DESC Shader::CreateDepthStencilState() {
 	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 	depthStencilDesc.StencilEnable = TRUE;
 	depthStencilDesc.StencilReadMask = 0x00;
+
 	depthStencilDesc.StencilWriteMask = 0x00;
 	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
 	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
@@ -444,7 +445,7 @@ D3D12_RASTERIZER_DESC InstancingShader::CreateRasterizerState() {
 	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
 	//	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK; 
 	//rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
 	rasterizerDesc.FrontCounterClockwise = FALSE;
 	rasterizerDesc.DepthBias = 0;

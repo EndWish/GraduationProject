@@ -30,7 +30,6 @@ protected:
 public:
 	static unordered_map<string, Instancing_Data>& GetInstanceDatas() { return instanceDatas; };
 	static void RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	static void InitInstanceData();
 protected:
 	UINT instanceID;
 	string name;
@@ -144,7 +143,7 @@ public:
 	// 렌더
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, Instancing_Data& _instanceData);
-	void InputInstanceData();
+
 	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox);
 	// 월드 변환행렬을 쉐이더로 넘겨준다.
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -157,11 +156,12 @@ public:
 
 class GameObjectManager {
 	unordered_map<string, shared_ptr<GameObject>> storage;
+	unordered_map<string, ComPtr<ID3D12Resource>> instanceUploadBuffers;
 
 
 public:
 	shared_ptr<GameObject> GetGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	shared_ptr<GameObject> GetExistGameObject(const string& _name);
-	void InitInstanceResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void InitInstanceResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, unordered_map<string, vector<XMFLOAT4X4>>& _instanceDatas);
 };
 

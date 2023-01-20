@@ -167,6 +167,7 @@ struct VS_INSTANCING_INPUT {
     float4x4 worldMatrix : WORLDMAT;
 };
 
+
 VS_OUTPUT InstanceVertexShader(VS_INSTANCING_INPUT input) {
     VS_OUTPUT output;
     
@@ -177,9 +178,12 @@ VS_OUTPUT InstanceVertexShader(VS_INSTANCING_INPUT input) {
     output.positionW = (float3) mul(float4(input.position, 1.0f), input.worldMatrix);
 
     output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
+
+
     output.uv = input.uv;
     return output;
 }
+
 
 [earlydepthstencil]
 float4 InstancePixelShader(VS_OUTPUT input) : SV_TARGET

@@ -119,6 +119,7 @@ public:
 	void ProcessInput();
 
 	void PushScene(const shared_ptr<Scene>& _pScene);
+	void LoadingScene(const shared_ptr<Scene>& _pScene);
 	void PopScene();
 	void ChangeScene(const shared_ptr<Scene>& _pScene);
 	void ClearScene();

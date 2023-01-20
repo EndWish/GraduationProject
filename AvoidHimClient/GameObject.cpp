@@ -18,22 +18,11 @@ void GameObject::RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& 
 		// 해당 인스턴스의 오브젝트 정보를 가져온다.
 		shared_ptr<GameObject> pGameObject = gameObjManager.GetExistGameObject(name);
 		
-		// 그려지는 오브젝트가 있을 경우
-		if (instanceData.activeInstanceCount > 0) {
-			if(pGameObject) pGameObject->RenderInstance(_pCommandList, instanceData);
-		}
+		if(pGameObject) pGameObject->RenderInstance(_pCommandList, instanceData);
+		
 	}
 }
 
-void GameObject::InitInstanceData() {
-	// 오브젝트 종류 별 현재 그려지는 오브젝트의 카운트를 초기화 해준다.
-	for (auto& [name, data] : instanceDatas) {
-		data.activeInstanceCount = 0;
-	}
-	for (auto& [name, count] : drawInstanceCount) {
-		count = 0;
-	}
-}
 
 GameObject::GameObject() {
 	name = "unknown";
@@ -130,6 +119,9 @@ XMFLOAT3 GameObject::GetWorldUpVector() const {
 }
 XMFLOAT3 GameObject::GetWorldLookVector() const {
 	return Vector3::Normalize(worldTransform._31, worldTransform._32, worldTransform._33);
+}
+XMFLOAT4X4 GameObject::GetWorldTransform() const {
+	return worldTransform;
 }
 XMFLOAT3 GameObject::GetWorldPosition() const {
 	return XMFLOAT3(worldTransform._41, worldTransform._42, worldTransform._43);
@@ -306,20 +298,6 @@ void GameObject::RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 	}
 }
 
-void GameObject::InputInstanceData() {
-	// 현재 리소스에 들어간 같은 인스턴스의 수
-	string objName = pChildren[0]->GetName();
-
-	UINT count = drawInstanceCount[objName]++;
-
-	XMFLOAT4X4 world;
-	XMStoreFloat4x4(&world, XMMatrixTranspose(XMLoadFloat4x4(&worldTransform)));
-
-	memcpy((instanceDatas[objName].mappedResource) + count, &world, sizeof(XMFLOAT4X4));
-
-	instanceDatas[objName].activeInstanceCount = count + 1;
-}
-
 void GameObject::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox) {
 
 	if (isOOBBCover) {	// 메쉬가 있을 경우에만 렌더링을 한다.
@@ -472,22 +450,24 @@ shared_ptr<GameObject> GameObjectManager::GetExistGameObject(const string& _name
 	return storage[_name];
 }
 
-void GameObjectManager::InitInstanceResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void GameObjectManager::InitInstanceResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, unordered_map<string, vector<XMFLOAT4X4>>& _instanceDatas) {
 	UINT refCount = 0;
 	ComPtr<ID3D12Resource> temp;
 	auto& instanceDatas = GameObject::GetInstanceDatas();
+
 	for (auto& [name, pObject] : storage) {
 		Instancing_Data data;
-		refCount = pObject->GetRef();
-		
-		data.resource = CreateBufferResource(_pDevice, _pCommandList, NULL, sizeof(XMFLOAT4X4) * refCount, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
+		// 현재 이 이름을 가진 오브젝트를 사용하는 인스턴스의 수만큼 리소스를 생성한다.
+		refCount = _instanceDatas[name].size();
+		data.activeInstanceCount = refCount;
+
+		data.resource = CreateBufferResource(_pDevice, _pCommandList, _instanceDatas[name].data(), sizeof(XMFLOAT4X4) * refCount, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, instanceUploadBuffers[name]);
 		data.bufferView.BufferLocation = data.resource->GetGPUVirtualAddress();
 		data.bufferView.StrideInBytes = sizeof(XMFLOAT4X4);
 		data.bufferView.SizeInBytes = sizeof(XMFLOAT4X4) * refCount;
 
 		instanceDatas[name] = data;
-		instanceDatas[name].resource->Map(0, NULL, (void**)&instanceDatas[name].mappedResource);
 		cout << name << " 인스턴스는 최대 " << refCount << "개가 있습니다\n";
 	}
-	cout << instanceDatas.size() << "개입니다.\n";
+	cout << instanceDatas.size() << "가지의 오브젝트가 있습니다.\n";
 }

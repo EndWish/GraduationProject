@@ -56,19 +56,12 @@ shared_ptr<GameObject> Sector::FindObject(SectorLayer _sectorLayer, UINT _object
 } 
 
 void Sector::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-#ifdef USING_INSTANCING
-	for (auto pGameObjectLayer : pGameObjectLayers) {
-		for (auto [gid, pGameObject] : pGameObjectLayer) {
-			pGameObject->InputInstanceData();
-	}
-}
-#else
+
 	for (auto pGameObjectLayer : pGameObjectLayers) {
 		for (auto [gid, pGameObject] : pGameObjectLayer) {
 			pGameObject->Render(_pCommandList);
 		}
 	}
-#endif
 
 }
 
@@ -80,9 +73,7 @@ void Sector::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 Zone::Zone() {
 
 }
-Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div) : size(_size), div(_div) {
-	GameFramework& gameFramework = GameFramework::Instance();
-	pScene = reinterpret_pointer_cast<PlayScene>(gameFramework.GetCurrentScene());
+Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div, shared_ptr<PlayScene> _pScene) : size(_size), div(_div), pScene(_pScene) {
 	sectors.assign(div.x, vector<vector<Sector>>(div.y, vector<Sector>(div.z, Sector())));
 	sectorSize = Vector3::Division(size, div);
 	startPoint = XMFLOAT3(-50, -50, -50);
@@ -180,12 +171,13 @@ vector<Sector*> Zone::GetFrustumSectors(const BoundingFrustum& _frustum) {
 
 void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum) {
 
+
+#ifdef USING_INSTANCING
+	GameObject::RenderInstanceObjects(_pCommandList);
+#else
 	for (auto& sector : GetFrustumSectors(*_pBoundingFrustum)) {
 		sector->Render(_pCommandList);
 	}
-#ifdef USING_INSTANCING
-	GameObject::RenderInstanceObjects(_pCommandList);
-
 #endif
 
 	//cout << i << "\n";
@@ -202,9 +194,16 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		return;
 	}
 
+	// 리소스를 만들기 위해 임시로 정적 인스턴스의 월드 행렬 정보를 저장해둔다.
+	unordered_map<string, vector<XMFLOAT4X4>> instanceDatas;
+
+	// 맵내 전체 인스턴스의 개수
 	UINT nInstance;
+
 	string objName;
 	SectorLayer objType;
+
+	XMFLOAT4X4 world, temp;
 
 	XMFLOAT3 position, scale;
 	XMFLOAT4 rotation;
@@ -227,6 +226,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		switch (objType) {
 		case SectorLayer::player: {
 			shared_ptr<Player> pPlayer = make_shared<Player>();
+
 			pPlayer->Create(objName, _pDevice, _pCommandList);
 			pPlayer->SetLocalPosition(position);
 			pPlayer->SetLocalScale(scale);
@@ -246,13 +246,17 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pGameObject->UpdateObject();
 
 			AddObject(objType, objectID, pGameObject, GetIndex(position));
+			// 쉐이더에서는 읽는 기준이 달라지므로 전치행렬로 바꾸어준다. 
+			world = pGameObject->GetWorldTransform();
+			XMStoreFloat4x4(&temp, XMMatrixTranspose(XMLoadFloat4x4(&world)));
+			instanceDatas[objName].push_back(temp);
 			break;
 		}
 		}
 
 	}
 #ifdef USING_INSTANCING
-	gameFramework.GetGameObjectManager().InitInstanceResource(_pDevice, _pCommandList);
+	gameFramework.GetGameObjectManager().InitInstanceResource(_pDevice, _pCommandList, instanceDatas);
 #endif
 
 }

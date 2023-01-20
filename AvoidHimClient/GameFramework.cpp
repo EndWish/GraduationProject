@@ -38,6 +38,7 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 
 		// 최초씬 생성
 		shared_ptr<Scene> pScene = make_shared<LobbyScene>();
+		gameFramework.LoadingScene(pScene);
 		gameFramework.PushScene(pScene);
 
 		// 히트박스용 메쉬 생성
@@ -641,13 +642,17 @@ void GameFramework::ProcessInput() {
 	}
 }
 
+
 void GameFramework::PushScene(const shared_ptr<Scene>& _pScene) {
+	pScenes.push(_pScene);
+}
+
+
+void GameFramework::LoadingScene(const shared_ptr<Scene>& _pScene) {
 	GameFramework& gameFramework = *spInstance;
 	gameFramework.pCommandList->Reset(gameFramework.pCommandAllocator.Get(), NULL);
 
-
-	pScenes.push(_pScene);
-	pScenes.top()->Init(pDevice, pCommandList);
+	_pScene->Init(pDevice, pCommandList);
 
 	gameFramework.pCommandList->Close();
 

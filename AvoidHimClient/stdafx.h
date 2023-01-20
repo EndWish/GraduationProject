@@ -10,7 +10,7 @@
 #define GRAVITY 9.8f
 #define C_WIDTH 800
 #define C_HEIGHT 600
-//#define USING_INSTANCING
+#define USING_INSTANCING
 //#define DEBUG
 
 // Windows 헤더 파일
