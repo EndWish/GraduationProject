@@ -1,6 +1,6 @@
 #pragma once
 #include "Mesh.h"
-
+#include "Animation.h"
 
 #define RESOURCE_TEXTURE1D			0x01
 #define RESOURCE_TEXTURE2D			0x02
@@ -107,11 +107,6 @@ public:
 	// 해당 오브젝트 프레임을 최상위 부모 ( 바운딩박스 커버 )로 설정
 	void SetOOBBCover(bool _isCover);
 
-	// 해당 메쉬의 참조 카운트를 1 증가시킨다.
-	void AddRef();
-	// 메쉬의 참조 카운트를 가져온다.
-	UINT GetRef();
-
 	// 자식을 추가한다.
 	void SetChild(const shared_ptr<GameObject> _pChild);
 	// 메쉬를 설정한다.
@@ -132,7 +127,7 @@ public:
 
 	// 충돌 체크
 	// 애니메이션
-	shared_ptr<GameObject> FindFrame(const string& _name);
+	shared_ptr<GameObject> FindFrame(const string& _name);	// 이름으로 자식(자신포함)을 오브젝트를 찾는다.
 	virtual void PrepareAnimate();
 	virtual void Animate(double _timeElapsed);
 	virtual void Animate(double _timeElapsed, const XMFLOAT3& _playerPos);
@@ -148,10 +143,19 @@ public:
 	// 월드 변환행렬을 쉐이더로 넘겨준다.
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void UpdateHitboxShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject);
+	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject);
 	virtual void CopyObject(const GameObject& _other);
 };
 
+class SkinnedGameObject : public GameObject {
+protected:
+	vector<shared_ptr<GameObject>> pBones;
+	AnimationController aniController;
+
+public:
+	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject);
+
+};
 
 
 class GameObjectManager {

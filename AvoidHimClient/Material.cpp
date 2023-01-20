@@ -47,14 +47,19 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 	for (auto& pTex : pTextures) {
 
 		ReadStringBinary(textureName, _file);
+		cout << textureName << "로드 \n";
 		if (textureName != "null") {
 			pTex = gameFramework.GetTextureManager().GetTexture(textureName, _pDevice, pShader,  _pCommandList, 4 + i);
 
 			if (pTex) {
 				nType += 1 << i++;
 			}
+			else {
+				cout << textureName << "로드 실패..\n";
+			}
 		}
 	}
+	cout << textureName << " : " << nType << "\n";
 	pTexture = pTextures[0];
 	pBumpTexture = pTextures[1];
 

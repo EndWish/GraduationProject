@@ -188,7 +188,7 @@ VS_OUTPUT InstanceVertexShader(VS_INSTANCING_INPUT input) {
 [earlydepthstencil]
 float4 InstancePixelShader(VS_OUTPUT input) : SV_TARGET
 {
-    float4 cColor = float4(1, 0, 0, 1);
+    float4 cColor = diffuse;
     if (drawMask & MATERIAL_ALBEDO_MAP)
     {
         cColor = albedoMap.Sample(gssWrap, input.uv);
@@ -196,10 +196,7 @@ float4 InstancePixelShader(VS_OUTPUT input) : SV_TARGET
     if (drawMask & MATERIAL_NORMAL_MAP)
     {
         // 노말 매핑 수행
-    }
-    else
-    {
-
+        
     }
     float4 color = CalculateLight(cColor, input.positionW, input.normal);
     //color = cColor;

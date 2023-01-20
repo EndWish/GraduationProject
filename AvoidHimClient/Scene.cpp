@@ -535,8 +535,6 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	// 씬에 그려질 오브젝트들을 전부 빌드.
 
 	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
-	
-	cout << "!";
 
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList);
 

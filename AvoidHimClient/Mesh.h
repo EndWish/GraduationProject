@@ -10,7 +10,6 @@ class Particle;
 class Mesh {
 
 protected:
-	UINT refCount;
 	string name;
 
 
@@ -46,12 +45,36 @@ public:		// 멤버 함수▼
 	// get, set함수
 	const string& GetName() const;
 	const BoundingOrientedBox& GetOOBB() const;
-	void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj);
+	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj);
 	void ReleaseUploadBuffers();
-	void AddRef();
-	UINT GetRef();
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex);
 	virtual void RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex, Instancing_Data& _instanceData);
+};
+
+// skinned 메쉬
+class SkinnedMesh : public Mesh {
+protected:
+	UINT bonesPerVertex;
+	UINT nBone;
+	ComPtr<ID3D12Resource> pOffsetMatrixBuffer;
+	ComPtr<ID3D12Resource> pOffsetMatrixUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW pOffsetMatrixBufferView;
+
+	ComPtr<ID3D12Resource> pBoneIndexBuffer;	// 버텍스의 뼈 인덱스 정보
+	ComPtr<ID3D12Resource> pBoneIndexUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW boneIndexBufferView;
+
+	ComPtr<ID3D12Resource> pBoneWeightBuffer;	// 버텍스의 뼈 가중치 정보
+	ComPtr<ID3D12Resource> pBoneWeightUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW boneWeightBufferView;
+
+
+
+	BoundingOrientedBox skinnedOOBB;
+
+public:
+	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj);
+
 };
 
 // boundingBox 메쉬

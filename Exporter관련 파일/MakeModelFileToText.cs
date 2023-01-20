@@ -11,6 +11,13 @@ using Unity.VisualScripting;
 
 public class MakeModelFileToText : MonoBehaviour
 {
+    struct SRT
+    {
+        public Vector3 scale;
+        public Quaternion rotation;
+        public Vector3 position;
+    }
+
     void StreamWriteString(string str, StreamWriter streamWriter)
     {
         streamWriter.Write(str.Length + " " + str);
@@ -50,30 +57,53 @@ public class MakeModelFileToText : MonoBehaviour
     }
     void StreamWriteMatrix(Matrix4x4 matrix, StreamWriter streamWriter)
     {
-        streamWriter.Write(matrix.m00);
-        streamWriter.Write(matrix.m10);
-        streamWriter.Write(matrix.m20);
-        streamWriter.Write(matrix.m30);
-        streamWriter.Write(matrix.m01);
-        streamWriter.Write(matrix.m11);
-        streamWriter.Write(matrix.m21);
-        streamWriter.Write(matrix.m31);
-        streamWriter.Write(matrix.m02);
-        streamWriter.Write(matrix.m12);
-        streamWriter.Write(matrix.m22);
-        streamWriter.Write(matrix.m32);
-        streamWriter.Write(matrix.m03);
-        streamWriter.Write(matrix.m13);
-        streamWriter.Write(matrix.m23);
-        streamWriter.Write(matrix.m33);
+        streamWriter.Write(matrix.m00 + " ");
+        streamWriter.Write(matrix.m10 + " ");
+        streamWriter.Write(matrix.m20 + " ");
+        streamWriter.Write(matrix.m30 + " ");
+        streamWriter.Write(matrix.m01 + " ");
+        streamWriter.Write(matrix.m11 + " ");
+        streamWriter.Write(matrix.m21 + " ");
+        streamWriter.Write(matrix.m31 + " ");
+        streamWriter.Write(matrix.m02 + " ");
+        streamWriter.Write(matrix.m12 + " ");
+        streamWriter.Write(matrix.m22 + " ");
+        streamWriter.Write(matrix.m32 + " ");
+        streamWriter.Write(matrix.m03 + " ");
+        streamWriter.Write(matrix.m13 + " ");
+        streamWriter.Write(matrix.m23 + " ");
+        streamWriter.Write(matrix.m33 + " ");
+        streamWriter.Write("\n");
     }
     void StreamWriteMaterial(Material material, StreamWriter streamWriter)
     {
 
+        int materialType = 0;
         StreamWriteStringWithoutLength("//////////// MaterialInfo //////////////", streamWriter);
-        // materialNameSize(UINT) / materialName(string) -> 텍스처 이름
+        // albedoNameSize(UINT) / albedoName(string) -> 알베도 텍스처 이름
+        // bumpNameSize(UINT) / bumpName(string) -> 노말맵 텍스처 이름
+        // 이후 추가
+        string[] mapTypes = new string[2]
+        {
+            "_MainTex",
+            "_BumpMap"
+        };
+        for (int i = 0; i < mapTypes.Length; ++i)
+        {
+            StreamWriteStringWithoutLength(mapTypes[i], streamWriter);
+            
+            Texture texture = material.GetTexture(mapTypes[i]);
+            if (texture)
+            {
+                StreamWriteString(texture.name, streamWriter);
+                materialType += 1 << i;
+            }
+            else
+            {
+                StreamWriteString("null", streamWriter);
+            }
 
-        StreamWriteString(material.name, streamWriter);
+        }
 
         // ambient(XMFLOAT4)
         StreamWriteString("ambient", streamWriter);
@@ -120,9 +150,12 @@ public class MakeModelFileToText : MonoBehaviour
             Color emission = new Color(0.0f, 0.0f, 0.0f, 1.0f);
             StreamWriteColor(emission, streamWriter);
         }
+        StreamWriteString("materialType", streamWriter);
+        StreamWriteInt(materialType, streamWriter);
+
     }
 
-    void CreateMeshStreamFile(Mesh mesh, MeshRenderer meshRenderer, ref Bounds modelBound, Vector3 vec, StreamWriter streamWriter)
+    void CreateMeshStreamFile(Mesh mesh, ref Bounds modelBound, Vector3 vec, StreamWriter streamWriter)
     {
 
         StreamWriteStringWithoutLength("//////////// MeshInfo //////////////", streamWriter);
@@ -196,6 +229,101 @@ public class MakeModelFileToText : MonoBehaviour
         }
     }
 
+    void CreateSkinnedMeshStreamFile(SkinnedMeshRenderer skinnedMeshRenderer, ref Bounds modelBound, Vector3 vec, StreamWriter streamWriter)
+    {
+
+        StreamWriteStringWithoutLength("//////////// SkinnedMeshInfo //////////////", streamWriter);
+
+        // 뼈하나당 영향의 주는 정점의 개수를 출력
+        int nBonesPerVertex = 4;
+        StreamWriteStringWithoutLength("뼈당 영향을 받는 정점의 개수" + nBonesPerVertex, streamWriter);
+
+        // 뼈들의 이름을 출력
+        StreamWriteStringWithoutLength("뼈의 개수" + skinnedMeshRenderer.bones.Length, streamWriter);
+        foreach (Transform boneTransform in skinnedMeshRenderer.bones)
+        {
+            StreamWriteStringWithoutLength(boneTransform.gameObject.name, streamWriter);
+        }
+
+        Mesh mesh = skinnedMeshRenderer.sharedMesh;
+        // 오프셋 행렬 출력
+        //StreamWriteStringWithoutLength("오프셋 행렬의 개수" + skinnedMeshRenderer.sharedMesh.bindposes.Length, streamWriter);
+        foreach (Matrix4x4 matrix in mesh.bindposes)  // 행렬의 개수는 뼈의 개수와 같다.
+        {
+            StreamWriteMatrix(matrix, streamWriter);
+        }
+
+        // 뼈의 가중치 정보 출력
+        StreamWriteStringWithoutLength("뼈에 영향을 받는 정점의 개수 : " + mesh.boneWeights.Length, streamWriter);
+        StreamWriteStringWithoutLength("두줄에 걸쳐 인덱스와 가중치를(각각4개씩 총 8개) x (정점의 수) 만큼 출력한다. : " + mesh.boneWeights.Length, streamWriter);
+        foreach (BoneWeight boneWeight in mesh.boneWeights)
+        {
+            StreamWriteStringWithoutLength(boneWeight.boneIndex0 + " " + boneWeight.boneIndex1 + " " + boneWeight.boneIndex2 + " " + boneWeight.boneIndex3 + " ", streamWriter);
+            StreamWriteStringWithoutLength(boneWeight.weight0 + " " + boneWeight.weight1 + " " + boneWeight.weight2 + " " + boneWeight.weight3 + " ", streamWriter);
+        }
+
+        // skinnnedMesh의 OOBB정보 출력
+        StreamWriteStringWithoutLength("SkinnedMesh OOBB.Center", streamWriter);
+        StreamWriteVector3(skinnedMeshRenderer.localBounds.center, streamWriter);
+        StreamWriteStringWithoutLength("SkinnedMesh OOBB.Extents", streamWriter);
+        StreamWriteVector3(skinnedMeshRenderer.localBounds.extents, streamWriter);
+
+        // 애니메이션 정보를 읽어서 출력한다.
+        ObjectInfo objectInfo = skinnedMeshRenderer.GetComponent<ObjectInfo>();
+        if(objectInfo)
+        {
+
+            // 애니메이션 동작의 개수를 출력
+            StreamWriteStringWithoutLength("애니메이션 동작의 개수 : " + objectInfo.animationClips.Length, streamWriter);
+            foreach(AnimationClip clip in objectInfo.animationClips)
+            {
+
+                // 애니메이셔 동작의 행렬 출력
+                int nFramesPerSec = (int)clip.frameRate;
+                int nKeyFrames = Mathf.CeilToInt(clip.length * nFramesPerSec);
+                StreamWriteStringWithoutLength("애니메이션 동작의 이름 : " + clip.name, streamWriter);
+                StreamWriteStringWithoutLength("애니메이션 동작의 시간 : " + clip.length, streamWriter);
+                StreamWriteStringWithoutLength("애니메이션 동작의 프레임수 : " + nKeyFrames, streamWriter);
+
+                float fFrameRate = (1.0f / nFramesPerSec), fKeyFrameTime = 0.0f;
+
+                SRT[,] animationSet = new SRT[skinnedMeshRenderer.bones.Length, nKeyFrames];
+
+                for (int k = 0; k < nKeyFrames; k++)
+                {
+                    clip.SampleAnimation(skinnedMeshRenderer.gameObject, fKeyFrameTime);
+                    for (int boneIndex = 0; boneIndex < skinnedMeshRenderer.bones.Length; boneIndex++)
+                    {
+                        animationSet[boneIndex, k].scale = skinnedMeshRenderer.bones[boneIndex].localScale;
+                        animationSet[boneIndex, k].rotation = skinnedMeshRenderer.bones[boneIndex].localRotation;
+                        animationSet[boneIndex, k].position = skinnedMeshRenderer.bones[boneIndex].position;
+                    }
+                    fKeyFrameTime += fFrameRate;
+                }
+
+                for (int boneIndex = 0; boneIndex < skinnedMeshRenderer.bones.Length; boneIndex++)
+                {
+                    StreamWriteStringWithoutLength("부위 : " + skinnedMeshRenderer.bones[boneIndex].name, streamWriter);
+                    for (int k = 0; k < nKeyFrames; ++k)
+                    {
+                        StreamWriteStringWithoutLength(k + "번째 프레임 : ", streamWriter);
+                        StreamWriteVector3(animationSet[boneIndex, k].scale, streamWriter);
+                        StreamWriteQuat(animationSet[boneIndex, k].rotation, streamWriter);
+                        StreamWriteVector3(animationSet[boneIndex, k].position, streamWriter);
+                    }
+                }
+
+            }
+        }
+        else
+        {
+            Debug.Log("애니메이션 클립 정보를 읽기 위한 ObjectInfo 스트립트가 존재하지 안습니다.");
+        }
+
+        // 스킨드메쉬의 정보를 저장
+        CreateMeshStreamFile(skinnedMeshRenderer.sharedMesh, ref modelBound, vec, streamWriter);
+        
+    }
     void CreateObjectStreamFile(Transform curObjectTransform, StreamWriter streamWriter, ref Bounds modelBound)
     {
 
@@ -221,7 +349,7 @@ public class MakeModelFileToText : MonoBehaviour
 
         MeshFilter meshFilter = curObjectTransform.GetComponent<MeshFilter>();
         MeshRenderer meshRenderer = curObjectTransform.GetComponent<MeshRenderer>();
-
+        SkinnedMeshRenderer skinnedMeshRenderer = curObjectTransform.GetComponent<SkinnedMeshRenderer>();  
 
         if (meshFilter && meshRenderer)    // 메쉬가 있는 경우
         {
@@ -231,7 +359,7 @@ public class MakeModelFileToText : MonoBehaviour
             StreamWriteInt(1, streamWriter);
 
 
-            CreateMeshStreamFile(meshFilter.sharedMesh, meshRenderer, ref modelBound, curObjectTransform.position, streamWriter);
+            CreateMeshStreamFile(meshFilter.sharedMesh, ref modelBound, curObjectTransform.position, streamWriter);
 
             // material 리스트 정보
             Material[] materialList = meshRenderer.sharedMaterials;
@@ -247,6 +375,13 @@ public class MakeModelFileToText : MonoBehaviour
             }
 
         }
+        else if (skinnedMeshRenderer)
+        {
+            StreamWriteStringWithoutLength("haveSkinnedMesh", streamWriter);
+
+
+            CreateSkinnedMeshStreamFile(skinnedMeshRenderer, ref modelBound, curObjectTransform.position, streamWriter);
+        }
         else  // 메쉬가 없는 경우
         {
             StreamWriteInt(0, streamWriter);
@@ -254,7 +389,6 @@ public class MakeModelFileToText : MonoBehaviour
 
         // nChildren(UINT)
         streamWriter.Write(curObjectTransform.childCount);
-        Debug.Log(curObjectTransform.childCount + "개이다.");
         for (int i = 0; i < curObjectTransform.childCount; i++)  // 자식들을 똑같은 포멧으로 저장
         {
             // vec = worldPosition

@@ -154,15 +154,6 @@ void GameObject::SetOOBBCover(bool _isCover) {
 	isOOBBCover = _isCover;
 }
 
-void GameObject::AddRef() {
-	if(pMesh) pMesh->AddRef();
-}
-
-UINT GameObject::GetRef() {
-	if (pMesh) return pMesh->GetRef();
-	else return 0;
-}
-
 void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 	// 입양할 아이가, 부모가 있을 경우 부모로 부터 독립시킨다.
 	if (auto pPreParent = _pChild->pParent.lock()) {
@@ -175,8 +166,6 @@ void GameObject::SetChild(const shared_ptr<GameObject> _pChild) {
 	// 자식의 부모를 나로 지정
 	_pChild->pParent = shared_from_this();
 }
-
-
 
 void GameObject::SetMesh(const shared_ptr<Mesh>& _pMesh) {
 	pMesh = _pMesh;
@@ -348,13 +337,16 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 	UpdateLocalTransform();
 
 	int haveMesh;
-	// haveMesh(bool)
+	// haveMesh(int)
+
 
 	_file.read((char*)&haveMesh, sizeof(int));
 	// 메시가 없을경우 스킵
-	if (haveMesh) {
-
-		pMesh = make_shared<Mesh>();
+	if (0 < haveMesh) {
+		if(haveMesh == 1)
+			pMesh = make_shared<Mesh>();
+		else
+			pMesh = make_shared<SkinnedMesh>();
 		pMesh->LoadFromFile(_file, _pDevice, _pCommandList, shared_from_this());
 
 		// 마테리얼 정보
@@ -369,12 +361,24 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 			mat->LoadMaterial(_file, _pDevice, _pCommandList);
 		}
 	}
-	UINT nChildren;
+
+
+	UINT nChildren = 0;
 	_file.read((char*)&nChildren, sizeof(UINT));
 	pChildren.reserve(nChildren);
 		
-	for (int i = 0; i < nChildren; ++i) {
-		shared_ptr<GameObject> newObject = make_shared<GameObject>();
+	for (int i = 0; i < (int)nChildren; ++i) {
+		bool isSkinnedObject;
+		_file.read((char*)&isSkinnedObject, sizeof(bool));
+
+		shared_ptr<GameObject> newObject;
+		if (isSkinnedObject) {
+			newObject = make_shared<SkinnedGameObject>();
+		}
+		else {
+			newObject = make_shared<GameObject>();
+		}
+
 		newObject->LoadFromFile(_file, _pDevice, _pCommandList, _coverObject);
 		SetChild(newObject);
 	}
@@ -400,21 +404,49 @@ void GameObject::CopyObject(const GameObject& _other) {
 	}
 }
 
-/////////////// FullScreenObject
+/////////////////////////// SkinnedGameObject /////////////////////
+void SkinnedGameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject) {
+	UINT nBone = 0;
 
+	_file.read((char*)&nBone, sizeof(UINT));
+
+	vector<string> boneNames(nBone);
+	for (int i = 0; i < nBone; ++i) {
+		ReadStringBinary(boneNames[i], _file);
+	}
+
+	aniController.LoadFromFile(_file, nBone);
+
+	GameObject::LoadFromFile(_file, _pDevice, _pCommandList, _coverObject);
+	
+	// 이름을 가지고 뼈를 찾는다.
+	pBones.assign(nBone, nullptr);
+	for (int i = 0; i < nBone; ++i) {
+		pBones[i] = FindFrame(boneNames[i]);
+	}
+
+}
 
 /////////////////////////// GameObjectManager /////////////////////
 shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	if (!storage.contains(_name)) {	// 처음 불러온 오브젝트일 경우
-		shared_ptr<GameObject> newObject;
-		
-		newObject = make_shared<GameObject>();
 		ifstream file("GameObject/" + _name, ios::binary);	// 파일을 연다
-
 		if (!file) {
 			cout << "GameObject Load Failed : " << _name << "\n";
 			return nullptr;
+		}
+
+		bool isSkinnedObject;
+		file.read((char*)&isSkinnedObject, sizeof(bool));
+
+		shared_ptr<GameObject> newObject;
+
+		if (isSkinnedObject) {
+			newObject = make_shared<SkinnedGameObject>();
+		}
+		else {
+			newObject = make_shared<GameObject>();
 		}
 
 		// 최상위 오브젝트를 커버 OOBB로 설정
@@ -437,8 +469,6 @@ shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, con
 	Object = make_shared<GameObject>();
 
 	Object->CopyObject(*storage[_name]);
-	Object->AddRef();
-
 	return Object;
 }
 
@@ -455,7 +485,7 @@ void GameObjectManager::InitInstanceResource(const ComPtr<ID3D12Device>& _pDevic
 	ComPtr<ID3D12Resource> temp;
 	auto& instanceDatas = GameObject::GetInstanceDatas();
 
-	for (auto& [name, pObject] : storage) {
+	for (auto& [name, transform] : _instanceDatas) {
 		Instancing_Data data;
 		// 현재 이 이름을 가진 오브젝트를 사용하는 인스턴스의 수만큼 리소스를 생성한다.
 		refCount = _instanceDatas[name].size();
@@ -467,7 +497,5 @@ void GameObjectManager::InitInstanceResource(const ComPtr<ID3D12Device>& _pDevic
 		data.bufferView.SizeInBytes = sizeof(XMFLOAT4X4) * refCount;
 
 		instanceDatas[name] = data;
-		cout << name << " 인스턴스는 최대 " << refCount << "개가 있습니다\n";
 	}
-	cout << instanceDatas.size() << "가지의 오브젝트가 있습니다.\n";
 }

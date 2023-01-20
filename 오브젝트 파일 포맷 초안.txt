@@ -1,7 +1,25 @@
+IsSkinnedObject(bool)		// 스킨드 오브젝트 인지, false일 경우 nBone과 boneName, 애니메이션 정보들이 주어지지 않는다.
+nBone(UINT)					// 뼈의 개수
+boneNames(string * nBone)		// 뼈의 이름들
+
+nAnimationSet (UINT)		// 애니메이션 클립의 개수
+{
+	animationSetName (string)	// 애니메이션 클립의 이름
+	animationSetRuntime (float)	// 애니메이션 클립의 런타임
+	animationNKeyFrame (UINT)	// 키프레임의 수
+	{
+		{
+			scale (float * 3)
+			rotation (float * 4)
+			position (float * 3)
+		} ( * animationNKeyFrame)
+	} ( * nBone)
+
+} ( * nAnimationSet)
 
 nameSize (UINT) / name(string) ( 실제 storage에 들어갈 최상위 오브젝트 )
 localPosition, Scale, Rotation(float3, float3, float4)
-haveMesh(bool) 0일경우 메쉬 정보가 없음. 없다면 아래 메쉬, 마테리얼 스킵. 메쉬 있을경우 1
+haveMesh(int) 0일경우 메쉬 정보가 없음. 없다면 아래 메쉬, 마테리얼 스킵. 메쉬 있을경우 1, 스킨드 메쉬 일경우 2
 메쉬 정보
 마테리얼 정보. 각 서브메시는 순서대로 다른 마테리얼을 사용 
 
@@ -14,6 +32,7 @@ nChildren(UINT)
 }
 
 coverOOBB
+
 
 /////////////////////////////////////////////////////////////////
 
@@ -28,6 +47,21 @@ texcoord (float * 3 * nVertex)
 nSubMesh (UINT)
 nSubMeshIndex (UINT) / subMeshIndex (UINT * nSubMeshIndex)    ....( * nSubMesh )
 
+
+
+/////////////////////////////////////////////////////////////////
+
+스킨드 메쉬 정보
+bonesPerVertex(UINT)			// 뼈에 영향을 주는 정점의 개수
+nBone(UINT)					// 뼈의 개수
+bindposes(float4x4 * nBone)		// 오프셋 행렬들 (==offsetMatrix)
+
+skinnedMeshOOBB(float * 6)		// 스킨드 메쉬의 바운딩 박스
+
+메쉬 정보
+
+boneIndices (UINT * 4 * nVertex)	// 해당 정점에 영향을 주는 뼈의 인덱스
+boneWeight (float * 4 * nVertex)	// 가중치
 
 /////////////////////////////////////////////////////////////////
 마테리얼 정보

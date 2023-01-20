@@ -6,7 +6,6 @@
 // 생성자, 소멸자
 Mesh::Mesh() {
 	primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	refCount = 0;
 }
 Mesh::~Mesh() {
 
@@ -108,14 +107,6 @@ void Mesh::ReleaseUploadBuffers() {
 	}
 }
 
-void Mesh::AddRef() {
-	refCount++;
-}
-
-UINT Mesh::GetRef() {
-	return refCount;
-}
-
 void Mesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex) {
 
 	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
@@ -137,6 +128,54 @@ void Mesh::RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 	_pCommandList->IASetIndexBuffer(&subMeshIndexBufferViews[_subMeshIndex]);
 	_pCommandList->DrawIndexedInstanced(nSubMeshIndex[_subMeshIndex], numInstance, 0, 0, 0);
 }
+
+//////////////// SkinnedMesh ///////////////////
+void SkinnedMesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj) {
+	_file.read((char*)&bonesPerVertex, sizeof(UINT));	// 뼈에 영향을 주는 정점의 개수
+	_file.read((char*)&nBone, sizeof(UINT));			// 뼈의 개수
+	cout << "뼈의 개수" << bonesPerVertex << "\n";
+
+	// 오프셋 행렬들을 리소스로 만드는 과정 => 루트시그니쳐에 연결해야 한다.
+	vector<XMFLOAT4X4> offsetMatrix(nBone);				// 오프셋 행렬들
+	_file.read((char*)offsetMatrix.data(), sizeof(XMFLOAT4X4) * nBone);
+	
+	UINT ncbElementBytes = ((sizeof(XMFLOAT4X4) * nBone + 255) & ~255); //256의 배수
+	pOffsetMatrixBuffer = ::CreateBufferResource(_pDevice, _pCommandList, offsetMatrix.data(), ncbElementBytes, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pOffsetMatrixUploadBuffer);
+	pOffsetMatrixBufferView.BufferLocation = pOffsetMatrixBuffer->GetGPUVirtualAddress();
+	pOffsetMatrixBufferView.StrideInBytes = sizeof(XMFLOAT4X4);
+	pOffsetMatrixBufferView.SizeInBytes = sizeof(XMFLOAT4X4) * nBone;
+
+	// 스킨드 메쉬의 바운딩 박스
+	XMFLOAT3 skinnedOOBBCenter, skinnedOOBBExtents;
+	_file.read((char*)&skinnedOOBBCenter, sizeof(XMFLOAT3));
+	_file.read((char*)&skinnedOOBBExtents, sizeof(XMFLOAT3));
+	skinnedOOBB = BoundingOrientedBox(skinnedOOBBCenter, skinnedOOBBExtents, XMFLOAT4A(0.0f, 0.0f, 0.0f, 1.0f));
+
+	// 메쉬 정보 읽기
+	Mesh::LoadFromFile(_file, _pDevice, _pCommandList, _obj);
+
+	// 정점의 뼈에대한 인덱스정보 리소스로 만들기
+	// boneIndices (UINT * 4 * nVertex)
+	vector<UINT> boneIndices(nVertex * bonesPerVertex);
+	_file.read((char*)boneIndices.data(), sizeof(UINT) * bonesPerVertex * nVertex);
+
+	pBoneIndexBuffer = CreateBufferResource(_pDevice, _pCommandList, boneIndices.data(), sizeof(UINT) * bonesPerVertex * nVertex, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pBoneIndexUploadBuffer);
+	boneIndexBufferView.BufferLocation = pBoneIndexBuffer->GetGPUVirtualAddress();
+	boneIndexBufferView.StrideInBytes = sizeof(UINT) * bonesPerVertex;
+	boneIndexBufferView.SizeInBytes = sizeof(UINT) * bonesPerVertex * nVertex;
+
+	// 정점의 뼈에대한 가중치정보 리소스로 만들기
+	// boneWeight (float * 4 * nVertex)
+	vector<float> boneWeight(nVertex * bonesPerVertex);
+	_file.read((char*)boneWeight.data(), sizeof(float) * bonesPerVertex * nVertex);
+
+	pBoneWeightBuffer = CreateBufferResource(_pDevice, _pCommandList, boneWeight.data(), sizeof(float) * bonesPerVertex * nVertex, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pBoneWeightUploadBuffer);
+	boneWeightBufferView.BufferLocation = pBoneWeightBuffer->GetGPUVirtualAddress();
+	boneWeightBufferView.StrideInBytes = sizeof(float) * bonesPerVertex;
+	boneWeightBufferView.SizeInBytes = sizeof(float) * bonesPerVertex * nVertex;
+
+}
+
 
 //////////////// HitBoxMesh ///////////////////
 
@@ -247,3 +286,5 @@ void FrustumMesh::UpdateMesh(shared_ptr<BoundingFrustum> _pBoundingFrustum) {
 	_pBoundingFrustum->GetCorners(pCorner);
 	pPositionBuffer->Unmap(0, NULL);
 }
+
+
