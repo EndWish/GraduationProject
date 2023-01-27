@@ -174,12 +174,14 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 
 #ifdef USING_INSTANCING
 	GameObject::RenderInstanceObjects(_pCommandList);
+
+	// 플레이어 Render는 따로 수행 ( 인스턴스 사용 X )
 #else
 	for (auto& sector : GetFrustumSectors(*_pBoundingFrustum)) {
 		sector->Render(_pCommandList);
 	}
 #endif
-
+	
 	//cout << i << "\n";
 }
 
@@ -234,7 +236,8 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pPlayer->UpdateObject();
 			pScene->SetPlayer(pPlayer);
 
-			//AddObject(objType, objectID, pPlayer, GetIndex(position));
+			AddObject(objType, objectID, pPlayer, GetIndex(position));
+
 			break;
 		}
 		case SectorLayer::obstacle: {

@@ -37,6 +37,9 @@ void Scene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos)
 	}
 }
 
+void Scene::ProcessCursorMove(XMFLOAT2 _delta, float _timeElapsed) {
+}
+
 void Scene::CheckCollision() {
 }
 
@@ -254,6 +257,7 @@ void LobbyScene::ProcessSocketMessage() {
 		break;
 	}
 	case SC_PACKET_TYPE::gameStart: {
+
 		loadingScene = make_shared<PlayScene>();
 
 		// 게임이 시작된 경우 먼저 게임에서 사용될 인스턴스 정보, 메쉬, 애니메이션, 텍스처 등의 정보를 로드한다.
@@ -267,12 +271,17 @@ void LobbyScene::ProcessSocketMessage() {
 		break;
 	}
 	case SC_PACKET_TYPE::allPlayerLoadingComplete: {
+
+		SetCapture(hWnd);
+		gameFramework.InitOldCursor();
 		gameFramework.PushScene(loadingScene);
+
 		break;
 
 	}
 	default:
-		cout << "나머지 패킷\n";
+
+		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
 	}
 }
 
@@ -534,6 +543,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	// 스테이지 생성
 	// 씬에 그려질 오브젝트들을 전부 빌드.
 
+
 	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
 
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList);
@@ -550,7 +560,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	camera->Create(_pDevice, _pCommandList);
 
 	//camera->SetLocalPosition(XMFLOAT3(0.0, 0.0, 0.0));
-	//camera->SetLocalPosition(XMFLOAT3(0.0, 1.0, -2.0));
+	camera->SetLocalPosition(XMFLOAT3(0.0, 1.0, -2.0));
 
 	camera->SetLocalRotation(Vector4::QuaternionRotation(XMFLOAT3(0, 1, 0), 0.0f));
 
@@ -582,27 +592,27 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, floa
 
 	GameFramework& gameFramework = GameFramework::Instance();
 	if (_keysBuffers['A'] & 0xF0) {
-		pPlayer->Rotate(XMFLOAT3(0, 1, 0), 90.0f, _timeElapsed);
+		pPlayer->MoveRight(-1.0f, _timeElapsed);
 		pPlayer->UpdateObject();
 	}
 	if (_keysBuffers['D'] & 0xF0) {
-		pPlayer->Rotate(XMFLOAT3(0, 1, 0), -90.0f, _timeElapsed);
+		pPlayer->MoveRight(1.0f, _timeElapsed);
 		pPlayer->UpdateObject();
 	}
 	if (_keysBuffers['W'] & 0xF0) {
-		pPlayer->MoveFront(0.1f);
+		pPlayer->MoveFront(1.0f, _timeElapsed);
 		pPlayer->UpdateObject();
 	}
 	if (_keysBuffers['S'] & 0xF0) {
-		pPlayer->MoveFront(-0.1f);
+		pPlayer->MoveFront(-1.0f, _timeElapsed);
 		pPlayer->UpdateObject();
 	}
 	if (_keysBuffers['1'] & 0xF0) {
-		pPlayer->MoveUp(-0.1f);
+		pPlayer->MoveUp(1.0f, _timeElapsed);
 		pPlayer->UpdateObject();
 	}
 	if (_keysBuffers['2'] & 0xF0) {
-		pPlayer->MoveUp(0.1f);
+		pPlayer->MoveUp(-1.0f, _timeElapsed);
 		pPlayer->UpdateObject();
 	}
 }
@@ -641,6 +651,33 @@ void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandLis
 
 void PlayScene::ReActButton(shared_ptr<Button> _pButton)
 {
+
+}
+
+void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
+
+	GameFramework& gameFramework = GameFramework::Instance();
+	Scene::ProcessMouseInput(_type, _pos);
+	switch (_type) {
+	case WM_LBUTTONDOWN:
+		ReleaseCapture();
+
+		break;
+	case WM_LBUTTONUP:
+		SetCapture(hWnd);
+		gameFramework.InitOldCursor();
+		break;
+}
+}
+
+void PlayScene::ProcessCursorMove(XMFLOAT2 _delta, float _timeElapsed)  {
+	
+	pPlayer->Rotate(XMFLOAT3(0, 1, 0), _delta.x * 10.0f, _timeElapsed);
+	pPlayer->UpdateObject();
+
+	pPlayer->GetRevObj()->Rotate(XMFLOAT3(1, 0, 0), _delta.y * 4.0f, _timeElapsed);
+	pPlayer->GetRevObj()->UpdateObject();
+
 
 }
 

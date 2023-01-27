@@ -34,8 +34,17 @@ shared_ptr<Camera> Player::GetCamera() const {
 	return pCamera.lock();
 }
 
+shared_ptr<GameObject> Player::GetRevObj() const {
+
+	return pChildren[1];
+}
+
 void Player::SetCamera(shared_ptr<Camera> _pCamera) {
-	SetChild(_pCamera);
+	// 공전을 위한 빈 오브젝트를 플레이어의 자식으로 연결 후 카메라를 연결한다.
+	shared_ptr<GameObject> revObj = make_shared<GameObject>();
+	revObj->SetChild(_pCamera);
+
+	SetChild(revObj);
 	pCamera = _pCamera;
 }
 

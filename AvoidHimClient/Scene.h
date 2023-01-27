@@ -22,6 +22,7 @@ public:
 	virtual void AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 	virtual void ProcessSocketMessage() = 0;
 	virtual void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);
+	virtual void ProcessCursorMove(XMFLOAT2 _delta, float _timeElapsed);
 
 	virtual void ReActButton(shared_ptr<Button> _pButton) = 0;
 	virtual void CheckCollision();
@@ -113,6 +114,8 @@ public:
 	virtual void ProcessSocketMessage();
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void ReActButton(shared_ptr<Button> _pButton);
+	virtual void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);
+	virtual void ProcessCursorMove(XMFLOAT2 _delta, float _timeElapsed);
 
 	void SetPlayer(shared_ptr<Player>& _pPlayer);
 	void CheckCollision();

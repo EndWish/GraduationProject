@@ -79,10 +79,11 @@ public:
 	XMFLOAT4 GetLocalRotate() const;
 	XMFLOAT3 GetLocalPosition() const;
 	// 로컬 이동
-	void MoveRight(float distance);
+
 	void Move(const XMFLOAT3& _moveVector, float _timeElapsed = 1.0f);
-	void MoveUp(float distance);
-	void MoveFront(float distance);
+	void MoveRight(float distance, float _timeElapsed = 1.0f);
+	void MoveUp(float distance, float _timeElapsed = 1.0f);
+	void MoveFront(float distance, float _timeElapsed = 1.0f);
 
 	void Rotate(const XMFLOAT3& _axis, float _angle, float _timeElapsed = 1.0f);
 	void Rotate(const XMFLOAT4& _quat);

@@ -12,7 +12,7 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 
 		gameFramework.instanceHandle = _hInstance;
 		gameFramework.windowHandle = _hMainWnd;
-
+		
 		gameFramework.CreateDirect3DDevice();    // 가장먼저 디바이스를 생성해야 명령 대기열이나 서술자 힙 등을 생성할 수 있다.
 		gameFramework.CreateCommandQueueList();
 		gameFramework.CreateRtvAndDsvDescriptorHeaps();
@@ -81,14 +81,20 @@ GameFramework& GameFramework::Instance() {
 
 void GameFramework::ProcessMouseInput(UINT _type, XMFLOAT2 _pos)
 {
+
 	switch (_type) {
+	case WM_MOUSEMOVE:
+		break;
+
 	case WM_LBUTTONDOWN:
+
 		if (isClick) return; // 처음 한번 마우스를 클릭 했을때만 수행
 		break;
 	case WM_LBUTTONUP:
 		if (!isClick) return;
 		break;
 	}
+
 	isClick = !isClick;	// 클릭 상태를 바꾸어준다.
 	if (pScenes.top()) pScenes.top()->ProcessMouseInput(_type, _pos);
 }
@@ -453,6 +459,14 @@ shared_ptr<Shader> GameFramework::GetShader(const string& _name)
 {
 	return shaderManager.GetShader(_name);
 }
+
+void GameFramework::InitOldCursor() {
+	POINT mid{ C_WIDTH / 2.f, C_HEIGHT / 2.f };
+	ClientToScreen(hWnd, &mid);
+	oldCursorPos = mid;
+	SetCursorPos(mid.x, mid.y);
+}
+
 const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
 	//if (!pScenes.empty()) {
 	return pScenes.top();
@@ -609,6 +623,8 @@ void GameFramework::ProcessInput() {
 	static array<bool, 256> keysUpBuffers;		// 현재 키가 눌린 순간인지 저장하는 변수
 	bool processedByScene = false;
 
+	
+
 	keysDownBuffers.fill(false);
 	keysUpBuffers.fill(false);
 	if (GetKeyboardState((PBYTE)keysBuffers.data())) {	// 키보드로 부터 입력데이터를 받으면
@@ -635,6 +651,22 @@ void GameFramework::ProcessInput() {
 			cout << "!";
 		}
 		
+		if (GetCapture() == windowHandle)
+		{
+			POINT curCursorPos;
+			XMFLOAT2 delta;
+
+			GetCursorPos(&curCursorPos);
+			delta.x = (float)(curCursorPos.x - oldCursorPos.x);
+			delta.y = (float)(curCursorPos.y - oldCursorPos.y);
+			//SetCursorPos(oldCursorPos.x, oldCursorPos.y);
+
+			SetCursor(NULL);
+			InitOldCursor();
+
+			if (!pScenes.empty()) pScenes.top()->ProcessCursorMove(delta, gameTimer.GetTimeElapsed());
+		}
+
 		// 씬의 키보드입력 처리
 		if (!pScenes.empty()) {
 			pScenes.top()->ProcessKeyboardInput(keysBuffers, gameTimer.GetTimeElapsed(), pDevice, pCommandList);

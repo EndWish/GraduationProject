@@ -79,29 +79,33 @@ XMFLOAT4 GameObject::GetLocalRotate() const {
 	return localRotation;
 }
 
-void GameObject::MoveRight(float distance) {
-	XMFLOAT3 moveVector = GetLocalRightVector();	// RightVector를 가져와서
-	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
-	moveVector = Vector3::ScalarProduct(moveVector, distance);	// 이동거리만큼 곱해준다.
-	localPosition = Vector3::Add(localPosition, moveVector);
-}
+
 
 void GameObject::Move(const XMFLOAT3& _moveVector, float _timeElapsed) {
 	localPosition = Vector3::Add(localPosition, _moveVector);
 }
 
-void GameObject::MoveUp(float distance) {
+void GameObject::MoveRight(float distance, float _timeElapsed) {
+	XMFLOAT3 moveVector = GetLocalRightVector();	// RightVector를 가져와서
+	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
+	moveVector = Vector3::ScalarProduct(moveVector, distance * _timeElapsed);	// 이동거리만큼 곱해준다.
+	localPosition = Vector3::Add(localPosition, moveVector);
+}
+
+void GameObject::MoveUp(float distance, float _timeElapsed) {
 	XMFLOAT3 moveVector = GetLocalUpVector();	// UpVector를 가져와서
 	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
-	moveVector = Vector3::ScalarProduct(moveVector, distance);	// 이동거리만큼 곱해준다.
+	moveVector = Vector3::ScalarProduct(moveVector, distance * _timeElapsed);	// 이동거리만큼 곱해준다.
 	localPosition = Vector3::Add(localPosition, moveVector);
 }
-void GameObject::MoveFront(float distance) {
+
+void GameObject::MoveFront(float distance, float _timeElapsed) {
 	XMFLOAT3 moveVector = GetLocalLookVector();	// LookVector를 가져와서
 	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
-	moveVector = Vector3::ScalarProduct(moveVector, distance);	// 이동거리만큼 곱해준다.
+	moveVector = Vector3::ScalarProduct(moveVector, distance * _timeElapsed);	// 이동거리만큼 곱해준다.
 	localPosition = Vector3::Add(localPosition, moveVector);
 }
+
 void GameObject::Rotate(const XMFLOAT3& _axis, float _angle, float _timeElapsed) {
 	localRotation = Vector4::QuaternionMultiply(localRotation, Vector4::QuaternionRotation(_axis, _angle * _timeElapsed));
 }

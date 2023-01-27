@@ -2,6 +2,8 @@
 #include "DDSTextureLoader12.h"
 
 
+HWND hWnd;
+
 UINT rtvDescriptorIncrementSize = 0;
 UINT dsvDescriptorIncrementSize = 0;
 UINT cbvSrvDescriptorIncrementSize = 0;

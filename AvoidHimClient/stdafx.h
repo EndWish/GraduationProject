@@ -10,7 +10,7 @@
 #define GRAVITY 9.8f
 #define C_WIDTH 800
 #define C_HEIGHT 600
-#define USING_INSTANCING
+//#define USING_INSTANCING
 //#define DEBUG
 
 // Windows 헤더 파일
@@ -89,6 +89,9 @@ using namespace DirectX::PackedVector;
 extern UINT cbvSrvDescriptorIncrementSize;
 extern UINT	rtvDescriptorIncrementSize;
 extern UINT dsvDescriptorIncrementSize;
+
+// 메인 윈도우 핸들
+extern HWND hWnd;
 
 // 서버에 대한 소켓
 extern SOCKET server_sock;
