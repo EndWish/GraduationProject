@@ -47,7 +47,7 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 	for (auto& pTex : pTextures) {
 
 		ReadStringBinary(textureName, _file);
-		cout << textureName << "·Îµå \n";
+
 		if (textureName != "null") {
 			pTex = gameFramework.GetTextureManager().GetTexture(textureName, _pDevice, pShader,  _pCommandList, 4 + i);
 
@@ -59,12 +59,10 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 			}
 		}
 	}
-	cout << textureName << " : " << nType << "\n";
 	pTexture = pTextures[0];
 	pBumpTexture = pTextures[1];
 
 	shared_ptr<VS_MaterialMappedFormat> pMappedMaterial;
-
 	UINT cbElementSize = (sizeof(VS_MaterialMappedFormat) + 255) & (~255);
 	ComPtr<ID3D12Resource> temp;
 	pMaterialBuffer = CreateBufferResource(_pDevice, _pCommandList, NULL, cbElementSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);

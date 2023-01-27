@@ -64,6 +64,15 @@ void Sector::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 }
 
+void Sector::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _mesh) {
+
+	for (auto pGameObjectLayer : pGameObjectLayers) {
+		for (auto [gid, pGameObject] : pGameObjectLayer) {
+			pGameObject->RenderHitBox(_pCommandList, _mesh);
+		}
+	}
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Zone
@@ -172,18 +181,26 @@ vector<Sector*> Zone::GetFrustumSectors(const BoundingFrustum& _frustum) {
 }
 
 void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum) {
-
+	GameFramework& gameFramework = GameFramework::Instance();
 
 
 #ifdef USING_INSTANCING
 	GameObject::RenderInstanceObjects(_pCommandList);
 
-	//GameFramework& gameFramework = GameFramework::Instance();
 	//gameFramework.GetShader("SkinnedShader")->PrepareRender(_pCommandList);
 	pPlayer->Render(_pCommandList);
 #else
-	for (auto& sector : GetFrustumSectors(*_pBoundingFrustum)) {
+	auto sectors = GetFrustumSectors(*_pBoundingFrustum);
+
+	for (auto& sector : sectors) {
 		sector->Render(_pCommandList);
+	}
+
+	HitBoxMesh& hitBoxMesh = gameFramework.GetHitBoxMesh();
+	gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
+
+	for (auto& sector : sectors) {
+		sector->RenderHitBox(_pCommandList, hitBoxMesh);
 	}
 #endif
 

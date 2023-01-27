@@ -39,6 +39,7 @@ enum class LobbyState : unsigned char {
 };
 
 struct RoomInfo {
+	UINT id = 0;
 	UINT host = 0;
 	UINT nParticipant = 0;
 	vector<Player_Info> players;
@@ -64,6 +65,7 @@ private:
 
 	// 미리 로딩을 해놓은 후 게임이 시작되었을 때 push 한다.
 	shared_ptr<PlayScene> loadingScene;
+	
 	
 	UINT roomPage;	// 1페이지부터 시작
 	RoomInfo roomInfo;

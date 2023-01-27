@@ -67,6 +67,7 @@ struct CS_READY {
 struct CS_LOADING_COMPLETE {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::loadingComplete;
 	UINT cid = 0;
+	UINT roomID = 0;
 };
 
 /// 서버->클라
@@ -93,6 +94,7 @@ struct SC_SUB_ROOM_PLAYERS_INFO {
 };
 struct SC_ROOM_PLAYERS_INFO {	// 방에 입장했을때 존재하는 플레이어들의 정보를 보내는 패킷
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::roomPlayersInfo;
+	UINT roomID = 0;
 	UINT hostID = 0;
 	UINT nParticipant = 0;
 	SC_SUB_ROOM_PLAYERS_INFO participantInfos[maxParticipant];

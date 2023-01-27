@@ -13,10 +13,13 @@ Room::~Room() {
 }
 
 bool Room::EnterUser(UINT _clientID) {
+	
+	ServerFramework& serverFramework = ServerFramework::Instance();
+
 	if (participants.size() == maxParticipant)
 		return false;
 
-	// 첫번째 참가자일 경우 반장으로 임명한다.
+	// 첫번째 참가자일 경우 방장으로 임명한다.
 	if (participants.size() == 0)
 		hostID = _clientID;
 
@@ -26,6 +29,19 @@ bool Room::EnterUser(UINT _clientID) {
 	Client* client = ServerFramework::Instance().GetClient(_clientID);
 	client->SetClientState(ClientState::roomWait);
 	client->SetCurrentRoom(this);
+
+	// 2. 입장하는 플레이어에게 정보를 전송한다.
+	SC_ROOM_PLAYERS_INFO sendPacket1;
+	sendPacket1.roomID = GetID();
+	sendPacket1.hostID = GetHostID();
+	sendPacket1.nParticipant = GetNumOfParticipants();
+	for (UINT i = 0; UINT clientID : GetParticipants()) {
+		sendPacket1.participantInfos[i].clientID = clientID;
+		sendPacket1.participantInfos[i].ready = client->GetClientState() == ClientState::roomReady;
+		++i;
+	}
+	send(client->GetSocket(), (char*)&sendPacket1, sizeof(SC_ROOM_PLAYERS_INFO), 0);
+	cout << "입장하는 플레이어에게 정보를 전송한다.\n";
 
 	return true;
 }
@@ -54,4 +70,5 @@ void Room::LeaveUser(UINT _clientID) {
 void Room::GameStart() {
 	gameRunning = true;
 	ServerFramework::Instance().AddPlayInfo(id);
+	cout << "playinfo " << id << " 생성 \n";
 }

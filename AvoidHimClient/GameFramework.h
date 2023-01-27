@@ -60,6 +60,7 @@ private:
 	// 이전 프레임에서의 마우스 커서 위치를 저장하는 변수
 	POINT oldCursorPos;
 
+	HitBoxMesh hitBoxMesh;
 	// 현재 왼쪽 마우스가 눌리고 있는지를 판단
 	bool isClick;
 
@@ -106,7 +107,7 @@ public:
 	void ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam);
 	pair<int, int> GetClientSize();
 	POINT GetOldCursorPos() { return oldCursorPos; };
-
+	HitBoxMesh& GetHitBoxMesh() { return hitBoxMesh; };
 	// 루트 시그니처 Get
 	ComPtr<ID3D12RootSignature> GetRootSignature() { return pRootSignature; }
 	const shared_ptr<Scene>& GetCurrentScene() const;

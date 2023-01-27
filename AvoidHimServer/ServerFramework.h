@@ -20,7 +20,6 @@ private:
 	unordered_map<SOCKET, UINT> socketAndIdTable;
 	UINT roomIDCount;
 	unordered_map<UINT, Room*> pRooms;
-	UINT playInfoIDCount;
 	unordered_map<UINT, PlayInfo*> pPlayInfos;
 
 public:

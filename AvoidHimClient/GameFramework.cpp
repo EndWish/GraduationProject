@@ -35,7 +35,10 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 
 		// 텍스처 출력을 위한 TextLayer 인스턴스 초기화
 		TextLayer::Create(nSwapChainBuffer, gameFramework.pDevice, gameFramework.pCommandQueue, gameFramework.pRenderTargetBuffers, gameFramework.clientWidth, gameFramework.clientHeight);
-
+		
+		// 디버그용 히트박스 메쉬 생성
+		gameFramework.hitBoxMesh.Create(gameFramework.pDevice, gameFramework.pCommandList);
+		
 		// 최초씬 생성
 		shared_ptr<Scene> pScene = make_shared<LobbyScene>();
 		gameFramework.LoadingScene(pScene);

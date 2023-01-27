@@ -3,6 +3,7 @@
 class GameObject;
 class Player;
 class PlayScene;
+class HitBoxMesh;
 
 class Sector {
 	typedef unordered_map<UINT, shared_ptr<GameObject>> Layer;
@@ -21,6 +22,7 @@ public:
 	// °´Ã¼ Ã£±â
 	shared_ptr<GameObject> FindObject(SectorLayer _sectorLayer, UINT _objectID);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _mesh);
 };
 
 class Zone {

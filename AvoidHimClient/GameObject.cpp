@@ -323,8 +323,8 @@ void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _
 
 
 void GameObject::UpdateHitboxShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-
-	XMFLOAT4X4 world = Matrix4x4::ScaleTransform(Vector3::ScalarProduct(baseOrientedBox.Extents, 1.0f));
+	
+	XMFLOAT4X4 world = Matrix4x4::ScaleTransform(Vector3::ScalarProduct(baseOrientedBox.Extents, 2.0f));
 	XMFLOAT4X4 translate = Matrix4x4::Identity();
 	translate._41 += baseOrientedBox.Center.x;
 	translate._42 += baseOrientedBox.Center.y;
@@ -542,6 +542,7 @@ shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, con
 		BoundingOrientedBox box;
 		file.read((char*)&box.Center, sizeof(XMFLOAT3));
 		file.read((char*)&box.Extents, sizeof(XMFLOAT3));
+		
 
 		newObject->SetBoundingBox(box);
 		// eachTransfrom에 맞게 각 계층의 오브젝트들의 worldTransform을 갱신

@@ -234,9 +234,9 @@ struct VS_BOUNDING_OUTPUT {
 
 
 VS_BOUNDING_OUTPUT BoundingVertexShader(VS_BOUNDING_INPUT input) {
-    // 현재 프러스텀은 정점에 월드변환이 적용되어 오기 때문에 임시로 world를 뺀 상태이다.
+    // 현재 프러스텀은 정점에 월드변환이 적용되어 오는 상태이다. (수정 필요)
     VS_BOUNDING_OUTPUT output;
-    output.position = mul(mul(float4(input.position, 1.0f), view), projection);
+    output.position = mul(mul(mul(float4(input.position, 1.0f), worldTransform), view), projection);
     return output;
 }
 

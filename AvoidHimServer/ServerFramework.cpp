@@ -20,7 +20,7 @@ ServerFramework::ServerFramework() {
     buffer.reserve(1024);
 	clientIDCount = 1;
     roomIDCount = 1;
-    playInfoIDCount = 1;
+
 }
 ServerFramework::~ServerFramework() {
 }
@@ -140,21 +140,10 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         }
 
         // 입장이 가능한 경우
-        // 1. 플레이어를 입장시킨다.
+        // 1. 플레이어를 입장시킨 후 방의 정보를 전송한다.
         pRoom->EnterUser(recvPacket.cid);
-        cout << recvPacket.visitRoomID << "번 방에 접속 성공.\n";
-        // 2. 입장하는 플레이어에게 정보를 전송한다.
-        SC_ROOM_PLAYERS_INFO sendPacket1;
-        sendPacket1.hostID = pRoom->GetHostID();
-        sendPacket1.nParticipant = pRoom->GetNumOfParticipants();
-        for (UINT i = 0; UINT clientID : pRoom->GetParticipants()) {
-            sendPacket1.participantInfos[i].clientID = clientID;
-            sendPacket1.participantInfos[i].ready = pClients[clientID]->GetClientState() == ClientState::roomReady;
-            ++i;
-        }
-        send(_socket, (char*)&sendPacket1, sizeof(SC_ROOM_PLAYERS_INFO), 0);
-        cout << "입장하는 플레이어에게 정보를 전송한다.\n";
-        // 3. 기존에 접속해 있는 플레이어 에게 정보를 전송한다.
+
+        // 2. 기존에 접속해 있는 플레이어 에게 정보를 전송한다.
         SC_ROOM_VISIT_PLAYER_INFO sendPacket2;
         sendPacket2.visitClientID = recvPacket.cid;
         for (UINT clientID : pRoom->GetParticipants()) {
@@ -248,7 +237,8 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         CS_LOADING_COMPLETE recvPacket;
         recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_LOADING_COMPLETE) - sizeof(CS_PACKET_TYPE), 0);
 
-        PlayInfo* pPlayInfo = pPlayInfos[recvPacket.cid];
+        cout << recvPacket.roomID << " 번 방 로딩 완료 ! \n";
+        PlayInfo* pPlayInfo = pPlayInfos[recvPacket.roomID];
         pPlayInfo->LoadingComplete(recvPacket.cid);
         break;
     }
@@ -342,11 +332,11 @@ void ServerFramework::CreateRoomlistInfo() {
 }
 
 void ServerFramework::AddPlayInfo(UINT _roomID) {
-    PlayInfo* pPlayInfo = new PlayInfo(playInfoIDCount);
-    pPlayInfos[playInfoIDCount] = pPlayInfo;
+
+    PlayInfo* pPlayInfo = new PlayInfo(_roomID);
+    pPlayInfos[_roomID] = pPlayInfo;
     pPlayInfo->Init(_roomID);
 
-    ++playInfoIDCount;
 }
 
 void ServerFramework::SendRoomOutPlayerAndRoomList(Room* pRoom, Client* pOutClient) {

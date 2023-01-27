@@ -202,6 +202,7 @@ void LobbyScene::ProcessSocketMessage() {
 	case SC_PACKET_TYPE::roomPlayersInfo: { // 입장 질의를 보내고 난 후 입장이 가능하다고 받음
 		SC_ROOM_PLAYERS_INFO packet;
 		RecvContents(packet);
+		roomInfo.id = packet.roomID;
 		roomInfo.players.clear();
 		roomInfo.host = packet.hostID;
 		roomInfo.nParticipant = packet.nParticipant;
@@ -257,6 +258,8 @@ void LobbyScene::ProcessSocketMessage() {
 		break;
 	}
 	case SC_PACKET_TYPE::gameStart: {
+		SC_GAME_START recvPacket;
+		RecvContents(recvPacket);
 
 		loadingScene = make_shared<PlayScene>();
 
@@ -264,9 +267,11 @@ void LobbyScene::ProcessSocketMessage() {
 		gameFramework.LoadingScene(loadingScene);
 
 		// 플레이 씬 로딩이 모두 완료된 경우 서버에게 로딩 완료 패킷을 보낸다. 
-		CS_LOADING_COMPLETE packet;
-		packet.cid = cid;
-		send(server_sock, (char*)&packet, sizeof(CS_LOADING_COMPLETE), 0);
+		CS_LOADING_COMPLETE sendPacket;
+		sendPacket.roomID = roomInfo.id;
+
+		sendPacket.cid = cid;
+		send(server_sock, (char*)&sendPacket, sizeof(CS_LOADING_COMPLETE), 0);
 		
 		break;
 	}
@@ -681,7 +686,6 @@ void PlayScene::ProcessCursorMove(XMFLOAT2 _delta, float _timeElapsed)  {
 	pPlayer->GetRevObj()->Rotate(XMFLOAT3(1, 0, 0), _delta.y * 4.0f, _timeElapsed);
 	pPlayer->GetRevObj()->UpdateObject();
 
-
 }
 
 
@@ -703,9 +707,9 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 #endif
 	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
 
-	gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
-	pFrustumMesh->UpdateMesh(camera->GetBoundingFrustum());
-	pFrustumMesh->Render(_pCommandList);
+	//gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
+	//pFrustumMesh->UpdateMesh(camera->GetBoundingFrustum());
+	//pFrustumMesh->Render(_pCommandList);
 }
 
 void PlayScene::AddLight(const shared_ptr<Light>& _pLight) {
