@@ -31,6 +31,7 @@ public:
 	static unordered_map<string, Instancing_Data>& GetInstanceDatas() { return instanceDatas; };
 	static void RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 protected:
+	bool isSkinnedObject;
 	UINT instanceID;
 	string name;
 
@@ -115,6 +116,10 @@ public:
 	// 메쉬의 바운딩 박스를 오브젝트로 옮긴다.
 	void SetBoundingBox(const BoundingOrientedBox& _box);
 
+	// skinnedObject인지 설정, 얻기
+	void SetSkinnedObject(bool _isSkinnedObject);
+	bool IsSkinnedObject();
+
 	void UpdateLocalTransform();
 	// eachTransform를 가지고 worldTransform를 업데이트 한다.
 	virtual void UpdateWorldTransform();
@@ -148,16 +153,33 @@ public:
 	virtual void CopyObject(const GameObject& _other);
 };
 
+
+///////////////////////////////////////////////////////////////////////////////
+/// SkinnedGameObject
+struct SkinnedWorldTransformFormat {
+	array<XMFLOAT4X4, MAX_BONE> worldTransform;
+};
+
 class SkinnedGameObject : public GameObject {
+protected:
+	static ComPtr<ID3D12Resource> pSkinnedWorldTransformBuffer;
+	static shared_ptr<SkinnedWorldTransformFormat> pMappedSkinnedWorldTransform;
+public:
+	static void InitSkinnedWorldTransformBuffer(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
 protected:
 	vector<shared_ptr<GameObject>> pBones;
 	AnimationController aniController;
 
 public:
+	SkinnedGameObject();
+	virtual ~SkinnedGameObject();
+
 	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject);
-
+	
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void CopyObject(const GameObject& _other);
 };
-
 
 class GameObjectManager {
 	unordered_map<string, shared_ptr<GameObject>> storage;

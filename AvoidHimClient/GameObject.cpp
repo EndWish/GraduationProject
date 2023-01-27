@@ -34,6 +34,7 @@ GameObject::GameObject() {
 	boundingBox = BoundingOrientedBox();
 	isOOBBCover = false;
 	instanceID = 0;
+	isSkinnedObject = false;
 }
 GameObject::~GameObject() {
 
@@ -179,6 +180,13 @@ void GameObject::SetBoundingBox(const BoundingOrientedBox& _box) {
 	baseOrientedBox = _box;
 }
 
+void GameObject::SetSkinnedObject(bool _isSkinnedObject) {
+	isSkinnedObject = _isSkinnedObject;
+}
+bool GameObject::IsSkinnedObject() {
+	return isSkinnedObject;
+}
+
 void GameObject::UpdateLocalTransform() {
 	localTransform = Matrix4x4::Identity();
 	// S
@@ -264,6 +272,10 @@ bool GameObject::CheckRemove() const {
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	if (pMesh) {	// 메쉬가 있을 경우에만 렌더링을 한다.
+		GameFramework& gameFramework = GameFramework::Instance();
+		gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
+
+
 		UpdateShaderVariable(_pCommandList);
 
 		// 각 마테리얼에 맞는 서브메쉬를 그린다.
@@ -402,20 +414,42 @@ void GameObject::CopyObject(const GameObject& _other) {
 	materials = _other.materials;
 
 	for (int i = 0; i < _other.pChildren.size(); ++i) {
-		shared_ptr<GameObject> child = make_shared<GameObject>();
+		shared_ptr<GameObject> child;
+		if(_other.pChildren[i]->IsSkinnedObject())
+			child = make_shared<SkinnedGameObject>();
+		else
+			child = make_shared<GameObject>();
+
 		child->CopyObject(*_other.pChildren[i]);
 		SetChild(child);
 	}
 }
 
 /////////////////////////// SkinnedGameObject /////////////////////
+ComPtr<ID3D12Resource> SkinnedGameObject::pSkinnedWorldTransformBuffer;
+shared_ptr<SkinnedWorldTransformFormat> SkinnedGameObject::pMappedSkinnedWorldTransform;
+
+void SkinnedGameObject::InitSkinnedWorldTransformBuffer(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	ComPtr<ID3D12Resource> temp;
+	UINT ncbElementBytes = ((sizeof(SkinnedWorldTransformFormat) + 255) & ~255); //256의 배수
+	pSkinnedWorldTransformBuffer = ::CreateBufferResource(_pDevice, _pCommandList, NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
+	pSkinnedWorldTransformBuffer->Map(0, NULL, (void**)&pMappedSkinnedWorldTransform);
+}
+
+SkinnedGameObject::SkinnedGameObject() {
+	aniController = AnimationController();
+}
+SkinnedGameObject::~SkinnedGameObject() {
+
+}
+
 void SkinnedGameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject) {
 	UINT nBone = 0;
 
 	_file.read((char*)&nBone, sizeof(UINT));
 
 	vector<string> boneNames(nBone);
-	for (int i = 0; i < nBone; ++i) {
+	for (UINT i = 0; i < nBone; ++i) {
 		ReadStringBinary(boneNames[i], _file);
 	}
 
@@ -425,10 +459,56 @@ void SkinnedGameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>
 	
 	// 이름을 가지고 뼈를 찾는다.
 	pBones.assign(nBone, nullptr);
-	for (int i = 0; i < nBone; ++i) {
+	for (UINT i = 0; i < nBone; ++i) {
 		pBones[i] = FindFrame(boneNames[i]);
 	}
 
+}
+
+void SkinnedGameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	if (pMesh) {
+		GameFramework& gameFramework = GameFramework::Instance();
+		gameFramework.GetShader("SkinnedShader")->PrepareRender(_pCommandList);
+		// 메쉬가 있을 경우에만 렌더링을 한다.
+		// 애니메이션에 따라 본들의 행렬을 변경하고 Update한다.	[이 부분은 추후 Animation에서 하도록 수정한다.]
+		aniController.AddTime(1.f / 300.f);
+		aniController.UpdateBoneLocalTransform(pBones);
+		UpdateWorldTransform();
+		UpdateShaderVariable(_pCommandList);
+
+		// 본의 월드 변환 행렬들을 리소스에 담아 루트시그니처에 연결한다.
+		for (int i = 0; auto & pBone : pBones) {
+			XMFLOAT4X4 world = pBone->GetWorldTransform();
+			XMStoreFloat4x4(&world, XMMatrixTranspose(XMLoadFloat4x4(&world)));
+			pMappedSkinnedWorldTransform->worldTransform[i++] = world;
+		}
+
+		D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pSkinnedWorldTransformBuffer->GetGPUVirtualAddress();
+		_pCommandList->SetGraphicsRootConstantBufferView(7, gpuVirtualAddress);
+
+		// 각 마테리얼에 맞는 서브메쉬를 그린다.
+		for (int i = 0; i < materials.size(); ++i) {
+			// 해당 서브매쉬와 매칭되는 마테리얼을 Set 해준다.
+			materials[i]->UpdateShaderVariable(_pCommandList);
+			pMesh->Render(_pCommandList, i);	// 오프셋 행렬을 루트 시그니처에 연결하는 것은 메쉬에서 한다.
+		}
+	}
+	for (const auto& pChild : pChildren) {
+		pChild->Render(_pCommandList);
+	}
+}
+
+void SkinnedGameObject::CopyObject(const GameObject& _other) {
+	const SkinnedGameObject& other = static_cast<const SkinnedGameObject&>(_other);
+
+	aniController = other.aniController;
+	GameObject::CopyObject(_other);
+
+	pBones.assign(other.pBones.size(), {});
+	for (int i = 0; i < pBones.size(); ++i) {
+		if(other.pBones[i])
+			pBones[i] = FindFrame(other.pBones[i]->GetName());
+	}
 }
 
 /////////////////////////// GameObjectManager /////////////////////
@@ -452,6 +532,7 @@ shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, con
 		else {
 			newObject = make_shared<GameObject>();
 		}
+		newObject->SetSkinnedObject(isSkinnedObject);
 
 		// 최상위 오브젝트를 커버 OOBB로 설정
 		newObject->SetOOBBCover(true);
@@ -470,7 +551,12 @@ shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, con
 
 	// 스토리지 내 오브젝트 정보와 같은 오브젝트를 복사하여 생성한다.
 	shared_ptr<GameObject> Object;
-	Object = make_shared<GameObject>();
+	if (storage[_name]->IsSkinnedObject()) {
+		Object = make_shared<SkinnedGameObject>();
+	}
+	else {
+		Object = make_shared<GameObject>();
+	}
 
 	Object->CopyObject(*storage[_name]);
 	return Object;
@@ -492,7 +578,7 @@ void GameObjectManager::InitInstanceResource(const ComPtr<ID3D12Device>& _pDevic
 	for (auto& [name, transform] : _instanceDatas) {
 		Instancing_Data data;
 		// 현재 이 이름을 가진 오브젝트를 사용하는 인스턴스의 수만큼 리소스를 생성한다.
-		refCount = _instanceDatas[name].size();
+		refCount = (UINT)_instanceDatas[name].size();
 		data.activeInstanceCount = refCount;
 
 		data.resource = CreateBufferResource(_pDevice, _pCommandList, _instanceDatas[name].data(), sizeof(XMFLOAT4X4) * refCount, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, instanceUploadBuffers[name]);

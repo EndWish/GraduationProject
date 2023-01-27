@@ -113,7 +113,7 @@ void TextBox::Render()
 	pD3D11On12Device->AcquireWrappedResources(ppResources, _countof(ppResources));
 
 	pD2DDeviceContext->BeginDraw();
-	pD2DDeviceContext->DrawText(text.c_str(), text.size(), format.Get(), rect, brush.Get());
+	pD2DDeviceContext->DrawText(text.c_str(), (UINT32)text.size(), format.Get(), rect, brush.Get());
 	pD2DDeviceContext->EndDraw();
 	pD3D11On12Device->ReleaseWrappedResources(ppResources, _countof(ppResources));
 	pD3D11DeviceContext->Flush();
@@ -187,7 +187,8 @@ void TextLayer::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Co
 	hr = pD3d11On12Device->QueryInterface(__uuidof(IDXGIDevice), (void**)&pdxgiDevice);
 
 	hr = ::D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, __uuidof(ID2D1Factory3), &d2dFactoryOptions, (void**)&pD2dFactory);
-	hr = pD2dFactory->CreateDevice(pdxgiDevice, (ID2D1Device2**)&pD2dDevice);
+	if(pdxgiDevice)
+		hr = pD2dFactory->CreateDevice(pdxgiDevice, (ID2D1Device2**)&pD2dDevice);
 	hr = pD2dDevice->CreateDeviceContext(D2D1_DEVICE_CONTEXT_OPTIONS_NONE, (ID2D1DeviceContext2**)&pD2dDeviceContext);
 
 	pD2dDeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
@@ -203,7 +204,8 @@ void TextLayer::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Co
 		pD3d11On12Device->CreateWrappedResource(_renderTargets[i].Get(), &d3d11Flags, D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT, IID_PPV_ARGS(&pD3d11WrappedRenderTargets[i]));
 		IDXGISurface* pdxgiSurface = NULL;
 		pD3d11WrappedRenderTargets[i]->QueryInterface(__uuidof(IDXGISurface), (void**)&pdxgiSurface);
-		pD2dDeviceContext->CreateBitmapFromDxgiSurface(pdxgiSurface, &d2dBitmapProperties, &pD2dRenderTargets[i]);
+		if(pdxgiSurface)
+			pD2dDeviceContext->CreateBitmapFromDxgiSurface(pdxgiSurface, &d2dBitmapProperties, &pD2dRenderTargets[i]);
 		pdxgiSurface->Release();
 	}
 }

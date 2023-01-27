@@ -84,6 +84,7 @@ using namespace std;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
+#define MAX_BONE 100
 
 // 각 디스크립터 내 보더 사이즈
 extern UINT cbvSrvDescriptorIncrementSize;
@@ -278,7 +279,6 @@ namespace Vector4 {
 		return result;
 	}
 }
-
 
 namespace Matrix4x4 {
 	inline XMFLOAT4X4 Identity() {

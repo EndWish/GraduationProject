@@ -206,7 +206,7 @@ void LobbyScene::ProcessSocketMessage() {
 		roomInfo.host = packet.hostID;
 		roomInfo.nParticipant = packet.nParticipant;
 
-		for (int i = 0; i < roomInfo.nParticipant; ++i) {
+		for (UINT i = 0; i < roomInfo.nParticipant; ++i) {
 			Player_Info pi{ packet.participantInfos[i].clientID, packet.participantInfos[i].ready };
 			roomInfo.players.push_back(pi);
 		}
@@ -401,7 +401,7 @@ void LobbyScene::NoticeCloseToServer() {
 		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_ROOMLIST_INFO), 0);
 	}
 }
-
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
 void LobbyScene::changeUI(LobbyState _state, bool _active) {
 	// 로비씬의 각 세부 상태에 따라 버튼, 배경 이미지를 변경한다.  
 	if (_state == LobbyState::title) {
@@ -490,7 +490,7 @@ void LobbyScene::UpdateReadyState() {
 	for (int i = 0; i < 5; ++i) {
 		pUIs["2DUI_ready_" + to_string(i + 1)]->SetEnable(false);
 	}
-	for (int i = 0; i < roomInfo.nParticipant; ++i) {
+	for (UINT i = 0; i < roomInfo.nParticipant; ++i) {
 		// 방장일 경우
 		if (roomInfo.host == roomInfo.players[i].clientID) {
 			pUIs["2DUI_ready_" + to_string(i + 1)]->SetTexture("2DUI_host");
@@ -579,6 +579,9 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	UINT ncbElementBytes = ((sizeof(LightsMappedFormat) + 255) & ~255); //256의 배수
 	pLightsBuffer = ::CreateBufferResource(_pDevice, _pCommandList, NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
 	pLightsBuffer->Map(0, NULL, (void**)&pMappedLights);
+
+	SkinnedGameObject::InitSkinnedWorldTransformBuffer(_pDevice, _pCommandList);	// skinnedObject를 렌더하기 위한 (월드변환행렬을 담는)리소스를 생성한다.
+
 }
 
 void PlayScene::ReleaseUploadBuffers() {

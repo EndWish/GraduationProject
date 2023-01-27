@@ -1,6 +1,7 @@
 #pragma once
 
 class GameObject;
+class Player;
 class PlayScene;
 
 class Sector {
@@ -26,6 +27,7 @@ class Zone {
 	// GetAroundSectors(const XMINT3& _index)가 불릴때 같은 _index가 자주 불릴경우 성능을 높일 수 있다.
 
 private:
+	shared_ptr<Player> pPlayer;
 	XMFLOAT3 startPoint;	// 시작위치
 	XMFLOAT3 size;			// 이 공간의 크기
 	XMINT3 div;				// 공간을 나눌 개수

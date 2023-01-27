@@ -1,5 +1,7 @@
 #pragma once
 
+class GameObject;
+
 class AnimationClip {
 protected:
 	string name;
@@ -13,8 +15,14 @@ public:
 	~AnimationClip();
 
 	const string& GetName() const { return name; }
+	float GetRunTime() const { return runTime; }
+	UINT GetNKeyFrame() const { return nKeyFrame; }
+	XMFLOAT3 GetScale(int boneIndex, int keyFrameIndex) const { return scales[boneIndex][keyFrameIndex]; }
+	XMFLOAT3 GetPosition(int boneIndex, int keyFrameIndex) const { return position[boneIndex][keyFrameIndex]; }
+	XMFLOAT4 GetRotation(int boneIndex, int keyFrameIndex) const { return rotation[boneIndex][keyFrameIndex]; }
 
 	void LoadFromFile(ifstream& _file, UINT _nBone);
+	
 
 };
 
@@ -29,8 +37,9 @@ public:
 	AnimationController();
 	~AnimationController();
 
-	void AddTime(float _time) { time += _time; }
+	void AddTime(float _time);
 	void LoadFromFile(ifstream& _file, UINT _nBone);
+	void UpdateBoneLocalTransform(vector<shared_ptr<GameObject>>& _pBones);
 
 };
 

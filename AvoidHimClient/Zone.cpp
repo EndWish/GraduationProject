@@ -4,7 +4,6 @@
 #include "GameObject.h"
 
 
-
 ///////////////////////////////////////////////////////////////////////////////
 /// Sector
 Sector::Sector() {
@@ -71,7 +70,10 @@ void Sector::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 // 생성자, 소멸자
 Zone::Zone() {
-
+	startPoint = XMFLOAT3(0, 0, 0);
+	size = XMFLOAT3(0, 0, 0);
+	div = XMINT3(0, 0, 0);
+	sectorSize = XMFLOAT3(0, 0, 0);
 }
 Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div, shared_ptr<PlayScene> _pScene) : size(_size), div(_div), pScene(_pScene) {
 	sectors.assign(div.x, vector<vector<Sector>>(div.y, vector<Sector>(div.z, Sector())));
@@ -172,17 +174,19 @@ vector<Sector*> Zone::GetFrustumSectors(const BoundingFrustum& _frustum) {
 void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum) {
 
 
+
 #ifdef USING_INSTANCING
 	GameObject::RenderInstanceObjects(_pCommandList);
 
-	// 플레이어 Render는 따로 수행 ( 인스턴스 사용 X )
+	//GameFramework& gameFramework = GameFramework::Instance();
+	//gameFramework.GetShader("SkinnedShader")->PrepareRender(_pCommandList);
+	pPlayer->Render(_pCommandList);
 #else
 	for (auto& sector : GetFrustumSectors(*_pBoundingFrustum)) {
 		sector->Render(_pCommandList);
 	}
 #endif
-	
-	//cout << i << "\n";
+
 }
 
 
@@ -227,7 +231,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 
 		switch (objType) {
 		case SectorLayer::player: {
-			shared_ptr<Player> pPlayer = make_shared<Player>();
+			pPlayer = make_shared<Player>();
 
 			pPlayer->Create(objName, _pDevice, _pCommandList);
 			pPlayer->SetLocalPosition(position);
@@ -236,8 +240,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pPlayer->UpdateObject();
 			pScene->SetPlayer(pPlayer);
 
-			AddObject(objType, objectID, pPlayer, GetIndex(position));
-
+			//AddObject(objType, objectID, pPlayer, GetIndex(position));
 			break;
 		}
 		case SectorLayer::obstacle: {

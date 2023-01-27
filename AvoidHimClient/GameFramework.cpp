@@ -142,13 +142,16 @@ GameFramework::GameFramework() {
 	fenceValues.fill(0);
 	rtvDescriptorIncrementSize = 0;
 
-	cid = -1;
+	cid = 0;
+	oldCursorPos = POINT();
 	isClick = false;
 	rtvCPUDescriptorHandles.fill(D3D12_CPU_DESCRIPTOR_HANDLE());
 	// 현재 스왑체인의 후면 버퍼의 인덱스
 	swapChainBufferCurrentIndex = 0;
 	fenceEvent = NULL;
 	//PushScene(make_shared<Scene>());
+
+	
 }
 
 GameFramework::~GameFramework() {
@@ -355,7 +358,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pDescriptorRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 	// 루트 시그니처는 이후 계속 수정 
 	
-	D3D12_ROOT_PARAMETER pRootParameters[6];
+	D3D12_ROOT_PARAMETER pRootParameters[8];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
@@ -387,6 +390,16 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[5].DescriptorTable.NumDescriptorRanges = 1;
 	pRootParameters[5].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[1];
 	pRootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// Normal Texture
+
+	pRootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	pRootParameters[6].Descriptor.ShaderRegister = 7; // 스킨드 오브젝트 오브셋 행렬
+	pRootParameters[6].Descriptor.RegisterSpace = 0;
+	pRootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pRootParameters[7].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	pRootParameters[7].Descriptor.ShaderRegister = 8; // 스킨드 오브젝트 월드 변환 행렬
+	pRootParameters[7].Descriptor.RegisterSpace = 0;
+	pRootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	// 정적 샘플러
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[2];
@@ -461,7 +474,7 @@ shared_ptr<Shader> GameFramework::GetShader(const string& _name)
 }
 
 void GameFramework::InitOldCursor() {
-	POINT mid{ C_WIDTH / 2.f, C_HEIGHT / 2.f };
+	POINT mid{ C_WIDTH / 2, C_HEIGHT / 2 };
 	ClientToScreen(hWnd, &mid);
 	oldCursorPos = mid;
 	SetCursorPos(mid.x, mid.y);

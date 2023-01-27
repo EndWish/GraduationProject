@@ -133,17 +133,19 @@ void Mesh::RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 void SkinnedMesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj) {
 	_file.read((char*)&bonesPerVertex, sizeof(UINT));	// 뼈에 영향을 주는 정점의 개수
 	_file.read((char*)&nBone, sizeof(UINT));			// 뼈의 개수
-	cout << "뼈의 개수" << bonesPerVertex << "\n";
 
 	// 오프셋 행렬들을 리소스로 만드는 과정 => 루트시그니쳐에 연결해야 한다.
-	vector<XMFLOAT4X4> offsetMatrix(nBone);				// 오프셋 행렬들
+	vector<XMFLOAT4X4> offsetMatrix(MAX_BONE);				// 오프셋 행렬들
 	_file.read((char*)offsetMatrix.data(), sizeof(XMFLOAT4X4) * nBone);
+	for (auto& matrix : offsetMatrix | views::take(nBone)) {
+		XMStoreFloat4x4(&matrix, XMMatrixTranspose(XMLoadFloat4x4(&matrix)));
+	}
 	
-	UINT ncbElementBytes = ((sizeof(XMFLOAT4X4) * nBone + 255) & ~255); //256의 배수
+	UINT ncbElementBytes = ((sizeof(XMFLOAT4X4) * MAX_BONE + 255) & ~255); //256의 배수
 	pOffsetMatrixBuffer = ::CreateBufferResource(_pDevice, _pCommandList, offsetMatrix.data(), ncbElementBytes, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pOffsetMatrixUploadBuffer);
 	pOffsetMatrixBufferView.BufferLocation = pOffsetMatrixBuffer->GetGPUVirtualAddress();
 	pOffsetMatrixBufferView.StrideInBytes = sizeof(XMFLOAT4X4);
-	pOffsetMatrixBufferView.SizeInBytes = sizeof(XMFLOAT4X4) * nBone;
+	pOffsetMatrixBufferView.SizeInBytes = sizeof(XMFLOAT4X4) * MAX_BONE;
 
 	// 스킨드 메쉬의 바운딩 박스
 	XMFLOAT3 skinnedOOBBCenter, skinnedOOBBExtents;
@@ -175,7 +177,20 @@ void SkinnedMesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDe
 	boneWeightBufferView.SizeInBytes = sizeof(float) * bonesPerVertex * nVertex;
 
 }
+void SkinnedMesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex) {
 
+	// 오프셋 행렬 루트시그니처에 연결
+	D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pOffsetMatrixBuffer->GetGPUVirtualAddress();
+	_pCommandList->SetGraphicsRootConstantBufferView(6, gpuVirtualAddress);
+
+	// 그리기
+	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[5] = { positionBufferView , normalBufferView, texCoord0BufferView, boneIndexBufferView, boneWeightBufferView };
+	_pCommandList->IASetVertexBuffers(0, 5, vertexBuffersViews);
+
+	_pCommandList->IASetIndexBuffer(&subMeshIndexBufferViews[_subMeshIndex]);
+	_pCommandList->DrawIndexedInstanced(nSubMeshIndex[_subMeshIndex], 1, 0, 0, 0);
+}
 
 //////////////// HitBoxMesh ///////////////////
 

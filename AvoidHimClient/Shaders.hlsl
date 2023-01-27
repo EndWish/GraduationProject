@@ -9,6 +9,16 @@ cbuffer cbGameObjectInfo : register(b2) {
 	matrix worldTransform : packoffset(c0);
 };
 
+#define MAX_BONE 100
+cbuffer cbSkinnedOffsetTransforms : register(b7)
+{
+    matrix offsetTransform[MAX_BONE];
+}
+cbuffer cbSkinnedWorldTransforms : register(b8)
+{
+    matrix skinnedWorldTransforms[MAX_BONE];
+}
+
 #include "Light.hlsl"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -20,7 +30,6 @@ cbuffer cbGameObjectInfo : register(b2) {
 #define MATERIAL_NORMAL_MAP      0x02
 #define CWIDTH 1920
 #define CHEIGHT 1080
-
 
 // 텍스처
 Texture2D albedoMap : register(t5);
@@ -76,6 +85,84 @@ float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET {
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+/// 
+struct VS_SKINNED_INPUT
+{
+    float3 position : POSITION;
+    float3 normal : NORMAL;
+    float2 uv : TEXCOORD;
+    uint4 boneIndex : BONEINDEX;
+    float4 boneWeight : BONEWEIGHT;
+};
+
+struct VS_SKINNED_OUTPUT
+{
+    float4 position : SV_POSITION;
+    float3 positionW : POSITION;
+    float3 normal : NORMAL;
+    float2 uv : TEXCOORD;
+};
+
+VS_SKINNED_OUTPUT SkinnedVertexShader(VS_SKINNED_INPUT input)
+{
+ //   VS_OUTPUT output;
+
+ //   output.normal = mul(input.normal, (float3x3) worldTransform);
+ //   output.normal = normalize(output.normal);
+
+	//// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
+ //   output.positionW = (float3) mul(float4(input.position, 1.0f), worldTransform);
+
+ //   output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
+ //   output.uv = input.uv;
+ //   return output;
+
+    VS_OUTPUT output;
+    output.positionW = float3(0, 0, 0);
+    output.normal = float3(0, 0, 0);
+    
+    matrix mtxVertexToBoneWorld;
+    for (int i = 0; i < 4; ++i)
+    {
+        if (input.boneWeight[i] > 0.0001f)
+        {
+            mtxVertexToBoneWorld = mul(offsetTransform[input.boneIndex[i]], skinnedWorldTransforms[input.boneIndex[i]]);
+            output.positionW += input.boneWeight[i] * mul(float4(input.position, 1.0f), mtxVertexToBoneWorld).xyz;
+            output.normal += input.boneWeight[i] * mul(input.normal, (float3x3) mtxVertexToBoneWorld);
+        }
+    }
+    output.normal = normalize(output.normal);
+    output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
+    output.uv = input.uv;
+
+    return output;
+}
+
+[earlydepthstencil]
+float4 SkinnedPixelShader(VS_SKINNED_OUTPUT input) : SV_TARGET
+{
+    float4 cColor = float4(0, 0, 0, 1);
+    if (drawMask & MATERIAL_ALBEDO_MAP)
+    {
+        cColor = albedoMap.Sample(gssWrap, input.uv);
+    }
+    if (drawMask & MATERIAL_NORMAL_MAP)
+    {
+        // 노말 매핑 수행
+    }
+    else
+    {
+        cColor = diffuse;
+    }
+    float4 color = CalculateLight(cColor, input.positionW, input.normal);
+
+    return color;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
+///
 
 struct VS_2D_IN {
     float2 position : POSITION;

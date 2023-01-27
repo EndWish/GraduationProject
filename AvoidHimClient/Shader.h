@@ -21,7 +21,7 @@ protected:
 public:
 	// 생성 관련 함수들
 	Shader();
-	virtual ~Shader();
+	virtual ~Shader();	
 	void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
 
 	D3D12_SHADER_BYTECODE CompileShaderFromFile(const wstring& _fileName, const string& _shaderName, const string& _shaderProfile, ComPtr<ID3DBlob>& _pBlob);
@@ -62,6 +62,16 @@ public:
 
 };
 
+class SkinnedShader : public Shader {
+private:
+
+public:
+	SkinnedShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~SkinnedShader();
+
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+};
 
 class UIShader : public Shader {
 

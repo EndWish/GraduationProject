@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Animation.h"
-
+#include "GameObject.h"
 
 
 AnimationClip::AnimationClip() {
@@ -8,7 +8,6 @@ AnimationClip::AnimationClip() {
 	runTime = 0.f;
 	nKeyFrame = 0;
 }
-
 AnimationClip::~AnimationClip() {
 
 }
@@ -18,7 +17,7 @@ void AnimationClip::LoadFromFile(ifstream& _file, UINT _nBone) {
 		cout << "Animation Load Failed" << "\n";
 		return;
 	}
-	
+
 	ReadStringBinary(name, _file);	// animationSetName(string)	// 애니메이션 셋의 이름
 	_file.read((char*)&runTime, sizeof(float));	// animationSetRuntime(float)	// 애니메이션 셋의 런타임
 	_file.read((char*)&nKeyFrame, sizeof(UINT));	// animationNKeyFrame(UINT)	// 키프레임의 수
@@ -43,11 +42,18 @@ void AnimationClip::LoadFromFile(ifstream& _file, UINT _nBone) {
 AnimationController::AnimationController() {
 	nBone = 0;
 	currentAniClipName = "unknown";
-	time = 0;
+	time = 0.f;
 }
-
 AnimationController::~AnimationController() {
 
+}
+
+void AnimationController::AddTime(float _time) {
+	time += _time;
+	float maxTime = pAniClips[currentAniClipName]->GetRunTime();
+	if (maxTime <= time) {
+		time -= maxTime;
+	}
 }
 
 void AnimationController::LoadFromFile(ifstream& _file, UINT _nBone) {
@@ -69,5 +75,21 @@ void AnimationController::LoadFromFile(ifstream& _file, UINT _nBone) {
 			currentAniClipName = pAniClip->GetName();
 	}
 
+
+}
+
+void AnimationController::UpdateBoneLocalTransform(vector<shared_ptr<GameObject>>& _pBones) {
+	
+	
+	shared_ptr<AnimationClip> pCurrentAniClip = pAniClips[currentAniClipName];
+
+	int keyFrameIndex = (int)(time / pCurrentAniClip->GetRunTime() * pCurrentAniClip->GetNKeyFrame());
+
+	for (UINT boneIndex = 0; boneIndex < nBone; ++boneIndex) {
+		_pBones[boneIndex]->SetLocalScale(pCurrentAniClip->GetScale(boneIndex, keyFrameIndex));
+		_pBones[boneIndex]->SetLocalRotation(pCurrentAniClip->GetRotation(boneIndex, keyFrameIndex));
+		_pBones[boneIndex]->SetLocalPosition(pCurrentAniClip->GetPosition(boneIndex, keyFrameIndex));
+		_pBones[boneIndex]->UpdateLocalTransform();
+	}
 
 }
