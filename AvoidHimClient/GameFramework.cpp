@@ -680,7 +680,7 @@ void GameFramework::ProcessInput() {
 			SetCursor(NULL);
 			InitOldCursor();
 
-			if (!pScenes.empty()) pScenes.top()->ProcessCursorMove(delta, gameTimer.GetTimeElapsed());
+			if (!pScenes.empty()) pScenes.top()->ProcessCursorMove(delta);
 		}
 
 		// 씬의 키보드입력 처리

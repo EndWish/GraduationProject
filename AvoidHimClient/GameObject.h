@@ -88,6 +88,10 @@ public:
 
 	void Rotate(const XMFLOAT3& _axis, float _angle, float _timeElapsed = 1.0f);
 	void Rotate(const XMFLOAT4& _quat);
+	void Revolve(const XMFLOAT3& _axis, float _angle);
+	void SynchronousRotation(const XMFLOAT3& _axis, float _angle);
+	void RotateMoveHorizontal(XMFLOAT3 _dir, float _angularSpeed, float _moveSpeed);
+
 	// 월드좌표계 기준 자신의 위치를 리턴한다.
 	XMFLOAT3 GetWorldPosition() const;
 	XMFLOAT3 GetWorldRightVector() const;

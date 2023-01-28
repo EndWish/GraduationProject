@@ -116,6 +116,29 @@ void GameObject::Rotate(const XMFLOAT4& _quat) {
 	localRotation = Vector4::QuaternionMultiply(localRotation, _quat);
 }
 
+void GameObject::Revolve(const XMFLOAT3& _axis, float _angle) {
+	XMFLOAT4X4 rotationMatrix = Matrix4x4::RotationAxis(_axis, _angle);
+	localPosition = Vector3::Transform(localPosition, rotationMatrix);
+}
+void GameObject::SynchronousRotation(const XMFLOAT3& _axis, float _angle) {
+	Revolve(_axis, _angle);
+	localRotation = Vector4::QuaternionMultiply(localRotation, Vector4::QuaternionRotation(_axis, _angle));
+}
+void GameObject::RotateMoveHorizontal(XMFLOAT3 _dir, float _angularSpeed, float _moveSpeed) {
+	// 룩벡터와 타겟벡터를 xz평면에 투영한다.
+	_dir.y = 0;
+	XMFLOAT3 origin = GetLocalLookVector();
+	origin.y = 0;
+	XMFLOAT3 axis = Vector3::CrossProduct(origin, _dir);
+	float minAngle = Vector3::Angle(origin, _dir);
+	if (abs(axis.y) <= numeric_limits<float>::epsilon()) {	// 외적이 불가능한 경우 (두 벡터가 평행한 경우)
+		axis = XMFLOAT3(0, 1, 0);
+	}
+
+	localRotation = Vector4::QuaternionMultiply(localRotation, Vector4::QuaternionRotation(axis, min(_angularSpeed, minAngle)));
+	MoveFront(_moveSpeed);
+}
+
 XMFLOAT3 GameObject::GetWorldRightVector() const {
 	return Vector3::Normalize(worldTransform._11, worldTransform._12, worldTransform._13);
 }

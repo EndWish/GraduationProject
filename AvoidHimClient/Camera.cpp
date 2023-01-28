@@ -74,7 +74,16 @@ void Camera::UpdateProjectionTransform(float _nearDistance, float _farDistance, 
 }
 
 void Camera::UpdateWorldTransform() {
-	GameObject::UpdateWorldTransform();
+	// 1인칭인 경우
+	//GameObject::UpdateWorldTransform();
+
+	// 3인칭인 경우
+	if (auto pParentLock = pParent.lock()) {	// 부모가 있을 경우
+		worldTransform = Matrix4x4::Multiply(localTransform, Matrix4x4::MoveTransform(pParentLock->GetWorldPosition()));
+	}
+	else {	// 부모가 없을 경우
+		worldTransform = localTransform;
+	}
 	UpdateViewTransform();
 }
 void Camera::UpdateObject() {

@@ -257,7 +257,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pPlayer->UpdateObject();
 			pScene->SetPlayer(pPlayer);
 
-			//AddObject(objType, objectID, pPlayer, GetIndex(position));
+			AddObject(objType, objectID, pPlayer, GetIndex(position));
 			break;
 		}
 		case SectorLayer::obstacle: {

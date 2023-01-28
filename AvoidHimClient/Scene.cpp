@@ -37,7 +37,7 @@ void Scene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos)
 	}
 }
 
-void Scene::ProcessCursorMove(XMFLOAT2 _delta, float _timeElapsed) {
+void Scene::ProcessCursorMove(XMFLOAT2 _delta) {
 }
 
 void Scene::CheckCollision() {
@@ -561,21 +561,22 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	AddLight(baseLight);
 
 
-	camera = make_shared<Camera>();
-	camera->Create(_pDevice, _pCommandList);
+	//camera = make_shared<Camera>();
+	//camera->Create(_pDevice, _pCommandList);
 
-	//camera->SetLocalPosition(XMFLOAT3(0.0, 0.0, 0.0));
-	camera->SetLocalPosition(XMFLOAT3(0.0, 1.0, -2.0));
+	////camera->SetLocalPosition(XMFLOAT3(0.0, 0.0, 0.0));
+	//camera->SetLocalPosition(XMFLOAT3(0.0, 1.0, -2.0));
 
-	camera->SetLocalRotation(Vector4::QuaternionRotation(XMFLOAT3(0, 1, 0), 0.0f));
+	//camera->SetLocalRotation(Vector4::QuaternionRotation(XMFLOAT3(0, 1, 0), 0.0f));
 
-	camera->SetPlayerPos(pPlayer->GetWorldPosition());
+	//camera->SetPlayerPos(pPlayer->GetWorldPosition());
 
-	camera->UpdateLocalTransform();
-	camera->UpdateWorldTransform();
+	//camera->UpdateLocalTransform();
+	//camera->UpdateWorldTransform();
 
-	pPlayer->SetCamera(camera);
+	//pPlayer->SetCamera(camera);
 	pPlayer->UpdateObject();
+	camera = pPlayer->GetCamera();
 
 	pFrustumMesh = make_shared<FrustumMesh>();
 	pFrustumMesh->Create(camera->GetBoundingFrustum(), _pDevice, _pCommandList);
@@ -600,20 +601,23 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, floa
 
 	GameFramework& gameFramework = GameFramework::Instance();
 	if (_keysBuffers['A'] & 0xF0) {
-		pPlayer->MoveRight(-1.0f, _timeElapsed);
-		pPlayer->UpdateObject();
+		XMFLOAT3 cameraLeft = pPlayer->GetCamera()->GetWorldRightVector();
+		cameraLeft = Vector3::ScalarProduct(cameraLeft, -1);
+		pPlayer->RotateMoveHorizontal(cameraLeft, 720 * _timeElapsed, 5 * _timeElapsed);
+
 	}
 	if (_keysBuffers['D'] & 0xF0) {
-		pPlayer->MoveRight(1.0f, _timeElapsed);
-		pPlayer->UpdateObject();
+		XMFLOAT3 cameraRight = pPlayer->GetCamera()->GetWorldRightVector();
+		pPlayer->RotateMoveHorizontal(cameraRight, 720 * _timeElapsed, 5 * _timeElapsed);
 	}
 	if (_keysBuffers['W'] & 0xF0) {
-		pPlayer->MoveFront(1.0f, _timeElapsed);
-		pPlayer->UpdateObject();
+		XMFLOAT3 cameraLook = pPlayer->GetCamera()->GetWorldLookVector();
+		pPlayer->RotateMoveHorizontal(cameraLook, 720 * _timeElapsed, 5 * _timeElapsed);
 	}
 	if (_keysBuffers['S'] & 0xF0) {
-		pPlayer->MoveFront(-1.0f, _timeElapsed);
-		pPlayer->UpdateObject();
+		XMFLOAT3 cameraBack = pPlayer->GetCamera()->GetWorldLookVector();
+		cameraBack = Vector3::ScalarProduct(cameraBack, -1);
+		pPlayer->RotateMoveHorizontal(cameraBack, 720 * _timeElapsed, 5 * _timeElapsed);
 	}
 	if (_keysBuffers['1'] & 0xF0) {
 		pPlayer->MoveUp(1.0f, _timeElapsed);
@@ -678,14 +682,23 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 }
 }
 
-void PlayScene::ProcessCursorMove(XMFLOAT2 _delta, float _timeElapsed)  {
+void PlayScene::ProcessCursorMove(XMFLOAT2 _delta)  {
 	
-	pPlayer->Rotate(XMFLOAT3(0, 1, 0), _delta.x * 10.0f, _timeElapsed);
+	shared_ptr<Camera> pCamera = pPlayer->GetCamera();
+	if (_delta.x != 0.0f) {
+		//XMFLOAT3 upVector = pPlayer->GetCamera()->GetLocalUpVector();
+		pCamera->SynchronousRotation(XMFLOAT3(0, 1, 0), _delta.x / 3.f);
+		pCamera->UpdateLocalTransform();
+	}
+	if (_delta.y != 0.0f) {
+		XMFLOAT3 rightVector = pCamera->GetLocalRightVector();
+		pCamera->SynchronousRotation(rightVector, _delta.y / 3.f);
+		pCamera->UpdateLocalTransform();
+	}
+	//pCamera->UpdateLocalTransform();
+
+	// Àû¿ë
 	pPlayer->UpdateObject();
-
-	pPlayer->GetRevObj()->Rotate(XMFLOAT3(1, 0, 0), _delta.y * 4.0f, _timeElapsed);
-	pPlayer->GetRevObj()->UpdateObject();
-
 }
 
 

@@ -329,4 +329,9 @@ namespace Matrix4x4 {
 		XMStoreFloat4x4(&result, XMMatrixScaling(scale.x, scale.y, scale.z));
 		return result;
 	}
+	inline XMFLOAT4X4 MoveTransform(const XMFLOAT3& _move) {
+		XMFLOAT4X4 result;
+		XMStoreFloat4x4(&result, XMMatrixTranslationFromVector(XMLoadFloat3(&_move)));
+		return result;
+	}
 }
