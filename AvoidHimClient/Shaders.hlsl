@@ -42,6 +42,8 @@ SamplerState gssClamp : register(s1);
 struct VS_INPUT {
 	float3 position : POSITION;
 	float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 biTangent : BITANGENT;
     float2 uv : TEXCOORD;
 };
 
@@ -49,6 +51,8 @@ struct VS_OUTPUT {
     float4 position : SV_POSITION;
     float3 positionW : POSITION;
     float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 biTangent : BITANGENT;
     float2 uv : TEXCOORD;
 };
 
@@ -56,7 +60,8 @@ VS_OUTPUT DefaultVertexShader(VS_INPUT input) {
     VS_OUTPUT output;
 
     output.normal = mul(input.normal, (float3x3) worldTransform);
-    output.normal = normalize(output.normal);
+    output.tangent = mul(input.tangent, (float3x3) worldTransform);
+    output.biTangent = mul(input.biTangent, (float3x3) worldTransform);
 
 	// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
     output.positionW = (float3) mul(float4(input.position, 1.0f), worldTransform);
@@ -72,13 +77,23 @@ float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET {
     if (drawMask & MATERIAL_ALBEDO_MAP) {
         cColor = albedoMap.Sample(gssWrap, input.uv);
     }
-    if (drawMask & MATERIAL_NORMAL_MAP)
+    else
     {
-        // 노말 매핑 수행
-    }
-    else {
         cColor = diffuse;
     }
+    
+    // 노멀값 조정
+    if (drawMask & MATERIAL_NORMAL_MAP)
+    {
+        float3x3 TBN = float3x3(normalize(input.tangent), normalize(input.biTangent), normalize(input.normal));
+        float3 vNormal = normalize(normalMap.Sample(gssWrap, input.uv).rgb * 2.0f - 1.0f); //[0, 1] → [-1, 1]
+        input.normal = normalize(mul(vNormal, TBN));
+    }
+    else
+    {
+        input.normal = normalize(input.normal);
+    }
+    
    float4 color = CalculateLight(cColor, input.positionW, input.normal);
 
     return color;
@@ -91,6 +106,8 @@ struct VS_SKINNED_INPUT
 {
     float3 position : POSITION;
     float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 biTangent : BITANGENT;
     float2 uv : TEXCOORD;
     uint4 boneIndex : BONEINDEX;
     float4 boneWeight : BONEWEIGHT;
@@ -101,26 +118,20 @@ struct VS_SKINNED_OUTPUT
     float4 position : SV_POSITION;
     float3 positionW : POSITION;
     float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 biTangent : BITANGENT;
     float2 uv : TEXCOORD;
 };
 
 VS_SKINNED_OUTPUT SkinnedVertexShader(VS_SKINNED_INPUT input)
 {
- //   VS_OUTPUT output;
-
- //   output.normal = mul(input.normal, (float3x3) worldTransform);
- //   output.normal = normalize(output.normal);
-
-	//// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
- //   output.positionW = (float3) mul(float4(input.position, 1.0f), worldTransform);
-
- //   output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
- //   output.uv = input.uv;
- //   return output;
-
+    
+    
     VS_OUTPUT output;
     output.positionW = float3(0, 0, 0);
     output.normal = float3(0, 0, 0);
+    output.tangent = float3(0, 0, 0);
+    output.biTangent = float3(0, 0, 0);
     
     matrix mtxVertexToBoneWorld;
     for (int i = 0; i < 4; ++i)
@@ -130,9 +141,10 @@ VS_SKINNED_OUTPUT SkinnedVertexShader(VS_SKINNED_INPUT input)
             mtxVertexToBoneWorld = mul(offsetTransform[input.boneIndex[i]], skinnedWorldTransforms[input.boneIndex[i]]);
             output.positionW += input.boneWeight[i] * mul(float4(input.position, 1.0f), mtxVertexToBoneWorld).xyz;
             output.normal += input.boneWeight[i] * mul(input.normal, (float3x3) mtxVertexToBoneWorld);
+            output.tangent += input.boneWeight[i] * mul(input.tangent, (float3x3) mtxVertexToBoneWorld);
+            output.biTangent += input.boneWeight[i] * mul(input.biTangent, (float3x3) mtxVertexToBoneWorld);
         }
     }
-    output.normal = normalize(output.normal);
     output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
     output.uv = input.uv;
 
@@ -147,14 +159,23 @@ float4 SkinnedPixelShader(VS_SKINNED_OUTPUT input) : SV_TARGET
     {
         cColor = albedoMap.Sample(gssWrap, input.uv);
     }
-    if (drawMask & MATERIAL_NORMAL_MAP)
-    {
-        // 노말 매핑 수행
-    }
     else
     {
         cColor = diffuse;
     }
+    
+    // 노멀값 조정
+    if (drawMask & MATERIAL_NORMAL_MAP)
+    {
+        float3x3 TBN = float3x3(normalize(input.tangent), normalize(input.biTangent), normalize(input.normal));
+        float3 vNormal = normalize(normalMap.Sample(gssWrap, input.uv).rgb * 2.0f - 1.0f); //[0, 1] → [-1, 1]
+        input.normal = normalize(mul(vNormal, TBN));
+    }
+    else
+    {
+        input.normal = normalize(input.normal);
+    }
+
     float4 color = CalculateLight(cColor, input.positionW, input.normal);
 
     return color;
@@ -250,6 +271,8 @@ float4 BoundingPixelShader(VS_BOUNDING_OUTPUT input) : SV_TARGET {
 struct VS_INSTANCING_INPUT {
     float3 position : POSITION;
     float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 biTangent : BITANGENT;
     float2 uv : TEXCOORD;
     float4x4 worldMatrix : WORLDMAT;
 };
@@ -258,8 +281,9 @@ struct VS_INSTANCING_INPUT {
 VS_OUTPUT InstanceVertexShader(VS_INSTANCING_INPUT input) {
     VS_OUTPUT output;
     
-    output.normal = mul(input.normal, (float3x3) input.worldMatrix);
-    output.normal = normalize(output.normal);
+    output.normal = mul(input.normal, (float3x3) worldTransform);
+    output.tangent = mul(input.tangent, (float3x3) worldTransform);
+    output.biTangent = mul(input.biTangent, (float3x3) worldTransform);
 
 	// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
     output.positionW = (float3) mul(float4(input.position, 1.0f), input.worldMatrix);
@@ -280,11 +304,23 @@ float4 InstancePixelShader(VS_OUTPUT input) : SV_TARGET
     {
         cColor = albedoMap.Sample(gssWrap, input.uv);
     }
+    else
+    {
+        cColor = diffuse;
+    }
+    
+    // 노멀값 조정
     if (drawMask & MATERIAL_NORMAL_MAP)
     {
-        // 노말 매핑 수행
-        
+        float3x3 TBN = float3x3(normalize(input.tangent), normalize(input.biTangent), normalize(input.normal));
+        float3 vNormal = normalize(normalMap.Sample(gssWrap, input.uv).rgb * 2.0f - 1.0f); //[0, 1] → [-1, 1]
+        input.normal = normalize(mul(vNormal, TBN));
     }
+    else
+    {
+        input.normal = normalize(input.normal);
+    }
+    
     float4 color = CalculateLight(cColor, input.positionW, input.normal);
     //color = cColor;
 

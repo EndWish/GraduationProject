@@ -557,24 +557,10 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	baseLight->lightType = 3;
 	baseLight->position = XMFLOAT3(0, 500, 0);
 	baseLight->direction = XMFLOAT3(0, -1, 1);
+	baseLight->diffuse = XMFLOAT4(3, 3, 3, 1);
 	baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
 	AddLight(baseLight);
 
-
-	//camera = make_shared<Camera>();
-	//camera->Create(_pDevice, _pCommandList);
-
-	////camera->SetLocalPosition(XMFLOAT3(0.0, 0.0, 0.0));
-	//camera->SetLocalPosition(XMFLOAT3(0.0, 1.0, -2.0));
-
-	//camera->SetLocalRotation(Vector4::QuaternionRotation(XMFLOAT3(0, 1, 0), 0.0f));
-
-	//camera->SetPlayerPos(pPlayer->GetWorldPosition());
-
-	//camera->UpdateLocalTransform();
-	//camera->UpdateWorldTransform();
-
-	//pPlayer->SetCamera(camera);
 	pPlayer->UpdateObject();
 	camera = pPlayer->GetCamera();
 

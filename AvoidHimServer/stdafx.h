@@ -41,6 +41,11 @@ void SockErrorQuit(const char* msg);
 void SockErrorDisplay(const char* msg);
 void SockErrorDisplay(int errcode);
 
+// 패킷의 크기만큼에서 패킷의 타입 크기만큼을 제외한 실제 패킷의 내용만 Recv하는 함수
+template <class Packet>
+void RecvContents(SOCKET& _sock, Packet& _packet) {
+	recv(_sock, (char*)&_packet + sizeof(CS_PACKET_TYPE), sizeof(Packet) - sizeof(CS_PACKET_TYPE), 0);
+}
 
 namespace Vector3 {
 	// 더하기

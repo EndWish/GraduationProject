@@ -88,14 +88,14 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     switch (packetType) {
     case CS_PACKET_TYPE::makeRoom: {
         CS_MAKE_ROOM packet;
-        recv(_socket, (char*)&packet + sizeof(CS_PACKET_TYPE), sizeof(CS_MAKE_ROOM) - sizeof(CS_PACKET_TYPE), 0);
+        RecvContents(_socket, packet);
         AddRoom(packet.hostID);
         break;
     }
     case CS_PACKET_TYPE::queryRoomlistInfo: {
         // 데이터 받기
         CS_QUERY_ROOMLIST_INFO recvPacket;
-        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_QUERY_ROOMLIST_INFO) - sizeof(CS_PACKET_TYPE), 0);
+        RecvContents(_socket, recvPacket);
 
         // 방 리스트에 대한 데이터를 만든다.
         CreateRoomlistInfo();
@@ -107,7 +107,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::visitRoom: {
         // 데이터 받기
         CS_QUERY_VISIT_ROOM recvPacket;
-        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_QUERY_VISIT_ROOM) - sizeof(CS_PACKET_TYPE), 0);
+        RecvContents(_socket, recvPacket);
         
         cout << recvPacket.cid << "번 클라이언트 - visitRoom 패킷 받음 : ";
 
@@ -157,7 +157,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::outRoom: {
         // 데이터 받기
         CS_OUT_ROOM recvPacket;
-        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_OUT_ROOM) - sizeof(CS_PACKET_TYPE), 0);
+        RecvContents(_socket, recvPacket);
 
         // 1. 플레이어를 방에서 내보낸다.
         Room* pRoom = pClients[recvPacket.cid]->GetCurrentRoom();
@@ -185,7 +185,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     }
     case CS_PACKET_TYPE::ready: {
         CS_READY recvPacket;
-        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_READY) - sizeof(CS_PACKET_TYPE), 0);
+        RecvContents(_socket, recvPacket);
 
         Client* pClient = pClients[recvPacket.cid];
         Room* pRoom = pClient->GetCurrentRoom();
@@ -235,11 +235,33 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     }
     case CS_PACKET_TYPE::loadingComplete: {
         CS_LOADING_COMPLETE recvPacket;
-        recv(_socket, (char*)&recvPacket + sizeof(CS_PACKET_TYPE), sizeof(CS_LOADING_COMPLETE) - sizeof(CS_PACKET_TYPE), 0);
+        RecvContents(_socket, recvPacket);
 
         cout << recvPacket.roomID << " 번 방 로딩 완료 ! \n";
         PlayInfo* pPlayInfo = pPlayInfos[recvPacket.roomID];
         pPlayInfo->LoadingComplete(recvPacket.cid);
+        break;
+    }
+    case CS_PACKET_TYPE::playerInfo: {
+        CS_PLALYER_INFO recvPacket;
+        RecvContents(_socket, recvPacket);
+
+        // 보낼 패킷을 만든다.
+        SC_PLAYER_INFO sendPacket;
+        sendPacket.aniTime = recvPacket.aniTime;
+        sendPacket.clientID = recvPacket.cid;
+        sendPacket.position = recvPacket.position;
+        sendPacket.rotation = recvPacket.rotation;
+        sendPacket.size = recvPacket.size;
+
+        // 다른 플레이어들에게 패킷을 보낸다.
+        PlayInfo* pPlayInfo = pClients[recvPacket.cid]->GetCurrentPlayInfo();
+        for (UINT participant : pPlayInfo->GetParticipants()) {
+            if (participant == recvPacket.cid)
+                continue;
+            send(pClients[participant]->GetSocket(), (char*)&sendPacket, sizeof(SC_PLAYER_INFO), 0);
+        }
+
         break;
     }
     default:

@@ -57,6 +57,33 @@ void Mesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, c
 	normalBufferView.StrideInBytes = sizeof(XMFLOAT3);
 	normalBufferView.SizeInBytes = sizeof(XMFLOAT3) * nVertex;
 
+	// nTangent(UINT)
+	UINT nTangent;
+	_file.read((char*)&nTangent, sizeof(UINT));
+
+	if (nTangent != nVertex) {
+		cout << "에러 : nTangent와 nVertex 가 같지 않음\n";
+	}
+	if (nTangent > 0) {
+		// tangents (float * 3 * nTangent)
+		vector<float> tangents(3 * nTangent);
+		_file.read((char*)tangents.data(), sizeof(float) * 3 * nTangent);
+		// tangents를 리소스로 만드는 과정
+		pTangentBuffer = CreateBufferResource(_pDevice, _pCommandList, tangents.data(), sizeof(float) * 3 * nTangent, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pTangentUploadBuffer);
+		tangentBufferView.BufferLocation = pTangentBuffer->GetGPUVirtualAddress();
+		tangentBufferView.StrideInBytes = sizeof(XMFLOAT3);
+		tangentBufferView.SizeInBytes = sizeof(XMFLOAT3) * nTangent;
+
+		// tangents (float * 3 * nTangent)
+		vector<float> biTangent(3 * nTangent);
+		_file.read((char*)biTangent.data(), sizeof(float) * 3 * nTangent);
+		// tangents를 리소스로 만드는 과정
+		pBiTangentsBuffer = CreateBufferResource(_pDevice, _pCommandList, biTangent.data(), sizeof(float) * 3 * nTangent, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pBiTangentsUploadBuffer);
+		biTangentsBufferView.BufferLocation = pBiTangentsBuffer->GetGPUVirtualAddress();
+		biTangentsBufferView.StrideInBytes = sizeof(XMFLOAT3);
+		biTangentsBufferView.SizeInBytes = sizeof(XMFLOAT3) * nTangent;
+	}
+
 
 	// 텍스처좌표값 읽기
 	int nTexCoord = 0;
@@ -110,8 +137,8 @@ void Mesh::ReleaseUploadBuffers() {
 void Mesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex) {
 
 	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[3] = { positionBufferView , normalBufferView, texCoord0BufferView };
-	_pCommandList->IASetVertexBuffers(0, 3, vertexBuffersViews);
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[5] = { positionBufferView , normalBufferView, tangentBufferView, biTangentsBufferView, texCoord0BufferView };
+	_pCommandList->IASetVertexBuffers(0, 5, vertexBuffersViews);
 
 	_pCommandList->IASetIndexBuffer(&subMeshIndexBufferViews[_subMeshIndex]);
 	_pCommandList->DrawIndexedInstanced(nSubMeshIndex[_subMeshIndex], 1, 0, 0, 0);
@@ -122,8 +149,8 @@ void Mesh::RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 
 	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
 	// 인자로 들어온 인스턴스 정보를 이용하여 갯수만큼 한꺼번에 그린다.
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[4] = { positionBufferView , normalBufferView, texCoord0BufferView, _instanceData.bufferView };
-	_pCommandList->IASetVertexBuffers(0, 4, vertexBuffersViews);
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[6] = { positionBufferView , normalBufferView, tangentBufferView, biTangentsBufferView,  texCoord0BufferView, _instanceData.bufferView };
+	_pCommandList->IASetVertexBuffers(0, 6, vertexBuffersViews);
 	  
 	_pCommandList->IASetIndexBuffer(&subMeshIndexBufferViews[_subMeshIndex]);
 	_pCommandList->DrawIndexedInstanced(nSubMeshIndex[_subMeshIndex], numInstance, 0, 0, 0);
@@ -185,8 +212,8 @@ void SkinnedMesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList,
 
 	// 그리기
 	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
-	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[5] = { positionBufferView , normalBufferView, texCoord0BufferView, boneIndexBufferView, boneWeightBufferView };
-	_pCommandList->IASetVertexBuffers(0, 5, vertexBuffersViews);
+	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[7] = { positionBufferView , normalBufferView, tangentBufferView, biTangentsBufferView,  texCoord0BufferView, boneIndexBufferView, boneWeightBufferView };
+	_pCommandList->IASetVertexBuffers(0, 7, vertexBuffersViews);
 
 	_pCommandList->IASetIndexBuffer(&subMeshIndexBufferViews[_subMeshIndex]);
 	_pCommandList->DrawIndexedInstanced(nSubMeshIndex[_subMeshIndex], 1, 0, 0, 0);

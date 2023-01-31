@@ -24,6 +24,14 @@ protected:
 	ComPtr<ID3D12Resource> pNormalUploadBuffer;
 	D3D12_VERTEX_BUFFER_VIEW normalBufferView;
 
+	ComPtr<ID3D12Resource> pTangentBuffer;		// ≈∫¡®∆Æ ∫§≈Õ¿« ¡§∫∏
+	ComPtr<ID3D12Resource> pTangentUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW tangentBufferView;
+
+	ComPtr<ID3D12Resource> pBiTangentsBuffer;		// πŸ¿Ã ≈∫¡®∆Æ ∫§≈Õ¿« ¡§∫∏
+	ComPtr<ID3D12Resource> pBiTangentsUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW biTangentsBufferView;
+
 	ComPtr<ID3D12Resource> pTexCoord0Buffer;	// ≈ÿΩ∫√≥ ¡¬«•¿« ¡§∫∏
 	ComPtr<ID3D12Resource> pTexCoord0UploadBuffer;
 	D3D12_VERTEX_BUFFER_VIEW texCoord0BufferView;
