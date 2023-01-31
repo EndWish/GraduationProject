@@ -19,13 +19,13 @@ public:
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 	virtual void ReleaseUploadBuffers() = 0;
 	virtual void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
-	virtual void AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
+	virtual void AnimateObjects(char _collideCheck, double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 	virtual void ProcessSocketMessage() = 0;
 	virtual void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);
 	virtual void ProcessCursorMove(XMFLOAT2 _delta);
 
 	virtual void ReActButton(shared_ptr<Button> _pButton) = 0;
-	virtual void CheckCollision();
+	virtual char CheckCollision();
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
 	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -77,7 +77,7 @@ public:
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ReleaseUploadBuffers();
 	virtual void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	virtual void AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void AnimateObjects(char _collideCheck, double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ProcessSocketMessage();
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
@@ -112,7 +112,7 @@ public:
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ReleaseUploadBuffers();
 	virtual void ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	virtual void AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void AnimateObjects(char _collideCheck, double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ProcessSocketMessage();
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void ReActButton(shared_ptr<Button> _pButton);
@@ -120,7 +120,7 @@ public:
 	virtual void ProcessCursorMove(XMFLOAT2 _delta);
 
 	void SetPlayer(shared_ptr<Player>& _pPlayer);
-	void CheckCollision();
+	virtual char CheckCollision();
 	void AddLight(const shared_ptr<Light>& _pLight);
 	void UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };

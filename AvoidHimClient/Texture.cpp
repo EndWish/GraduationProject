@@ -168,7 +168,7 @@ D3D12_SHADER_RESOURCE_VIEW_DESC Texture::GetShaderResourceViewDesc(int _index)
 /////////////////////////// TextureManager ////////////////////////
 
 
-shared_ptr<Texture> TextureManager::GetTexture(const string& _name, const ComPtr<ID3D12Device>& _pDevice, shared_ptr<Shader> _pShader, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _rootParameterIndex) {
+shared_ptr<Texture> TextureManager::GetTexture(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _rootParameterIndex) {
 	if (!storage.contains(_name)) {	// 처음 불러온 텍스처일 경우
 		GameFramework& gameFramework = GameFramework::Instance();
 		shared_ptr<Texture> newTexture = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
@@ -177,7 +177,7 @@ shared_ptr<Texture> TextureManager::GetTexture(const string& _name, const ComPtr
 
 		if (!result) return nullptr;
 
-		_pShader->CreateShaderResourceViews(_pDevice, newTexture, 0, _rootParameterIndex);
+		Shader::CreateShaderResourceViews(_pDevice, newTexture, 0, _rootParameterIndex);
 		storage[_name] = newTexture;
 	}
 	return storage[_name];

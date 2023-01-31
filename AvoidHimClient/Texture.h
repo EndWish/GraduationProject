@@ -56,7 +56,7 @@ class TextureManager {
 	unordered_map<string, shared_ptr<Texture>> storage;
 public:
 	// 기본 루트 파라미터 인덱스는 4. (알베도 맵)
-	shared_ptr<Texture> GetTexture(const string& _name, const ComPtr<ID3D12Device>& _pDevice, shared_ptr<Shader> _pShader, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _rootParameterIndex = 4);
+	shared_ptr<Texture> GetTexture(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _rootParameterIndex = 4);
 	shared_ptr<Texture> GetExistTexture(const string& _name);
 	void ReleaseUploadBuffers();
 };

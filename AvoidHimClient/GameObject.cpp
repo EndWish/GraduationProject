@@ -47,7 +47,15 @@ void GameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice
 	shared_ptr<GameObject> temp = gameFramework.GetGameObjectManager().GetGameObject(_ObjectName, _pDevice, _pCommandList);
 
 	// 인스턴스의 자식으로 그 오브젝트의 정보를 설정
-	if (temp) SetChild(temp);
+
+	if (temp) {
+
+		// 인스턴스가 CoverOOBB를 갖게 된다.
+		name = temp->GetName() + "_Instance";
+		isOOBBCover = true;
+		baseOrientedBox = temp->GetBaseBoundingBox();
+		SetChild(temp);
+	}
 }
 
 void GameObject::Create() {
@@ -83,7 +91,7 @@ XMFLOAT4 GameObject::GetLocalRotate() const {
 
 
 void GameObject::Move(const XMFLOAT3& _moveVector, float _timeElapsed) {
-	localPosition = Vector3::Add(localPosition, _moveVector);
+	localPosition = Vector3::Add(localPosition, Vector3::ScalarProduct(_moveVector, _timeElapsed));
 }
 
 void GameObject::MoveRight(float distance, float _timeElapsed) {
@@ -157,6 +165,10 @@ XMFLOAT3 GameObject::GetWorldPosition() const {
 
 const BoundingOrientedBox& GameObject::GetBoundingBox() const {
 	return boundingBox;
+}
+
+const BoundingOrientedBox& GameObject::GetBaseBoundingBox() const {
+	return baseOrientedBox;
 }
 
 shared_ptr<GameObject> GameObject::GetObj() {
@@ -287,6 +299,7 @@ void GameObject::Animate(double _timeElapsed) {
 void GameObject::Animate(double _timeElapsed, const XMFLOAT3& _playerPos) {
 
 };
+
 void GameObject::Remove() {
 };
 bool GameObject::CheckRemove() const {
@@ -558,7 +571,7 @@ shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, con
 		newObject->SetSkinnedObject(isSkinnedObject);
 
 		// 최상위 오브젝트를 커버 OOBB로 설정
-		newObject->SetOOBBCover(true);
+		//newObject->SetOOBBCover(true);
 		newObject->LoadFromFile(file, _pDevice, _pCommandList, newObject);
 
 		// 최상위 오브젝트는 따로 파일에서 읽어옴

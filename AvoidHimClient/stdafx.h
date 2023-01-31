@@ -10,8 +10,9 @@
 #define GRAVITY 9.8f
 #define C_WIDTH 800
 #define C_HEIGHT 600
-//#define USING_INSTANCING
+#define USING_INSTANCING
 //#define DEBUG
+#define DRAW_BOUNDING
 
 // Windows 헤더 파일
 #include <windows.h>
@@ -230,7 +231,11 @@ namespace Vector3 {
 	{
 		XMFLOAT3 xmf3Result;
 		XMStoreFloat3(&xmf3Result, XMVector3AngleBetweenVectors(XMLoadFloat3(&_vector1), XMLoadFloat3(&_vector2)));
-		return(xmf3Result.x);
+		return(XMConvertToDegrees(xmf3Result.x));
+	}
+
+	inline bool IsSame(const XMFLOAT3& _vector1, const XMFLOAT3& _vector2) {
+		return XMVector3Equal(XMLoadFloat3(&_vector1), XMLoadFloat3(&_vector2));
 	}
 }
 
@@ -277,6 +282,14 @@ namespace Vector4 {
 		XMFLOAT4 result;
 		XMStoreFloat4(&result, XMQuaternionIdentity());
 		return result;
+	}
+	inline XMFLOAT4 QuaternionSlerp(const XMFLOAT4& _quaternion1, const XMFLOAT4& _quaternion2, float t) {
+		XMFLOAT4 result;
+		XMStoreFloat4(&result, XMQuaternionSlerp(XMLoadFloat4(&_quaternion1), XMLoadFloat4(&_quaternion2), t));
+		return result;
+	}
+	inline bool IsSame(const XMFLOAT4& _vector1, const XMFLOAT4& _vector2) {
+		return XMVector4Equal(XMLoadFloat4(&_vector1), XMLoadFloat4(&_vector2));
 	}
 }
 

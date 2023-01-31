@@ -23,6 +23,7 @@ public:
 	shared_ptr<GameObject> FindObject(SectorLayer _sectorLayer, UINT _objectID);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _mesh);
+	shared_ptr<GameObject> CheckCollision(BoundingOrientedBox& _boundingBox, shared_ptr<GameObject> _pFloor);
 };
 
 class Zone {
@@ -30,6 +31,10 @@ class Zone {
 
 private:
 	shared_ptr<Player> pPlayer;
+	// 현재 플레이어가 속한 섹터의 인덱스
+	XMINT3 pindex;
+	UINT pid;
+	
 	XMFLOAT3 startPoint;	// 시작위치
 	XMFLOAT3 size;			// 이 공간의 크기
 	XMINT3 div;				// 공간을 나눌 개수
@@ -73,4 +78,7 @@ public:
 	vector<Sector*> GetFrustumSectors(const BoundingFrustum& _frustum);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum);
 	void LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	
+	shared_ptr<GameObject> CheckCollision(BoundingOrientedBox _boundingBox, shared_ptr<GameObject> _pFloor = nullptr);
+	void UpdatePlayerSector();
 };

@@ -40,7 +40,8 @@ void Scene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos)
 void Scene::ProcessCursorMove(XMFLOAT2 _delta) {
 }
 
-void Scene::CheckCollision() {
+char Scene::CheckCollision() {
+	return 0;
 }
 
 void Scene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)
@@ -66,12 +67,11 @@ LobbyScene::~LobbyScene()
 void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
-	auto pShader = gameFramework.GetShader("UIShader");
-	gameFramework.GetTextureManager().GetTexture("2DUI_readyButton", _pDevice, pShader,_pCommandList);
-	gameFramework.GetTextureManager().GetTexture("2DUI_readyCancelButton", _pDevice, pShader, _pCommandList);
-	gameFramework.GetTextureManager().GetTexture("2DUI_ready", _pDevice, pShader, _pCommandList);
-	gameFramework.GetTextureManager().GetTexture("2DUI_host", _pDevice, pShader, _pCommandList);
-	gameFramework.GetTextureManager().GetTexture("2DUI_roomInfo", _pDevice, pShader, _pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_readyButton", _pDevice,_pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_readyCancelButton", _pDevice, _pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_ready", _pDevice, _pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_host", _pDevice, _pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_roomInfo", _pDevice, _pCommandList);
 	
 	string name = "2DUI_title";
 	pBackGround = make_shared<Image2D>(name, XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList);
@@ -172,7 +172,7 @@ void LobbyScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, flo
 
 }
 
-void LobbyScene::AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)  {
+void LobbyScene::AnimateObjects(char _collideCheck, double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)  {
 
 }
 
@@ -296,8 +296,12 @@ void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, 
 	_pCommandList->RSSetViewports(1, &viewPort);
 	_pCommandList->RSSetScissorRects(1, &scissorRect);
 
+	// 텍스처가 들어있는 디스크립터 힙을 연결한다.
+	Shader::SetDescriptorHeap(_pCommandList);
+
 	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);
 	pBackGround->Render(_pCommandList);
+
 	for (auto [name, pUI] : pUIs) {
 		pUI->Render(_pCommandList);
 	}
@@ -538,21 +542,66 @@ void PlayScene::SetPlayer(shared_ptr<Player>& _pPlayer) {
 	pPlayer = _pPlayer;
 }
 
-void PlayScene::CheckCollision() {
+char PlayScene::CheckCollision() {
 
+
+	char result = 0;
+	XMFLOAT3 velocity = pPlayer->GetVelocity();
+
+	BoundingOrientedBox checkOOBB = pPlayer->GetBoundingBox();
+	checkOOBB.Center.y += velocity.y;
+	shared_ptr<GameObject> collideObj = pZone->CheckCollision(checkOOBB);
+
+	// 플레이어의 OOBB를 y방향으로 이동시켜 본 후 충돌체크를 진행한다.
+	if (!collideObj) {
+		result += 1;
+	}
+	else {
+		// 바닥이 없다면 새로 지정한다.
+		if(!pPlayer->GetFloor()) pPlayer->SetFloor(collideObj);
+	}
+
+	checkOOBB = pPlayer->GetBoundingBox();
+	checkOOBB.Center.x += velocity.x;
+	checkOOBB.Center.z += velocity.z;
+
+	// 플레이어의 OOBB를 x,z방향으로 이동시켜 본 후 충돌체크를 진행한다.
+	collideObj = pZone->CheckCollision(checkOOBB, pPlayer->GetFloor());
+	if (!collideObj) {
+		result += 2;
+	}
+
+	// 플레이어의 OOBB를 회전시켜본 후 충돌체크를 진행한다.
+	XMFLOAT4 rot = pPlayer->GetRotation();
+	if (Vector4::IsSame(rot, Vector4::QuaternionIdentity())) {
+		result += 4;
+	} 
+	else {
+		checkOOBB = pPlayer->GetBoundingBox();
+		checkOOBB.Orientation = Vector4::QuaternionMultiply(checkOOBB.Orientation, rot);
+		collideObj = pZone->CheckCollision(checkOOBB, pPlayer->GetFloor());
+		if (!collideObj) {
+			result += 4;
+		}
+		else {
+			// 부딪힐 경우 반대방향으로 밀려나는 벡터를 설정해준다.
+			pPlayer->SetKnockBack(Vector3::Subtract(pPlayer->GetBoundingBox().Center, collideObj->GetBoundingBox().Center));
+		}
+
+	}
+	
+	return result;
 }
 
 
 void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
-	// 스테이지 생성
-	// 씬에 그려질 오브젝트들을 전부 빌드.
 
-
+	// Zone을 생성 후 맵파일을 읽어 오브젝트들을 로드한다.
 	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
-
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList);
 
+	// 빛을 추가
 	shared_ptr<Light> baseLight = make_shared<Light>();
 	baseLight->lightType = 3;
 	baseLight->position = XMFLOAT3(0, 500, 0);
@@ -560,6 +609,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	baseLight->diffuse = XMFLOAT4(3, 3, 3, 1);
 	baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
 	AddLight(baseLight);
+
 
 	pPlayer->UpdateObject();
 	camera = pPlayer->GetCamera();
@@ -586,38 +636,38 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, floa
 
 
 	GameFramework& gameFramework = GameFramework::Instance();
+	float angleSpeed = 720.f * _timeElapsed;
+	float moveSpeed = 5.f * _timeElapsed;
+
 	if (_keysBuffers['A'] & 0xF0) {
 		XMFLOAT3 cameraLeft = pPlayer->GetCamera()->GetWorldRightVector();
 		cameraLeft = Vector3::ScalarProduct(cameraLeft, -1);
-		pPlayer->RotateMoveHorizontal(cameraLeft, 720 * _timeElapsed, 5 * _timeElapsed);
+		pPlayer->RotateMoveHorizontal(cameraLeft, angleSpeed, moveSpeed);
 
 	}
 	if (_keysBuffers['D'] & 0xF0) {
 		XMFLOAT3 cameraRight = pPlayer->GetCamera()->GetWorldRightVector();
-		pPlayer->RotateMoveHorizontal(cameraRight, 720 * _timeElapsed, 5 * _timeElapsed);
+		pPlayer->RotateMoveHorizontal(cameraRight, angleSpeed, moveSpeed);
 	}
 	if (_keysBuffers['W'] & 0xF0) {
 		XMFLOAT3 cameraLook = pPlayer->GetCamera()->GetWorldLookVector();
-		pPlayer->RotateMoveHorizontal(cameraLook, 720 * _timeElapsed, 5 * _timeElapsed);
+		pPlayer->RotateMoveHorizontal(cameraLook, angleSpeed, moveSpeed);
 	}
 	if (_keysBuffers['S'] & 0xF0) {
 		XMFLOAT3 cameraBack = pPlayer->GetCamera()->GetWorldLookVector();
 		cameraBack = Vector3::ScalarProduct(cameraBack, -1);
-		pPlayer->RotateMoveHorizontal(cameraBack, 720 * _timeElapsed, 5 * _timeElapsed);
+		pPlayer->RotateMoveHorizontal(cameraBack, angleSpeed, moveSpeed);
 	}
-	if (_keysBuffers['1'] & 0xF0) {
-		pPlayer->MoveUp(1.0f, _timeElapsed);
-		pPlayer->UpdateObject();
+	if (_keysBuffers['J'] & 0xF0) {
+		pPlayer->Jump(30.0f);
 	}
-	if (_keysBuffers['2'] & 0xF0) {
-		pPlayer->MoveUp(-1.0f, _timeElapsed);
-		pPlayer->UpdateObject();
-	}
+	pZone->UpdatePlayerSector();
 }
 
-void PlayScene::AnimateObjects(double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void PlayScene::AnimateObjects(char _collideCheck, double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
-	pPlayer->Animate(_timeElapsed);
+	pPlayer->Animate(_collideCheck, _timeElapsed);
+	pZone->UpdatePlayerSector();
 	camera->SetPlayerPos(pPlayer->GetWorldPosition());
 
 	for (auto& pLight : pLights) {
@@ -692,13 +742,15 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 
 	GameFramework& gameFramework = GameFramework::Instance();
 
-
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
 	camera->SetViewPortAndScissorRect(_pCommandList);
 	camera->UpdateShaderVariable(_pCommandList);
 
 	UpdateLightShaderVariables(_pCommandList);
+	// 쉐이더 클래스에 정적으로 정의된 디스크립터 힙을 연결한다.
 
+	Shader::SetDescriptorHeap(_pCommandList);
+	
 #ifdef USING_INSTANCING
 	gameFramework.GetShader("InstancingShader")->PrepareRender(_pCommandList);
 #else

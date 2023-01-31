@@ -90,7 +90,7 @@ public:
 	void Rotate(const XMFLOAT4& _quat);
 	void Revolve(const XMFLOAT3& _axis, float _angle);
 	void SynchronousRotation(const XMFLOAT3& _axis, float _angle);
-	void RotateMoveHorizontal(XMFLOAT3 _dir, float _angularSpeed, float _moveSpeed);
+	virtual void RotateMoveHorizontal(XMFLOAT3 _dir, float _angularSpeed, float _moveSpeed);
 
 	// 월드좌표계 기준 자신의 위치를 리턴한다.
 	XMFLOAT3 GetWorldPosition() const;
@@ -101,6 +101,7 @@ public:
 
 	// 자신의 바운딩 박스의 래퍼런스를 리턴한다.
 	const BoundingOrientedBox& GetBoundingBox() const;
+	const BoundingOrientedBox& GetBaseBoundingBox() const;
 
 	// 해당 인스턴스가 가진 오브젝트의 정보
 	shared_ptr<GameObject> GetObj();

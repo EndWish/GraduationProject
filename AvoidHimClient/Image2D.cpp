@@ -10,7 +10,7 @@ Image2D::Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XM
 	GameFramework& gameFramework = GameFramework::Instance();
 	auto pShader = gameFramework.GetShader("UIShader");
 	enable = _enable;
-	pTexture = gameFramework.GetTextureManager().GetTexture(_fileName, _pDevice, pShader, _pCommandList);
+	pTexture = gameFramework.GetTextureManager().GetTexture(_fileName, _pDevice,  _pCommandList);
 	
 	name = _fileName;
 	position = XMFLOAT2(_position.x - 1, -_position.y + 1 - _size.y);
@@ -59,7 +59,10 @@ void Image2D::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	if (!enable) return;
 
+	// 이미지의 위치, 크기 등을 루트시그니처를 통해 보낸다.
 	UpdateShaderVariable(_pCommandList);
+
+	// 텍스처를 연결한다.
 	pTexture->UpdateShaderVariable(_pCommandList);
 
 	_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);

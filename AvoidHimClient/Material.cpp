@@ -49,7 +49,7 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 		ReadStringBinary(textureName, _file);
 
 		if (textureName != "null") {
-			pTex = gameFramework.GetTextureManager().GetTexture(textureName, _pDevice, pShader,  _pCommandList, 4 + i);
+			pTex = gameFramework.GetTextureManager().GetTexture(textureName, _pDevice, _pCommandList, 4 + i);
 
 			if (pTex) {
 				nType += 1 << i++;

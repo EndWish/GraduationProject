@@ -281,9 +281,9 @@ struct VS_INSTANCING_INPUT {
 VS_OUTPUT InstanceVertexShader(VS_INSTANCING_INPUT input) {
     VS_OUTPUT output;
     
-    output.normal = mul(input.normal, (float3x3) worldTransform);
-    output.tangent = mul(input.tangent, (float3x3) worldTransform);
-    output.biTangent = mul(input.biTangent, (float3x3) worldTransform);
+    output.normal = mul(input.normal, (float3x3) input.worldMatrix);
+    output.tangent = mul(input.tangent, (float3x3) input.worldMatrix);
+    output.biTangent = mul(input.biTangent, (float3x3) input.worldMatrix);
 
 	// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
     output.positionW = (float3) mul(float4(input.position, 1.0f), input.worldMatrix);

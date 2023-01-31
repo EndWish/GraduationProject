@@ -33,6 +33,10 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 			cout << "쉐이더 생성 실패\n";
 		}
 
+		// cbv, srv를 담기 위한 정적 디스크립터 힙 생성
+		Shader::CreateCbvSrvDescriptorHeaps(gameFramework.pDevice, 0, 200);
+
+
 		// 텍스처 출력을 위한 TextLayer 인스턴스 초기화
 		TextLayer::Create(nSwapChainBuffer, gameFramework.pDevice, gameFramework.pCommandQueue, gameFramework.pRenderTargetBuffers, gameFramework.clientWidth, gameFramework.clientHeight);
 		
@@ -492,18 +496,20 @@ const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
 
 void GameFramework::FrameAdvance() {
 
-	gameTimer.Tick(.0f);
+	gameTimer.Tick(0.0f);
 
+	// 입력을 받을 때 플레이어의 움직임을 저장한다.
+	ProcessInput();
 
 	if (!pScenes.empty()) {	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
-		pScenes.top()->AnimateObjects(gameTimer.GetTimeElapsed(), pDevice, pCommandList);
-		pScenes.top()->CheckCollision();
-		// 씬의 오브젝트 충돌처리 [수정]
+		
+		// 저장된 이동, 회전으로 먼저 충돌체크를 진행해본 후 실제로 플레이어를 움직인다.
+		pScenes.top()->AnimateObjects(pScenes.top()->CheckCollision(), gameTimer.GetTimeElapsed(), pDevice, pCommandList);
 	}
 
 	// 명령 할당자와 명령 리스트를 리셋한다.
 	HRESULT hResult = pCommandAllocator->Reset();
-
+	
 	hResult = pCommandList->Reset(pCommandAllocator.Get(), NULL);
 
 	// 현재 렌더 타겟에 대한 Present가 끝나기를 기다림.  (PRESENT = 프리젠트 상태, RENDER_TARGET = 렌더 타겟 상태
@@ -518,7 +524,7 @@ void GameFramework::FrameAdvance() {
 
 	pCommandList->ResourceBarrier(1, &resourceBarrier);
 
-	ProcessInput();
+	
 
 	// 현재 렌더 타겟 뷰의 CPU 주소 계산
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvCPUDescriptorHandle = pRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
@@ -664,7 +670,6 @@ void GameFramework::ProcessInput() {
 		}
 		// 재시작
 		if (keysDownBuffers['R']) {
-			cout << "!";
 		}
 		
 		if (GetCapture() == windowHandle)

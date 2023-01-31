@@ -2,19 +2,20 @@
 #include "Shader.h"
 #include "GameFramework.h"
 
+ComPtr<ID3D12DescriptorHeap> Shader::cbvSrvDescriptorHeap;
+
+D3D12_CPU_DESCRIPTOR_HANDLE Shader::srvCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::srvGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
+D3D12_CPU_DESCRIPTOR_HANDLE Shader::srvCPUDescriptorNextHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::srvGPUDescriptorNextHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
+D3D12_CPU_DESCRIPTOR_HANDLE Shader::cbvCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::cbvGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
 
 Shader::Shader() {
-	srvCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
-	srvGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
-
-	srvCPUDescriptorNextHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
-	srvGPUDescriptorNextHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
-
-	cbvCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
-	cbvGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
 	pipelineStateDesc = D3D12_GRAPHICS_PIPELINE_STATE_DESC();
-
-
 }
 
 Shader::~Shader() {
@@ -169,11 +170,7 @@ void Shader::PrepareRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLis
 	else {
 		cout << "파이프라인 Set 실패\n";
 	}
-	// 각 쉐이더가 가지고 있는 디스크립터 힙을 연결한다.
-	if (cbvSrvDescriptorHeap) {
 
-		_pCommandList->SetDescriptorHeaps(1, cbvSrvDescriptorHeap.GetAddressOf());
-	}
 }
 void Shader::PrepareRenderSO(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	// 스트림 출력
@@ -182,6 +179,11 @@ void Shader::PrepareRenderSO(const ComPtr<ID3D12GraphicsCommandList>& _pCommandL
 void Shader::CreateConstantBufferView()
 {
 }
+
+void Shader::SetDescriptorHeap(ComPtr<ID3D12GraphicsCommandList> _pCommandList) {
+	_pCommandList->SetDescriptorHeaps(1, cbvSrvDescriptorHeap.GetAddressOf());
+}
+
 
 void Shader::CreateCbvSrvDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nConstantBufferViews, int nShaderResourceViews)
 {
@@ -205,7 +207,6 @@ void Shader::CreateCbvSrvDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nCon
 
 //////////////////// Basic Shader
 BasicShader::BasicShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
-	CreateCbvSrvDescriptorHeaps(_pDevice, 0, 50);
 
 	Init(_pDevice, _pRootSignature);
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC envPipelineStateDesc;
@@ -266,7 +267,6 @@ D3D12_INPUT_LAYOUT_DESC BasicShader::CreateInputLayout() {
 
 //////////////////// SkinnedShader
 SkinnedShader::SkinnedShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
-	CreateCbvSrvDescriptorHeaps(_pDevice, 0, 50);
 
 	Init(_pDevice, _pRootSignature);
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC envPipelineStateDesc;
@@ -326,8 +326,6 @@ D3D12_INPUT_LAYOUT_DESC SkinnedShader::CreateInputLayout() {
 
 
 UIShader::UIShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
-
-	CreateCbvSrvDescriptorHeaps(_pDevice, 0, 50);
 
 	Init(_pDevice, _pRootSignature);
 
@@ -476,7 +474,6 @@ D3D12_INPUT_LAYOUT_DESC BoundingMeshShader::CreateInputLayout() {
 //////////////////// Instancing Shader ///////////////////////
 
 InstancingShader::InstancingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
-	CreateCbvSrvDescriptorHeaps(_pDevice, 0, 50);
 
 	Init(_pDevice, _pRootSignature);
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC envPipelineStateDesc;
