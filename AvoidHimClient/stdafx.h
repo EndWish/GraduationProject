@@ -10,7 +10,7 @@
 #define GRAVITY 9.8f
 #define C_WIDTH 800
 #define C_HEIGHT 600
-#define USING_INSTANCING
+//#define USING_INSTANCING
 //#define DEBUG
 #define DRAW_BOUNDING
 
@@ -217,7 +217,7 @@ namespace Vector3 {
 		XMStoreSInt3(&result, XMVectorClamp(XMLoadSInt3(&_vector), XMLoadSInt3(&_min), XMLoadSInt3(&_max)));
 		return result;
 	}
-	inline XMFLOAT3 CrossProduct(XMFLOAT3& _vector1, XMFLOAT3& _vector2, bool bNormalize = true)
+	inline XMFLOAT3 CrossProduct(const XMFLOAT3& _vector1, const XMFLOAT3& _vector2, bool bNormalize = true)
 	{
 		XMFLOAT3 xmf3Result;
 		if (bNormalize)
@@ -227,7 +227,7 @@ namespace Vector3 {
 		return(xmf3Result);
 	}
 
-	inline float Angle(XMFLOAT3& _vector1, XMFLOAT3& _vector2)
+	inline float Angle(const XMFLOAT3& _vector1, const XMFLOAT3& _vector2)
 	{
 		XMFLOAT3 xmf3Result;
 		XMStoreFloat3(&xmf3Result, XMVector3AngleBetweenVectors(XMLoadFloat3(&_vector1), XMLoadFloat3(&_vector2)));

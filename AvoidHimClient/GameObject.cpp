@@ -5,7 +5,6 @@
 
 
 unordered_map<string, Instancing_Data> GameObject::instanceDatas;
-unordered_map<string, UINT> GameObject::drawInstanceCount;
 
 //////////////////////////////////////////
 

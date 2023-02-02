@@ -41,9 +41,6 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 }
 
 void Player::Animate(char _collideCheck, double _timeElapsed) {
-	// 속도를 업데이트 해준다.
-	UpdateRigidBody(_timeElapsed);
-
 	cout << (int)_collideCheck << "\n";
 	cout << "바닥 : ";
 	if (pFloor) {
@@ -64,14 +61,13 @@ void Player::Animate(char _collideCheck, double _timeElapsed) {
 	}
 
 	if (_collideCheck & 2) {
-		MoveRight(velocity.x);
 		MoveFront(velocity.z);
 	}
 
 	// 부딪힐 경우 물체를 바라보는 방향의 반대 방향으로 밀어준다.
 	Rotate(rotation);
 	if (!(_collideCheck & 4)) {
-		Move(knockBack, _timeElapsed);
+		Move(knockBack);
 	}
 
 	// 프레임에 모인 이동 및 회전값을 초기화해준다.
@@ -81,8 +77,13 @@ void Player::Animate(char _collideCheck, double _timeElapsed) {
 
 	if (pChildren[0]) pChildren[0]->Animate(_timeElapsed);
 
+	// 속도를 업데이트 해준다.
+	UpdateRigidBody(_timeElapsed);
+
+
 	// 월드행렬을 업데이트 해준다.
 	GameObject::UpdateObject();
+
 }
 
 shared_ptr<Camera> Player::GetCamera() {

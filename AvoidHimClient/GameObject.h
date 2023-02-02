@@ -26,7 +26,6 @@ struct Instancing_Data {
 class GameObject : public enable_shared_from_this<GameObject> {
 protected:
 	static unordered_map<string, Instancing_Data> instanceDatas;
-	static unordered_map<string, UINT> drawInstanceCount;
 public:
 	static unordered_map<string, Instancing_Data>& GetInstanceDatas() { return instanceDatas; };
 	static void RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);

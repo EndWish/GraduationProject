@@ -23,6 +23,9 @@ public:
 	shared_ptr<GameObject> FindObject(SectorLayer _sectorLayer, UINT _objectID);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _mesh);
+	// 충돌한 모든 오브젝트를 반환하는 함수
+	vector<shared_ptr<GameObject>> CheckCollisions(BoundingOrientedBox& _boundingBox, shared_ptr<GameObject> _pFloor);
+	// 최초로 충돌한 오브젝트만 반환하는 함수
 	shared_ptr<GameObject> CheckCollision(BoundingOrientedBox& _boundingBox, shared_ptr<GameObject> _pFloor);
 };
 
@@ -79,6 +82,9 @@ public:
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum);
 	void LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	
+	// 충돌한 모든 오브젝트를 반환하는 함수
+	vector<shared_ptr<GameObject>> CheckCollisions(BoundingOrientedBox _boundingBox, shared_ptr<GameObject> _pFloor = nullptr);
+	// 최초로 충돌한 오브젝트만 반환하는 함수
 	shared_ptr<GameObject> CheckCollision(BoundingOrientedBox _boundingBox, shared_ptr<GameObject> _pFloor = nullptr);
 	void UpdatePlayerSector();
 };

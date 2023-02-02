@@ -543,13 +543,12 @@ void PlayScene::SetPlayer(shared_ptr<Player>& _pPlayer) {
 }
 
 char PlayScene::CheckCollision() {
-
-
 	char result = 0;
 	XMFLOAT3 velocity = pPlayer->GetVelocity();
 
 	BoundingOrientedBox checkOOBB = pPlayer->GetBoundingBox();
 	checkOOBB.Center.y += velocity.y;
+
 	shared_ptr<GameObject> collideObj = pZone->CheckCollision(checkOOBB);
 
 	// 플레이어의 OOBB를 y방향으로 이동시켜 본 후 충돌체크를 진행한다.
@@ -561,31 +560,51 @@ char PlayScene::CheckCollision() {
 		if(!pPlayer->GetFloor()) pPlayer->SetFloor(collideObj);
 	}
 
+	XMFLOAT3 moveVector = Vector3::ScalarProduct(Vector3::Normalize(pPlayer->GetWorldLookVector()), velocity.z);
 	checkOOBB = pPlayer->GetBoundingBox();
-	checkOOBB.Center.x += velocity.x;
-	checkOOBB.Center.z += velocity.z;
+	checkOOBB.Center = Vector3::Add(checkOOBB.Center, moveVector);
+	
 
 	// 플레이어의 OOBB를 x,z방향으로 이동시켜 본 후 충돌체크를 진행한다.
-	collideObj = pZone->CheckCollision(checkOOBB, pPlayer->GetFloor());
-	if (!collideObj) {
+	vector<shared_ptr<GameObject>> collideObjs = pZone->CheckCollisions(checkOOBB, pPlayer->GetFloor());
+	if (collideObjs.size() == 0) {
 		result += 2;
 	}
 
 	// 플레이어의 OOBB를 회전시켜본 후 충돌체크를 진행한다.
 	XMFLOAT4 rot = pPlayer->GetRotation();
-	if (Vector4::IsSame(rot, Vector4::QuaternionIdentity())) {
+	
+	/*if (Vector4::IsSame(rot, Vector4::QuaternionIdentity())) {
 		result += 4;
 	} 
-	else {
+	else */
+	{
 		checkOOBB = pPlayer->GetBoundingBox();
 		checkOOBB.Orientation = Vector4::QuaternionMultiply(checkOOBB.Orientation, rot);
-		collideObj = pZone->CheckCollision(checkOOBB, pPlayer->GetFloor());
-		if (!collideObj) {
+		collideObjs = pZone->CheckCollisions(checkOOBB, pPlayer->GetFloor());
+		if (collideObjs.size() == 0) {
 			result += 4;
 		}
 		else {
-			// 부딪힐 경우 반대방향으로 밀려나는 벡터를 설정해준다.
-			pPlayer->SetKnockBack(Vector3::Subtract(pPlayer->GetBoundingBox().Center, collideObj->GetBoundingBox().Center));
+			// 부딪힐 경우 
+			
+			XMFLOAT3 knockBack = XMFLOAT3();
+			XMFLOAT3 lookVector, direcVector;
+
+			for (auto& collideObj : collideObjs) {
+				// 물체의 룩벡터와 두 OOBB의 방향의 각을 비교해 룩벡터가 반대쪽에 있을경우 -1을 곱해준다.
+				
+				lookVector = collideObj->GetWorldLookVector();
+				direcVector = Vector3::Subtract(pPlayer->GetBoundingBox().Center, collideObj->GetBoundingBox().Center);
+				direcVector.y = 0;
+				if (Vector3::Angle(direcVector, lookVector) > 90.0f) {
+					lookVector = Vector3::ScalarProduct(lookVector, -1.f);
+				}
+				knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(Vector3::Normalize(lookVector), 0.01f));
+			}
+
+			// 부딪힌 오브젝트들의 룩벡터 방향들을 모아 그 방향으로 밀어준다.
+			pPlayer->SetKnockBack(knockBack);
 		}
 
 	}
