@@ -28,7 +28,7 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 	//카메라 설정
 	pCamera = make_shared<Camera>();
 	pCamera->Create(_pDevice, _pCommandList);
-	pCamera->SetLocalPosition(XMFLOAT3(0.f, 0.f, -1.5f));
+	pCamera->SetLocalPosition(XMFLOAT3(0.f, 1.0f, -1.5f));
 	SetChild(pCamera);
 	pCamera->UpdateObject();
 
@@ -42,11 +42,11 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 void Player::Animate(char _collideCheck, double _timeElapsed) {
 	cout << (int)_collideCheck << "\n";
-	cout << "바닥 : ";
-	if (pFloor) {
-		cout << pFloor->GetName() << "\n";
-	}
-	else cout << "없음\n";
+	//cout << "바닥 : ";
+	//if (pFloor) {
+	//	cout << pFloor->GetName() << "\n";
+	//}
+	//else cout << "없음\n";
 
 	// y방향으로 충돌하지 않을 경우
 	if (_collideCheck & 1) {
@@ -92,8 +92,10 @@ shared_ptr<Camera> Player::GetCamera() {
 
 
 void Player::UpdateRigidBody(double _timeElapsed) {
+
 	if (!landed) {
-		velocity.y -= GRAVITY * _timeElapsed / 6;
+		velocity.y -= GRAVITY * _timeElapsed / 12;
+		velocity.y = max(MAX_FALLSPEED, velocity.y);
 	}
 }
 

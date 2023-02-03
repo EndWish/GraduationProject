@@ -531,7 +531,7 @@ void LobbyScene::UpdateReadyState() {
 /////////////////////////
 
 PlayScene::PlayScene() {
-	globalAmbient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.0f);
+	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 }
 
 PlayScene::~PlayScene() {
@@ -546,10 +546,7 @@ char PlayScene::CheckCollision() {
 	char result = 0;
 	XMFLOAT3 velocity = pPlayer->GetVelocity();
 
-	BoundingOrientedBox checkOOBB = pPlayer->GetBoundingBox();
-	checkOOBB.Center.y += velocity.y;
-
-	shared_ptr<GameObject> collideObj = pZone->CheckCollision(checkOOBB);
+	shared_ptr<GameObject> collideObj = pZone->CheckCollisionVertical();
 
 	// 플레이어의 OOBB를 y방향으로 이동시켜 본 후 충돌체크를 진행한다.
 	if (!collideObj) {
@@ -560,28 +557,22 @@ char PlayScene::CheckCollision() {
 		if(!pPlayer->GetFloor()) pPlayer->SetFloor(collideObj);
 	}
 
-	XMFLOAT3 moveVector = Vector3::ScalarProduct(Vector3::Normalize(pPlayer->GetWorldLookVector()), velocity.z);
-	checkOOBB = pPlayer->GetBoundingBox();
-	checkOOBB.Center = Vector3::Add(checkOOBB.Center, moveVector);
-	
 
 	// 플레이어의 OOBB를 x,z방향으로 이동시켜 본 후 충돌체크를 진행한다.
-	vector<shared_ptr<GameObject>> collideObjs = pZone->CheckCollisions(checkOOBB, pPlayer->GetFloor());
-	if (collideObjs.size() == 0) {
+	collideObj = pZone->CheckCollisionHorizontal(pPlayer->GetFloor());
+	if (collideObj == 0) {
 		result += 2;
 	}
 
-	// 플레이어의 OOBB를 회전시켜본 후 충돌체크를 진행한다.
-	XMFLOAT4 rot = pPlayer->GetRotation();
-	
+
 	/*if (Vector4::IsSame(rot, Vector4::QuaternionIdentity())) {
 		result += 4;
 	} 
 	else */
 	{
-		checkOOBB = pPlayer->GetBoundingBox();
-		checkOOBB.Orientation = Vector4::QuaternionMultiply(checkOOBB.Orientation, rot);
-		collideObjs = pZone->CheckCollisions(checkOOBB, pPlayer->GetFloor());
+
+		// 플레이어의 OOBB를 회전시켜본 후 충돌체크를 진행한다.
+		vector<shared_ptr<GameObject>> collideObjs = pZone->CheckCollisionRotate(pPlayer->GetFloor());
 		if (collideObjs.size() == 0) {
 			result += 4;
 		}
@@ -602,11 +593,9 @@ char PlayScene::CheckCollision() {
 				}
 				knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(Vector3::Normalize(lookVector), 0.01f));
 			}
-
 			// 부딪힌 오브젝트들의 룩벡터 방향들을 모아 그 방향으로 밀어준다.
 			pPlayer->SetKnockBack(knockBack);
 		}
-
 	}
 	
 	return result;
@@ -622,13 +611,14 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 	// 빛을 추가
 	shared_ptr<Light> baseLight = make_shared<Light>();
+
+
 	baseLight->lightType = 3;
 	baseLight->position = XMFLOAT3(0, 500, 0);
-	baseLight->direction = XMFLOAT3(0, -1, 1);
-	baseLight->diffuse = XMFLOAT4(3, 3, 3, 1);
+	baseLight->direction = XMFLOAT3(0, -1, 0);
+	baseLight->diffuse = XMFLOAT4(1, 1, 1, 1);
 	baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
 	AddLight(baseLight);
-
 
 	pPlayer->UpdateObject();
 	camera = pPlayer->GetCamera();
@@ -677,8 +667,8 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, floa
 		cameraBack = Vector3::ScalarProduct(cameraBack, -1);
 		pPlayer->RotateMoveHorizontal(cameraBack, angleSpeed, moveSpeed);
 	}
-	if (_keysBuffers['J'] & 0xF0) {
-		pPlayer->Jump(30.0f);
+	if (_keysBuffers[32] & 0xF0) {
+		pPlayer->Jump(15.0f);
 	}
 	pZone->UpdatePlayerSector();
 }

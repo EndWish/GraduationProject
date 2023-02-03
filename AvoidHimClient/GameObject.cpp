@@ -138,7 +138,7 @@ void GameObject::RotateMoveHorizontal(XMFLOAT3 _dir, float _angularSpeed, float 
 	origin.y = 0;
 	XMFLOAT3 axis = Vector3::CrossProduct(origin, _dir);
 	float minAngle = Vector3::Angle(origin, _dir);
-	if (abs(axis.y) <= numeric_limits<float>::epsilon()) {	// 외적이 불가능한 경우 (두 벡터가 평행한 경우)
+	if (abs(axis.y) <= FLT_EPSILON) {	// 외적이 불가능한 경우 (두 벡터가 평행한 경우)
 		axis = XMFLOAT3(0, 1, 0);
 	}
 

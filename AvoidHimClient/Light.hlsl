@@ -63,13 +63,13 @@ float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera, float4 _c
 	// 빛의 방향과 정점의 법선으로 각도 계산
 	float diffuseFactor = dot(toLight, _normal);
 	float specularFactor = 0.0f;
-	if (diffuseFactor > EPSILON)	{
+	if (diffuseFactor > EPSILON) {
 		// 반사벡터를 구해 시선벡터와 내적하여 빛의 양 계산
 		float3 reflectVector = reflect(-toLight, _normal);
 		specularFactor = pow(max(dot(reflectVector, _toCamera), 0.0f), specular.a);
 	}
 
-    return ((lights[_nIndex].ambient * ambient) + _color * (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular));
+    return ((lights[_nIndex].ambient * ambient) + _color * (lights[_nIndex].diffuse * max(diffuseFactor, 0) * diffuse) + (lights[_nIndex].specular * specularFactor * specular));
 }
 
 

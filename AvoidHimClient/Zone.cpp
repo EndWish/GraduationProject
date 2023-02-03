@@ -73,7 +73,7 @@ void Sector::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 	}
 }
 
-vector<shared_ptr<GameObject>>  Sector::CheckCollisions(BoundingOrientedBox& _boundingBox, shared_ptr<GameObject> _pFloor) {
+vector<shared_ptr<GameObject>>  Sector::CheckCollisionRotate(BoundingOrientedBox& _boundingBox, shared_ptr<GameObject> _pFloor) {
 	
 	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::attack]) {
 		if (pGameObject->GetBoundingBox().Intersects(_boundingBox)) {
@@ -90,24 +90,47 @@ vector<shared_ptr<GameObject>>  Sector::CheckCollisions(BoundingOrientedBox& _bo
 	return result;
 }
 
-shared_ptr<GameObject> Sector::CheckCollision(BoundingOrientedBox& _boundingBox, shared_ptr<GameObject> _pFloor) {
-
-	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::attack]) {
-		if (pGameObject->GetBoundingBox().Intersects(_boundingBox)) {
-			// 충돌한 pGameObject에 대한 처리 및 플레이어의 체력을 깎는다.
-		}
-	}
+shared_ptr<GameObject> Sector::CheckCollisionHorizontal(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, shared_ptr<GameObject> _pFloor) {
+	
+	// 점프없이 올라갈 수 있는 최대 높이값
+	float bias = 0.4f;
 
 	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		if (_pFloor && _pFloor == pGameObject) continue;
-		if (pGameObject->GetBoundingBox().Intersects(_boundingBox)) {
-			return pGameObject;
+
+		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
+
+		if (boundingBox.Intersects(_boundingBox)) {
+			// 부딪혔지만 충분히 올라갈만한 높이일 경우
+			float heightGap = boundingBox.Extents.y + boundingBox.Center.y + _boundingBox.Extents.y - _boundingBox.Center.y;
+			if (heightGap < bias) {
+				// 플레이어를 그 높이만큼 이동
+				_pPlayer->MoveUp(bias);
+			}
+			else return pGameObject;
 		}
 	}
 	return nullptr;
 }
 
+shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer) {
 
+	XMFLOAT3 vel = _pPlayer->GetVelocity();
+	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
+		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
+		if (boundingBox.Intersects(_boundingBox)) {
+			// 이동 하기전 바운딩박스가 물체의 위쪽에 있던것인지 확인
+			if (_boundingBox.Center.y - _boundingBox.Extents.y - vel.y >= boundingBox.Center.y + boundingBox.Extents.y) {
+				return pGameObject;
+			}
+			// 천장에서 부딪힌 경우
+			if (boundingBox.Center.y - boundingBox.Extents.y > _boundingBox.Center.y + _boundingBox.Extents.y - vel.y) {
+				//_pPlayer->SetVelocity(XMFLOAT3(vel.x, 0.f, vel.z));
+			}
+		}
+	}
+	return nullptr;
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -231,18 +254,34 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	//gameFramework.GetShader("SkinnedShader")->PrepareRender(_pCommandList);
 	pPlayer->Render(_pCommandList);
 #else
-	auto sectors = GetFrustumSectors(*_pBoundingFrustum);
+	for (auto& divx : sectors) {
+		for (auto& divy : divx) {
+			for (auto& sector : divy) {
+				sector.Render(_pCommandList);
+			}
+		}
+	}
+
+	/*auto sectors = GetFrustumSectors(*_pBoundingFrustum);
 
 	for (auto& sector : sectors) {
 		sector->Render(_pCommandList);
-	}
+	}*/
+
+
 #ifdef DRAW_BOUNDING
 	HitBoxMesh& hitBoxMesh = gameFramework.GetHitBoxMesh();
 	gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
 
-	for (auto& sector : sectors) {
-		sector->RenderHitBox(_pCommandList, hitBoxMesh);
+
+	for (auto& divx : sectors) {
+		for (auto& divy : divx) {
+			for (auto& sector : divy) {
+				sector.RenderHitBox(_pCommandList, hitBoxMesh);
+			}
+		}
 	}
+
 #endif
 #endif
 
@@ -257,7 +296,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 	ifstream file("Map", ios::binary);
 
 	if (!file) {
-		"Zone File Load Failed!\n";
+		cout << "Zone File Load Failed!\n";
 		return;
 	}
 
@@ -330,13 +369,17 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 
 }
 
-vector<shared_ptr<GameObject>> Zone::CheckCollisions(BoundingOrientedBox _boundingBox, shared_ptr<GameObject> _pFloor) {
+vector<shared_ptr<GameObject>> Zone::CheckCollisionRotate(shared_ptr<GameObject> _pFloor) {
 	// 플레이어가 포함된 섹터 및 인접한 섹터를 가져온다.
 	vector<shared_ptr<GameObject>> result;
 	vector<Sector*> checkSector = GetAroundSectors(pindex);
+
+	// 현재 프레임에 저장된 플레이어의 회전만큼 바운딩박스를 회전시켜본다.
+	BoundingOrientedBox boundingBox = pPlayer->GetBoundingBox();
+	boundingBox.Orientation = Vector4::QuaternionMultiply(boundingBox.Orientation, pPlayer->GetRotation());
 	vector<shared_ptr<GameObject>> objs;
 	for (auto& sector : checkSector) {
-		objs = sector->CheckCollisions(_boundingBox, _pFloor);
+		objs = sector->CheckCollisionRotate(boundingBox, _pFloor);
 		for (auto& obj : objs) {
 			result.push_back(obj);
 		}               
@@ -345,12 +388,37 @@ vector<shared_ptr<GameObject>> Zone::CheckCollisions(BoundingOrientedBox _boundi
 }
 
 
-shared_ptr<GameObject> Zone::CheckCollision(BoundingOrientedBox _boundingBox, shared_ptr<GameObject> _pFloor) {
+shared_ptr<GameObject> Zone::CheckCollisionHorizontal(shared_ptr<GameObject> _pFloor) {
 	// 플레이어가 포함된 섹터 및 인접한 섹터를 가져온다.
 	vector<Sector*> checkSector = GetAroundSectors(pindex);
+
+	BoundingOrientedBox boundingBox = pPlayer->GetBoundingBox();
+	XMFLOAT3 velocity = pPlayer->GetVelocity();
+	// 현재 프레임에 저장된 플레이어의 이동벡터만큼 바운딩박스를 이동시켜본다.
+	XMFLOAT3 moveVector = Vector3::ScalarProduct(Vector3::Normalize(pPlayer->GetWorldLookVector()), velocity.z);
+	boundingBox.Center = Vector3::Add(boundingBox.Center, moveVector);
+
 	shared_ptr<GameObject> obj;
 	for (auto& sector : checkSector) {
-		obj = sector->CheckCollision(_boundingBox, _pFloor);
+		obj = sector->CheckCollisionHorizontal(boundingBox, pPlayer, _pFloor);
+		if (obj) {
+			return obj;
+		}
+	}
+	return nullptr;
+}
+
+shared_ptr<GameObject> Zone::CheckCollisionVertical() {
+	// 플레이어가 포함된 섹터 및 인접한 섹터를 가져온다.
+	vector<Sector*> checkSector = GetAroundSectors(pindex);
+
+	BoundingOrientedBox boundingBox = pPlayer->GetBoundingBox();
+	XMFLOAT3 velocity = pPlayer->GetVelocity();
+	boundingBox.Center.y += velocity.y;
+
+	shared_ptr<GameObject> obj;
+	for (auto& sector : checkSector) {
+		obj = sector->CheckCollisionVertical(boundingBox, pPlayer);
 		if (obj) {
 			return obj;
 		}

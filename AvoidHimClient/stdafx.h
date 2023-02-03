@@ -14,6 +14,8 @@
 //#define DEBUG
 #define DRAW_BOUNDING
 
+#define MAX_FALLSPEED -0.1f
+
 // Windows 헤더 파일
 #include <windows.h>
 #include <random>
