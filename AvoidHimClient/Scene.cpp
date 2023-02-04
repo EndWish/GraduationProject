@@ -40,7 +40,7 @@ void Scene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos)
 void Scene::ProcessCursorMove(XMFLOAT2 _delta) {
 }
 
-char Scene::CheckCollision() {
+char Scene::CheckCollision(float _timeElapsed) {
 	return 0;
 }
 
@@ -542,11 +542,11 @@ void PlayScene::SetPlayer(shared_ptr<Player>& _pPlayer) {
 	pPlayer = _pPlayer;
 }
 
-char PlayScene::CheckCollision() {
+char PlayScene::CheckCollision(float _timeElapsed) {
 	char result = 0;
 	XMFLOAT3 velocity = pPlayer->GetVelocity();
 
-	shared_ptr<GameObject> collideObj = pZone->CheckCollisionVertical();
+	shared_ptr<GameObject> collideObj = pZone->CheckCollisionVertical(_timeElapsed);
 
 	// 플레이어의 OOBB를 y방향으로 이동시켜 본 후 충돌체크를 진행한다.
 	if (!collideObj) {
@@ -645,6 +645,7 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, floa
 
 
 	GameFramework& gameFramework = GameFramework::Instance();
+	// 등속운동은 미리 timeElapsed를 곱해준다
 	float angleSpeed = 720.f * _timeElapsed;
 	float moveSpeed = 5.f * _timeElapsed;
 
@@ -668,14 +669,14 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, floa
 		pPlayer->RotateMoveHorizontal(cameraBack, angleSpeed, moveSpeed);
 	}
 	if (_keysBuffers[32] & 0xF0) {
-		pPlayer->Jump(15.0f);
+		pPlayer->Jump(500.0f);
 	}
-	pZone->UpdatePlayerSector();
 }
 
 void PlayScene::AnimateObjects(char _collideCheck, double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	pPlayer->Animate(_collideCheck, _timeElapsed);
+
 	pZone->UpdatePlayerSector();
 	camera->SetPlayerPos(pPlayer->GetWorldPosition());
 

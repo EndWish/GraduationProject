@@ -21,7 +21,8 @@ void Sector::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<Game
 		pGameObjectLayer[_objectID] = _pGameObject;	// 추가한다.
 	}
 	else {
-		cout << format("버그 : 중복되는 id값이 존재합니다 : {} vs {} \n", pGameObjectLayer[_objectID]->GetName(), _pGameObject->GetName());
+		cout << _objectID << "오류! ";
+		cout << format("버그 : 중복되는 id값이 존재합니다 : {} vs {} \n", (*it).second->GetName(), _pGameObject->GetName());
 	}
 }
 void Sector::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pGameObject) {
@@ -113,19 +114,20 @@ shared_ptr<GameObject> Sector::CheckCollisionHorizontal(BoundingOrientedBox& _bo
 	return nullptr;
 }
 
-shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer) {
+shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, float _timeElapsed) {
 
 	XMFLOAT3 vel = _pPlayer->GetVelocity();
+	float displacement = vel.y * _timeElapsed;
 	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 		if (boundingBox.Intersects(_boundingBox)) {
 			// 이동 하기전 바운딩박스가 물체의 위쪽에 있던것인지 확인
-			if (_boundingBox.Center.y - _boundingBox.Extents.y - vel.y >= boundingBox.Center.y + boundingBox.Extents.y) {
+			if (_boundingBox.Center.y - _boundingBox.Extents.y - displacement >= boundingBox.Center.y + boundingBox.Extents.y) {
 				return pGameObject;
 			}
 			// 천장에서 부딪힌 경우
-			if (boundingBox.Center.y - boundingBox.Extents.y > _boundingBox.Center.y + _boundingBox.Extents.y - vel.y) {
-				//_pPlayer->SetVelocity(XMFLOAT3(vel.x, 0.f, vel.z));
+			if (boundingBox.Center.y - boundingBox.Extents.y > _boundingBox.Center.y + _boundingBox.Extents.y - displacement) {
+				_pPlayer->SetVelocity(XMFLOAT3(vel.x, 0.f, vel.z));
 			}
 		}
 	}
@@ -182,19 +184,20 @@ void Zone::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameOb
 // 오브젝트 제거
 void Zone::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos) {
 	Sector* sector = GetSector(_pos);
-	sector->AddObject(_sectorLayer, _objectID, _pObject);
+	sector->RemoveObject(_sectorLayer, _objectID, _pObject);
 }
+
 void Zone::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index) {
 	Sector* sector = GetSector(_index);
-	sector->AddObject(_sectorLayer, _objectID, _pObject);
+	sector->RemoveObject(_sectorLayer, _objectID, _pObject);
 }
+
 // 오브젝트를 다른 섹터로 이동
 void Zone::HandOffObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _prePos, const XMFLOAT3& _nextPos) {
 	AddObject(_sectorLayer, _objectID, _pObject, _nextPos);		// 새로추가하고
 	RemoveObject(_sectorLayer, _objectID, _pObject, _prePos);	// 이전위치에서는 제거
 }
 void Zone::HandOffObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _preIndex, const XMINT3& _nextIndex) {
-	//cout << _pObject->GetName() << "의 섹터를 " << _preIndex.x << " " << _preIndex.y << " " << _preIndex.z << "에서 " << _nextIndex.x << " " << _nextIndex.y << " " << _nextIndex.z << "로 이동\n ";
 	AddObject(_sectorLayer, _objectID, _pObject, _nextIndex);		// 새로추가하고
 	RemoveObject(_sectorLayer, _objectID, _pObject, _preIndex);	// 이전위치에서는 제거
 }
@@ -339,9 +342,10 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pPlayer->SetLocalRotation(rotation);
 			pPlayer->UpdateObject();
 			pScene->SetPlayer(pPlayer);
-			
+                                                                                                                                                                                                                                                                                                                                                   
 			pindex = GetIndex(position);
 			pid = objectID;
+			cout << "pid = " << pid << "\n";
 			AddObject(objType, pid, pPlayer, pindex);
 			break;
 		}
@@ -408,13 +412,13 @@ shared_ptr<GameObject> Zone::CheckCollisionHorizontal(shared_ptr<GameObject> _pF
 	return nullptr;
 }
 
-shared_ptr<GameObject> Zone::CheckCollisionVertical() {
+shared_ptr<GameObject> Zone::CheckCollisionVertical(float _timeElapsed) {
 	// 플레이어가 포함된 섹터 및 인접한 섹터를 가져온다.
 	vector<Sector*> checkSector = GetAroundSectors(pindex);
 
 	BoundingOrientedBox boundingBox = pPlayer->GetBoundingBox();
 	XMFLOAT3 velocity = pPlayer->GetVelocity();
-	boundingBox.Center.y += velocity.y;
+	boundingBox.Center.y += velocity.y * _timeElapsed;
 
 	shared_ptr<GameObject> obj;
 	for (auto& sector : checkSector) {
@@ -429,10 +433,10 @@ shared_ptr<GameObject> Zone::CheckCollisionVertical() {
 void Zone::UpdatePlayerSector() {
 	XMINT3 prevIndex = pindex;
 	pindex = GetIndex(pPlayer->GetWorldPosition());
-	
-	//cout << prevIndex.x << " , " << prevIndex.y << " ," << prevIndex.z << "\n";
+
 	// 이전과 현재 플레이어 섹터 인덱스가 다를경우
 	if (!(prevIndex.x == pindex.x && prevIndex.y == pindex.y && prevIndex.z == pindex.z)) {
+		cout << "발동!\n";
 		HandOffObject(SectorLayer::player, pid, pPlayer, prevIndex, pindex);
 	}
 }

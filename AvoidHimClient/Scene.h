@@ -25,7 +25,7 @@ public:
 	virtual void ProcessCursorMove(XMFLOAT2 _delta);
 
 	virtual void ReActButton(shared_ptr<Button> _pButton) = 0;
-	virtual char CheckCollision();
+	virtual char CheckCollision(float _timeElapsed);
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
 	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -120,7 +120,7 @@ public:
 	virtual void ProcessCursorMove(XMFLOAT2 _delta);
 
 	void SetPlayer(shared_ptr<Player>& _pPlayer);
-	virtual char CheckCollision();
+	virtual char CheckCollision(float _timeElapsed);
 	void AddLight(const shared_ptr<Light>& _pLight);
 	void UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
