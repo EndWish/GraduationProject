@@ -41,7 +41,7 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 }
 
 void Player::Animate(char _collideCheck, double _timeElapsed) {
-	cout << (int)_collideCheck << "\n";
+	//cout << (int)_collideCheck << "\n";
 	//cout << "바닥 : ";
 	//if (pFloor) {
 	//	cout << pFloor->GetName() << "\n";
@@ -50,7 +50,7 @@ void Player::Animate(char _collideCheck, double _timeElapsed) {
 
 	// y방향으로 충돌하지 않을 경우
 	if (_collideCheck & 1) {
-		MoveUp(velocity.y);
+		MoveUp(velocity.y, _timeElapsed);
 		landed = false;
 		pFloor = nullptr;
 	}
@@ -69,7 +69,7 @@ void Player::Animate(char _collideCheck, double _timeElapsed) {
 	if (!(_collideCheck & 4)) {
 		Move(knockBack);
 	}
-
+	cout << velocity.y << "\n";
 	// 프레임에 모인 이동 및 회전값을 초기화해준다.
 	velocity.x = 0;
 	velocity.z = 0;
@@ -94,8 +94,8 @@ shared_ptr<Camera> Player::GetCamera() {
 void Player::UpdateRigidBody(double _timeElapsed) {
 
 	if (!landed) {
-		velocity.y -= GRAVITY * _timeElapsed / 12;
-		velocity.y = max(MAX_FALLSPEED, velocity.y);
+		velocity.y -= GRAVITY * _timeElapsed;
+		//velocity.y = max(MAX_FALLSPEED, velocity.y);
 	}
 }
 

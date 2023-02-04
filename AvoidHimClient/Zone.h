@@ -29,7 +29,7 @@ public:
 	// xz방향 충돌을 확인하는 함수
 	shared_ptr<GameObject> CheckCollisionHorizontal(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, shared_ptr<GameObject> _pFloor);
 	// y방향 충돌을 확인하는 함수
-	shared_ptr<GameObject> CheckCollisionVertical(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer);
+	shared_ptr<GameObject> CheckCollisionVertical(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, float _timeElapsed = 1.0f);
 };
 
 class Zone {
@@ -37,6 +37,8 @@ class Zone {
 
 private:
 	shared_ptr<Player> pPlayer;
+
+	vector< shared_ptr<GameObject>> pEnemy;
 	// 현재 플레이어가 속한 섹터의 인덱스
 	XMINT3 pindex;
 	UINT pid;
@@ -48,6 +50,7 @@ private:
 	vector<vector<vector<Sector>>> sectors;
 	shared_ptr<PlayScene> pScene;
 	unordered_map<string, vector<XMFLOAT4X4>> initVector;
+
 public:
 	// 생성자, 소멸자
 	Zone();
@@ -91,7 +94,7 @@ public:
 	// xz방향 충돌을 확인하는 함수
 	shared_ptr<GameObject> CheckCollisionHorizontal(shared_ptr<GameObject> _pFloor = nullptr);
 	// y방향 충돌을 확인하는 함수
-	shared_ptr<GameObject> CheckCollisionVertical();
+	shared_ptr<GameObject> CheckCollisionVertical(float _timeElapsed);
 	
 	void UpdatePlayerSector();
 };

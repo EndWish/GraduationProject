@@ -498,13 +498,13 @@ void GameFramework::FrameAdvance() {
 
 	gameTimer.Tick(0.0f);
 
+	float timeElapsed = gameTimer.GetTimeElapsed();
 	// 입력을 받을 때 플레이어의 움직임을 저장한다.
 	ProcessInput();
 
 	if (!pScenes.empty()) {	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
-		
 		// 저장된 이동, 회전으로 먼저 충돌체크를 진행해본 후 실제로 플레이어를 움직인다.
-		pScenes.top()->AnimateObjects(pScenes.top()->CheckCollision(), gameTimer.GetTimeElapsed(), pDevice, pCommandList);
+		pScenes.top()->AnimateObjects(pScenes.top()->CheckCollision(timeElapsed), timeElapsed, pDevice, pCommandList);
 	}
 
 	// 명령 할당자와 명령 리스트를 리셋한다.
@@ -548,7 +548,7 @@ void GameFramework::FrameAdvance() {
 
 	//씬 렌더링  (Scene에서 카메라, 플레이어를 관리한다.)
 	if (!pScenes.empty()) {
-		pScenes.top()->Render(pCommandList, gameTimer.GetTimeElapsed());
+		pScenes.top()->Render(pCommandList, timeElapsed);
 	}
 
 
