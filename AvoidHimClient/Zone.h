@@ -97,4 +97,5 @@ public:
 	shared_ptr<GameObject> CheckCollisionVertical(float _timeElapsed);
 	
 	void UpdatePlayerSector();
+	void SetPlayer(shared_ptr<Player> _pPlayer) { pPlayer = _pPlayer; };
 };

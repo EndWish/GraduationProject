@@ -59,6 +59,7 @@ LobbyScene::LobbyScene()
 	currState = LobbyState::title;
 	viewPort = { 0,0, C_WIDTH, C_HEIGHT, 0, 1 };
 	scissorRect = { 0,0, C_WIDTH, C_HEIGHT };
+	roomList.resize(6);
 }
 
 LobbyScene::~LobbyScene()
@@ -179,36 +180,38 @@ void LobbyScene::AnimateObjects(char _collideCheck, double _timeElapsed, const C
 void LobbyScene::ProcessSocketMessage() {
 	GameFramework& gameFramework = GameFramework::Instance();
 
-	SC_PACKET_TYPE packetType;
-	recv(server_sock, (char*)&packetType, sizeof(SC_PACKET_TYPE), 0);
+	// 고정길이의 패킷을 Recv받는다.
+	RecvFixedPacket();
+	// 첫바이트를 읽어 패킷 타입을 알아낸다.
+	SC_PACKET_TYPE packetType = (SC_PACKET_TYPE)buffer[0];
+
 	switch (packetType) {
 	case SC_PACKET_TYPE::giveClientID: { // 처음 접속시 플레이어 cid를 부여받는 패킷
-		SC_GIVE_CLIENT_ID packet;
-		RecvContents(packet);
-		cid = packet.clientID;
+		SC_GIVE_CLIENT_ID* packet = GetPacket<SC_GIVE_CLIENT_ID>();
+
+		cid = packet->clientID;
 		break;
 	}
 	case SC_PACKET_TYPE::roomListInfo: {
-		SC_ROOMLIST_INFO packet;
-		RecvContents(packet);
-
+		SC_ROOMLIST_INFO* packet = GetPacket<SC_ROOMLIST_INFO>();
 		// Roomlist 내 nRoom의 수 만큼 SC_SUB_ROOMLIST_INFO 패킷을 추가로 한꺼번에 받는다.
-		roomList.clear();
-		roomList.resize(packet.nRoom);
-		recv(server_sock, (char*)roomList.data(), sizeof(SC_SUB_ROOMLIST_INFO) * packet.nRoom, 0);
+
+		for (int i = 0; i < 6; ++i) {
+			roomList[i] = packet->roomInfo[i];
+		}
+		//recv(server_sock, (char*)roomList.data(), sizeof(SC_SUB_ROOMLIST_INFO) * packet.nRoom, 0);
 		UpdateRoomText();
 		break;
 	}	// 현재 방의 리스트를 받는 패킷
 	case SC_PACKET_TYPE::roomPlayersInfo: { // 입장 질의를 보내고 난 후 입장이 가능하다고 받음
-		SC_ROOM_PLAYERS_INFO packet;
-		RecvContents(packet);
-		roomInfo.id = packet.roomID;
+		SC_ROOM_PLAYERS_INFO* packet = GetPacket<SC_ROOM_PLAYERS_INFO>();
 		roomInfo.players.clear();
-		roomInfo.host = packet.hostID;
-		roomInfo.nParticipant = packet.nParticipant;
+		roomInfo.id = packet->roomID;
+		roomInfo.host = packet->hostID;
+		roomInfo.nParticipant = packet->nParticipant;
 
 		for (UINT i = 0; i < roomInfo.nParticipant; ++i) {
-			Player_Info pi{ packet.participantInfos[i].clientID, packet.participantInfos[i].ready };
+			Player_Info pi{ packet->participantInfos[i].clientID, packet->participantInfos[i].ready };
 			roomInfo.players.push_back(pi);
 		}
 
@@ -219,48 +222,42 @@ void LobbyScene::ProcessSocketMessage() {
 	} 
 	case SC_PACKET_TYPE::fail: { 	// 방이 시작했거나, 꽉차거나 삭제되어 방 입장 실패한 경우
 		// 실패
-		SC_FAIL packet;
-		RecvContents(packet);
+		SC_FAIL* packet = GetPacket<SC_FAIL>();
 		
+		// 실패에 대한 처리
 		break;
 	}
 	case SC_PACKET_TYPE::ready: {	// 누군가 준비를 눌렀을 경우 
-		SC_READY packet;
-		RecvContents(packet);
+		SC_READY* packet = GetPacket<SC_READY>();
 
 		// 해당 cid를 가진 플레이어를 찾아 레디상태를 반대로 바꾸어준다.
-		auto pindex = roomInfo.findPlayerIndex(packet.readyClientID);
+		auto pindex = roomInfo.findPlayerIndex(packet->readyClientID);
 		pindex->ready = !pindex->ready;
 		UpdateReadyState();
 		break;
 	}
 	case SC_PACKET_TYPE::roomVisitPlayerInfo: {	// 누가 방에 들어온 경우
-		SC_ROOM_VISIT_PLAYER_INFO packet;
-		RecvContents(packet);
+		SC_ROOM_VISIT_PLAYER_INFO* packet = GetPacket<SC_ROOM_VISIT_PLAYER_INFO>();
 
 		// 방 정보에 해당 플레이어의 정보를 추가한다.
-		Player_Info pi{ packet.visitClientID, false };
+		Player_Info pi{ packet->visitClientID, false };
 		roomInfo.players.push_back(pi);
 		roomInfo.nParticipant++;
 		UpdateReadyState();
 		break;
 	}
 	case SC_PACKET_TYPE::roomOutPlayerInfo: { // 누가 방에서 나간 경우
-		SC_ROOM_OUT_PLAYER_INFO packet;
-		RecvContents(packet);
+		SC_ROOM_OUT_PLAYER_INFO* packet = GetPacket<SC_ROOM_OUT_PLAYER_INFO>();
 
 		// 해당 클라이언트를 찾아 지우고 방장이 바뀌었다면 새로 임명한다.
-		auto pindex = roomInfo.findPlayerIndex(packet.outClientID);
+		auto pindex = roomInfo.findPlayerIndex(packet->outClientID);
 		roomInfo.players.erase(pindex);
 		roomInfo.nParticipant--;
-		roomInfo.host = packet.newHostID;
+		roomInfo.host = packet->newHostID;
 		UpdateReadyState();
 		break;
 	}
 	case SC_PACKET_TYPE::gameStart: {
-		SC_GAME_START recvPacket;
-		RecvContents(recvPacket);
-
 		loadingScene = make_shared<PlayScene>();
 
 		// 게임이 시작된 경우 먼저 게임에서 사용될 인스턴스 정보, 메쉬, 애니메이션, 텍스처 등의 정보를 로드한다.
@@ -271,23 +268,28 @@ void LobbyScene::ProcessSocketMessage() {
 		sendPacket.roomID = roomInfo.id;
 
 		sendPacket.cid = cid;
-		send(server_sock, (char*)&sendPacket, sizeof(CS_LOADING_COMPLETE), 0);
-		
+		SendFixedPacket(sendPacket);
 		break;
 	}
 	case SC_PACKET_TYPE::allPlayerLoadingComplete: {
-
 		SetCapture(hWnd);
 		gameFramework.InitOldCursor();
 		gameFramework.PushScene(loadingScene);
-
 		break;
-
 	}
+	case SC_PACKET_TYPE::yourPlayerObjectID: {
+		SC_YOUR_PLAYER_OBJECTID* packet = GetPacket<SC_YOUR_PLAYER_OBJECTID>();
+
+		myObjectID = packet->objectID;
+		cout << packet->objectID << "\n";
+		break;
+	}
+
 	default:
 
 		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
 	}
+
 }
 
 void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
@@ -327,8 +329,9 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		// 서버에게 CS_QUERY_ROOMLIST_INFO 패킷을 보내 현재 방 리스트를 보내달라고 요청한다.
 		CS_QUERY_ROOMLIST_INFO sPacket;
 		sPacket.cid = cid;
-		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_ROOMLIST_INFO), 0);
-
+		sPacket.roomPage = 1;
+		SendFixedPacket(sPacket);
+		cout << "방정보를 요청한다\n";
 		changeUI(LobbyState::title, false);
 		changeUI(LobbyState::roomList, true);
 		break;
@@ -339,7 +342,8 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		// 본인이 만든 방으로 입장한다.
 		CS_MAKE_ROOM sPacket;
 		sPacket.hostID = cid;
-		send(server_sock, (char*)&sPacket, sizeof(CS_MAKE_ROOM), 0);
+
+		SendFixedPacket(sPacket);
 
 		// 방 정보를 비운 후 본인을 방장으로 방 하나를 만든다.
 		roomInfo.ClearRoom();
@@ -355,10 +359,10 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 	}
 	case ButtonType::quitRoom: {
 		// 나간 후 방에서 나갔다는 사실을 알려주는 패킷을 전송.
-	// 서버에서 알아서 이 패킷을 받아 룸 리스트를 다시 보내준다.
+		// 서버에서 알아서 이 패킷을 받아 룸 리스트를 다시 보내준다.
 		CS_OUT_ROOM sPacket;
 		sPacket.cid = cid;
-		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_ROOMLIST_INFO), 0);
+		SendFixedPacket(sPacket);
 
 		changeUI(LobbyState::inRoom, false);
 		changeUI(LobbyState::roomList, true);
@@ -374,29 +378,37 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		CS_QUERY_VISIT_ROOM sPacket;
 		sPacket.cid = cid;
 		sPacket.visitRoomID = reinterpret_pointer_cast<RoomButton>(_pButton)->GetRoomIndex();
-		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_VISIT_ROOM), 0);
+		SendFixedPacket(sPacket);
 		break;
 	}
 	case ButtonType::gameStart: {
 		CS_READY sPacket;
 		sPacket.cid = cid;
-		send(server_sock, (char*)&sPacket, sizeof(CS_READY), 0);
+		SendFixedPacket(sPacket);
 		break;
 	}
+	// 서버에게 한 페이지씩만 룸의 정보를 요청한다.
 	case ButtonType::prevRoomPage: {
-			if (roomPage > 1) roomPage--;
-			UpdateRoomText();
-			break;
+		if (roomPage > 1) roomPage--;
+		CS_QUERY_ROOMLIST_INFO sPacket;
+		sPacket.cid = cid;
+		sPacket.roomPage = roomPage;
+		SendFixedPacket(sPacket);
+		break;
 	}
 	case ButtonType::nextRoomPage: {
-			roomPage++;
-			UpdateRoomText();
-			break;
+		roomPage++;
+		CS_QUERY_ROOMLIST_INFO sPacket;
+		sPacket.cid = cid;
+		sPacket.roomPage = roomPage;
+		SendFixedPacket(sPacket);
+		break;
 	}
 	case ButtonType::refreshRoomList: {
 		CS_QUERY_ROOMLIST_INFO sPacket;
 		sPacket.cid = cid;
-		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_ROOMLIST_INFO), 0);
+		sPacket.roomPage = roomPage;
+		SendFixedPacket(sPacket);
 		break;
 	}
 	}
@@ -407,7 +419,7 @@ void LobbyScene::NoticeCloseToServer() {
 		// 방 안에 있을때 클라이언트 종료 시 방 나가기 버튼을 눌렀을때와 같은 동작 수행
 		CS_OUT_ROOM sPacket;
 		sPacket.cid = cid;
-		send(server_sock, (char*)&sPacket, sizeof(CS_QUERY_ROOMLIST_INFO), 0);
+		SendFixedPacket(sPacket);
 	}
 }
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           
@@ -462,33 +474,27 @@ void LobbyScene::UpdateRoomText() {
 	pTexts["pageNum"]->SetText(to_wstring(roomPage));
 	// 현재 페이지 기준 방 리스트의 정보로 갱신 해준다.
 	bool lastRoom = false;
-	UINT startIndex = 1 + (roomPage - 1) * 6;
-	for (UINT i = startIndex; i < startIndex + 6; ++i) {
+	for (UINT i = 0; i < 6; ++i) {
 
-		UINT participant = 0;
 		RoomState state = RoomState::none;
-		string baseName = "RoomButton_" + to_string(i - startIndex + 1);
+		string baseName = "RoomButton_" + to_string(i + 1);
 
 		// 방 정보가 없는 칸일 경우 
-		if (roomList.size() < i) {
+		if (roomList[i].nParticipant == 0) {
 			state = RoomState::none;
 			lastRoom = true; // 이후에 나오는 룸들을 모두 빈 방으로 표시한다.
 		}
-		UINT roomID = 0;
-		if (!lastRoom) {
-			SC_SUB_ROOMLIST_INFO packet = roomList[i - 1];
-			roomID = packet.roomID;
 
-			participant = packet.nParticipant;
-			if (packet.started) { // 이미 시작한 경우
+		if (!lastRoom) {
+			if (roomList[i].started) { // 이미 시작한 경우
 				state = RoomState::started;
 			}
-			else if (packet.nParticipant == 5) {	// 정원이 꽉 찬 경우
+			else if (roomList[i].nParticipant == 5) {	// 정원이 꽉 찬 경우
 				state = RoomState::full;
 			}
 			else state = RoomState::joinable;
 		}
-		reinterpret_cast<RoomButton*>(pButtons[baseName].get())->UpdateState(roomID, participant ,state);
+		reinterpret_cast<RoomButton*>(pButtons[baseName].get())->UpdateState(roomList[i].roomID, roomList[i].nParticipant ,state);
 	}
 }
 
@@ -605,9 +611,52 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
+
+	SC_GAME_START* recvPacket = GetPacket<SC_GAME_START>();
+
+
 	// Zone을 생성 후 맵파일을 읽어 오브젝트들을 로드한다.
 	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList);
+	
+	professorObjectID = recvPacket->professorObjectID;
+
+	for (int i = 0; i < recvPacket->nPlayer; ++i) {
+
+		if (recvPacket->playerInfo[i].objectID == myObjectID) {	// 내가 조종할 캐릭터일 경우
+
+			pPlayer = make_shared<Player>();
+
+			pPlayer->Create("TrashCan"s, _pDevice, _pCommandList);
+			pPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
+			pPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
+			pPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
+			pPlayer->UpdateObject();
+			pPlayer->SetID(recvPacket->playerInfo[i].objectID);
+			cout << recvPacket->playerInfo[i].position << "\n";
+			SetPlayer(pPlayer);
+			pZone->SetPlayer(pPlayer);
+			//pindex = GetIndex(position);
+			//pid = objectID;
+			//AddObject(objLayer, pid, pPlayer, pindex);
+			//[수정] 애니메이션 정보 갱신
+		}
+		else {	// 다른 플레이어의 캐릭터 정보일 경우
+			shared_ptr<GameObject> pOtherPlayer = make_shared<GameObject>();
+			pOtherPlayer->Create("TrashCan"s, _pDevice, _pCommandList);
+			pOtherPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
+			pOtherPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
+			pOtherPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
+			pOtherPlayer->UpdateObject();
+			pOtherPlayer->SetID(recvPacket->playerInfo[i].objectID);
+			pOtherPlayers.emplace(pOtherPlayer->GetID(), pOtherPlayer);
+			//[수정] 애니메이션 정보 갱신
+		}
+
+	}
+
+	pPlayer->UpdateObject();
+	camera = pPlayer->GetCamera();
 
 	// 빛을 추가
 	shared_ptr<Light> baseLight = make_shared<Light>();
@@ -619,9 +668,6 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	baseLight->diffuse = XMFLOAT4(1, 1, 1, 1);
 	baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
 	AddLight(baseLight);
-
-	pPlayer->UpdateObject();
-	camera = pPlayer->GetCamera();
 
 	pFrustumMesh = make_shared<FrustumMesh>();
 	pFrustumMesh->Create(camera->GetBoundingFrustum(), _pDevice, _pCommandList);
@@ -689,6 +735,22 @@ void PlayScene::AnimateObjects(char _collideCheck, double _timeElapsed, const Co
 
 void PlayScene::ProcessSocketMessage()
 {
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	RecvFixedPacket();
+	SC_PACKET_TYPE packetType = (SC_PACKET_TYPE)buffer[0];
+
+	switch (packetType) {
+	case SC_PACKET_TYPE::playerInfo: {
+		SC_PLAYER_INFO* packet = GetPacket< SC_PLAYER_INFO>();
+		shared_ptr<GameObject> pMoveClient = pOtherPlayers.find(packet->objectID)->second;
+		pMoveClient->SetLocalPosition(packet->position);
+		pMoveClient->SetLocalRotation(packet->rotation);
+		pMoveClient->SetLocalScale(packet->scale);
+		pMoveClient->UpdateObject();
+		break;
+	}
+	}
 
 }
 
@@ -760,13 +822,15 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	// 쉐이더 클래스에 정적으로 정의된 디스크립터 힙을 연결한다.
 
 	Shader::SetDescriptorHeap(_pCommandList);
-	
-#ifdef USING_INSTANCING
-	gameFramework.GetShader("InstancingShader")->PrepareRender(_pCommandList);
-#else
-	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
-#endif
+
 	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
+
+	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
+
+	pPlayer->Render(_pCommandList);
+	for (auto& [pid, pOtherPlayer] : pOtherPlayers) {
+		pOtherPlayer->Render(_pCommandList);
+	}
 
 	//gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
 	//pFrustumMesh->UpdateMesh(camera->GetBoundingFrustum());

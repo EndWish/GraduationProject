@@ -11,10 +11,15 @@ UINT cbvSrvDescriptorIncrementSize = 0;
 SOCKET server_sock = 0;
 
 UINT cid = 0;
+UINT myObjectID = 0;
 
 RECT clientRect;
 random_device rd;
 mt19937 gen;
+
+array<char, BUFSIZE> buffer;
+
+
 
 float random(float min, float max) {
 	uniform_real_distribution<float> dis(min, max);
@@ -267,4 +272,19 @@ XMFLOAT2 GetViewportCoord(POINT _point)
 	pf.x = _point.x / (float)clientRect.right * 2 - 1;
 	pf.y = _point.y / (float)clientRect.bottom * 2 - 1;
 	return pf;
+}
+
+int RecvFixedPacket() {
+	int result = recv(server_sock, buffer.data(), BUFSIZE, 0);
+	if (result == SOCKET_ERROR) {
+		if (WSAGetLastError() != WSAEWOULDBLOCK) {
+			// wouldblock이 아닐 경우 오류를 출력한다.
+			SockErrorDisplay("Recv()");
+		}
+		else {
+			cout << "recv wouldblock!!\n";
+			return result;
+		}
+	}
+	return result;
 }

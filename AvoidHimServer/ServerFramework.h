@@ -8,13 +8,9 @@ private:
 	static ServerFramework instance;	// 고유 프레임워크 
 
 public:
-	static void Init();
-	static void Destroy();
 	static ServerFramework& Instance();
 
 private:
-	vector<char> buffer;
-	
 	UINT clientIDCount;
 	unordered_map<UINT, Client*> pClients;
 	unordered_map<SOCKET, UINT> socketAndIdTable;
@@ -22,10 +18,18 @@ private:
 	unordered_map<UINT, Room*> pRooms;
 	unordered_map<UINT, PlayInfo*> pPlayInfos;
 
+	// 맵정보를 미리 읽어온다.
+	vector<pair<UINT, GameObject*>> pInitialObjects;
+	vector<XMFLOAT3> studentStartPositions;
+	XMFLOAT3 professorStartPosition;
+
 public:
 	// 생성자 및 소멸자
 	ServerFramework();
 	~ServerFramework();
+
+	void Init();
+	void Destroy();
 
 	// Get + Set 함수
 	Client* GetClient(int _clientID) { return pClients.contains(_clientID) ? pClients[_clientID] : NULL; }
@@ -43,11 +47,16 @@ public:
 
 	void AddRoom(UINT hostID);
 	bool RemoveRoom(UINT roomID);
-	void CreateRoomlistInfo();	// 방리스트에 대한 정보를 buffer에 저장한다.
+	void SendRoomlistInfo(Client* _pClient,int _page);	// 방리스트에 대한 정보를 buffer에 저장한다.
 
 	void AddPlayInfo(UINT _roomID);	// PlayInfo를 생성과 초기화를 하고 컨테이너에 추가한다.
 
 	void SendRoomOutPlayerAndRoomList(Room* pRoom, Client* pOutClient);
+
+	void LoadMapFile();
+	const vector<pair<UINT, GameObject*>>& GetinitialObjects() const { return pInitialObjects; };
+	const vector<XMFLOAT3>& GetShuffledStudentStartPositions();
+	XMFLOAT3 GetProfessorStartPosition() { return professorStartPosition; }
 
 };
 

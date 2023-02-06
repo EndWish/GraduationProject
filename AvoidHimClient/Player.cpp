@@ -10,6 +10,7 @@ Player::Player() {
 	velocity = XMFLOAT3();
 	knockBack = XMFLOAT3();
 	rotation = Vector4::QuaternionIdentity();
+	sendMovePacketTime = 0.f;
 }
 
 Player::~Player() {
@@ -41,16 +42,11 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 }
 
 void Player::Animate(char _collideCheck, double _timeElapsed) {
-	//cout << (int)_collideCheck << "\n";
-	//cout << "바닥 : ";
-	//if (pFloor) {
-	//	cout << pFloor->GetName() << "\n";
-	//}
-	//else cout << "없음\n";
 
+	sendMovePacketTime += (float)_timeElapsed;
 	// y방향으로 충돌하지 않을 경우
 	if (_collideCheck & 1) {
-		MoveUp(velocity.y, _timeElapsed);
+		MoveUp(velocity.y, (float)_timeElapsed);
 		landed = false;
 		pFloor = nullptr;
 	}
@@ -69,7 +65,7 @@ void Player::Animate(char _collideCheck, double _timeElapsed) {
 	if (!(_collideCheck & 4)) {
 		Move(knockBack);
 	}
-	cout << velocity.y << "\n";
+
 	// 프레임에 모인 이동 및 회전값을 초기화해준다.
 	velocity.x = 0;
 	velocity.z = 0;
@@ -83,6 +79,21 @@ void Player::Animate(char _collideCheck, double _timeElapsed) {
 
 	// 월드행렬을 업데이트 해준다.
 	GameObject::UpdateObject();
+
+	// 서버에게 움직인만큼 전송해준다.
+
+	if (sendMovePacketTime > SEND_PACKET_PERIOD) {
+		sendMovePacketTime = 0.f;
+		CS_PLAYER_INFO packet;
+		packet.cid = cid;
+		packet.position = localPosition;
+		packet.rotation = localRotation;
+		packet.scale = localScale;
+		packet.objectID = id;
+		if (packet.cid == 0)
+			cout << name << "\n";
+		SendFixedPacket(packet);
+	}
 
 }
 

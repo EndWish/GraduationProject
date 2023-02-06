@@ -8,6 +8,7 @@ Client::Client(SOCKET _socket) : socket{_socket} {
 	pCurrentRoom = NULL;
 	pCurrentPlayInfo = NULL;
 	disconnected = false;
+	lastPacketType = CS_PACKET_TYPE::none;
 }
 Client::~Client() {
 	closesocket(socket);

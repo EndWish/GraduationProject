@@ -1,15 +1,24 @@
 #include "stdafx.h"
 #include "ServerFramework.h"
+#include "GameObject.h"
 
 /// 전역 변수
 ServerFramework ServerFramework::instance;	// 고유 프레임워크 
 
 /// 전역 함수
 void ServerFramework::Init() {
-
+    LoadMapFile();
 }
 void ServerFramework::Destroy() {
-	
+    for (auto [key, pClient] : pClients)
+        delete pClient;
+    for (auto [key, pRoom] : pRooms)
+        delete pRoom;
+    for (auto [key, pPlayInfo] : pPlayInfos)
+        delete pPlayInfo;
+
+    for (auto [key, pInitialObject] : pInitialObjects)
+        delete pInitialObject;
 }
 ServerFramework& ServerFramework::Instance() {
 	return instance;
@@ -17,10 +26,9 @@ ServerFramework& ServerFramework::Instance() {
 
 /// 생성자 및 소멸자
 ServerFramework::ServerFramework() {
-    buffer.reserve(1024);
 	clientIDCount = 1;
     roomIDCount = 1;
-
+    professorStartPosition = XMFLOAT3(0, 0, 0);
 }
 ServerFramework::~ServerFramework() {
 }
@@ -68,65 +76,83 @@ void ServerFramework::ProcessSocketMessage(HWND _hWnd, UINT _message, WPARAM _wP
         // 클라이언트에게 자신이 부여받은 clientID를 알려준다.
         SC_GIVE_CLIENT_ID sendPacket;
         sendPacket.clientID = pNewClient->GetClientID();
-        send(clientSocket, (char*)&sendPacket, sizeof(SC_GIVE_CLIENT_ID), 0);
+        SendContents(pNewClient->GetSocket(), pNewClient->GetRemainBuffer(), sendPacket);
         break;
     }
     case FD_READ:
         ProcessRecv((SOCKET)_wParam);
         break;
     case FD_WRITE:  // https://m.blog.naver.com/PostView.naver?isHttpsRedirect=true&blogId=kkum04&logNo=150048096101
+        
+        cout << "FD_WRITE - send Byte : " << send((SOCKET)_wParam, pClients[socketAndIdTable[(SOCKET)_wParam]]->GetRemainBuffer().data(), bufferSize, 0) << "\n";
         break;
+
     case FD_CLOSE:
         RemoveClient(SocketToID((SOCKET)_wParam));
         break;
     }
 }
 void ServerFramework::ProcessRecv(SOCKET _socket) {
+    Client* pClient;
+    if (socketAndIdTable.contains(_socket)) {
+        pClient = pClients[socketAndIdTable[_socket]];
+    }
+    else {
+        pClient = nullptr;
+    }
+
+    if (recv(_socket, buffer.data(), bufferSize, 0) == SOCKET_ERROR) {
+        SockErrorDisplay("recv() : ");
+        if (WSAGetLastError() == WSAEWOULDBLOCK)
+            cout << "WARINNG : WSAEWOULDBLOCK\n";
+        return;
+    }
+
+    // 패킷타입을 읽는다.
     CS_PACKET_TYPE packetType;
-    recv(_socket, (char*)&packetType, sizeof(char), 0);
+    memcpy((char*)&packetType, buffer.data(), sizeof(packetType));
 
     switch (packetType) {
     case CS_PACKET_TYPE::makeRoom: {
-        CS_MAKE_ROOM packet;
-        RecvContents(_socket, packet);
-        AddRoom(packet.hostID);
+        CS_MAKE_ROOM recvPacket;
+        RecvContents(recvPacket);
+        cout << format("CS_MAKE_ROOM : hostID - {} \n", recvPacket.hostID);
+
+        AddRoom(recvPacket.hostID);
         break;
     }
     case CS_PACKET_TYPE::queryRoomlistInfo: {
         // 데이터 받기
         CS_QUERY_ROOMLIST_INFO recvPacket;
-        RecvContents(_socket, recvPacket);
+        RecvContents(recvPacket);
+        cout << format("CS_QUERY_ROOMLIST_INFO : cid - {}, roomPage - {} \n", recvPacket.cid, recvPacket.roomPage);
 
         // 방 리스트에 대한 데이터를 만든다.
-        CreateRoomlistInfo();
-
-        // 데이터를 전송한다.
-        send(_socket, buffer.data(), (int)buffer.size(), 0);
+        SendRoomlistInfo(pClient, recvPacket.roomPage);
         break;
     }
     case CS_PACKET_TYPE::visitRoom: {
         // 데이터 받기
         CS_QUERY_VISIT_ROOM recvPacket;
-        RecvContents(_socket, recvPacket);
-        
-        cout << recvPacket.cid << "번 클라이언트 - visitRoom 패킷 받음 : ";
+        RecvContents(recvPacket);
+        cout << format("CS_QUERY_VISIT_ROOM : cid - {}, visitRoomID - {} \n", recvPacket.cid, recvPacket.visitRoomID);
 
         // 방이 존재하지 않은 경우
         if (!pRooms.contains(recvPacket.visitRoomID)) { 
             cout << recvPacket.visitRoomID << "번 방은 존재하지 않음\n";
             SC_FAIL sendPacket;
             sendPacket.cause = SC_FAIL_TYPE::noExistRoom;
-            send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
+            SendContents(_socket, pClient->GetRemainBuffer(), sendPacket);
             break;
         }
 
         // 인원이 꽉 찼을 경우
         Room* pRoom = pRooms[recvPacket.visitRoomID];
-        if (pRoom->GetNumOfParticipants() == maxParticipant ) {
+        if (pRoom->GetNumOfParticipants() == MAX_PARTICIPANT ) {
             cout << recvPacket.visitRoomID << "번 방은 인원이 가득 찼다.\n";
             SC_FAIL sendPacket;
             sendPacket.cause = SC_FAIL_TYPE::roomOvercapacity;
-            send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
+            SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
             break;
         }
 
@@ -135,7 +161,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
             cout << recvPacket.visitRoomID << "번 방은 게임이 시작되었다.\n";
             SC_FAIL sendPacket;
             sendPacket.cause = SC_FAIL_TYPE::roomGameStarted;
-            send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
+            SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
             break;
         }
 
@@ -144,12 +170,12 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         pRoom->EnterUser(recvPacket.cid);
 
         // 2. 기존에 접속해 있는 플레이어 에게 정보를 전송한다.
-        SC_ROOM_VISIT_PLAYER_INFO sendPacket2;
-        sendPacket2.visitClientID = recvPacket.cid;
+        SC_ROOM_VISIT_PLAYER_INFO sendPacket;
+        sendPacket.visitClientID = recvPacket.cid;
         for (UINT clientID : pRoom->GetParticipants()) {
             if (clientID == recvPacket.cid)  // 입장한 플레이어의 경우 제외한다.
                 continue;
-            send(pClients[clientID]->GetSocket(), (char*)&sendPacket2, sizeof(SC_ROOM_VISIT_PLAYER_INFO), 0);
+            SendContents(pClients[clientID]->GetSocket(), pClients[clientID]->GetRemainBuffer(), sendPacket);
             cout << "기존에 접속해 있는 플레이어 에게 정보를 전송한다.\n";
         }
         break;
@@ -157,35 +183,23 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::outRoom: {
         // 데이터 받기
         CS_OUT_ROOM recvPacket;
-        RecvContents(_socket, recvPacket);
+        RecvContents(recvPacket);
+        cout << format("CS_OUT_ROOM : cid - {}\n", recvPacket.cid);
 
         // 1. 플레이어를 방에서 내보낸다.
         Room* pRoom = pClients[recvPacket.cid]->GetCurrentRoom();
         int roomID = pRoom->GetID();
         pRoom->LeaveUser(recvPacket.cid);
 
+        //  남아있는 플레이어에게 나간 플레이어의 정보를, 나간 플레이어에게는 roomListInfo를 보내준다.
         SendRoomOutPlayerAndRoomList(pRoom, pClients[recvPacket.cid]);
-
-        //// 2. 방에 존재하는 플레이에게 나간 플레이어의 정보를 전송한다.
-        //if (pRooms.contains(roomID)) {
-        //    SC_ROOM_OUT_PLAYER_INFO sendPacket;
-        //    sendPacket.outClientID = recvPacket.cid;
-        //    sendPacket.newHostID = pRoom->GetHostID();
-        //    for (UINT clientID : pRoom->GetParticipants()) {
-        //        cout << clientID << "플레이어에게 " << sendPacket.outClientID << "플레이어가 나갔다고 패킷 전송함\n";
-        //        send(pClients[clientID]->GetSocket(), (char*)&sendPacket, sizeof(SC_ROOM_OUT_PLAYER_INFO), 0);
-        //    }
-        //}
-
-        //// 3. 나간 플레이어에게 방의 리스트 정보를 보낸다.
-        //CreateRoomlistInfo();
-        //send(_socket, buffer.data(), (int)buffer.size(), 0);
 
         break;
     }
     case CS_PACKET_TYPE::ready: {
         CS_READY recvPacket;
-        RecvContents(_socket, recvPacket);
+        RecvContents(recvPacket);
+        cout << format("CS_READY : cid - {}\n", recvPacket.cid);
 
         Client* pClient = pClients[recvPacket.cid];
         Room* pRoom = pClient->GetCurrentRoom();
@@ -209,13 +223,13 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
                 else {  // 시작불가 - 레디하지않은 인원이 존재한다.
                     SC_FAIL sendPacket;
                     sendPacket.cause = SC_FAIL_TYPE::notAllReady;
-                    send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
+                    SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
                 }
             }
             else {  // 시작불가 - 인원부족
                 SC_FAIL sendPacket;
                 sendPacket.cause = SC_FAIL_TYPE::lackOfParticipants;
-                send(_socket, (char*)&sendPacket, sizeof(SC_FAIL), 0);
+                SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
             }
         }
         // 2. ready패킷을 보낸 플레이어가 방장이 아닐 경우
@@ -229,13 +243,14 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
             sendPacket.readyClientID = pClient->GetClientID();
             //해당플레이어가 레디했다는 것을 알린다.
             for (UINT participant : pRoom->GetParticipants())
-                send(pClients[participant]->GetSocket(), (char*)&sendPacket, sizeof(SC_READY), 0);
+                SendContents(pClients[participant]->GetSocket(), pClients[participant]->GetRemainBuffer(), sendPacket);
         }
         break;
     }
     case CS_PACKET_TYPE::loadingComplete: {
         CS_LOADING_COMPLETE recvPacket;
-        RecvContents(_socket, recvPacket);
+        RecvContents(recvPacket);
+        cout << format("CS_LOADING_COMPLETE : cid - {}, roomID - {} \n", recvPacket.cid, recvPacket.roomID);
 
         cout << recvPacket.roomID << " 번 방 로딩 완료 ! \n";
         PlayInfo* pPlayInfo = pPlayInfos[recvPacket.roomID];
@@ -243,29 +258,34 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         break;
     }
     case CS_PACKET_TYPE::playerInfo: {
-        CS_PLALYER_INFO recvPacket;
-        RecvContents(_socket, recvPacket);
+        CS_PLAYER_INFO recvPacket;
+        RecvContents(recvPacket);
+        //cout << format("CS_PLAYER_INFO : cid - {}, objectID - {} \n", recvPacket.cid, recvPacket.objectID);
+        //cout << format("CS_PLAYER_INFO : cid - {}, objectID - {}, position - {} \n", recvPacket.cid, recvPacket.objectID, recvPacket.position);
+
+        PlayInfo* pPlayInfo = pClients[recvPacket.cid]->GetCurrentPlayInfo();
 
         // 보낼 패킷을 만든다.
         SC_PLAYER_INFO sendPacket;
         sendPacket.aniTime = recvPacket.aniTime;
-        sendPacket.clientID = recvPacket.cid;
+        sendPacket.objectID = recvPacket.objectID;
         sendPacket.position = recvPacket.position;
         sendPacket.rotation = recvPacket.rotation;
-        sendPacket.size = recvPacket.size;
+        sendPacket.scale = recvPacket.scale;
 
         // 다른 플레이어들에게 패킷을 보낸다.
-        PlayInfo* pPlayInfo = pClients[recvPacket.cid]->GetCurrentPlayInfo();
-        for (UINT participant : pPlayInfo->GetParticipants()) {
-            if (participant == recvPacket.cid)
-                continue;
-            send(pClients[participant]->GetSocket(), (char*)&sendPacket, sizeof(SC_PLAYER_INFO), 0);
+        if (pPlayInfo) {
+            for (UINT clientID : pPlayInfo->GetParticipants()) {
+                if (clientID == recvPacket.cid)
+                    continue;
+                if (!pClients[clientID]->IsDisconnected())
+                    SendContents(pClients[clientID]->GetSocket(), pClients[clientID]->GetRemainBuffer(), sendPacket);
+            }
         }
-
         break;
     }
     default:
-        cout << (int)packetType << "이 왔다.\n";
+        cout << format("잘못된 패킷 번호 : {}, cid - {}\n", (int)packetType, *((UINT*)(buffer.data() + sizeof(CS_PACKET_TYPE))) );
         break;
     }
 }
@@ -285,7 +305,7 @@ void ServerFramework::AddClient(Client* _pClient) {
 }
 void ServerFramework::RemoveClient(UINT _clientID) {
     if (pClients.contains(_clientID)) {
-        cout << format("<- 클라이언트 종료 : clientID - {0}\n", pClients[_clientID]->GetClientID());
+        
         
         Client* pClient = pClients[_clientID];
 
@@ -293,6 +313,7 @@ void ServerFramework::RemoveClient(UINT _clientID) {
         PlayInfo* pPlayInfo = pClient->GetCurrentPlayInfo();
         if (pPlayInfo != NULL) {
             pClient->SetDisconnected(true);
+            return;
         }
 
         // 클라이언트가 방에 있었을 경우 방을 나간다.
@@ -306,6 +327,8 @@ void ServerFramework::RemoveClient(UINT _clientID) {
         socketAndIdTable.erase(pClient->GetSocket());   // socket-id table에서 제거한다.
         delete pClients[_clientID];
         pClients.erase(_clientID);
+
+        cout << format("<- 클라이언트 종료 : clientID - {0}\n", _clientID);
     }
 }
 UINT ServerFramework::SocketToID(SOCKET _socket) {
@@ -334,23 +357,22 @@ bool ServerFramework::RemoveRoom(UINT roomID) {
     return false;
 }
 
-void ServerFramework::CreateRoomlistInfo() {
+void ServerFramework::SendRoomlistInfo(Client* _pClient, int _page) {
     // 보낼 데이터를 만든다.
-    buffer.clear();
 
     SC_ROOMLIST_INFO sendPacket;
-    sendPacket.nRoom = (UINT)pRooms.size();
-    // 1. 방의 개수에 대한 정보 삽입
-    buffer.insert(buffer.end(), (char*)&sendPacket, (char*)&sendPacket + sizeof(SC_ROOMLIST_INFO));
-    // 2. 각 방에 대한 정보를 삽입
-    for (auto [roomID, pRoom] : pRooms) {
-        SC_SUB_ROOMLIST_INFO sendSubPacket;
-        sendSubPacket.nParticipant = pRoom->GetNumOfParticipants();
-        sendSubPacket.roomID = roomID;
-        sendSubPacket.started = pRoom->IsGameRunning();
-        buffer.insert(buffer.end(), (char*)&sendSubPacket, (char*)&sendSubPacket + sizeof(SC_SUB_ROOMLIST_INFO));
-    }
 
+    // 2. 각 방에 대한 정보를 삽입
+    for (int index = 0; auto [roomID, pRoom] : pRooms | views::drop(_page * 6 - 6) | views::take(6)) {
+        SC_SUB_ROOMLIST_INFO& roomInfo = sendPacket.roomInfo[index];
+        roomInfo.nParticipant = pRoom->GetNumOfParticipants();
+        roomInfo.roomID = roomID;
+        roomInfo.started = pRoom->IsGameRunning();
+        ++index;
+        cout << "roomID : " << roomID << "\n";
+        cout << "roomInfo.nParticipant : " << roomInfo.nParticipant << "\n";
+    }
+    SendContents(_pClient->GetSocket(), _pClient->GetRemainBuffer(), sendPacket);
 }
 
 void ServerFramework::AddPlayInfo(UINT _roomID) {
@@ -368,10 +390,75 @@ void ServerFramework::SendRoomOutPlayerAndRoomList(Room* pRoom, Client* pOutClie
     sendPacket.newHostID = pRoom->GetHostID();
     for (UINT clientID : pRoom->GetParticipants()) {
         cout << clientID << "플레이어에게 " << sendPacket.outClientID << "플레이어가 나갔다고 패킷 전송함\n";
-        send(pClients[clientID]->GetSocket(), (char*)&sendPacket, sizeof(SC_ROOM_OUT_PLAYER_INFO), 0);
+        SendContents(pClients[clientID]->GetSocket(), pClients[clientID]->GetRemainBuffer(), sendPacket);
     }
 
     // 3. 나간 플레이어에게 방의 리스트 정보를 보낸다.
-    CreateRoomlistInfo();
-    send(pOutClient->GetSocket(), buffer.data(), (int)buffer.size(), 0);
+    SendRoomlistInfo(pOutClient, 1);
+}
+
+void ServerFramework::LoadMapFile() {
+
+    ifstream mapFile("Map", ios::binary);
+
+    if (!mapFile) {
+        cout << "Map File Load Failed!\n";
+        return;
+    }
+
+    // 맵내 전체 인스턴스의 개수
+    UINT nInstance;
+    string objName;
+    SectorLayer objLayer;
+    ObjectType objType;
+    XMFLOAT3 position, scale;
+    XMFLOAT4 rotation;
+    GameObject* pObject;
+
+    // nInstance (UINT)
+    mapFile.read((char*)&nInstance, sizeof(UINT));
+
+    for (UINT i = 0; i < nInstance; ++i) {
+        // nameSize(UINT) / fileName (string)
+        ReadStringBinary(objName, mapFile);
+
+        // objectLayer(char)
+        mapFile.read((char*)&objLayer, sizeof(SectorLayer));
+        // objectType(char)
+        mapFile.read((char*)&objType, sizeof(ObjectType));
+
+        // position(float * 3) / scale(float * 3) / rotation(float * 3)
+        mapFile.read((char*)&position, sizeof(XMFLOAT3));
+        mapFile.read((char*)&scale, sizeof(XMFLOAT3));
+        mapFile.read((char*)&rotation, sizeof(XMFLOAT4));
+
+        switch (objType) {
+        case ObjectType::door:
+        case ObjectType::lever:
+        case ObjectType::waterDispenser:
+        {
+            pObject = new GameObject();
+            pObject->SetType(objType);
+            pObject->SetID(objectIDStart);
+            pInitialObjects.emplace_back(pObject->GetID(), pObject);
+            break;
+        }
+        case ObjectType::studentStartPosition:
+            studentStartPositions.push_back(position);
+            break;
+        case ObjectType::professorStartPosition:
+            professorStartPosition = position;
+            break;
+        default:
+            break;
+        }
+
+        ++objectIDStart;
+	}
+
+}
+
+const vector<XMFLOAT3>& ServerFramework::GetShuffledStudentStartPositions() {
+    ranges::shuffle(studentStartPositions, rd);
+    return studentStartPositions;
 }

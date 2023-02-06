@@ -21,6 +21,10 @@ private:
 	ClientState state;
 	Room* pCurrentRoom;
 	PlayInfo* pCurrentPlayInfo;
+	
+	array<char, bufferSize> remainBuffer;
+	// 최근 받은 패킷의 타입을 저장
+	CS_PACKET_TYPE lastPacketType;
 
 public:
 	// 생성자 및 소멸자
@@ -28,6 +32,12 @@ public:
 	~Client();
 
 	// Get + Set 함수
+	array<char, bufferSize>& GetRemainBuffer() { return remainBuffer; }
+	void CopyRemainBuffer() { memcpy(remainBuffer.data(), buffer.data(), bufferSize); }
+
+	void SetLastPacketType(CS_PACKET_TYPE _type) { lastPacketType = _type; }
+	CS_PACKET_TYPE GetLastPacketType() const { return lastPacketType; }
+
 	SOCKET GetSocket() const { return socket; }
 
 	bool IsDisconnected() const { return disconnected; }

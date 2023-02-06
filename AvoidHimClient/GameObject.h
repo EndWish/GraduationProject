@@ -31,7 +31,7 @@ public:
 	static void RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 protected:
 	bool isSkinnedObject;
-	UINT instanceID;
+	UINT id;
 	string name;
 
 	XMFLOAT4X4 worldTransform;
@@ -71,15 +71,19 @@ public:
 	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 	// get set 함수
+	void SetID(UINT _id) { id = _id; }
+	UINT GetID() const { return id; }
+
 	const string& GetName() const;
+
 	// 부모좌표계기준 벡터들을 얻는다.
 	XMFLOAT3 GetLocalRightVector() const;
 	XMFLOAT3 GetLocalUpVector() const;
 	XMFLOAT3 GetLocalLookVector() const;
 	XMFLOAT4 GetLocalRotate() const;
 	XMFLOAT3 GetLocalPosition() const;
-	// 로컬 이동
 
+	// 로컬 이동
 	void Move(const XMFLOAT3& _moveVector, float _timeElapsed = 1.0f);
 	void MoveRight(float distance, float _timeElapsed = 1.0f);
 	void MoveUp(float distance, float _timeElapsed = 1.0f);

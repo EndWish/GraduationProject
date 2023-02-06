@@ -21,31 +21,58 @@
 using namespace DirectX;
 
 #include <stdio.h>
+#include <fstream>
 #include <iostream>
 #include <format> // c++ lastest
 #include <vector>
 #include <string>
 #include <array>
 #include <queue>
-#include <functional>
+#include <ranges>
 #include <random>
 #include <unordered_map>
 using namespace std;
 
 // 전역 변수
 extern random_device rd;
+extern UINT objectIDStart;	// Map파일을 읽어오고 나서 (플레이어 포함)추가적으로 생성하는 오브젝트에게 ID를 부여할때 시작할 번호 (objectIDCount는 각 경기마다 있어야 하므로)
+
+#define bufferSize 256
+extern array<char, bufferSize> buffer;
 
 /// 전역 함수
+//xmfloat 출력하기
+std::ostream& operator<<(std::ostream& os, const XMFLOAT2& f2);
+std::ostream& operator<<(std::ostream& os, const XMFLOAT3& f3);
+std::ostream& operator<<(std::ostream& os, const XMFLOAT4& f4);
+std::ostream& operator<<(std::ostream& os, const XMFLOAT4X4& f4x4);
+
 // 소켓 함수 오류 출력
 void SockErrorQuit(const char* msg);
 void SockErrorDisplay(const char* msg);
 void SockErrorDisplay(int errcode);
 
-// 패킷의 크기만큼에서 패킷의 타입 크기만큼을 제외한 실제 패킷의 내용만 Recv하는 함수
 template <class Packet>
-void RecvContents(SOCKET& _sock, Packet& _packet) {
-	recv(_sock, (char*)&_packet + sizeof(CS_PACKET_TYPE), sizeof(Packet) - sizeof(CS_PACKET_TYPE), 0);
+void RecvContents(Packet& _packet) {
+	memcpy((char*)&_packet, buffer.data(), sizeof(_packet));
 }
+
+template <class Packet>
+void SendContents(const SOCKET& _socket, array<char, bufferSize>& remainBuffer, const Packet& _packet) {
+	memcpy(buffer.data(), (const char*)&_packet, sizeof(_packet));
+	if (SOCKET_ERROR == send(_socket, buffer.data(), bufferSize, 0))
+	{
+		if (WSAGetLastError() == WSAEWOULDBLOCK) {
+			cout << "send WSAEWOULDBLOCK -> remainBuffer에 저장\n";
+			memcpy(remainBuffer.data(), (const char*)&_packet, sizeof(_packet));
+		}
+	}
+}
+
+// file로 부터 string을 읽는다.
+void ReadStringBinary(string& _dest, ifstream& _file);
+
+
 
 namespace Vector3 {
 	// 더하기

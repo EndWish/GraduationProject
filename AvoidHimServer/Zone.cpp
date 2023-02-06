@@ -97,11 +97,11 @@ void Zone::AddObject(SectorLayer _sectorLayer, UINT _objectID, GameObject* _pObj
 // 오브젝트 제거
 void Zone::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, GameObject* _pObject, const XMFLOAT3& _pos) {
 	Sector* sector = GetSector(_pos);
-	sector->AddObject(_sectorLayer, _objectID, _pObject);
+	sector->RemoveObject(_sectorLayer, _objectID, _pObject);
 }
 void Zone::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, GameObject* _pObject, const XMINT3& _index) {
 	Sector* sector = GetSector(_index);
-	sector->AddObject(_sectorLayer, _objectID, _pObject);
+	sector->RemoveObject(_sectorLayer, _objectID, _pObject);
 }
 // 오브젝트를 다른 섹터로 이동
 void Zone::HandOffObject(SectorLayer _sectorLayer, UINT _objectID, GameObject* _pObject, const XMFLOAT3& _prePos, const XMFLOAT3& _nextPos) {

@@ -10,11 +10,12 @@
 #define GRAVITY 9.8f
 #define C_WIDTH 800
 #define C_HEIGHT 600
-//#define USING_INSTANCING
+#define USING_INSTANCING
 //#define DEBUG
 #define DRAW_BOUNDING
 
-#define MAX_FALLSPEED -0.1f
+#define SEND_PACKET_PERIOD 1 / 30.f
+#define BUFSIZE 256
 
 // Windows 헤더 파일
 #include <windows.h>
@@ -102,18 +103,16 @@ extern SOCKET server_sock;
 
 // 현재 클라이언트가 서버에게 부여받은 고유 클라이언트 id
 extern UINT cid;
+extern UINT myObjectID;
 
 // 현재 클라이언트 크기
 extern RECT clientRect;
 
+// 고정 길이 패킷을 담을 버퍼
+
+extern array<char, BUFSIZE> buffer;
+
 using Microsoft::WRL::ComPtr;
-
-
-// 패킷의 크기만큼에서 패킷의 타입 크기만큼을 제외한 실제 패킷의 내용만 Recv하는 함수
-template <class Packet>
-void RecvContents(Packet& _packet) {
-	recv(server_sock, (char*)&_packet + sizeof(SC_PACKET_TYPE), sizeof(Packet) - sizeof(SC_PACKET_TYPE), 0);
-}
 
 
 // float 난수 생성
@@ -141,6 +140,32 @@ void SockErrorDisplay(int errcode);
 
 // 마우스 클릭시 해당 좌표를 뷰포트 좌표계로 변경
 XMFLOAT2 GetViewportCoord(POINT _point);
+
+int RecvFixedPacket();
+
+// 패킷의 크기만큼에서 패킷의 타입 크기만큼을 제외한 실제 패킷의 내용만 Recv하는 함수
+template <class Packet>
+int SendFixedPacket(Packet& _packet) {
+	memcpy(buffer.data(), (char*)&_packet, sizeof(_packet));
+	int result = send(server_sock, buffer.data(), BUFSIZE, 0);
+	if (result == SOCKET_ERROR) {
+		if (WSAGetLastError() != WSAEWOULDBLOCK) {
+			// wouldblock이 아닐 경우 오류를 출력한다.
+			SockErrorDisplay("Send()");
+		}
+		else {
+			cout << "send wouldblock!!\n";
+			return result;
+		}
+	}
+	return result;
+}
+
+template <class Packet>
+Packet* GetPacket() {
+	return reinterpret_cast<Packet*>(buffer.data());
+}
+
 
 
 namespace Vector3 {

@@ -56,7 +56,7 @@ struct RoomInfo {
 class LobbyScene : public Scene {
 private:
 	shared_ptr<Image2D> pBackGround;
-	static const int maxParticipant = 5;
+
 	D3D12_VIEWPORT viewPort;
 	D3D12_RECT scissorRect;
 
@@ -65,8 +65,7 @@ private:
 
 	// 미리 로딩을 해놓은 후 게임이 시작되었을 때 push 한다.
 	shared_ptr<PlayScene> loadingScene;
-	
-	
+
 	UINT roomPage;	// 1페이지부터 시작
 	RoomInfo roomInfo;
 	LobbyState currState;
@@ -96,6 +95,8 @@ private:
 
 	shared_ptr<Player> pPlayer;
 	// 다른 플레이어들도 추가
+	UINT professorObjectID;
+	unordered_map<UINT, shared_ptr<GameObject>> pOtherPlayers;
 	shared_ptr<Zone> pZone;
 
 	ComPtr<ID3D12Resource> pLightsBuffer;

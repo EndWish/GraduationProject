@@ -250,12 +250,10 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 
 
 #ifdef USING_INSTANCING
-
+	gameFramework.GetShader("InstancingShader")->PrepareRender(_pCommandList);
 	GameObject::RenderInstanceObjects(_pCommandList);
-
-	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
 	//gameFramework.GetShader("SkinnedShader")->PrepareRender(_pCommandList);
-	pPlayer->Render(_pCommandList);
+
 #else
 	for (auto& divx : sectors) {
 		for (auto& divy : divx) {
@@ -310,7 +308,8 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 	UINT nInstance;
 
 	string objName;
-	SectorLayer objType;
+	SectorLayer objLayer;
+	ObjectType objType;
 
 	XMFLOAT4X4 world, temp;
 
@@ -325,30 +324,32 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		ReadStringBinary(objName, file);
 
 		// objectType(char)
-		file.read((char*)&objType, sizeof(SectorLayer));
+		file.read((char*)&objLayer, sizeof(SectorLayer));
+		// objectType(char)
+		file.read((char*)&objType, sizeof(ObjectType));
 
 		// position(float * 3) / scale(float * 3) / rotation(float * 3)
 		file.read((char*)&position, sizeof(XMFLOAT3));
 		file.read((char*)&scale, sizeof(XMFLOAT3));
 		file.read((char*)&rotation, sizeof(XMFLOAT4));
 
-		switch (objType) {
-		case SectorLayer::player: {
-			pPlayer = make_shared<Player>();
+		switch (objLayer) {
+		//case SectorLayer::player: {
+		//	pPlayer = make_shared<Player>();
 
-			pPlayer->Create(objName, _pDevice, _pCommandList);
-			pPlayer->SetLocalPosition(position);
-			pPlayer->SetLocalScale(scale);
-			pPlayer->SetLocalRotation(rotation);
-			pPlayer->UpdateObject();
-			pScene->SetPlayer(pPlayer);
-                                                                                                                                                                                                                                                                                                                                                   
-			pindex = GetIndex(position);
-			pid = objectID;
-			cout << "pid = " << pid << "\n";
-			AddObject(objType, pid, pPlayer, pindex);
-			break;
-		}
+		//	pPlayer->Create(objName, _pDevice, _pCommandList);
+		//	pPlayer->SetLocalPosition(position);
+		//	pPlayer->SetLocalScale(scale);
+		//	pPlayer->SetLocalRotation(rotation);
+		//	pPlayer->UpdateObject();
+		//	pPlayer->SetID(objectID);
+		//	pScene->SetPlayer(pPlayer);
+		//	
+		//	pindex = GetIndex(position);
+		//	pid = objectID;
+		//	AddObject(objLayer, pid, pPlayer, pindex);
+		//	break;
+		//}
 		case SectorLayer::obstacle: {
 			shared_ptr<GameObject> pGameObject = make_shared<GameObject>();
 			pGameObject->Create(objName, _pDevice, _pCommandList);
@@ -356,8 +357,9 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pGameObject->SetLocalScale(scale);
 			pGameObject->SetLocalRotation(rotation);
 			pGameObject->UpdateObject();
+			pGameObject->SetID(objectID);
 
-			AddObject(objType, objectID, pGameObject, GetIndex(position));
+			AddObject(objLayer, objectID, pGameObject, GetIndex(position));
 			// 쉐이더에서는 읽는 기준이 달라지므로 전치행렬로 바꾸어준다. 
 			world = pGameObject->GetWorldTransform();
 			XMStoreFloat4x4(&temp, XMMatrixTranspose(XMLoadFloat4x4(&world)));
@@ -434,11 +436,7 @@ void Zone::UpdatePlayerSector() {
 	XMINT3 prevIndex = pindex;
 	pindex = GetIndex(pPlayer->GetWorldPosition());
 
-	// 이전과 현재 플레이어 섹터 인덱스가 다를경우
-	if (!(prevIndex.x == pindex.x && prevIndex.y == pindex.y && prevIndex.z == pindex.z)) {
-		cout << "발동!\n";
-		HandOffObject(SectorLayer::player, pid, pPlayer, prevIndex, pindex);
-	}
+	
 }
 
 

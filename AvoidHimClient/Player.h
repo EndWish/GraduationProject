@@ -15,6 +15,7 @@ private:
 	shared_ptr<Camera> pCamera;
 
 	shared_ptr<GameObject> pFloor;
+	float sendMovePacketTime;
 public:
 	Player();
 	~Player();

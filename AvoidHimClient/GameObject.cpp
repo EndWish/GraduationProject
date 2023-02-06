@@ -32,7 +32,7 @@ GameObject::GameObject() {
 	localScale = XMFLOAT3(1, 1, 1);
 	boundingBox = BoundingOrientedBox();
 	isOOBBCover = false;
-	instanceID = 0;
+	id = 0;
 	isSkinnedObject = false;
 }
 GameObject::~GameObject() {

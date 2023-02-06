@@ -14,17 +14,17 @@
 #include <DirectXMath.h>
 using namespace DirectX;
 
-const int maxParticipant = 5;
+#define MAX_PARTICIPANT 5
 
 ///////////////////////////////
 
 enum class CS_PACKET_TYPE : char {
-	makeRoom = 1, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange
+	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange
 };
 
 enum class SC_PACKET_TYPE : char {
-	giveClientID = 1, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail, 
-	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange
+	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail, 
+	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID
 
 };
 
@@ -41,7 +41,18 @@ enum class SectorLayer : char {
 	player,
 	obstacle,
 	attack,
-	num
+	num,
+	etc
+};
+
+enum class ObjectType : char {
+	none,
+	wall,
+	door,
+	lever,
+	waterDispenser,
+	studentStartPosition,
+	professorStartPosition,
 };
 
 #pragma pack(push, 1)
@@ -54,6 +65,7 @@ struct CS_MAKE_ROOM {	// 방을 만들어 달라는 패킷
 struct CS_QUERY_ROOMLIST_INFO {	// 로비에서 방에대한 정보를 요구할때 보내는 패킷
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::queryRoomlistInfo;
 	UINT cid = 0;
+	UINT roomPage = 0;
 };
 struct CS_QUERY_VISIT_ROOM {	// 방에 입장할때 전송하는 패킷
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::visitRoom;
@@ -73,12 +85,13 @@ struct CS_LOADING_COMPLETE {
 	UINT cid = 0;
 	UINT roomID = 0;
 };
-struct CS_PLALYER_INFO {
+struct CS_PLAYER_INFO {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::playerInfo;
 	UINT cid = 0;
+	UINT objectID = 0;
 	XMFLOAT3 position = XMFLOAT3(0,0,0);
 	XMFLOAT4 rotation = XMFLOAT4(0, 0, 0, 1);
-	XMFLOAT3 size = XMFLOAT3(1, 1, 1);
+	XMFLOAT3 scale = XMFLOAT3(1, 1, 1);
 	float aniTime = 0.0f;
 };
 struct CS_ANICLIP_CHANGE {
@@ -100,7 +113,7 @@ struct SC_SUB_ROOMLIST_INFO {
 };
 struct SC_ROOMLIST_INFO {	// 로비에서 볼때 필요한 방들에 대한 정보를 보내는 패킷
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::roomListInfo;
-	UINT nRoom = 0;
+	SC_SUB_ROOMLIST_INFO roomInfo[6];
 	// nRoom 개수만큼 "SC_SUB_ROOMLIST_INFO"를 전송한다.
 };
 struct SC_SUB_ROOM_PLAYERS_INFO {
@@ -113,12 +126,30 @@ struct SC_ROOM_PLAYERS_INFO {	// 방에 입장했을때 존재하는 플레이어들의 정보를 보
 	UINT roomID = 0;
 	UINT hostID = 0;
 	UINT nParticipant = 0;
-	SC_SUB_ROOM_PLAYERS_INFO participantInfos[maxParticipant];
+	SC_SUB_ROOM_PLAYERS_INFO participantInfos[MAX_PARTICIPANT];
 };
+
+struct SC_PLAYER_INFO {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::playerInfo;
+	UINT objectID = 0;
+	XMFLOAT3 position = XMFLOAT3(0, 0, 0);
+	XMFLOAT4 rotation = XMFLOAT4(0, 0, 0, 1);
+	XMFLOAT3 scale = XMFLOAT3(1, 1, 1);
+	float aniTime = 0.0f;
+};
+
 struct SC_GAME_START {	// 방장이 시작을 눌렀을 떄 시작 가능한 상태인지 확인하여 보내줌
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::gameStart;
-	UINT professorClientID;
+	UINT professorObjectID = 0;
+	UINT nPlayer = 0;
+	SC_PLAYER_INFO playerInfo[MAX_PARTICIPANT];
+	// SC_PLAYER_INFO 를 nPlayer만큼 추가로 전송한다.
 };
+struct SC_YOUR_PLAYER_OBJECTID {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::yourPlayerObjectID;
+	UINT objectID = 0;
+};
+
 struct SC_ROOM_VISIT_PLAYER_INFO {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::roomVisitPlayerInfo;
 	UINT visitClientID = 0;
@@ -141,14 +172,6 @@ struct SC_All_PLAYER_LOADING_COMPLETE {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::allPlayerLoadingComplete;
 };
 
-struct SC_PLAYER_INFO {
-	SC_PACKET_TYPE type = SC_PACKET_TYPE::playerInfo;
-	UINT clientID = 0;
-	XMFLOAT3 position = XMFLOAT3(0, 0, 0);
-	XMFLOAT4 rotation = XMFLOAT4(0, 0, 0, 1);
-	XMFLOAT3 size = XMFLOAT3(1, 1, 1);
-	float aniTime = 0.0f;
-};
 struct SC_ANICLIP_CHANGE {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::aniClipChange;
 	UINT clientID = 0;

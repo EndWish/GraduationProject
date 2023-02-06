@@ -6,13 +6,41 @@
 
 GameObject::GameObject() {
 	name = "unknown";
+	type = ObjectType::none;
+	id = 0;
 	worldTransform = Matrix4x4::Identity();
 	position = XMFLOAT3(0, 0, 0);
 	rotation = XMFLOAT4(0, 0, 0, 1);
 	scale = XMFLOAT3(1, 1, 1);
-	isOOBBCover = false;
 	modelBouningBox = BoundingOrientedBox();
 	worldBouningBox = BoundingOrientedBox();
+}
+GameObject::GameObject(const GameObject& _other) {
+	name = _other.name;
+	type = _other.type;
+	id = _other.id;
+
+	worldTransform = _other.worldTransform;
+	position = _other.position;
+	scale = _other.scale;
+	rotation = _other.rotation;
+
+	modelBouningBox = _other.modelBouningBox;
+	worldBouningBox = _other.worldBouningBox;
+}
+GameObject& GameObject::operator=(const GameObject& _other) {
+	name = _other.name;
+	type = _other.type;
+	id = _other.id;
+
+	worldTransform = _other.worldTransform;
+	position = _other.position;
+	scale = _other.scale;
+	rotation = _other.rotation;
+
+	modelBouningBox = _other.modelBouningBox;
+	worldBouningBox = _other.worldBouningBox;
+	return *this;
 }
 GameObject::~GameObject() {
 
@@ -39,35 +67,6 @@ XMFLOAT3 GameObject::GetLookVector() const {
 	XMFLOAT3 rightVector = XMFLOAT3(0, 0, 1);
 	rightVector = Vector3::Transform(rightVector, Matrix4x4::RotateQuaternion(rotation));
 	return rightVector;
-}
-
-void GameObject::Move(const XMFLOAT3& _moveVector, float _timeElapsed) {
-	position = Vector3::Add(position, _moveVector);
-}
-void GameObject::MoveRight(float distance) {
-	XMFLOAT3 moveVector = GetRightVector();	// RightVector를 가져와서
-	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
-	moveVector = Vector3::ScalarProduct(moveVector, distance);	// 이동거리만큼 곱해준다.
-	position = Vector3::Add(position, moveVector);
-}
-void GameObject::MoveUp(float distance) {
-	XMFLOAT3 moveVector = GetUpVector();	// UpVector를 가져와서
-	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
-	moveVector = Vector3::ScalarProduct(moveVector, distance);	// 이동거리만큼 곱해준다.
-	position = Vector3::Add(position, moveVector);
-}
-void GameObject::MoveFront(float distance) {
-	XMFLOAT3 moveVector = GetLookVector();	// LookVector를 가져와서
-	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
-	moveVector = Vector3::ScalarProduct(moveVector, distance);	// 이동거리만큼 곱해준다.
-	position = Vector3::Add(position, moveVector);
-}
-
-void GameObject::Rotate(const XMFLOAT3& _axis, float _angle, float _timeElapsed) {
-	rotation = Vector4::QuaternionMultiply(rotation, Vector4::QuaternionRotation(_axis, _angle * _timeElapsed));
-}
-void GameObject::Rotate(const XMFLOAT4& _quat) {
-	rotation = Vector4::QuaternionMultiply(rotation, _quat);
 }
 
 void GameObject::UpdateWorldTransform() {

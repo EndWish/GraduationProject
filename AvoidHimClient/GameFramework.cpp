@@ -120,6 +120,7 @@ void GameFramework::ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam,
 		if (pScenes.top()) pScenes.top()->ProcessSocketMessage();
 		break;
 	case FD_WRITE:
+		send(server_sock, buffer.data(), BUFSIZE, 0);
 		break;
 	case FD_CLOSE:
 		cout << "서버가 종료되었습니다.\n";

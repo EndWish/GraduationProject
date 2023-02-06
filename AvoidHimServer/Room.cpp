@@ -4,7 +4,7 @@
 
 Room::Room(UINT _id) : id{ _id } {
 	hostID = 0;
-	participants.reserve(maxParticipant);
+	participants.reserve(MAX_PARTICIPANT);
 
 	gameRunning = false;
 }
@@ -16,7 +16,7 @@ bool Room::EnterUser(UINT _clientID) {
 	
 	ServerFramework& serverFramework = ServerFramework::Instance();
 
-	if (participants.size() == maxParticipant)
+	if (participants.size() == MAX_PARTICIPANT)
 		return false;
 
 	// 첫번째 참가자일 경우 방장으로 임명한다.
@@ -26,22 +26,22 @@ bool Room::EnterUser(UINT _clientID) {
 	participants.push_back(_clientID); // 참가자를 컨테이너에 추가한다.
 
 	// 참가자의 상태와 접속한 룸번호를 변경한다.
-	Client* client = ServerFramework::Instance().GetClient(_clientID);
-	client->SetClientState(ClientState::roomWait);
-	client->SetCurrentRoom(this);
+	Client* pClient = serverFramework.GetClient(_clientID);
+	pClient->SetClientState(ClientState::roomWait);
+	pClient->SetCurrentRoom(this);
 
 	// 2. 입장하는 플레이어에게 정보를 전송한다.
-	SC_ROOM_PLAYERS_INFO sendPacket1;
-	sendPacket1.roomID = GetID();
-	sendPacket1.hostID = GetHostID();
-	sendPacket1.nParticipant = GetNumOfParticipants();
-	for (UINT i = 0; UINT clientID : GetParticipants()) {
-		sendPacket1.participantInfos[i].clientID = clientID;
-		sendPacket1.participantInfos[i].ready = client->GetClientState() == ClientState::roomReady;
+	SC_ROOM_PLAYERS_INFO sendPacket;
+	sendPacket.roomID = GetID();
+	sendPacket.hostID = GetHostID();
+	sendPacket.nParticipant = GetNumOfParticipants();
+	for (UINT i = 0; UINT participant : GetParticipants()) {
+		Client* pParticipantClient = serverFramework.GetClient(participant);
+		sendPacket.participantInfos[i].clientID = participant;
+		sendPacket.participantInfos[i].ready = pParticipantClient->GetClientState() == ClientState::roomReady;
 		++i;
 	}
-	send(client->GetSocket(), (char*)&sendPacket1, sizeof(SC_ROOM_PLAYERS_INFO), 0);
-	cout << "입장하는 플레이어에게 정보를 전송한다.\n";
+	SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 
 	return true;
 }
