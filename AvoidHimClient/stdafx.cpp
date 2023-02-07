@@ -90,7 +90,7 @@ ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice
 			memcpy(pBufferDataBegin.get(), _pData, _byteSize);
 			pBuffer->Unmap(0, NULL);
 		}
-		else if (_heapType == D3D12_HEAP_TYPE_READBACK) {
+		else if (_heapType == D3D12_HEAP_TYPE_READBACK) {	
 			D3D12_RANGE d3dReadRange = { 0, 0 };
 			UINT8* pBufferDataBegin = NULL;
 			pBuffer->Map(0, &d3dReadRange, (void**)&pBufferDataBegin);

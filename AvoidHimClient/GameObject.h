@@ -45,7 +45,6 @@ protected:
 	// 물체가 가지고 있는 빛의 포인터
 	shared_ptr<Light> pLight;
 
-
 	BoundingOrientedBox boundingBox;
 
 	// true일경우 하위 오브젝트들을 모두 포함하는 바운딩박스를 가짐
@@ -57,7 +56,6 @@ protected:
 	vector<shared_ptr<GameObject>> pChildren;
 
 	shared_ptr<Mesh> pMesh;
-
 
 	vector<shared_ptr<Material>> materials;
 
@@ -200,3 +198,21 @@ public:
 	void InitInstanceResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, unordered_map<string, vector<XMFLOAT4X4>>& _instanceDatas);
 };
 
+class InterpolateMoveGameObject : public GameObject {
+private:
+	XMFLOAT3 prevPosition;
+	XMFLOAT4 prevRotation;
+	XMFLOAT3 prevScale;
+
+	XMFLOAT3 nextPosition;
+	XMFLOAT4 nextRotation;
+	XMFLOAT3 nextScale;
+
+	float t;
+public:
+	InterpolateMoveGameObject();
+	~InterpolateMoveGameObject();
+
+	virtual void Animate(double _timeElapsed);
+	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
+};

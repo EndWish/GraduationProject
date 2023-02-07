@@ -128,6 +128,7 @@ void GameObject::Revolve(const XMFLOAT3& _axis, float _angle) {
 	localPosition = Vector3::Transform(localPosition, rotationMatrix);
 }
 void GameObject::SynchronousRotation(const XMFLOAT3& _axis, float _angle) {
+
 	Revolve(_axis, _angle);
 	localRotation = Vector4::QuaternionMultiply(localRotation, Vector4::QuaternionRotation(_axis, _angle));
 }
@@ -624,4 +625,49 @@ void GameObjectManager::InitInstanceResource(const ComPtr<ID3D12Device>& _pDevic
 
 		instanceDatas[name] = data;
 	}
+}
+
+InterpolateMoveGameObject::InterpolateMoveGameObject() {
+	prevPosition = XMFLOAT3();
+	prevRotation = Vector4::QuaternionIdentity();
+	prevScale = XMFLOAT3(1,1,1);
+	
+	nextPosition = XMFLOAT3();
+	nextRotation = Vector4::QuaternionIdentity();
+	nextScale = XMFLOAT3(1,1,1);
+	t = 0;
+
+}
+
+InterpolateMoveGameObject::~InterpolateMoveGameObject() {
+}
+
+void InterpolateMoveGameObject::Animate(double _timeElapsed) {
+	// 서버의 다음 주기가 돌때를 t = 1로 잡고 보간한다
+	t += _timeElapsed / SERVER_PERIOD; 
+	t = min(t, 1.f);
+	localPosition = Vector3::Lerp(prevPosition, nextPosition, t);
+	localRotation = Vector4::QuaternionSlerp(prevRotation, nextRotation, t);
+	localScale = Vector3::Lerp(prevScale, nextScale, t);
+	UpdateObject();
+}
+
+void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale) {
+	// 기존에 보간으로 이동중이던 목표위치로 순간이동 시킨다.
+	localPosition = nextPosition;
+	localRotation = nextRotation;
+	localScale = nextScale;
+
+	// 시작 위치를 갱신해준다.
+	prevPosition = nextPosition;
+	prevRotation = nextRotation;
+	prevScale = nextScale;
+
+	// 도착 위치를 새로 도착한 패킷의 정보로 갱신해준다.
+	nextPosition = _position;
+	nextRotation = _rotation;
+	nextScale = _scale;
+
+	UpdateObject();
+	t = 0;
 }

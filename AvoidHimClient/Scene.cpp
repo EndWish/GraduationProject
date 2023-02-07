@@ -594,7 +594,7 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 				lookVector = collideObj->GetWorldLookVector();
 				direcVector = Vector3::Subtract(pPlayer->GetBoundingBox().Center, collideObj->GetBoundingBox().Center);
 				direcVector.y = 0;
-				if (Vector3::Angle(direcVector, lookVector) > 90.0f) {
+				if (Vector3::Angle(direcVector, lookVector, false) > 90.0f) {
 					lookVector = Vector3::ScalarProduct(lookVector, -1.f);
 				}
 				knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(Vector3::Normalize(lookVector), 0.01f));
@@ -627,7 +627,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 			pPlayer = make_shared<Player>();
 
-			pPlayer->Create("TrashCan"s, _pDevice, _pCommandList);
+			pPlayer->Create("TRChair"s, _pDevice, _pCommandList);
 			pPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -642,8 +642,8 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			//[수정] 애니메이션 정보 갱신
 		}
 		else {	// 다른 플레이어의 캐릭터 정보일 경우
-			shared_ptr<GameObject> pOtherPlayer = make_shared<GameObject>();
-			pOtherPlayer->Create("TrashCan"s, _pDevice, _pCommandList);
+			shared_ptr<InterpolateMoveGameObject> pOtherPlayer = make_shared<InterpolateMoveGameObject>();
+			pOtherPlayer->Create("TRChair"s, _pDevice, _pCommandList);
 			pOtherPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pOtherPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pOtherPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -689,30 +689,37 @@ void PlayScene::ReleaseUploadBuffers() {
 
 void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
-
+	bool move = false;
 	GameFramework& gameFramework = GameFramework::Instance();
 	// 등속운동은 미리 timeElapsed를 곱해준다
 	float angleSpeed = 720.f * _timeElapsed;
 	float moveSpeed = 5.f * _timeElapsed;
-
+	XMFLOAT3 moveVector = XMFLOAT3();
 	if (_keysBuffers['A'] & 0xF0) {
 		XMFLOAT3 cameraLeft = pPlayer->GetCamera()->GetWorldRightVector();
 		cameraLeft = Vector3::ScalarProduct(cameraLeft, -1);
-		pPlayer->RotateMoveHorizontal(cameraLeft, angleSpeed, moveSpeed);
-
+		moveVector = Vector3::Add(moveVector, cameraLeft);
+		move = true;
 	}
 	if (_keysBuffers['D'] & 0xF0) {
 		XMFLOAT3 cameraRight = pPlayer->GetCamera()->GetWorldRightVector();
-		pPlayer->RotateMoveHorizontal(cameraRight, angleSpeed, moveSpeed);
+		moveVector = Vector3::Add(moveVector, cameraRight);
+		move = true;
 	}
 	if (_keysBuffers['W'] & 0xF0) {
 		XMFLOAT3 cameraLook = pPlayer->GetCamera()->GetWorldLookVector();
-		pPlayer->RotateMoveHorizontal(cameraLook, angleSpeed, moveSpeed);
+		moveVector = Vector3::Add(moveVector, cameraLook);
+		move = true;
 	}
 	if (_keysBuffers['S'] & 0xF0) {
 		XMFLOAT3 cameraBack = pPlayer->GetCamera()->GetWorldLookVector();
 		cameraBack = Vector3::ScalarProduct(cameraBack, -1);
-		pPlayer->RotateMoveHorizontal(cameraBack, angleSpeed, moveSpeed);
+		moveVector = Vector3::Add(moveVector, cameraBack);
+		move = true;
+	}
+	if (move && !Vector3::IsSame(XMFLOAT3(), moveVector)) {
+		moveVector = Vector3::Normalize(moveVector);
+		pPlayer->RotateMoveHorizontal(moveVector, angleSpeed, moveSpeed);
 	}
 	if (_keysBuffers[32] & 0xF0) {
 		pPlayer->Jump(500.0f);
@@ -722,6 +729,9 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, floa
 void PlayScene::AnimateObjects(char _collideCheck, double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	pPlayer->Animate(_collideCheck, _timeElapsed);
+	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
+		pOtherPlayer->Animate(_timeElapsed);
+	}
 
 	pZone->UpdatePlayerSector();
 	camera->SetPlayerPos(pPlayer->GetWorldPosition());
@@ -739,15 +749,20 @@ void PlayScene::ProcessSocketMessage()
 
 	RecvFixedPacket();
 	SC_PACKET_TYPE packetType = (SC_PACKET_TYPE)buffer[0];
-
+	
 	switch (packetType) {
-	case SC_PACKET_TYPE::playerInfo: {
-		SC_PLAYER_INFO* packet = GetPacket< SC_PLAYER_INFO>();
-		shared_ptr<GameObject> pMoveClient = pOtherPlayers.find(packet->objectID)->second;
-		pMoveClient->SetLocalPosition(packet->position);
-		pMoveClient->SetLocalRotation(packet->rotation);
-		pMoveClient->SetLocalScale(packet->scale);
-		pMoveClient->UpdateObject();
+	case SC_PACKET_TYPE::playersInfo: {
+		SC_PLAYERS_INFO* packet = GetPacket<SC_PLAYERS_INFO>();
+
+		for (int i = 0; i < packet->nPlayer; ++i) {
+			// 본인에 대한 정보일 경우 
+			SC_PLAYER_INFO& pinfo = packet->playersInfo[i];
+			if (pinfo.objectID == pPlayer->GetID())
+				continue;
+			// 받은 플레이어의 새 월드정보를 업데이트 해준다.
+			shared_ptr<InterpolateMoveGameObject> pMoveClient = pOtherPlayers.find(pinfo.objectID)->second;
+			pMoveClient->SetNextTransform(pinfo.position, pinfo.rotation, pinfo.scale);
+		}
 		break;
 	}
 	}
@@ -796,13 +811,26 @@ void PlayScene::ProcessCursorMove(XMFLOAT2 _delta)  {
 	if (_delta.x != 0.0f) {
 		//XMFLOAT3 upVector = pPlayer->GetCamera()->GetLocalUpVector();
 		pCamera->SynchronousRotation(XMFLOAT3(0, 1, 0), _delta.x / 3.f);
-		pCamera->UpdateLocalTransform();
 	}
-	if (_delta.y != 0.0f) {
-		XMFLOAT3 rightVector = pCamera->GetLocalRightVector();
+	
+	XMFLOAT3 rightVector = pCamera->GetLocalRightVector();
+	float angle = Vector3::Angle(pCamera->GetWorldUpVector(), XMFLOAT3(0, 1, 0));
+
+	// 카메라의 y방향 시선을 제한.
+	if (angle > 40.0f) {
+		// 카메라가 위를 보고있을 경우
+		if (pCamera->GetWorldLookVector().y > 0) {
+			pCamera->SynchronousRotation(rightVector, angle / 300.f);
+		}
+		else {
+			pCamera->SynchronousRotation(rightVector, - angle / 300.f);
+		}
+	}
+	else if (_delta.y != 0.0f) {
 		pCamera->SynchronousRotation(rightVector, _delta.y / 3.f);
-		pCamera->UpdateLocalTransform();
 	}
+	pCamera->UpdateLocalTransform();
+
 	//pCamera->UpdateLocalTransform();
 
 	// 적용

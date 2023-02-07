@@ -96,7 +96,7 @@ private:
 	shared_ptr<Player> pPlayer;
 	// 다른 플레이어들도 추가
 	UINT professorObjectID;
-	unordered_map<UINT, shared_ptr<GameObject>> pOtherPlayers;
+	unordered_map<UINT, shared_ptr<InterpolateMoveGameObject>> pOtherPlayers;
 	shared_ptr<Zone> pZone;
 
 	ComPtr<ID3D12Resource> pLightsBuffer;

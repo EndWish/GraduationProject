@@ -45,7 +45,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     if (server_sock == INVALID_SOCKET) SockErrorQuit("socket()");
 
 
-    string serverIP = "172.30.1.18";
+    string serverIP = "172.30.1.49";
     //string serverIP = "127.0.0.1";
     
     // connect()

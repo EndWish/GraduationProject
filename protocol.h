@@ -15,7 +15,7 @@
 using namespace DirectX;
 
 #define MAX_PARTICIPANT 5
-
+#define SERVER_PERIOD (1.f / 30)
 ///////////////////////////////
 
 enum class CS_PACKET_TYPE : char {
@@ -24,7 +24,7 @@ enum class CS_PACKET_TYPE : char {
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail, 
-	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID
+	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID, playersInfo
 
 };
 
@@ -136,6 +136,12 @@ struct SC_PLAYER_INFO {
 	XMFLOAT4 rotation = XMFLOAT4(0, 0, 0, 1);
 	XMFLOAT3 scale = XMFLOAT3(1, 1, 1);
 	float aniTime = 0.0f;
+};
+
+struct SC_PLAYERS_INFO {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::playersInfo;
+	UINT nPlayer = 0;
+	SC_PLAYER_INFO playersInfo[MAX_PARTICIPANT];
 };
 
 struct SC_GAME_START {	// 방장이 시작을 눌렀을 떄 시작 가능한 상태인지 확인하여 보내줌

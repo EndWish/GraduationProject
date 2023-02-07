@@ -14,7 +14,7 @@
 //#define DEBUG
 #define DRAW_BOUNDING
 
-#define SEND_PACKET_PERIOD 1 / 30.f
+#define SEND_PACKET_PERIOD (1 / 30.f)
 #define BUFSIZE 256
 
 // Windows 헤더 파일
@@ -254,15 +254,24 @@ namespace Vector3 {
 		return(xmf3Result);
 	}
 
-	inline float Angle(const XMFLOAT3& _vector1, const XMFLOAT3& _vector2)
+	inline float Angle(const XMFLOAT3& _vector1, const XMFLOAT3& _vector2, bool bNormalize = true)
 	{
 		XMFLOAT3 xmf3Result;
-		XMStoreFloat3(&xmf3Result, XMVector3AngleBetweenVectors(XMLoadFloat3(&_vector1), XMLoadFloat3(&_vector2)));
+		if(bNormalize)
+			XMStoreFloat3(&xmf3Result, XMVector3AngleBetweenNormals(XMLoadFloat3(&_vector1), XMLoadFloat3(&_vector2)));
+		else 
+			XMStoreFloat3(&xmf3Result, XMVector3AngleBetweenVectors(XMLoadFloat3(&_vector1), XMLoadFloat3(&_vector2)));
 		return(XMConvertToDegrees(xmf3Result.x));
 	}
 
 	inline bool IsSame(const XMFLOAT3& _vector1, const XMFLOAT3& _vector2) {
 		return XMVector3Equal(XMLoadFloat3(&_vector1), XMLoadFloat3(&_vector2));
+	}
+
+	inline XMFLOAT3 Lerp(const XMFLOAT3& _vector1, const XMFLOAT3& _vector2, float _t) {
+		XMFLOAT3 xmf3Result;
+		XMStoreFloat3(&xmf3Result, XMVectorLerp(XMLoadFloat3(&_vector1), XMLoadFloat3(&_vector2), _t));
+		return xmf3Result;
 	}
 }
 
@@ -318,6 +327,7 @@ namespace Vector4 {
 	inline bool IsSame(const XMFLOAT4& _vector1, const XMFLOAT4& _vector2) {
 		return XMVector4Equal(XMLoadFloat4(&_vector1), XMLoadFloat4(&_vector2));
 	}
+
 }
 
 namespace Matrix4x4 {
