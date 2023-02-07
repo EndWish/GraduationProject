@@ -56,17 +56,6 @@ void Mesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, c
 	normalBufferView.BufferLocation = pNormalBuffer->GetGPUVirtualAddress();
 	normalBufferView.StrideInBytes = sizeof(XMFLOAT3);
 	normalBufferView.SizeInBytes = sizeof(XMFLOAT3) * nVertex;
-	int i = 0;
-	if (name == "WhiteBoard") {
-		cout << name << "ÀÇ ³ë¸»\n";
-		for (auto t : normals) {
-			cout << t << " ";
-			if (i == 2) {
-				cout << ", ";
-			}
-			i++;
-		}
-	}
 
 	// nTangent(UINT)
 	UINT nTangent;

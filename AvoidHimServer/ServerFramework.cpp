@@ -6,8 +6,10 @@
 ServerFramework ServerFramework::instance;	// 고유 프레임워크 
 
 /// 전역 함수
-void ServerFramework::Init() {
+void ServerFramework::Init(HWND _windowHandle) {
     LoadMapFile();
+    windowHandle = _windowHandle;
+    lastTime = chrono::system_clock::now();
 }
 void ServerFramework::Destroy() {
     for (auto [key, pClient] : pClients)
@@ -26,6 +28,9 @@ ServerFramework& ServerFramework::Instance() {
 
 /// 생성자 및 소멸자
 ServerFramework::ServerFramework() {
+    //timer = Timer();
+    lastTime = chrono::system_clock::now();
+
 	clientIDCount = 1;
     roomIDCount = 1;
     professorStartPosition = XMFLOAT3(0, 0, 0);
@@ -260,28 +265,11 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::playerInfo: {
         CS_PLAYER_INFO recvPacket;
         RecvContents(recvPacket);
-        //cout << format("CS_PLAYER_INFO : cid - {}, objectID - {} \n", recvPacket.cid, recvPacket.objectID);
-        //cout << format("CS_PLAYER_INFO : cid - {}, objectID - {}, position - {} \n", recvPacket.cid, recvPacket.objectID, recvPacket.position);
+        cout << format("CS_PLAYER_INFO : cid - {}, objectID - {} \n", recvPacket.cid, recvPacket.objectID);
 
         PlayInfo* pPlayInfo = pClients[recvPacket.cid]->GetCurrentPlayInfo();
+        pPlayInfo->ApplyCSPlayerInfo(recvPacket);
 
-        // 보낼 패킷을 만든다.
-        SC_PLAYER_INFO sendPacket;
-        sendPacket.aniTime = recvPacket.aniTime;
-        sendPacket.objectID = recvPacket.objectID;
-        sendPacket.position = recvPacket.position;
-        sendPacket.rotation = recvPacket.rotation;
-        sendPacket.scale = recvPacket.scale;
-
-        // 다른 플레이어들에게 패킷을 보낸다.
-        if (pPlayInfo) {
-            for (UINT clientID : pPlayInfo->GetParticipants()) {
-                if (clientID == recvPacket.cid)
-                    continue;
-                if (!pClients[clientID]->IsDisconnected())
-                    SendContents(pClients[clientID]->GetSocket(), pClients[clientID]->GetRemainBuffer(), sendPacket);
-            }
-        }
         break;
     }
     default:
@@ -293,6 +281,20 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
 void ServerFramework::FrameAdvance() {
 	// 게임을 진행시키면서 필요에 따라 메시지를 전송한다.
     
+    float timeElapsed = chrono::duration_cast<chrono::milliseconds>((chrono::system_clock::now() - lastTime)).count() / 1'000.f;
+    
+    float period = SERVER_PERIOD;
+    if (period <= timeElapsed)
+        lastTime = chrono::system_clock::now();
+    else
+        return;
+    
+    for (auto [playInfoID, pPlayInfo] : pPlayInfos)
+        pPlayInfo->FrameAdvance();
+
+    //// FPS 표시
+    //wstring titleString = L"FPS : " + to_wstring(timer.GetFPS());
+    //SetWindowText(windowHandle, (LPCWSTR)titleString.c_str());
 }
 void ServerFramework::AddClient(Client* _pClient) {
 	if (_pClient) {

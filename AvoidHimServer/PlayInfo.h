@@ -1,6 +1,7 @@
 #pragma once
-#include "Timer.h"
 #include "Zone.h"
+
+class Client;
 
 class PlayInfo {
 private:
@@ -10,10 +11,9 @@ private:
 	unordered_map<UINT, bool> loadingCompletes;	// 플레이어가 로딩을 완료하였는지 확인
 	
 	//Zone zone;
-	Timer timer;
-	vector<UINT> participants;
+	vector<pair<UINT, Client*>> participants;	// (=clientID)
 
-	UINT professorObjectID;	// (=clientID)
+	UINT professorObjectID;	// (=objectID)
 	unordered_map<UINT, GameObject*> pPlayers;	// objectID-object
 
 	unordered_map<UINT, GameObject*> pDoors;	// objectID-object
@@ -34,7 +34,7 @@ public:
 	UINT GetProfessorObjectID() const { return professorObjectID; }
 	void SetProfessorObjectID(UINT _professorObjectID) { professorObjectID = _professorObjectID; }
 
-	const vector<UINT>& GetParticipants() const { return participants; }
+	const vector<pair<UINT, Client*>>& GetParticipants() const { return participants; }
 	const unordered_map<UINT, GameObject*>& GetPlayers() const { return pPlayers; }
 	GameObject* GetPlayer(UINT _objectID) { return  pPlayers.contains(_objectID) ? pPlayers[_objectID] : NULL; }
 
@@ -43,7 +43,8 @@ public:
 	void LoadingComplete(UINT _clientID);
 	void ProcessLoadingComplete();
 
-	
+	void FrameAdvance();
+	bool ApplyCSPlayerInfo(CS_PLAYER_INFO& _packet);
 
 };
 

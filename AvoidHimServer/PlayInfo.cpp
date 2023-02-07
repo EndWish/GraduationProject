@@ -2,23 +2,21 @@
 #include "PlayInfo.h"
 #include "ServerFramework.h"
 #include "GameObject.h"
+#include "Client.h"
 
 PlayInfo::PlayInfo(UINT _playInfoID) : playInfoID{ _playInfoID } {
 	allPlayerLoadingComplete = false;
 	professorObjectID = 0;
 	objectIDCount = objectIDStart;
-
-	timer = Timer();
 }
 PlayInfo::~PlayInfo() {
 	ServerFramework& serverFramework = ServerFramework::Instance();
-	for (auto clientID : participants) {
-		Client* pClient = serverFramework.GetClient(clientID);
+	for (auto [participant, pClient] : participants) {
 		pClient->SetCurrentPlayInfo(NULL);
 
 		// 게임이 끝났으니 도중에 접속을 끊어서 보류(임시로 가지고 있던)하고 있던 클라이언트를 완전히 삭제한다.
 		if (pClient->IsDisconnected()) {
-			serverFramework.RemoveClient(clientID);
+			serverFramework.RemoveClient(participant);
 		}
 	}
 
@@ -43,7 +41,11 @@ PlayInfo::~PlayInfo() {
 void PlayInfo::Init(UINT _roomID) {
 	ServerFramework& serverFramework = ServerFramework::Instance();
     Room* pRoom = ServerFramework::Instance().GetRoom(_roomID);
-	participants = pRoom->GetParticipants();	// 참가자들의 ID를 가져온다.
+
+	// 참가자들의 clientID와 client* 를 가져온다.
+	for (UINT participant : pRoom->GetParticipants()) {
+		participants.emplace_back(participant, serverFramework.GetClient(participant));
+	}
 
 	const vector<XMFLOAT3>& shuffledStudentStartPos = serverFramework.GetShuffledStudentStartPositions();
 
@@ -62,16 +64,15 @@ void PlayInfo::Init(UINT _roomID) {
 
 	// clientID로 교수 플레이어를 정한다.
 	uniform_int_distribution<int> uid(0, (int)participants.size() - 1);
-	int professorClientID = participants[uid(rd)];
+	int professorClientID = participants[uid(rd)].first;
 
-	for (int studentStartPosIndex = 0; UINT participant : participants) {
+	for (int studentStartPosIndex = 0; auto[participant, pClient] : participants) {
 		// 모든 플레이어의 로딩상태를 false로 초기화 한다.
 		loadingCompletes[participant] = false;
 
 		// 클라이언트의 상태를 게임시작으로 바꿔준다.
-		Client* client = serverFramework.GetClient(participant);
-		client->SetClientState(ClientState::roomPlay);
-		client->SetCurrentPlayInfo(this);
+		pClient->SetClientState(ClientState::roomPlay);
+		pClient->SetCurrentPlayInfo(this);
 
 		// 플레이어들을 생성하고 위치를 초기화 해준다.
 		GameObject* pPlayer = new GameObject();
@@ -89,7 +90,7 @@ void PlayInfo::Init(UINT _roomID) {
 		// 자신이 조종할 캐릭터의 오브젝트 아이디를 알려준다.
 		SC_YOUR_PLAYER_OBJECTID sendPacket;
 		sendPacket.objectID = pPlayer->GetID();
-		SendContents(client->GetSocket(), client->GetRemainBuffer(), sendPacket);
+		SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 	}
 	// 활성화될 컴퓨터와 레버를 정한다.
 
@@ -115,8 +116,7 @@ void PlayInfo::Init(UINT _roomID) {
 	}
 
 	// 내용을 전부다 채운 buf를 각 플레이어들에게 전송한다.
-	for (UINT participant : participants) {
-		Client* pClient = serverFramework.GetClient(participant);
+	for (auto [participant, pClient] : participants) {
 		if (pClient) {
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
@@ -140,7 +140,6 @@ void PlayInfo::LoadingComplete(UINT _clientID) {
 		}
 	}
 }
-
 void PlayInfo::ProcessLoadingComplete() {
 	ServerFramework& serverFramework = ServerFramework::Instance();
 	allPlayerLoadingComplete = true;
@@ -151,10 +150,46 @@ void PlayInfo::ProcessLoadingComplete() {
 
 	// 모든 플레이어가 로딩이 완료되었다고 패킷을 보낸다.
 	SC_All_PLAYER_LOADING_COMPLETE sendPacket;
-	for (auto clientID : participants) {
-		Client* pClient = serverFramework.GetClient(clientID);
-		if (!pClient->IsDisconnected())
+	for (auto [participant, pClient] : participants) {
+		if (pClient && !pClient->IsDisconnected())
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 	}
+}
+
+void PlayInfo::FrameAdvance() {
+	if (!allPlayerLoadingComplete)
+		return;
+
+	ServerFramework& serverFramework = ServerFramework::Instance();
+
+	// 플레이어의 위치를 보내준다.
+	SC_PLAYERS_INFO sendPacket;
+	sendPacket.nPlayer = pPlayers.size();
+	for (int index = 0; auto [objectID, pPlayer] : pPlayers) {
+		SC_PLAYER_INFO& playerInfo = sendPacket.playersInfo[index];
+
+		playerInfo.aniTime = 0.f;
+		playerInfo.objectID = objectID;
+		playerInfo.position = pPlayer->GetPosition();
+		playerInfo.rotation = pPlayer->GetRotation();
+		playerInfo.scale = pPlayer->GetScale();
+		++index;
+	}
+	
+	for (auto [participant, pClient] : participants) {
+		if (pClient && !pClient->IsDisconnected())
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+	}
+
+}
+
+bool PlayInfo::ApplyCSPlayerInfo(CS_PLAYER_INFO& _packet) {
+	GameObject* pPlayer = pPlayers[_packet.objectID];
+	//[수정] aniTime을 적용시켜 준다.
+	pPlayer->SetPosition(_packet.position);
+	pPlayer->SetRotation(_packet.rotation);
+	pPlayer->SetScale(_packet.scale);
+
+	return false;
 }
 

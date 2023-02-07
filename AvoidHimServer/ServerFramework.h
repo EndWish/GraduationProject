@@ -2,6 +2,7 @@
 #include "Client.h"
 #include "Room.h"
 #include "PlayInfo.h"
+#include "Timer.h"
 
 class ServerFramework {
 private:
@@ -11,6 +12,10 @@ public:
 	static ServerFramework& Instance();
 
 private:
+	HWND windowHandle;
+
+	chrono::system_clock::time_point lastTime;
+
 	UINT clientIDCount;
 	unordered_map<UINT, Client*> pClients;
 	unordered_map<SOCKET, UINT> socketAndIdTable;
@@ -28,7 +33,7 @@ public:
 	ServerFramework();
 	~ServerFramework();
 
-	void Init();
+	void Init(HWND _windowHandle);
 	void Destroy();
 
 	// Get + Set ÇÔ¼ö
