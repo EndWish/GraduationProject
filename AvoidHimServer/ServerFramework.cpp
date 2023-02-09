@@ -28,6 +28,8 @@ ServerFramework& ServerFramework::Instance() {
 
 /// 생성자 및 소멸자
 ServerFramework::ServerFramework() {
+    windowHandle = HWND();
+
     //timer = Timer();
     lastTime = chrono::system_clock::now();
 
@@ -272,6 +274,16 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
 
         break;
     }
+    case CS_PACKET_TYPE::toggleDoor: {
+        CS_TOGGLE_DOOR recvPacket;
+        RecvContents(recvPacket);
+        cout << format("CS_TOGGLE_DOOR : cid - {}, objectID - {} \n", recvPacket.cid, recvPacket.objectID);
+        
+        PlayInfo* pPlayInfo = pClients[recvPacket.cid]->GetCurrentPlayInfo();
+        pPlayInfo->ApplyToggleDoor(recvPacket.objectID);
+
+        break;
+    }
     default:
         cout << format("잘못된 패킷 번호 : {}, cid - {}\n", (int)packetType, *((UINT*)(buffer.data() + sizeof(CS_PACKET_TYPE))) );
         break;
@@ -415,7 +427,7 @@ void ServerFramework::LoadMapFile() {
     ObjectType objType;
     XMFLOAT3 position, scale;
     XMFLOAT4 rotation;
-    GameObject* pObject;
+    GameObject* pObject = nullptr;
 
     // nInstance (UINT)
     mapFile.read((char*)&nInstance, sizeof(UINT));
@@ -435,16 +447,22 @@ void ServerFramework::LoadMapFile() {
         mapFile.read((char*)&rotation, sizeof(XMFLOAT4));
 
         switch (objType) {
+
+            // break;가 없는 것에 주의
         case ObjectType::door:
+            if (objType == ObjectType::door)
+                pObject = new Door();
         case ObjectType::lever:
+            if (objType == ObjectType::lever)
+                pObject = new Lever();
         case ObjectType::waterDispenser:
-        {
-            pObject = new GameObject();
+            if (objType == ObjectType::waterDispenser)
+                pObject = new WaterDispenser();
             pObject->SetType(objType);
             pObject->SetID(objectIDStart);
             pInitialObjects.emplace_back(pObject->GetID(), pObject);
             break;
-        }
+
         case ObjectType::studentStartPosition:
             studentStartPositions.push_back(position);
             break;

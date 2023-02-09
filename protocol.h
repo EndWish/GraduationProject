@@ -19,12 +19,14 @@ using namespace DirectX;
 ///////////////////////////////
 
 enum class CS_PACKET_TYPE : char {
-	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange
+	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
+	toggleDoor
 };
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail, 
-	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID, playersInfo
+	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID, 
+	playersInfo, toggleDoor
 
 };
 
@@ -98,6 +100,11 @@ struct CS_ANICLIP_CHANGE {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::aniClipChange;
 	UINT cid = 0;
 	std::array<char, 30> clipName;
+};
+struct CS_TOGGLE_DOOR {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::toggleDoor;
+	UINT cid = 0;
+	UINT objectID = 0;
 };
 
 /// 서버->클라
@@ -183,6 +190,9 @@ struct SC_ANICLIP_CHANGE {
 	UINT clientID = 0;
 	std::array<char, 30> clipName;
 };
-
+struct SC_TOGGLE_DOOR {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::toggleDoor;
+	UINT objectID = 0;
+};
 
 #pragma pack(pop)

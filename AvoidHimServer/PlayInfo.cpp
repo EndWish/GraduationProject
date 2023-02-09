@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "PlayInfo.h"
 #include "ServerFramework.h"
-#include "GameObject.h"
+
 #include "Client.h"
 
 PlayInfo::PlayInfo(UINT _playInfoID) : playInfoID{ _playInfoID } {
@@ -20,6 +20,7 @@ PlayInfo::~PlayInfo() {
 		}
 	}
 
+	
 	for (auto [objectID, pPlayer] : pPlayers)
 		delete pPlayer;
 	pPlayers.clear();
@@ -52,11 +53,23 @@ void PlayInfo::Init(UINT _roomID) {
 	// 초기 오브젝트들을 복사해서 가져온다.
 	const auto& initObjects = serverFramework.GetinitialObjects();
 	for (auto& [objectID, pObject] : initObjects) {
-		GameObject* pNewObject = new GameObject(*pObject);
-		switch (pNewObject->GetType()) {
-		case ObjectType::door: pDoors.emplace(pNewObject->GetID(), pNewObject); break;
-		case ObjectType::lever: pLevers.emplace(pNewObject->GetID(), pNewObject); break;
-		case ObjectType::waterDispenser: pWaterDispensers.emplace(pNewObject->GetID(), pNewObject); break;
+		GameObject* pNewObject = nullptr;// = new GameObject(*pObject);
+		switch (pObject->GetType()) {
+		case ObjectType::door: { 
+			pNewObject = new Door(*static_cast<Door*>(pObject));
+			pDoors.emplace(pNewObject->GetID(), static_cast<Door*>(pNewObject));
+			break; 
+		}
+		case ObjectType::lever: {
+			pNewObject = new Lever(*static_cast<Lever*>(pObject));
+			pLevers.emplace(pNewObject->GetID(), static_cast<Lever*>(pNewObject));
+			break;
+		}
+		case ObjectType::waterDispenser: {
+			pNewObject = new WaterDispenser(*static_cast<WaterDispenser*>(pObject));
+			pWaterDispensers.emplace(pNewObject->GetID(), static_cast<WaterDispenser*>(pNewObject));
+			break;
+		}
 		default:
 			break;
 		}
@@ -191,5 +204,24 @@ bool PlayInfo::ApplyCSPlayerInfo(CS_PLAYER_INFO& _packet) {
 	pPlayer->SetScale(_packet.scale);
 
 	return false;
+}
+
+void PlayInfo::ApplyToggleDoor(UINT _objectID) {
+	auto it = pDoors.find(_objectID);
+	if (it != pDoors.end()) {
+		Door* pDoor = it->second;
+		pDoor->SetOpen(!pDoor->IsOpen());
+
+		SC_TOGGLE_DOOR sendPacket;
+		sendPacket.objectID = _objectID;
+
+		for (auto [participant, pClient] : participants) {
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+	}
+	else {
+		cout << "\b해당하는 ID의 문이 없습니다.\n";
+	}
+
 }
 

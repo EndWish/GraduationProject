@@ -1,5 +1,6 @@
 #pragma once
 #include "Zone.h"
+#include "GameObject.h"
 
 class Client;
 
@@ -16,9 +17,9 @@ private:
 	UINT professorObjectID;	// (=objectID)
 	unordered_map<UINT, GameObject*> pPlayers;	// objectID-object
 
-	unordered_map<UINT, GameObject*> pDoors;	// objectID-object
-	unordered_map<UINT, GameObject*> pLevers;	// objectID-object
-	unordered_map<UINT, GameObject*> pWaterDispensers;	// objectID-object
+	unordered_map<UINT, Door*> pDoors;	// objectID-object
+	unordered_map<UINT, Lever*> pLevers;	// objectID-object
+	unordered_map<UINT, WaterDispenser*> pWaterDispensers;	// objectID-object
 
 public:
 	// 持失切, 社瑚切
@@ -45,6 +46,7 @@ public:
 
 	void FrameAdvance();
 	bool ApplyCSPlayerInfo(CS_PLAYER_INFO& _packet);
+	void ApplyToggleDoor(UINT _objectID);
 
 };
 

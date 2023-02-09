@@ -58,3 +58,56 @@ public:
 	
 };
 
+///////////////////////////////////////////////////////////////////////////////
+/// Door
+
+class Door : public GameObject {
+protected:
+	bool isOpen;
+
+public:
+	Door();
+	Door(const Door& _other);
+	Door& operator=(const Door& _other);	// 복사 대입 연산자
+	virtual ~Door();
+
+	bool IsOpen() { return isOpen; }
+	void SetOpen(bool _open) { isOpen = _open; }
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// WaterDispenser
+
+class WaterDispenser : public GameObject {
+protected:
+	float coolTime;
+
+public:
+	WaterDispenser();
+	WaterDispenser(const WaterDispenser& _other);
+	WaterDispenser& operator=(const WaterDispenser& _other);	// 복사 대입 연산자
+	virtual ~WaterDispenser();
+
+	float GetCoolTime() { return coolTime; }
+	void SetCoolTime(bool _coolTime) { coolTime = _coolTime; }
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Lever
+
+class Lever : public GameObject {
+protected:
+	bool power;
+
+public:
+	Lever();
+	Lever(const Lever& _other);
+	Lever& operator=(const Lever& _other);	// 복사 대입 연산자
+	virtual ~Lever();
+
+	bool GetPower() { return power; }
+	void SetPower(bool _power) { power = _power; }
+
+};

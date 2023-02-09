@@ -94,3 +94,58 @@ bool GameObject::CheckCollision(GameObject* pGameObject) {
 	return worldBouningBox.Intersects(pGameObject->worldBouningBox);
 }
 
+
+///////////////////////////////////////////////////////////////////////////////
+/// Door
+
+Door::Door() : GameObject() {
+	isOpen = false;
+}
+Door::Door(const Door& _other) : GameObject(_other) {
+	isOpen = _other.isOpen;
+}
+Door& Door::operator=(const Door& _other) {
+	GameObject::operator=(_other);
+	isOpen = _other.isOpen;
+	return *this;
+}
+Door::~Door() {
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// WaterDispenser
+
+WaterDispenser::WaterDispenser() : GameObject() {
+	coolTime = 0.f;
+}
+WaterDispenser::WaterDispenser(const WaterDispenser& _other) : GameObject(_other) {
+	coolTime = _other.coolTime;
+}
+WaterDispenser& WaterDispenser::operator=(const WaterDispenser& _other) {
+	GameObject::operator=(_other);
+	coolTime = _other.coolTime;
+	return *this;
+}
+WaterDispenser::~WaterDispenser() {
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Lever
+
+Lever::Lever() : GameObject() {
+	power = false;
+}
+Lever::Lever(const Lever& _other) : GameObject(_other) {
+	power = _other.power;
+}
+Lever& Lever::operator=(const Lever& _other) {
+	GameObject::operator=(_other);
+	power = _other.power;
+	return *this;
+}
+Lever::~Lever() {
+
+}
+
