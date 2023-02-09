@@ -137,12 +137,16 @@ public:
 	// 오브젝트 내용 전체적으로 갱신
 	virtual void UpdateObject();
 
+	// 서버에게 상호작용이 가능한 상태인지 질의
+	virtual void QueryInteract();
+	// 오브젝트와 플레이어의 상호작용
+	virtual void Interact();
+
 	// 충돌 체크
 	// 애니메이션
 	shared_ptr<GameObject> FindFrame(const string& _name);	// 이름으로 자식(자신포함)을 오브젝트를 찾는다.
 	virtual void PrepareAnimate();
-	virtual void Animate(double _timeElapsed);
-	virtual void Animate(double _timeElapsed, const XMFLOAT3& _playerPos);
+	virtual void Animate(float _timeElapsed);
 	virtual void Remove();
 	virtual bool CheckRemove() const;
 
@@ -213,6 +217,40 @@ public:
 	InterpolateMoveGameObject();
 	~InterpolateMoveGameObject();
 
-	virtual void Animate(double _timeElapsed);
+	virtual void Animate(float _timeElapsed);
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
+};
+
+class Door : public GameObject {
+private:
+	float openAngle;
+	bool isOpen;
+public:
+	Door();
+	~Door();
+	virtual void QueryInteract();
+	virtual void Interact();
+
+	virtual void Animate(float _timeElapsed);
+};
+
+class WaterDispenser : public GameObject {
+private:
+
+public:
+	WaterDispenser();
+	~WaterDispenser();
+	virtual void QueryInteract();
+	virtual void Interact();
+};
+
+class Lever : public GameObject {
+private:
+
+public:
+	Lever();
+	~Lever();
+	virtual void QueryInteract();
+	virtual void Interact();
+
 };

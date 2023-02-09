@@ -643,10 +643,8 @@ void GameFramework::ProcessInput() {
 	static array<UCHAR, 256> keysBuffers;
 	static array<bool, 256> keysDownStateBuffers;	// 키를 누른상태인지 확인한는 변수, 
 	static array<bool, 256> keysDownBuffers;		// 현재 키가 눌린 순간인지 저장하는 변수
-	static array<bool, 256> keysUpBuffers;		// 현재 키가 눌린 순간인지 저장하는 변수
+	static array<bool, 256> keysUpBuffers;		// 현재 키가 안눌린 순간인지 저장하는 변수
 	bool processedByScene = false;
-
-	
 
 	keysDownBuffers.fill(false);
 	keysUpBuffers.fill(false);
@@ -691,7 +689,7 @@ void GameFramework::ProcessInput() {
 
 		// 씬의 키보드입력 처리
 		if (!pScenes.empty()) {
-			pScenes.top()->ProcessKeyboardInput(keysBuffers, gameTimer.GetTimeElapsed(), pDevice, pCommandList);
+			pScenes.top()->ProcessKeyboardInput(keysDownBuffers, keysBuffers, gameTimer.GetTimeElapsed(), pDevice, pCommandList);
 		}
 	}
 }

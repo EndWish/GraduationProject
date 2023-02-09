@@ -10,7 +10,7 @@ class Sector {
 
 private:
 	vector<Layer> pGameObjectLayers;
-
+	unordered_map<UINT, shared_ptr<GameObject>> pInteractionObjects;
 public:
 	Sector();
 	~Sector();
@@ -19,6 +19,9 @@ public:
 	void AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pGameObject);
 	void RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pGameObject);
 
+	// 상호작용 물체 포인터 삽입 삭제
+	void AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pGameObject);
+	void RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pGameObject);
 	// 객체 찾기
 	shared_ptr<GameObject> FindObject(SectorLayer _sectorLayer, UINT _objectID);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -30,6 +33,8 @@ public:
 	shared_ptr<GameObject> CheckCollisionHorizontal(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, shared_ptr<GameObject> _pFloor);
 	// y방향 충돌을 확인하는 함수
 	shared_ptr<GameObject> CheckCollisionVertical(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, float _timeElapsed = 1.0f);
+
+	pair<float, shared_ptr<GameObject>> GetNearestInteractObject(const XMFLOAT3& _playerPosition, const XMFLOAT3& _playerLookVector);
 };
 
 class Zone {
@@ -47,9 +52,11 @@ private:
 	XMFLOAT3 size;			// 이 공간의 크기
 	XMINT3 div;				// 공간을 나눌 개수
 	XMFLOAT3 sectorSize;
-	vector<vector<vector<Sector>>> sectors;
-	shared_ptr<PlayScene> pScene;
-	unordered_map<string, vector<XMFLOAT4X4>> initVector;
+	vector<vector<vector<Sector>>> sectors; // x,y,z로 분할된 섹터 공간
+	shared_ptr<PlayScene> pScene; // 씬에 대한 포인터
+	unordered_map<string, vector<XMFLOAT4X4>> initVector; // 인스턴싱에 필요한 초기 벡터
+
+	unordered_map<UINT, shared_ptr<GameObject>> pInteractObjTable; // 패킷 도착시 오브젝트를 빠르게 찾기 위한 테이블
 
 public:
 	// 생성자, 소멸자
@@ -73,9 +80,15 @@ public:
 	// 오브젝트 추가
 	void AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos);
 	void AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index);
+	void AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos);
+	void AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index);
+	
 	// 오브젝트 제거
 	void RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos);
 	void RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index);
+	void RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos);
+	void RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index);
+	
 	// 오브젝트 다른 섹터로 이동
 	void HandOffObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _prePos, const XMFLOAT3& _nextPos);
 	void HandOffObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _preIndex, const XMINT3& _nextIndex);
@@ -96,6 +109,13 @@ public:
 	// y방향 충돌을 확인하는 함수
 	shared_ptr<GameObject> CheckCollisionVertical(float _timeElapsed);
 	
+	// 현재 플레이어가 상호작용 가능한 오브젝트를 갱신하는 함수
+	shared_ptr<GameObject> UpdateInteractableObject();
+	// 특정 오브젝트에 대한 상호작용을 수행하는 함수
+	void InteractObject(UINT _objectID);
+	// 현재 플레이어가 위치한 섹터의 인덱스를 업데이트
 	void UpdatePlayerSector();
+
+	void AnimateObjects(float _timeElapsed);
 	void SetPlayer(shared_ptr<Player> _pPlayer) { pPlayer = _pPlayer; };
 };

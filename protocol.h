@@ -195,4 +195,5 @@ struct SC_TOGGLE_DOOR {
 	UINT objectID = 0;
 };
 
+
 #pragma pack(pop)

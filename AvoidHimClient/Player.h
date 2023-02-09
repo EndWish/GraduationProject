@@ -24,10 +24,10 @@ public:
 	void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
-	void Animate(char _collideCheck, double _timeElapsed);
+	void Animate(char _collideCheck, float _timeElapsed);
 	shared_ptr<Camera> GetCamera();
 
-	void UpdateRigidBody(double _timeElapsed);
+	void UpdateRigidBody(float _timeElapsed);
 
 	void Jump(float _force);
 	XMFLOAT3 GetVelocity() const { return velocity; };

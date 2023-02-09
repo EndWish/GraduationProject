@@ -1,6 +1,7 @@
 nInstance(UINT)
 {
 	nameSize(UINT) / fileName (string)
+	objectLayer(char)
 	objectType(char)
 	position(float * 3) / scale(float * 3) / rotation(float * 3)
 }

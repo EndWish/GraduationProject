@@ -41,7 +41,7 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameObject::Render(_pCommandList);
 }
 
-void Player::Animate(char _collideCheck, double _timeElapsed) {
+void Player::Animate(char _collideCheck, float _timeElapsed) {
 
 	sendMovePacketTime += (float)_timeElapsed;
 	// y방향으로 충돌하지 않을 경우
@@ -102,7 +102,7 @@ shared_ptr<Camera> Player::GetCamera() {
 }
 
 
-void Player::UpdateRigidBody(double _timeElapsed) {
+void Player::UpdateRigidBody(float _timeElapsed) {
 
 	if (!landed) {
 		velocity.y -= GRAVITY * _timeElapsed;

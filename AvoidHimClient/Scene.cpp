@@ -169,11 +169,11 @@ void LobbyScene::ReleaseUploadBuffers() {
 
 }
 
-void LobbyScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void LobbyScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 }
 
-void LobbyScene::AnimateObjects(char _collideCheck, double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)  {
+void LobbyScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)  {
 
 }
 
@@ -284,9 +284,7 @@ void LobbyScene::ProcessSocketMessage() {
 		cout << packet->objectID << "\n";
 		break;
 	}
-
 	default:
-
 		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
 	}
 
@@ -474,6 +472,7 @@ void LobbyScene::UpdateRoomText() {
 	pTexts["pageNum"]->SetText(to_wstring(roomPage));
 	// 현재 페이지 기준 방 리스트의 정보로 갱신 해준다.
 	bool lastRoom = false;
+
 	for (UINT i = 0; i < 6; ++i) {
 
 		RoomState state = RoomState::none;
@@ -687,7 +686,7 @@ void PlayScene::ReleaseUploadBuffers() {
 }
 
 
-void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	bool move = false;
 	GameFramework& gameFramework = GameFramework::Instance();
@@ -695,6 +694,11 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, floa
 	float angleSpeed = 720.f * _timeElapsed;
 	float moveSpeed = 5.f * _timeElapsed;
 	XMFLOAT3 moveVector = XMFLOAT3();
+	if (_keyDownBuffer['E']) {
+		// 상호작용 키
+		if(pInteractableObject) 
+			pInteractableObject->QueryInteract();
+	}
 	if (_keysBuffers['A'] & 0xF0) {
 		XMFLOAT3 cameraLeft = pPlayer->GetCamera()->GetWorldRightVector();
 		cameraLeft = Vector3::ScalarProduct(cameraLeft, -1);
@@ -720,13 +724,14 @@ void PlayScene::ProcessKeyboardInput(const array<UCHAR, 256>& _keysBuffers, floa
 	if (move && !Vector3::IsSame(XMFLOAT3(), moveVector)) {
 		moveVector = Vector3::Normalize(moveVector);
 		pPlayer->RotateMoveHorizontal(moveVector, angleSpeed, moveSpeed);
+		pInteractableObject = pZone->UpdateInteractableObject();
 	}
 	if (_keysBuffers[32] & 0xF0) {
 		pPlayer->Jump(500.0f);
 	}
 }
 
-void PlayScene::AnimateObjects(char _collideCheck, double _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	pPlayer->Animate(_collideCheck, _timeElapsed);
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
@@ -741,9 +746,11 @@ void PlayScene::AnimateObjects(char _collideCheck, double _timeElapsed, const Co
 			pLight->UpdateLight();
 		}
 	}
+
+	pZone->AnimateObjects(_timeElapsed);
 }
 
-void PlayScene::ProcessSocketMessage()
+void PlayScene::ProcessSocketMessage() 
 {
 	GameFramework& gameFramework = GameFramework::Instance();
 
@@ -765,6 +772,15 @@ void PlayScene::ProcessSocketMessage()
 		}
 		break;
 	}
+	case SC_PACKET_TYPE::toggleDoor: {
+		SC_TOGGLE_DOOR* packet = GetPacket<SC_TOGGLE_DOOR>();
+		// 해당 오브젝트에 대한 상호작용을 한다.
+		pZone->InteractObject(packet->objectID);
+		cout << "문을 열어라. " << packet->objectID << "\n";
+		break;
+	}
+	default:
+		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
 	}
 
 }
@@ -852,8 +868,6 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	Shader::SetDescriptorHeap(_pCommandList);
 
 	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
-
-	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
 
 	pPlayer->Render(_pCommandList);
 	for (auto& [pid, pOtherPlayer] : pOtherPlayers) {

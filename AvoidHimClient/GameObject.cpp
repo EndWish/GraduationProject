@@ -273,6 +273,12 @@ void GameObject::UpdateObject() {
 	UpdateOOBB();
 }
 
+void GameObject::QueryInteract() {
+}
+
+void GameObject::Interact() {
+}
+
 
 shared_ptr<GameObject> GameObject::FindFrame(const string& _name) {
 	if (name == _name) {
@@ -290,15 +296,12 @@ void GameObject::PrepareAnimate() {
 
 }
 
-void GameObject::Animate(double _timeElapsed) {
+void GameObject::Animate(float _timeElapsed) {
 	for (const auto& pChild : pChildren) {
 		pChild->Animate(_timeElapsed);
 	}
 }
 
-void GameObject::Animate(double _timeElapsed, const XMFLOAT3& _playerPos) {
-
-};
 
 void GameObject::Remove() {
 };
@@ -642,7 +645,7 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 InterpolateMoveGameObject::~InterpolateMoveGameObject() {
 }
 
-void InterpolateMoveGameObject::Animate(double _timeElapsed) {
+void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 	// 서버의 다음 주기가 돌때를 t = 1로 잡고 보간한다
 	t += _timeElapsed / SERVER_PERIOD; 
 	t = min(t, 1.f);
@@ -670,4 +673,72 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 
 	UpdateObject();
 	t = 0;
+}
+
+////////////////////////////////////////////////////////
+
+Door::Door() {
+	openAngle = 0.f;
+	isOpen = false;
+}
+
+Door::~Door() {
+}
+
+void Door::QueryInteract() {
+	CS_TOGGLE_DOOR packet;
+	packet.cid = cid;
+	packet.objectID = id;
+	SendFixedPacket(packet);
+
+}
+
+
+void Door::Interact() {
+	isOpen = !isOpen;
+	cout << "열려라 참깨\n";
+}
+
+void Door::Animate(float _timeElapsed) {
+	float angle = 0.f;
+	if (isOpen && openAngle < 90.f) {
+		// 열리는곳
+		angle = min(180.0f, (90.0f - openAngle) / _timeElapsed);
+		Rotate(XMFLOAT3(0, 1, 0), -angle, _timeElapsed);
+	}
+
+	if (!isOpen && openAngle > 0.f) {
+		angle = -min(180.0f, openAngle / _timeElapsed);
+		Rotate(XMFLOAT3(0, 1, 0), -angle, _timeElapsed);
+	}
+	openAngle += (angle * _timeElapsed);
+	UpdateObject();
+}
+
+
+WaterDispenser::WaterDispenser() {
+}
+
+WaterDispenser::~WaterDispenser() {
+}
+
+void WaterDispenser::QueryInteract() {
+
+}
+
+void WaterDispenser::Interact() {
+}
+
+
+Lever::Lever() {
+}
+
+Lever::~Lever() {
+}
+
+void Lever::QueryInteract() {
+
+}
+
+void Lever::Interact() {
 }

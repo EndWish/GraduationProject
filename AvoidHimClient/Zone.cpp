@@ -26,7 +26,7 @@ void Sector::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<Game
 	}
 }
 void Sector::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pGameObject) {
-	if (_pGameObject == NULL) {
+	if (_pGameObject == nullptr) {
 		cout << format("버그 : 오브젝트 포인터가 NULL입니다.\n");
 		return;
 	}
@@ -36,6 +36,34 @@ void Sector::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<G
 
 	if (it != pGameObjectLayer.end()) {		// 객체가 존재할 경우
 		pGameObjectLayer.erase(it);
+	}
+	else {
+		cout << format("버그 : 해당 ID를 가지는 오브젝트가 없습니다.\n");
+	}
+}
+
+void Sector::AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pGameObject) {
+	auto it = pInteractionObjects.find(_objectID);
+
+	if (it == pInteractionObjects.end()) {		// 객체가 존재하지 않을 경우
+		pInteractionObjects[_objectID] = _pGameObject;	// 추가한다.
+	}
+	else {
+		cout << _objectID << "오류! ";
+		cout << format("버그 : 중복되는 id값이 존재합니다 : {} vs {} \n", (*it).second->GetName(), _pGameObject->GetName());
+	}
+}
+
+void Sector::RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pGameObject) {
+	if (_pGameObject == nullptr) {
+		cout << format("버그 : 오브젝트 포인터가 NULL입니다.\n");
+		return;
+	}
+
+	auto it = pInteractionObjects.find(_objectID);
+
+	if (it != pInteractionObjects.end()) {		// 객체가 존재할 경우
+		pInteractionObjects.erase(it);
 	}
 	else {
 		cout << format("버그 : 해당 ID를 가지는 오브젝트가 없습니다.\n");
@@ -94,7 +122,7 @@ vector<shared_ptr<GameObject>>  Sector::CheckCollisionRotate(BoundingOrientedBox
 shared_ptr<GameObject> Sector::CheckCollisionHorizontal(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, shared_ptr<GameObject> _pFloor) {
 	
 	// 점프없이 올라갈 수 있는 최대 높이값
-	float bias = 0.4f;
+	float bias = 0.2f;
 
 	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		if (_pFloor && _pFloor == pGameObject) continue;
@@ -132,6 +160,23 @@ shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boun
 		}
 	}
 	return nullptr;
+}
+
+pair<float, shared_ptr<GameObject>> Sector::GetNearestInteractObject(const XMFLOAT3& _playerPosition, const XMFLOAT3& _playerLookVector) {
+	float minDist = 1.0f;
+	float dist = 0.f;
+	shared_ptr<GameObject> pNearestObject;
+	for (auto [gid, pGameObject] : pInteractionObjects) {
+
+		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
+		if (boundingBox.Intersects(XMLoadFloat3(&_playerPosition), XMLoadFloat3(&_playerLookVector), dist)) {
+			if (minDist > dist) {
+				minDist = dist;
+				pNearestObject = pGameObject;
+			}
+		}
+	}
+	return make_pair(dist, pNearestObject);
 }
 
 
@@ -179,17 +224,35 @@ void Zone::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameOb
 void Zone::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index) {
 	Sector* sector = GetSector(_index);
 	sector->AddObject(_sectorLayer, _objectID, _pObject);
-
 }
+
+void Zone::AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos) {
+	Sector* sector = GetSector(_pos);
+	sector->AddInteractObject(_objectID, _pObject);
+}
+void Zone::AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index) {
+	Sector* sector = GetSector(_index);
+	sector->AddInteractObject(_objectID, _pObject);
+}
+
 // 오브젝트 제거
 void Zone::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos) {
 	Sector* sector = GetSector(_pos);
 	sector->RemoveObject(_sectorLayer, _objectID, _pObject);
 }
-
 void Zone::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index) {
 	Sector* sector = GetSector(_index);
 	sector->RemoveObject(_sectorLayer, _objectID, _pObject);
+}
+
+void Zone::RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos) {
+	Sector* sector = GetSector(_pos);
+	sector->RemoveInteractObject(_objectID, _pObject);
+}
+
+void Zone::RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index) {
+	Sector* sector = GetSector(_index);
+	sector->RemoveInteractObject(_objectID, _pObject);
 }
 
 // 오브젝트를 다른 섹터로 이동
@@ -252,9 +315,14 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 #ifdef USING_INSTANCING
 	gameFramework.GetShader("InstancingShader")->PrepareRender(_pCommandList);
 	GameObject::RenderInstanceObjects(_pCommandList);
+	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
+	for (auto [objectID, pGameObject] : pInteractObjTable) {
+		pGameObject->Render(_pCommandList);
+	}
 	//gameFramework.GetShader("SkinnedShader")->PrepareRender(_pCommandList);
 
 #else
+	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
 	for (auto& divx : sectors) {
 		for (auto& divy : divx) {
 			for (auto& sector : divy) {
@@ -351,7 +419,22 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		//	break;
 		//}
 		case SectorLayer::obstacle: {
-			shared_ptr<GameObject> pGameObject = make_shared<GameObject>();
+			shared_ptr<GameObject> pGameObject;
+
+			if(objType == ObjectType::door) 
+				pGameObject = make_shared<Door>();
+			else if (objType == ObjectType::lever)
+				pGameObject = make_shared<Lever>();
+			else if (objType == ObjectType::waterDispenser)
+				pGameObject = make_shared<WaterDispenser>();
+
+			if (objType == ObjectType::wall)
+				pGameObject = make_shared<GameObject>();
+			else {
+				AddInteractObject(objectID, pGameObject, GetIndex(position));
+				pInteractObjTable[objectID] = pGameObject;
+			}
+
 			pGameObject->Create(objName, _pDevice, _pCommandList);
 			pGameObject->SetLocalPosition(position);
 			pGameObject->SetLocalScale(scale);
@@ -361,9 +444,12 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 
 			AddObject(objLayer, objectID, pGameObject, GetIndex(position));
 			// 쉐이더에서는 읽는 기준이 달라지므로 전치행렬로 바꾸어준다. 
-			world = pGameObject->GetWorldTransform();
-			XMStoreFloat4x4(&temp, XMMatrixTranspose(XMLoadFloat4x4(&world)));
-			instanceDatas[objName].push_back(temp);
+
+			if (objType == ObjectType::none || objType == ObjectType::wall) {
+				world = pGameObject->GetWorldTransform();
+				XMStoreFloat4x4(&temp, XMMatrixTranspose(XMLoadFloat4x4(&world)));
+				instanceDatas[objName].push_back(temp);
+			}
 			break;
 		}
 		}
@@ -435,8 +521,41 @@ shared_ptr<GameObject> Zone::CheckCollisionVertical(float _timeElapsed) {
 void Zone::UpdatePlayerSector() {
 	XMINT3 prevIndex = pindex;
 	pindex = GetIndex(pPlayer->GetWorldPosition());
-
-	
 }
 
+void Zone::AnimateObjects(float _timeElapsed) {
+	for (auto [objectID, pGameObject] : pInteractObjTable) {
+		pGameObject->Animate(_timeElapsed);
+	}
+}
+
+shared_ptr<GameObject> Zone::UpdateInteractableObject() {
+	shared_ptr<GameObject> nearestObject;
+	float minDist = FLT_MAX;
+
+	vector<Sector*> checkSector = GetAroundSectors(pindex);
+	// 섹터마다 플레이어가 바라보고 있으면서 가장 가까운 오브젝트를 반환
+	for (auto& sector : checkSector) {
+
+		auto [dist, pGameObject] = sector->GetNearestInteractObject(pPlayer->GetWorldPosition(), pPlayer->GetWorldLookVector());
+		if (pGameObject) {
+			if (minDist > dist) {
+				minDist = dist;
+				nearestObject = pGameObject;
+
+			}
+		}
+
+	}
+	// 바라보는 방향의 가장 가까운 오브젝트를 반환한다.
+	return nearestObject;
+}
+
+void Zone::InteractObject(UINT _objectID) {
+	shared_ptr<GameObject> pGameObject = pInteractObjTable[_objectID];
+	if (pGameObject)
+		pGameObject->Interact();
+	else
+		cout << "InteractObject Null Error. objID : " << _objectID << "\n";
+}
 
