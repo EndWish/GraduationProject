@@ -44,9 +44,10 @@ public:
 	void LoadingComplete(UINT _clientID);
 	void ProcessLoadingComplete();
 
-	void FrameAdvance();
-	bool ApplyCSPlayerInfo(CS_PLAYER_INFO& _packet);
+	void FrameAdvance(float _timeElapsed);
+	bool ApplyCSPlayerInfo(const CS_PLAYER_INFO& _packet);
 	void ApplyToggleDoor(UINT _objectID);
+	void ApplyUseWaterDispenser(const CS_USE_WATER_DISPENSER& _packet);
 
 };
 

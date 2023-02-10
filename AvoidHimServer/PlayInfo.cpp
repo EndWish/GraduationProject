@@ -170,7 +170,7 @@ void PlayInfo::ProcessLoadingComplete() {
 	}
 }
 
-void PlayInfo::FrameAdvance() {
+void PlayInfo::FrameAdvance(float _timeElapsed) {
 	if (!allPlayerLoadingComplete)
 		return;
 
@@ -195,9 +195,14 @@ void PlayInfo::FrameAdvance() {
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 	}
 
+	// 정수기의 쿨타임을 줄인다.
+	for (auto [objectID, pObject] : pWaterDispensers) {
+		pObject->SubtractCoolTime(_timeElapsed);
+	}
+
 }
 
-bool PlayInfo::ApplyCSPlayerInfo(CS_PLAYER_INFO& _packet) {
+bool PlayInfo::ApplyCSPlayerInfo(const CS_PLAYER_INFO& _packet) {
 	GameObject* pPlayer = pPlayers[_packet.objectID];
 	//[수정] aniTime을 적용시켜 준다.
 	pPlayer->SetPosition(_packet.position);
@@ -226,3 +231,17 @@ void PlayInfo::ApplyToggleDoor(UINT _objectID) {
 
 }
 
+void PlayInfo::ApplyUseWaterDispenser(const CS_USE_WATER_DISPENSER& _packet) {
+	WaterDispenser* pWaterDispenser = pWaterDispensers[_packet.objectID];
+
+	if (pWaterDispenser->GetCoolTime() <= 0) {	// 정수기를 사용할 수 있을 경우
+		pWaterDispenser->SetCoolTime(WATER_DISPENSER_COOLTIME);
+		SC_USE_WATER_DISPENSER sendPacket;
+		sendPacket.playerObjectID = _packet.playerObjectID;
+		sendPacket.waterDispenserObjectID = _packet.objectID;
+
+		for (auto [participant, pClient] : participants) {
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+	}
+}

@@ -16,17 +16,18 @@ using namespace DirectX;
 
 #define MAX_PARTICIPANT 5
 #define SERVER_PERIOD (1.f / 10)
+#define WATER_DISPENSER_COOLTIME 10.f
 ///////////////////////////////
 
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
-	toggleDoor
+	toggleDoor, useWaterDispenser
 };
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail, 
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID, 
-	playersInfo, toggleDoor
+	playersInfo, toggleDoor, useWaterDispenser
 
 };
 
@@ -105,6 +106,12 @@ struct CS_ANICLIP_CHANGE {
 struct CS_TOGGLE_DOOR {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::toggleDoor;
 	UINT cid = 0;
+	UINT objectID = 0;
+};
+struct CS_USE_WATER_DISPENSER {	// 해당 정수기를 사용하겠다고 보냄
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::useWaterDispenser;
+	UINT cid = 0;
+	UINT playerObjectID = 0;
 	UINT objectID = 0;
 };
 
@@ -194,6 +201,12 @@ struct SC_ANICLIP_CHANGE {
 struct SC_TOGGLE_DOOR {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::toggleDoor;
 	UINT objectID = 0;
+};
+
+struct SC_USE_WATER_DISPENSER {	// 해당 정수기를 cid 플레이어가 사용했다고 보냄
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::useWaterDispenser;
+	UINT playerObjectID = 0;
+	UINT waterDispenserObjectID = 0;
 };
 
 

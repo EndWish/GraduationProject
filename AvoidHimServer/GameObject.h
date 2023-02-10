@@ -55,6 +55,7 @@ public:
 
 	bool CheckCollision(GameObject* pGameObject);
 
+	virtual void Animate(float _timeElapsed);
 	
 };
 
@@ -91,6 +92,9 @@ public:
 
 	float GetCoolTime() { return coolTime; }
 	void SetCoolTime(bool _coolTime) { coolTime = _coolTime; }
+	void SubtractCoolTime(float _time) { coolTime -= _time; }
+
+	virtual void Animate(float _timeElapsed);
 
 };
 

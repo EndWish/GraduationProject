@@ -289,6 +289,16 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
 
         break;
     }
+    case CS_PACKET_TYPE::useWaterDispenser: {
+        CS_USE_WATER_DISPENSER recvPacket;
+        RecvContents(recvPacket);
+        cout << format("CS_USE_WATER_DISPENSER : cid - {}, objectID - {} \n", recvPacket.cid, recvPacket.objectID);
+
+        PlayInfo* pPlayInfo = pClients[recvPacket.cid]->GetCurrentPlayInfo();
+        pPlayInfo->ApplyUseWaterDispenser(recvPacket);
+
+        break;
+    }
     default:
         cout << format("잘못된 패킷 번호 : {}, cid - {}\n", (int)packetType, *((UINT*)(buffer.data() + sizeof(CS_PACKET_TYPE))) );
         break;
@@ -307,7 +317,7 @@ void ServerFramework::FrameAdvance() {
         return;
     
     for (auto [playInfoID, pPlayInfo] : pPlayInfos)
-        pPlayInfo->FrameAdvance();
+        pPlayInfo->FrameAdvance(timeElapsed);
 
     //// FPS 표시
     //wstring titleString = L"FPS : " + to_wstring(timer.GetFPS());

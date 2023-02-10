@@ -765,6 +765,18 @@ void PlayScene::ProcessSocketMessage()
 		cout << "문을 열어라. " << packet->objectID << "\n";
 		break;
 	}
+	case SC_PACKET_TYPE::useWaterDispenser: {
+		SC_USE_WATER_DISPENSER* packet = GetPacket<SC_USE_WATER_DISPENSER>();
+		// 해당 오브젝트에 대한 상호작용을 한다.
+		cout << "정수기ID" << packet->waterDispenserObjectID << "\n";
+		pZone->InteractObject(packet->waterDispenserObjectID);
+		cout << "objectID : " << packet->playerObjectID << "가 정수기를 사용했다.\n";
+		if (packet->playerObjectID == myObjectID) {	// 자신이 정수기를 사용했을 경우
+			// 스테미너를 충전한다.
+			pPlayer->SetMP(100.f);
+		}
+		break;
+	}
 	default:
 		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
 	}

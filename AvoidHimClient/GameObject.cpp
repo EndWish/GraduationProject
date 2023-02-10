@@ -674,7 +674,8 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 	t = 0;
 }
 
-////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///
 
 Door::Door(ObjectType _type) {
 	isLeft = _type == ObjectType::Ldoor ? true : false;
@@ -718,19 +719,42 @@ void Door::Animate(float _timeElapsed) {
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+///
+
 WaterDispenser::WaterDispenser() {
+	float coolTime = 0.f;
+
 }
 
 WaterDispenser::~WaterDispenser() {
 }
 
 void WaterDispenser::QueryInteract() {
-
+	if (coolTime <= 0) {
+		CS_USE_WATER_DISPENSER sendPacket;
+		sendPacket.cid = cid;
+		sendPacket.playerObjectID = myObjectID;
+		sendPacket.objectID = id;
+		SendFixedPacket(sendPacket);
+	}
+	else {
+		cout << "정수기 재사용 대기시간 : " << coolTime << "\n";
+	}
 }
 
 void WaterDispenser::Interact() {
+	coolTime = WATER_DISPENSER_COOLTIME;
 }
 
+void WaterDispenser::Animate(float _timeElapsed) {
+	if (0 < coolTime) {
+		coolTime -= _timeElapsed;
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///
 
 Lever::Lever() {
 }

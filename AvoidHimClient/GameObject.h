@@ -192,6 +192,7 @@ public:
 };
 
 class GameObjectManager {
+private:
 	unordered_map<string, shared_ptr<GameObject>> storage;
 	unordered_map<string, ComPtr<ID3D12Resource>> instanceUploadBuffers;
 
@@ -236,13 +237,17 @@ public:
 };
 
 class WaterDispenser : public GameObject {
-private:
+protected:
+	float coolTime;
 
 public:
 	WaterDispenser();
 	~WaterDispenser();
 	virtual void QueryInteract();
 	virtual void Interact();
+
+	virtual void Animate(float _timeElapsed);
+
 };
 
 class Lever : public GameObject {

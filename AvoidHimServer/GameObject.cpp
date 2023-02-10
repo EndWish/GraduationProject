@@ -94,6 +94,9 @@ bool GameObject::CheckCollision(GameObject* pGameObject) {
 	return worldBouningBox.Intersects(pGameObject->worldBouningBox);
 }
 
+void GameObject::Animate(float _timeElapsed) {
+
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Door
@@ -129,6 +132,10 @@ WaterDispenser& WaterDispenser::operator=(const WaterDispenser& _other) {
 }
 WaterDispenser::~WaterDispenser() {
 
+}
+void WaterDispenser::Animate(float _timeElapsed) {
+	if(0 < coolTime)
+		coolTime -= _timeElapsed;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
