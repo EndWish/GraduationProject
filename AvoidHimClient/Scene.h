@@ -12,6 +12,7 @@ protected:
 	unordered_map<string, shared_ptr<Button>> pButtons;
 	unordered_map<string, shared_ptr<TextBox>> pTexts;
 
+	unordered_map<string, shared_ptr<Image2D>> pUIs;
 
 public:
 	Scene();
@@ -60,7 +61,6 @@ private:
 	D3D12_VIEWPORT viewPort;
 	D3D12_RECT scissorRect;
 
-	unordered_map<string, shared_ptr<Image2D>> pUIs;
 	vector<SC_SUB_ROOMLIST_INFO> roomList;
 
 	// 미리 로딩을 해놓은 후 게임이 시작되었을 때 push 한다.
@@ -91,6 +91,7 @@ public:
 class PlayScene : public Scene, public enable_shared_from_this<PlayScene> {
 
 private:
+	float remainTime;
 
 	shared_ptr<FrustumMesh> pFrustumMesh;
 
@@ -110,6 +111,8 @@ private:
 	
 	// 현재 상호작용 가능한 오브젝트의 포인터
 	shared_ptr<GameObject> pInteractableObject;
+
+	
 public:
 	PlayScene();
 	~PlayScene();
@@ -120,10 +123,13 @@ public:
 	virtual void AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ProcessSocketMessage();
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
+	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
 	virtual void ReActButton(shared_ptr<Button> _pButton);
 	virtual void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);
 	virtual void ProcessCursorMove(XMFLOAT2 _delta);
 
+	void UpdateTimeText();
 	void SetPlayer(shared_ptr<Player>& _pPlayer);
 	virtual char CheckCollision(float _timeElapsed);
 	void AddLight(const shared_ptr<Light>& _pLight);

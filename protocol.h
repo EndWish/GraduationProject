@@ -15,7 +15,7 @@
 using namespace DirectX;
 
 #define MAX_PARTICIPANT 5
-#define SERVER_PERIOD (1.f / 30)
+#define SERVER_PERIOD (1.f / 10)
 ///////////////////////////////
 
 enum class CS_PACKET_TYPE : char {
@@ -50,7 +50,8 @@ enum class SectorLayer : char {
 enum class ObjectType : char {
 	none,
 	wall,
-	door,
+	Rdoor,
+	Ldoor,
 	lever,
 	waterDispenser,
 	studentStartPosition,

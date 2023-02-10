@@ -421,8 +421,8 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		case SectorLayer::obstacle: {
 			shared_ptr<GameObject> pGameObject;
 
-			if(objType == ObjectType::door) 
-				pGameObject = make_shared<Door>();
+			if(objType == ObjectType::Rdoor || objType == ObjectType::Ldoor) 
+				pGameObject = make_shared<Door>(objType);
 			else if (objType == ObjectType::lever)
 				pGameObject = make_shared<Lever>();
 			else if (objType == ObjectType::waterDispenser)

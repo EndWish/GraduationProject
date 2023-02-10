@@ -86,17 +86,22 @@ void ServerFramework::ProcessSocketMessage(HWND _hWnd, UINT _message, WPARAM _wP
         SendContents(pNewClient->GetSocket(), pNewClient->GetRemainBuffer(), sendPacket);
         break;
     }
-    case FD_READ:
+    case FD_READ: {
         ProcessRecv((SOCKET)_wParam);
         break;
-    case FD_WRITE:  // https://m.blog.naver.com/PostView.naver?isHttpsRedirect=true&blogId=kkum04&logNo=150048096101
-        
-        cout << "FD_WRITE - send Byte : " << send((SOCKET)_wParam, pClients[socketAndIdTable[(SOCKET)_wParam]]->GetRemainBuffer().data(), bufferSize, 0) << "\n";
+    }
+    case FD_WRITE: {  // https://m.blog.naver.com/PostView.naver?isHttpsRedirect=true&blogId=kkum04&logNo=150048096101 
+        auto& remainBuffer = pClients[socketAndIdTable[(SOCKET)_wParam]]->GetRemainBuffer();
+        if (remainBuffer[0] != 0)
+            cout << "FD_WRITE - send Byte : " << send((SOCKET)_wParam, remainBuffer.data(), bufferSize, 0) << "\n";
         break;
+    }
 
-    case FD_CLOSE:
+    case FD_CLOSE: {
         RemoveClient(SocketToID((SOCKET)_wParam));
         break;
+    }
+        
     }
 }
 void ServerFramework::ProcessRecv(SOCKET _socket) {
@@ -449,8 +454,9 @@ void ServerFramework::LoadMapFile() {
         switch (objType) {
 
             // break;가 없는 것에 주의
-        case ObjectType::door:
-            if (objType == ObjectType::door)
+        case ObjectType::Ldoor:
+        case ObjectType::Rdoor:
+            if (objType == ObjectType::Ldoor || objType == ObjectType::Rdoor)
                 pObject = new Door();
         case ObjectType::lever:
             if (objType == ObjectType::lever)

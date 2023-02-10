@@ -74,71 +74,36 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	gameFramework.GetTextureManager().GetTexture("2DUI_host", _pDevice, _pCommandList);
 	gameFramework.GetTextureManager().GetTexture("2DUI_roomInfo", _pDevice, _pCommandList);
 	
-	string name = "2DUI_title";
-	pBackGround = make_shared<Image2D>(name, XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList);
+	pBackGround = make_shared<Image2D>("2DUI_title", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList);
 
 
-	shared_ptr<Image2D> pImg;
-	name = "2DUI_ready";
-	pImg = make_shared<Image2D>(name, XMFLOAT2(0.285f, 0.142f), XMFLOAT2(0.08f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	pUIs["2DUI_ready_1"] = pImg;
-	pImg = make_shared<Image2D>(name, XMFLOAT2(0.285f, 0.142f), XMFLOAT2(0.47f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	pUIs["2DUI_ready_2"] = pImg;
-	pImg = make_shared<Image2D>(name, XMFLOAT2(0.285f, 0.142f), XMFLOAT2(0.856f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	pUIs["2DUI_ready_3"] = pImg;
-	pImg = make_shared<Image2D>(name, XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.244f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	pUIs["2DUI_ready_4"] = pImg;
-	pImg = make_shared<Image2D>(name, XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.632f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	pUIs["2DUI_ready_5"] = pImg;
+	pUIs["2DUI_ready_1"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(0.08f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+	pUIs["2DUI_ready_2"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(0.47f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+	pUIs["2DUI_ready_3"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(0.856f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+	pUIs["2DUI_ready_4"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.244f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);;
+	pUIs["2DUI_ready_5"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.632f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);;
 
-	name = "2DUI_startButton";
-	shared_ptr<Button> pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.2f), ButtonType::start, _pDevice, _pCommandList);
-	pButtons["startButton"] = pButton;
 
-	name = "2DUI_optionButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.4f), ButtonType::option, _pDevice, _pCommandList);
-	pButtons["optionButton"] = pButton;
+	pButtons["startButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.2f), ButtonType::start, _pDevice, _pCommandList);;
 
-	name = "2DUI_exitButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.6f), ButtonType::exit, _pDevice, _pCommandList);
-	pButtons["exitButton"] = pButton;
+	pButtons["optionButton"] = make_shared<Button>("2DUI_optionButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.4f), ButtonType::option, _pDevice, _pCommandList);;
+
+	pButtons["exitButton"] = make_shared<Button>("2DUI_exitButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.6f), ButtonType::exit, _pDevice, _pCommandList);;
 
 	/////////////////////////////////
 
+	pButtons["RoomButton_1"] = make_shared<RoomButton>("2DUI_title", XMFLOAT2(0.4f, 0.2f), XMFLOAT2(0.5f, 0.4f), ButtonType::room, _pDevice, _pCommandList, false);
+	pButtons["RoomButton_2"] = make_shared<RoomButton>("2DUI_title", XMFLOAT2(0.4f, 0.2f), XMFLOAT2(0.5f, 0.7f), ButtonType::room, _pDevice, _pCommandList, false);
+	pButtons["RoomButton_3"] = make_shared<RoomButton>("2DUI_title", XMFLOAT2(0.4f, 0.2f), XMFLOAT2(0.5f, 1.0f), ButtonType::room, _pDevice, _pCommandList, false);
+	pButtons["RoomButton_4"] = make_shared<RoomButton>("2DUI_title", XMFLOAT2(0.4f, 0.2f), XMFLOAT2(1.1f, 0.4f), ButtonType::room, _pDevice, _pCommandList, false);
+	pButtons["RoomButton_5"] = make_shared<RoomButton>("2DUI_title", XMFLOAT2(0.4f, 0.2f), XMFLOAT2(1.1f, 0.7f), ButtonType::room, _pDevice, _pCommandList, false);
+	pButtons["RoomButton_6"] = make_shared<RoomButton>("2DUI_title", XMFLOAT2(0.4f, 0.2f), XMFLOAT2(1.1f, 1.0f), ButtonType::room, _pDevice, _pCommandList, false);
 
-	name = "2DUI_title";
-	pButton = make_shared<RoomButton>(name, XMFLOAT2(0.4f, 0.2f), XMFLOAT2(0.5f, 0.4f), ButtonType::room, _pDevice, _pCommandList, false);
-	pButtons["RoomButton_1"] = pButton;
-	pButton = make_shared<RoomButton>(name, XMFLOAT2(0.4f, 0.2f), XMFLOAT2(0.5f, 0.7f), ButtonType::room, _pDevice, _pCommandList, false);
-	pButtons["RoomButton_2"] = pButton;
-	pButton = make_shared<RoomButton>(name, XMFLOAT2(0.4f, 0.2f), XMFLOAT2(0.5f, 1.0f), ButtonType::room, _pDevice, _pCommandList, false);
-	pButtons["RoomButton_3"] = pButton;
-	pButton = make_shared<RoomButton>(name, XMFLOAT2(0.4f, 0.2f), XMFLOAT2(1.1f, 0.4f), ButtonType::room, _pDevice, _pCommandList, false);
-	pButtons["RoomButton_4"] = pButton;
-	pButton = make_shared<RoomButton>(name, XMFLOAT2(0.4f, 0.2f), XMFLOAT2(1.1f, 0.7f), ButtonType::room, _pDevice, _pCommandList, false);
-	pButtons["RoomButton_5"] = pButton;
-	pButton = make_shared<RoomButton>(name, XMFLOAT2(0.4f, 0.2f), XMFLOAT2(1.1f, 1.0f), ButtonType::room, _pDevice, _pCommandList, false);
-	pButtons["RoomButton_6"] = pButton;
-
-	name = "2DUI_refreshRoomButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.7f, 0.1f), ButtonType::refreshRoomList, _pDevice, _pCommandList, false);
-	pButtons["refreshRoomButton"] = pButton;
-
-	name = "2DUI_leftArrowButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.2f, 0.1f), XMFLOAT2(0.7f, 1.3f), ButtonType::prevRoomPage, _pDevice, _pCommandList, false);
-	pButtons["prevRoomButton"] = pButton;
-
-	name = "2DUI_rightArrowButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.2f, 0.1f), XMFLOAT2(1.1f, 1.3f), ButtonType::nextRoomPage, _pDevice, _pCommandList, false);
-	pButtons["nextRoomButton"] = pButton;
-
-	name = "2DUI_titleButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::title, _pDevice, _pCommandList, false);
-	pButtons["titleButton"] = pButton;
-
-	name = "2DUI_makeRoom";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::makeRoom, _pDevice, _pCommandList, false);
-	pButtons["makeRoom"] = pButton;
+	pButtons["refreshRoomButton"] = make_shared<Button>("2DUI_refreshRoomButton", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.7f, 0.1f), ButtonType::refreshRoomList, _pDevice, _pCommandList, false);;
+	pButtons["prevRoomButton"] = make_shared<Button>("2DUI_leftArrowButton", XMFLOAT2(0.2f, 0.1f), XMFLOAT2(0.7f, 1.3f), ButtonType::prevRoomPage, _pDevice, _pCommandList, false);;
+	pButtons["nextRoomButton"] = make_shared<Button>("2DUI_rightArrowButton", XMFLOAT2(0.2f, 0.1f), XMFLOAT2(1.1f, 1.3f), ButtonType::nextRoomPage, _pDevice, _pCommandList, false);;
+	pButtons["titleButton"] = make_shared<Button>("2DUI_titleButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::title, _pDevice, _pCommandList, false);;
+	pButtons["makeRoom"] = make_shared<Button>("2DUI_makeRoom", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::makeRoom, _pDevice, _pCommandList, false);;
 
 	shared_ptr<TextBox> pText = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 1.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, false);
 	pTexts["pageNum"] = pText;
@@ -146,21 +111,11 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	////////////////////////////////////
 
 
-	name = "2DUI_startButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::gameStart, _pDevice, _pCommandList, false);
-	pButtons["gameStartButton"] = pButton;
 
-	name = "2DUI_readyButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::ready, _pDevice, _pCommandList, false);
-	pButtons["readyButton"] = pButton;
-
-	name = "2DUI_readyCancelButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::readyCancel, _pDevice, _pCommandList, false);
-	pButtons["readyCancelButton"] = pButton;
-
-	name = "2DUI_quitRoomButton";
-	pButton = make_shared<Button>(name, XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::quitRoom, _pDevice, _pCommandList, false);
-	pButtons["quitRoomButton"] = pButton;
+	pButtons["gameStartButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::gameStart, _pDevice, _pCommandList, false);;
+	pButtons["readyButton"] = make_shared<Button>("2DUI_readyButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::ready, _pDevice, _pCommandList, false);;
+	pButtons["readyCancelButton"] = make_shared<Button>("2DUI_readyCancelButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::readyCancel, _pDevice, _pCommandList, false);;
+	pButtons["quitRoomButton"] = make_shared<Button>("2DUI_quitRoomButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::quitRoom, _pDevice, _pCommandList, false);;
 
 
 }
@@ -537,10 +492,18 @@ void LobbyScene::UpdateReadyState() {
 
 PlayScene::PlayScene() {
 	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	remainTime = 1000.f;
+	professorObjectID = 0;
 }
 
 PlayScene::~PlayScene() {
 	pLightsBuffer->Unmap(0, NULL);
+}
+
+void PlayScene::UpdateTimeText() {
+	UINT UINTTime = remainTime;
+
+	pTexts["remainTime"]->SetText(to_wstring(UINTTime / 60) + L" : " + to_wstring(UINTTime % 60));
 }
 
 void PlayScene::SetPlayer(shared_ptr<Player>& _pPlayer) {
@@ -610,9 +573,20 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
+	gameFramework.GetTextureManager().GetTexture("2DUI_hp", _pDevice, _pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_stamina", _pDevice, _pCommandList);
+	gameFramework.GetTextureManager().GetTexture("2DUI_staminaFrame", _pDevice, _pCommandList);
+	
+	shared_ptr<Image2D> pImg;
+	pUIs["2DUI_hp"] = make_shared<Image2D>("2DUI_hp", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+	pUIs["2DUI_stamina"] = make_shared<Image2D>("2DUI_stamina", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+	pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+	
+	 
+	pTexts["remainTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.1f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, true);
+
 
 	SC_GAME_START* recvPacket = GetPacket<SC_GAME_START>();
-
 
 	// Zone을 생성 후 맵파일을 읽어 오브젝트들을 로드한다.
 	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
@@ -691,14 +665,21 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 	bool move = false;
 	GameFramework& gameFramework = GameFramework::Instance();
 	// 등속운동은 미리 timeElapsed를 곱해준다
-	float angleSpeed = 720.f * _timeElapsed;
-	float moveSpeed = 5.f * _timeElapsed;
-	XMFLOAT3 moveVector = XMFLOAT3();
+
+
 	if (_keyDownBuffer['E']) {
 		// 상호작용 키
-		if(pInteractableObject) 
+		if (pInteractableObject)
 			pInteractableObject->QueryInteract();
 	}
+	if (_keysBuffers[VK_SHIFT] & 0xF0) {
+		pPlayer->Dash(_timeElapsed);
+	} 
+
+	float angleSpeed = 720.f * _timeElapsed;
+	float moveSpeed = pPlayer->GetSpeed() * _timeElapsed;
+	XMFLOAT3 moveVector = XMFLOAT3();
+
 	if (_keysBuffers['A'] & 0xF0) {
 		XMFLOAT3 cameraLeft = pPlayer->GetCamera()->GetWorldRightVector();
 		cameraLeft = Vector3::ScalarProduct(cameraLeft, -1);
@@ -726,7 +707,7 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		pPlayer->RotateMoveHorizontal(moveVector, angleSpeed, moveSpeed);
 		pInteractableObject = pZone->UpdateInteractableObject();
 	}
-	if (_keysBuffers[32] & 0xF0) {
+	if (_keysBuffers[VK_SPACE] & 0xF0) {
 		pPlayer->Jump(500.0f);
 	}
 }
@@ -738,7 +719,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		pOtherPlayer->Animate(_timeElapsed);
 	}
 
-	pZone->UpdatePlayerSector();
+	pZone->UpdatePlayerSector( );
 	camera->SetPlayerPos(pPlayer->GetWorldPosition());
 
 	for (auto& pLight : pLights) {
@@ -747,7 +728,12 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		}
 	}
 
+	// 시간을 갱신한다.
+	UpdateTimeText();
+	remainTime -= _timeElapsed;
+
 	pZone->AnimateObjects(_timeElapsed);
+	pUIs["2DUI_stamina"]->SetSizeUV(XMFLOAT2(pPlayer->GetMP() / 100 , 1.f));
 }
 
 void PlayScene::ProcessSocketMessage() 
@@ -874,9 +860,29 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 		pOtherPlayer->Render(_pCommandList);
 	}
 
+	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);
+
+	for (auto [name, pUI] : pUIs) {
+		pUI->Render(_pCommandList);
+	}
+	for (auto [name, pButton] : pButtons) {
+		pButton->Render(_pCommandList);
+	}
 	//gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
 	//pFrustumMesh->UpdateMesh(camera->GetBoundingFrustum());
 	//pFrustumMesh->Render(_pCommandList);
+}
+
+void PlayScene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+
+	// 글자는 Render과정이 전부 끝난 후에 가능
+	for (auto [name, pButton] : pButtons) {
+		pButton->PostRender();
+	}
+
+	for (auto [name, pText] : pTexts) {
+		pText->Render();
+	}
 }
 
 void PlayScene::AddLight(const shared_ptr<Light>& _pLight) {

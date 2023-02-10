@@ -55,7 +55,8 @@ void PlayInfo::Init(UINT _roomID) {
 	for (auto& [objectID, pObject] : initObjects) {
 		GameObject* pNewObject = nullptr;// = new GameObject(*pObject);
 		switch (pObject->GetType()) {
-		case ObjectType::door: { 
+		case ObjectType::Rdoor:
+		case ObjectType::Ldoor: { 
 			pNewObject = new Door(*static_cast<Door*>(pObject));
 			pDoors.emplace(pNewObject->GetID(), static_cast<Door*>(pNewObject));
 			break; 

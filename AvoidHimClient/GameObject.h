@@ -223,10 +223,11 @@ public:
 
 class Door : public GameObject {
 private:
+	bool isLeft;
 	float openAngle;
 	bool isOpen;
 public:
-	Door();
+	Door(ObjectType _type);
 	~Door();
 	virtual void QueryInteract();
 	virtual void Interact();

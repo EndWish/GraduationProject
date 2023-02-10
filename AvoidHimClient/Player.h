@@ -6,8 +6,16 @@
 class Player : public GameObject {
 //class Player : public GameObject {
 private:
+	// 0~100
+	float hp;
+	float mp;
+	// 자연 마나 회복량
+	float mpTick;
+
 	bool landed;
 	float mass;
+	float speed;
+
 	XMFLOAT3 velocity;
 	XMFLOAT4 rotation;
 
@@ -45,4 +53,16 @@ public:
 	void AddRotation(XMFLOAT4& _rotation);
 	
 	virtual void RotateMoveHorizontal(XMFLOAT3 _dir, float _angularSpeed, float _moveSpeed);
+	float GetHP() const { return hp; };
+	float GetMP() const { return mp; };
+	
+	void SetHP(float _hp) { hp = _hp; };
+	void SetMP(float _mp) { mp = _mp; };
+
+	void AddHP(float _hp) { hp += _hp; };
+	void AddMP(float _mp) { mp += _mp; };
+
+	float GetSpeed() const { return speed; };
+	void Dash(float _timeElapsed);
+
 };

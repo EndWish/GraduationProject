@@ -128,7 +128,6 @@ void GameObject::Revolve(const XMFLOAT3& _axis, float _angle) {
 	localPosition = Vector3::Transform(localPosition, rotationMatrix);
 }
 void GameObject::SynchronousRotation(const XMFLOAT3& _axis, float _angle) {
-
 	Revolve(_axis, _angle);
 	localRotation = Vector4::QuaternionMultiply(localRotation, Vector4::QuaternionRotation(_axis, _angle));
 }
@@ -677,7 +676,8 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 
 ////////////////////////////////////////////////////////
 
-Door::Door() {
+Door::Door(ObjectType _type) {
+	isLeft = _type == ObjectType::Ldoor ? true : false;
 	openAngle = 0.f;
 	isOpen = false;
 }
@@ -701,15 +701,17 @@ void Door::Interact() {
 
 void Door::Animate(float _timeElapsed) {
 	float angle = 0.f;
+	float dir = isLeft ? 1 : -1;
+	
 	if (isOpen && openAngle < 90.f) {
 		// 열리는곳
 		angle = min(180.0f, (90.0f - openAngle) / _timeElapsed);
-		Rotate(XMFLOAT3(0, 1, 0), -angle, _timeElapsed);
+		Rotate(XMFLOAT3(0, 1, 0), -angle * dir, _timeElapsed);
 	}
 
 	if (!isOpen && openAngle > 0.f) {
 		angle = -min(180.0f, openAngle / _timeElapsed);
-		Rotate(XMFLOAT3(0, 1, 0), -angle, _timeElapsed);
+		Rotate(XMFLOAT3(0, 1, 0), -angle * dir, _timeElapsed);
 	}
 	openAngle += (angle * _timeElapsed);
 	UpdateObject();

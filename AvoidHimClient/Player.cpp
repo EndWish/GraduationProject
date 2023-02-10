@@ -11,6 +11,11 @@ Player::Player() {
 	knockBack = XMFLOAT3();
 	rotation = Vector4::QuaternionIdentity();
 	sendMovePacketTime = 0.f;
+	speed = 5.0f;
+
+	hp = 100.0f;
+	mp = 100.0f;
+	mpTick = 1.f;
 }
 
 Player::~Player() {
@@ -42,6 +47,17 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 }
 
 void Player::Animate(char _collideCheck, float _timeElapsed) {
+	
+	if (speed > 5.f) {
+		// 속도 초기화
+		speed = 5.f;
+	}
+	else {
+		// 스태미너 회복
+		mp += mpTick * _timeElapsed;
+		mp = min(100.0f, mp);
+	}
+
 
 	sendMovePacketTime += (float)_timeElapsed;
 	// y방향으로 충돌하지 않을 경우
@@ -142,4 +158,14 @@ void Player::RotateMoveHorizontal(XMFLOAT3 _dir, float _angularSpeed, float _mov
 	XMFLOAT4 rot = Vector4::QuaternionRotation(axis, min(_angularSpeed, minAngle));
 	AddRotation(rot);
 	AddFrontVelocity(_moveSpeed);
+}
+
+void Player::Dash(float _timeElapsed) {
+	float costPerSec = 10.0f;
+
+	if (mp > (costPerSec * _timeElapsed))
+	{
+		speed = 7.5f;
+		mp -= costPerSec * _timeElapsed;
+	}
 }
