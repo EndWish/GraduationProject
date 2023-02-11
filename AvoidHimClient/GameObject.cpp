@@ -638,7 +638,11 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	nextRotation = Vector4::QuaternionIdentity();
 	nextScale = XMFLOAT3(1,1,1);
 	t = 0;
+}
 
+void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
+	name = "OtherPlayer";
 }
 
 InterpolateMoveGameObject::~InterpolateMoveGameObject() {

@@ -39,6 +39,8 @@ public:
 	void UpdateProjectionTransform(float _nearDistance, float _farDistance, float _aspectRatio, float _fovAngle);
 	virtual void UpdateWorldTransform();
 	virtual void UpdateObject();
-
+	
+	const XMFLOAT4X4& GetProjectionTransform() { return projectionTransform; };
+	const XMFLOAT4X4& GetViewTransform() { return viewTransform; };
 	shared_ptr<BoundingFrustum> GetBoundingFrustum() { return pBoundingFrustum; };
 };

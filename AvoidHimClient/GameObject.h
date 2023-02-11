@@ -217,6 +217,7 @@ private:
 public:
 	InterpolateMoveGameObject();
 	~InterpolateMoveGameObject();
+	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 	virtual void Animate(float _timeElapsed);
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);

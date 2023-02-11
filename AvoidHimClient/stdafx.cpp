@@ -266,6 +266,15 @@ void SockErrorDisplay(int errcode) {
 	LocalFree(lpMsgBuf);
 }
 
+XMFLOAT2 GetWorldToScreenCoord(const XMFLOAT3& _position, const XMFLOAT4X4& _view, const XMFLOAT4X4& _proj) {
+	XMFLOAT4 vector = XMFLOAT4(_position.x, _position.y, _position.z, 1.0f);
+
+	XMFLOAT4 result = Vector4::Transform(Vector4::Transform(vector, _view), _proj);
+	// w값을 1로 만들어준다.
+	result = Vector4::Multiply(1 / result.w, result);
+	return XMFLOAT2(result.x, -result.y);
+}
+
 XMFLOAT2 GetViewportCoord(POINT _point)
 {
 	XMFLOAT2 pf;

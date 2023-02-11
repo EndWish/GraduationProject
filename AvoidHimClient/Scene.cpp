@@ -108,6 +108,7 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	shared_ptr<TextBox> pText = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 1.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, false);
 	pTexts["pageNum"] = pText;
 
+	
 	////////////////////////////////////
 
 
@@ -586,12 +587,13 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	gameFramework.GetTextureManager().GetTexture("2DUI_hp", _pDevice, _pCommandList);
 	gameFramework.GetTextureManager().GetTexture("2DUI_stamina", _pDevice, _pCommandList);
 	gameFramework.GetTextureManager().GetTexture("2DUI_staminaFrame", _pDevice, _pCommandList);
-	
+
 	shared_ptr<Image2D> pImg;
 	pUIs["2DUI_hp"] = make_shared<Image2D>("2DUI_hp", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	pUIs["2DUI_stamina"] = make_shared<Image2D>("2DUI_stamina", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	
+	pUIs["2DUI_interact"] = make_shared<Image2D>("2DUI_interact", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	 
 	pTexts["remainTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.1f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, true);
 
@@ -633,6 +635,9 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			pOtherPlayer->UpdateObject();
 			pOtherPlayer->SetID(recvPacket->playerInfo[i].objectID);
 			pOtherPlayers.emplace(pOtherPlayer->GetID(), pOtherPlayer);
+			
+			// 충돌처리를 위해 Sector에 추가한다.
+			pZone->AddObject(SectorLayer::obstacle, recvPacket->playerInfo[i].objectID, pOtherPlayer, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
 			//[수정] 애니메이션 정보 갱신
 		}
 
@@ -716,6 +721,8 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		moveVector = Vector3::Normalize(moveVector);
 		pPlayer->RotateMoveHorizontal(moveVector, angleSpeed, moveSpeed);
 		pInteractableObject = pZone->UpdateInteractableObject();
+		bool enable = pInteractableObject == nullptr ? false : true;
+		pUIs["2DUI_interact"]->SetEnable(enable);
 	}
 	if (_keysBuffers[VK_SPACE] & 0xF0) {
 		pPlayer->Jump(500.0f);
@@ -725,8 +732,26 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	pPlayer->Animate(_collideCheck, _timeElapsed);
+
+	if (pInteractableObject) {
+
+		XMFLOAT2 pos = GetWorldToScreenCoord(pInteractableObject->GetBoundingBox().Center, camera->GetViewTransform(), camera->GetProjectionTransform());
+		// 상호작용 UI의 좌표를 갱신해준다.
+		// 뷰포트 좌표계 -1~1 -> UI좌표계 0~2
+		pUIs["2DUI_interact"]->SetPosition(XMFLOAT2(pos.x + 1, pos.y + 1));
+
+	}
+
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
+		XMINT3 prevIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
 		pOtherPlayer->Animate(_timeElapsed);
+		XMINT3 nextIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
+
+		// 이전 인덱스와 비교해서 바뀌었다면 
+		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z)
+		{
+			pZone->HandOffObject(SectorLayer::obstacle, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
+		}
 	}
 
 	pZone->UpdatePlayerSector( );
@@ -742,6 +767,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	remainTime -= _timeElapsed;
 
 	pZone->AnimateObjects(_timeElapsed);
+
 	pUIs["2DUI_stamina"]->SetSizeUV(XMFLOAT2(pPlayer->GetMP() / 100 , 1.f));
 }
 

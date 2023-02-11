@@ -62,6 +62,7 @@ private:
 	bool pressed;	// 버튼에 있는 이미지가 눌렸을 경우
 	bool enable;	// 해당 이미지가 그려지는지
 	XMFLOAT2 startuv;	// 이미지의 시작 uv좌표
+	XMFLOAT2 size;
 	XMFLOAT2 sizeuv;	// 이미지의 크기
 	XMFLOAT2 position;
 
@@ -83,8 +84,10 @@ public:
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void SetEnable(bool _enable) { enable = _enable; };
 	void SetStartUV(XMFLOAT2 _startuv) { startuv = _startuv; };
+	void SetPosition(XMFLOAT2 _position) { position = XMFLOAT2(_position.x - 1, -_position.y + 1 - size.y); };
 	void SetSizeUV(XMFLOAT2 _sizeuv) { sizeuv = _sizeuv; };
 	void SetPress(bool _isClick) { pressed = _isClick; };
+	
 	void SetTexture(const string& _name);
 };
 

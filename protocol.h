@@ -57,6 +57,8 @@ enum class ObjectType : char {
 	waterDispenser,
 	studentStartPosition,
 	professorStartPosition,
+	computer,
+	prison,
 };
 
 #pragma pack(push, 1)

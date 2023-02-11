@@ -127,7 +127,6 @@ shared_ptr<GameObject> Sector::CheckCollisionHorizontal(BoundingOrientedBox& _bo
 
 	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		if (_pFloor && _pFloor == pGameObject) continue;
-
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 
 		if (boundingBox.Intersects(_boundingBox)) {
@@ -419,22 +418,6 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		file.read((char*)&rotation, sizeof(XMFLOAT4));
 
 		switch (objLayer) {
-		//case SectorLayer::player: {
-		//	pPlayer = make_shared<Player>();
-
-		//	pPlayer->Create(objName, _pDevice, _pCommandList);
-		//	pPlayer->SetLocalPosition(position);
-		//	pPlayer->SetLocalScale(scale);
-		//	pPlayer->SetLocalRotation(rotation);
-		//	pPlayer->UpdateObject();
-		//	pPlayer->SetID(objectID);
-		//	pScene->SetPlayer(pPlayer);
-		//	
-		//	pindex = GetIndex(position);
-		//	pid = objectID;
-		//	AddObject(objLayer, pid, pPlayer, pindex);
-		//	break;
-		//}
 		case SectorLayer::obstacle: {
 			shared_ptr<GameObject> pGameObject;
 

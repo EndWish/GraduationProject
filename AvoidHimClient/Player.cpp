@@ -49,7 +49,7 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 }
 
 void Player::Animate(char _collideCheck, float _timeElapsed) {
-	
+
 	if (speed > 5.f) {
 		// 속도 초기화
 		speed = 5.f;

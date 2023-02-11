@@ -13,6 +13,7 @@ Image2D::Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XM
 	pTexture = gameFramework.GetTextureManager().GetTexture(_fileName, _pDevice,  _pCommandList);
 	
 	name = _fileName;
+	size = _size;
 	position = XMFLOAT2(_position.x - 1, -_position.y + 1 - _size.y);
 	startuv = XMFLOAT2(0, 0);
 	sizeuv = _uvsize;

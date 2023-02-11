@@ -10,7 +10,7 @@
 #define GRAVITY 9.8f
 #define C_WIDTH 800
 #define C_HEIGHT 600
-#define USING_INSTANCING
+//#define USING_INSTANCING
 //#define DEBUG
 #define DRAW_BOUNDING
 
@@ -138,6 +138,7 @@ void SockErrorQuit(const char* msg);
 void SockErrorDisplay(const char* msg);
 void SockErrorDisplay(int errcode);
 
+XMFLOAT2 GetWorldToScreenCoord(const XMFLOAT3& _position, const XMFLOAT4X4& _view, const XMFLOAT4X4& _proj);
 // 마우스 클릭시 해당 좌표를 뷰포트 좌표계로 변경
 XMFLOAT2 GetViewportCoord(POINT _point);
 
