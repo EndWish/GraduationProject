@@ -2,7 +2,6 @@ cbuffer cbCameraInfo : register(b1) {
 	matrix view : packoffset(c0);
 	matrix projection : packoffset(c4);
     float3 cameraPosition : packoffset(c36);
-    float3 playerPosition : packoffset(c37);
 };
 
 cbuffer cbGameObjectInfo : register(b2) {

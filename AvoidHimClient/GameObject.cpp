@@ -702,7 +702,7 @@ void Door::Interact() {
 
 void Door::Animate(float _timeElapsed) {
 	float angle = 0.f;
-	float dir = isLeft ? 1 : -1;
+	float dir = isLeft ? 1.f : -1.f;
 	
 	if (isOpen && openAngle < 90.f) {
 		// 열리는곳
@@ -723,8 +723,7 @@ void Door::Animate(float _timeElapsed) {
 ///
 
 WaterDispenser::WaterDispenser() {
-	float coolTime = 0.f;
-
+	coolTime = 0.f;
 }
 
 WaterDispenser::~WaterDispenser() {

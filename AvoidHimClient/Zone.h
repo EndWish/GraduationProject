@@ -1,6 +1,7 @@
 #pragma once
 
 class GameObject;
+class Camera;
 class Player;
 class PlayScene;
 class HitBoxMesh;
@@ -33,6 +34,8 @@ public:
 	shared_ptr<GameObject> CheckCollisionHorizontal(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, shared_ptr<GameObject> _pFloor);
 	// y방향 충돌을 확인하는 함수
 	shared_ptr<GameObject> CheckCollisionVertical(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, float _timeElapsed = 1.0f);
+	// 카메라시야와 벽이 출동하는지 확인
+	bool CheckObstacleBetweenPlayerAndCamera(const XMVECTOR& _origin, const XMVECTOR& _direction, float _curDistance);
 
 	pair<float, shared_ptr<GameObject>> GetNearestInteractObject(const XMFLOAT3& _playerPosition, const XMFLOAT3& _playerLookVector);
 };
@@ -108,6 +111,9 @@ public:
 	shared_ptr<GameObject> CheckCollisionHorizontal(shared_ptr<GameObject> _pFloor = nullptr);
 	// y방향 충돌을 확인하는 함수
 	shared_ptr<GameObject> CheckCollisionVertical(float _timeElapsed);
+
+	// 카메라가 보는 방향에 물체가 있는지 확인하는 함수
+	bool CheckObstacleBetweenPlayerAndCamera(shared_ptr<Camera> _pCamera);
 	
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 갱신하는 함수
 	shared_ptr<GameObject> UpdateInteractableObject();

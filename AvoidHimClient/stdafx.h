@@ -273,6 +273,19 @@ namespace Vector3 {
 		XMStoreFloat3(&xmf3Result, XMVectorLerp(XMLoadFloat3(&_vector1), XMLoadFloat3(&_vector2), _t));
 		return xmf3Result;
 	}
+
+	inline float Length(const XMFLOAT3& _vector) {
+		XMFLOAT3 xmf3Result;
+		XMStoreFloat3(&xmf3Result, XMVector3Length(XMLoadFloat3(&_vector)));
+		return xmf3Result.x;
+	}
+
+	inline float LengthEst(const XMFLOAT3& _vector) {
+		XMFLOAT3 xmf3Result;
+		XMStoreFloat3(&xmf3Result, XMVector3LengthEst(XMLoadFloat3(&_vector)));
+		return xmf3Result.x;
+	}
+
 }
 
 namespace Vector4 {

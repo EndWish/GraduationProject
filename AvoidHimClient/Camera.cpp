@@ -8,6 +8,9 @@ Camera::Camera() {
 	viewPort = { 0,0, C_WIDTH, C_HEIGHT, 0, 1 };
 	scissorRect = { 0,0, C_WIDTH, C_HEIGHT };
 
+	minDistance = 0.3f;
+	maxDistance = 3.f;
+
 }
 
 Camera::~Camera() {
@@ -53,9 +56,6 @@ void Camera::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCom
 
 	XMFLOAT3 worldPosition = GetWorldPosition();
 	memcpy(&pMappedCamera->position, &worldPosition, sizeof(XMFLOAT3));
-
-	XMFLOAT3 rr = playerPosition;
-	memcpy(&pMappedCamera->playerPosition, &rr, sizeof(XMFLOAT3));
 
 	D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pCameraBuffer->GetGPUVirtualAddress();
 	_pCommandList->SetGraphicsRootConstantBufferView(0, gpuVirtualAddress);

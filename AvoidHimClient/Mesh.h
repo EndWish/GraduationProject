@@ -66,7 +66,7 @@ protected:
 	UINT nBone;
 	ComPtr<ID3D12Resource> pOffsetMatrixBuffer;
 	ComPtr<ID3D12Resource> pOffsetMatrixUploadBuffer;
-	D3D12_VERTEX_BUFFER_VIEW pOffsetMatrixBufferView;
+	D3D12_VERTEX_BUFFER_VIEW offsetMatrixBufferView;
 
 	ComPtr<ID3D12Resource> pBoneIndexBuffer;	// 버텍스의 뼈 인덱스 정보
 	ComPtr<ID3D12Resource> pBoneIndexUploadBuffer;
@@ -81,6 +81,10 @@ protected:
 	BoundingOrientedBox skinnedOOBB;
 
 public:
+	// 생성자 및 소멸자
+	SkinnedMesh();
+	virtual ~SkinnedMesh();
+
 	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex);
 

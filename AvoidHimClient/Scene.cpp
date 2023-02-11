@@ -501,7 +501,7 @@ PlayScene::~PlayScene() {
 }
 
 void PlayScene::UpdateTimeText() {
-	UINT UINTTime = remainTime;
+	UINT UINTTime = (UINT)remainTime;
 
 	pTexts["remainTime"]->SetText(to_wstring(UINTTime / 60) + L" : " + to_wstring(UINTTime % 60));
 }
@@ -533,36 +533,46 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 	}
 
 
-	/*if (Vector4::IsSame(rot, Vector4::QuaternionIdentity())) {
+	// 플레이어의 OOBB를 회전시켜본 후 충돌체크를 진행한다.
+	vector<shared_ptr<GameObject>> collideObjs = pZone->CheckCollisionRotate(pPlayer->GetFloor());
+	if (collideObjs.size() == 0) {
 		result += 4;
-	} 
-	else */
-	{
-
-		// 플레이어의 OOBB를 회전시켜본 후 충돌체크를 진행한다.
-		vector<shared_ptr<GameObject>> collideObjs = pZone->CheckCollisionRotate(pPlayer->GetFloor());
-		if (collideObjs.size() == 0) {
-			result += 4;
-		}
-		else {
-			// 부딪힐 경우 
+	}
+	else {
+		// 부딪힐 경우 
 			
-			XMFLOAT3 knockBack = XMFLOAT3();
-			XMFLOAT3 lookVector, direcVector;
+		XMFLOAT3 knockBack = XMFLOAT3();
+		XMFLOAT3 lookVector, direcVector;
 
-			for (auto& collideObj : collideObjs) {
-				// 물체의 룩벡터와 두 OOBB의 방향의 각을 비교해 룩벡터가 반대쪽에 있을경우 -1을 곱해준다.
+		for (auto& collideObj : collideObjs) {
+			// 물체의 룩벡터와 두 OOBB의 방향의 각을 비교해 룩벡터가 반대쪽에 있을경우 -1을 곱해준다.
 				
-				lookVector = collideObj->GetWorldLookVector();
-				direcVector = Vector3::Subtract(pPlayer->GetBoundingBox().Center, collideObj->GetBoundingBox().Center);
-				direcVector.y = 0;
-				if (Vector3::Angle(direcVector, lookVector, false) > 90.0f) {
-					lookVector = Vector3::ScalarProduct(lookVector, -1.f);
-				}
-				knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(Vector3::Normalize(lookVector), 0.01f));
+			lookVector = collideObj->GetWorldLookVector();
+			direcVector = Vector3::Subtract(pPlayer->GetBoundingBox().Center, collideObj->GetBoundingBox().Center);
+			direcVector.y = 0;
+			if (Vector3::Angle(direcVector, lookVector, false) > 90.0f) {
+				lookVector = Vector3::ScalarProduct(lookVector, -1.f);
 			}
-			// 부딪힌 오브젝트들의 룩벡터 방향들을 모아 그 방향으로 밀어준다.
-			pPlayer->SetKnockBack(knockBack);
+			knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(Vector3::Normalize(lookVector), 0.01f));
+		}
+		// 부딪힌 오브젝트들의 룩벡터 방향들을 모아 그 방향으로 밀어준다.
+		pPlayer->SetKnockBack(knockBack);
+	}
+
+	if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
+		if (camera->GetMinDistance() < camera->GetCurrentDistance()) {
+			camera->MoveFront(20.f, _timeElapsed);
+			cout << "앞으로\n";
+		}
+	}
+	else {
+		if (camera->GetCurrentDistance() < camera->GetMaxDistance()) {
+			camera->MoveFront(-20.f, _timeElapsed);
+			camera->UpdateObject();
+			if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
+				camera->MoveFront(20.f, _timeElapsed);
+				camera->UpdateObject();
+			}
 		}
 	}
 	
@@ -594,7 +604,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	
 	professorObjectID = recvPacket->professorObjectID;
 
-	for (int i = 0; i < recvPacket->nPlayer; ++i) {
+	for (UINT i = 0; i < recvPacket->nPlayer; ++i) {
 
 		if (recvPacket->playerInfo[i].objectID == myObjectID) {	// 내가 조종할 캐릭터일 경우
 
@@ -720,7 +730,6 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	}
 
 	pZone->UpdatePlayerSector( );
-	camera->SetPlayerPos(pPlayer->GetWorldPosition());
 
 	for (auto& pLight : pLights) {
 		if (pLight) {
@@ -747,7 +756,7 @@ void PlayScene::ProcessSocketMessage()
 	case SC_PACKET_TYPE::playersInfo: {
 		SC_PLAYERS_INFO* packet = GetPacket<SC_PLAYERS_INFO>();
 
-		for (int i = 0; i < packet->nPlayer; ++i) {
+		for (UINT i = 0; i < packet->nPlayer; ++i) {
 			// 본인에 대한 정보일 경우 
 			SC_PLAYER_INFO& pinfo = packet->playersInfo[i];
 			if (pinfo.objectID == pPlayer->GetID())

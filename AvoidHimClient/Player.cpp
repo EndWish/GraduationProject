@@ -34,7 +34,9 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 	//카메라 설정
 	pCamera = make_shared<Camera>();
 	pCamera->Create(_pDevice, _pCommandList);
-	pCamera->SetLocalPosition(XMFLOAT3(0.f, 1.0f, -1.5f));
+	pCamera->SetLocalPosition(XMFLOAT3(0.f, 1.0f, -1.5f));	// ***** y축을 바꿀경우 Camera의 GetCurrentDistance도 바꿔줘야한다.
+	pCamera->SetMaxDistance(1.5f);
+	pCamera->SetMinDistance(0.3f);
 	SetChild(pCamera);
 	pCamera->UpdateObject();
 

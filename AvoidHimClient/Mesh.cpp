@@ -6,6 +6,11 @@
 // 생성자, 소멸자
 Mesh::Mesh() {
 	primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	positionBufferView = D3D12_VERTEX_BUFFER_VIEW();
+	normalBufferView = D3D12_VERTEX_BUFFER_VIEW();
+	tangentBufferView = D3D12_VERTEX_BUFFER_VIEW();
+	biTangentsBufferView = D3D12_VERTEX_BUFFER_VIEW();
+	texCoord0BufferView = D3D12_VERTEX_BUFFER_VIEW();
 }
 Mesh::~Mesh() {
 
@@ -157,6 +162,15 @@ void Mesh::RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 }
 
 //////////////// SkinnedMesh ///////////////////
+SkinnedMesh::SkinnedMesh() {
+	offsetMatrixBufferView = D3D12_VERTEX_BUFFER_VIEW();
+	boneIndexBufferView = D3D12_VERTEX_BUFFER_VIEW();
+	boneWeightBufferView = D3D12_VERTEX_BUFFER_VIEW();
+}
+SkinnedMesh::~SkinnedMesh() {
+
+}
+
 void SkinnedMesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _obj) {
 	_file.read((char*)&bonesPerVertex, sizeof(UINT));	// 뼈에 영향을 주는 정점의 개수
 	_file.read((char*)&nBone, sizeof(UINT));			// 뼈의 개수
@@ -170,9 +184,9 @@ void SkinnedMesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDe
 	
 	UINT ncbElementBytes = ((sizeof(XMFLOAT4X4) * MAX_BONE + 255) & ~255); //256의 배수
 	pOffsetMatrixBuffer = ::CreateBufferResource(_pDevice, _pCommandList, offsetMatrix.data(), ncbElementBytes, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pOffsetMatrixUploadBuffer);
-	pOffsetMatrixBufferView.BufferLocation = pOffsetMatrixBuffer->GetGPUVirtualAddress();
-	pOffsetMatrixBufferView.StrideInBytes = sizeof(XMFLOAT4X4);
-	pOffsetMatrixBufferView.SizeInBytes = sizeof(XMFLOAT4X4) * MAX_BONE;
+	offsetMatrixBufferView.BufferLocation = pOffsetMatrixBuffer->GetGPUVirtualAddress();
+	offsetMatrixBufferView.StrideInBytes = sizeof(XMFLOAT4X4);
+	offsetMatrixBufferView.SizeInBytes = sizeof(XMFLOAT4X4) * MAX_BONE;
 
 	// 스킨드 메쉬의 바운딩 박스
 	XMFLOAT3 skinnedOOBBCenter, skinnedOOBBExtents;
@@ -223,7 +237,9 @@ void SkinnedMesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList,
 
 
 HitBoxMesh::HitBoxMesh() {
-
+	primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+	positionBufferView = D3D12_VERTEX_BUFFER_VIEW();
+	indexBufferView = D3D12_INDEX_BUFFER_VIEW();
 }
 
 HitBoxMesh::~HitBoxMesh() {
@@ -276,6 +292,9 @@ void HitBoxMesh::Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D1
 }
 
 FrustumMesh::FrustumMesh() {
+	primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_LINELIST;
+	positionBufferView = D3D12_VERTEX_BUFFER_VIEW();
+	indexBufferView = D3D12_INDEX_BUFFER_VIEW();
 }
 
 FrustumMesh::~FrustumMesh() {

@@ -2,6 +2,7 @@
 #include "Zone.h"
 #include "GameFramework.h"
 #include "GameObject.h"
+#include "Camera.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -162,6 +163,17 @@ shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boun
 	return nullptr;
 }
 
+bool Sector::CheckObstacleBetweenPlayerAndCamera(const XMVECTOR& _origin, const XMVECTOR& _direction, float _curDistance) {
+	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
+		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
+		float dist;
+		if (boundingBox.Intersects(_origin, _direction, dist) && dist <= _curDistance) {
+			return true;
+		}
+	}
+	return false;
+}
+
 pair<float, shared_ptr<GameObject>> Sector::GetNearestInteractObject(const XMFLOAT3& _playerPosition, const XMFLOAT3& _playerLookVector) {
 	float minDist = 1.0f;
 	float dist = 0.f;
@@ -189,11 +201,15 @@ Zone::Zone() {
 	size = XMFLOAT3(0, 0, 0);
 	div = XMINT3(0, 0, 0);
 	sectorSize = XMFLOAT3(0, 0, 0);
+	pindex = XMINT3(0, 0, 0);
+	pid = 0;
 }
 Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div, shared_ptr<PlayScene> _pScene) : size(_size), div(_div), pScene(_pScene) {
 	sectors.assign(div.x, vector<vector<Sector>>(div.y, vector<Sector>(div.z, Sector())));
 	sectorSize = Vector3::Division(size, div);
 	startPoint = XMFLOAT3(-50, -50, -50);
+	pindex = XMINT3(0, 0, 0);
+	pid = 0;
 }
 Zone::~Zone() {
 }
@@ -286,6 +302,7 @@ vector<Sector*> Zone::GetAroundSectors(const XMINT3& _index) {
 	}
 	return sectors;
 }
+
 // 뷰프러스텀과 충돌하는 섹터 얻기
 vector<Sector*> Zone::GetFrustumSectors(const BoundingFrustum& _frustum) {
 	// 분할정복을 이용하면 개선가능
@@ -479,7 +496,6 @@ vector<shared_ptr<GameObject>> Zone::CheckCollisionRotate(shared_ptr<GameObject>
 	return result;
 }
 
-
 shared_ptr<GameObject> Zone::CheckCollisionHorizontal(shared_ptr<GameObject> _pFloor) {
 	// 플레이어가 포함된 섹터 및 인접한 섹터를 가져온다.
 	vector<Sector*> checkSector = GetAroundSectors(pindex);
@@ -516,6 +532,21 @@ shared_ptr<GameObject> Zone::CheckCollisionVertical(float _timeElapsed) {
 		}
 	}
 	return nullptr;
+}
+
+bool Zone::CheckObstacleBetweenPlayerAndCamera(shared_ptr<Camera> _pCamera) {
+	XMFLOAT3 cameraWorldPosition = _pCamera->GetWorldPosition();
+	XMFLOAT3 cameraWorldLookVector = _pCamera->GetWorldLookVector();
+	XMVECTOR xmCameraWorldPosition = XMLoadFloat3(&cameraWorldPosition);
+	XMVECTOR xmCameraWorldLookVector = XMLoadFloat3(&cameraWorldLookVector);
+
+	vector<Sector*> sectors = GetAroundSectors(GetIndex(_pCamera->GetWorldPosition()));
+	for (auto& sector : sectors) {
+		if (sector->CheckObstacleBetweenPlayerAndCamera(xmCameraWorldPosition, xmCameraWorldLookVector, _pCamera->GetCurrentDistance())) {
+			return true;
+		}
+	}
+	return false;
 }
 
 void Zone::UpdatePlayerSector() {
