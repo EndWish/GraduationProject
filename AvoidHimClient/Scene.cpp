@@ -492,7 +492,7 @@ void LobbyScene::UpdateReadyState() {
 /////////////////////////
 
 PlayScene::PlayScene() {
-	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
 	remainTime = 1000.f;
 	professorObjectID = 0;
 }
@@ -562,21 +562,20 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 
 	if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
 		if (camera->GetMinDistance() < camera->GetCurrentDistance()) {
-			camera->MoveFront(20.f, _timeElapsed);
-			cout << "앞으로\n";
+			camera->MoveFront(5.f, _timeElapsed);
 		}
 	}
 	else {
 		if (camera->GetCurrentDistance() < camera->GetMaxDistance()) {
-			camera->MoveFront(-20.f, _timeElapsed);
+			camera->MoveFront(-5.f, _timeElapsed);
 			camera->UpdateObject();
 			if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
-				camera->MoveFront(20.f, _timeElapsed);
+				camera->MoveFront(5.f, _timeElapsed);
 				camera->UpdateObject();
 			}
 		}
 	}
-	
+
 	return result;
 }
 
@@ -612,7 +611,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 			pPlayer = make_shared<Player>();
 
-			pPlayer->Create("TRChair"s, _pDevice, _pCommandList);
+			pPlayer->Create("TRChair_Player"s, _pDevice, _pCommandList);
 			pPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -628,7 +627,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 		}
 		else {	// 다른 플레이어의 캐릭터 정보일 경우
 			shared_ptr<InterpolateMoveGameObject> pOtherPlayer = make_shared<InterpolateMoveGameObject>();
-			pOtherPlayer->Create("TRChair"s, _pDevice, _pCommandList);
+			pOtherPlayer->Create("TRChair_Player"s, _pDevice, _pCommandList);
 			pOtherPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pOtherPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pOtherPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -649,11 +648,10 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	// 빛을 추가
 	shared_ptr<Light> baseLight = make_shared<Light>();
 
-
 	baseLight->lightType = 3;
 	baseLight->position = XMFLOAT3(0, 500, 0);
 	baseLight->direction = XMFLOAT3(0, -1, 0);
-	baseLight->diffuse = XMFLOAT4(1, 1, 1, 1);
+	baseLight->diffuse = XMFLOAT4(0.5, 0.5, 0.5, 1);
 	baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
 	AddLight(baseLight);
 
@@ -666,7 +664,8 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pLightsBuffer->Map(0, NULL, (void**)&pMappedLights);
 
 	SkinnedGameObject::InitSkinnedWorldTransformBuffer(_pDevice, _pCommandList);	// skinnedObject를 렌더하기 위한 (월드변환행렬을 담는)리소스를 생성한다.
-
+	
+	Shader::SetCamera(camera);
 }
 
 void PlayScene::ReleaseUploadBuffers() {
@@ -902,13 +901,8 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 
 	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
 
-	pPlayer->Render(_pCommandList);
-	for (auto& [pid, pOtherPlayer] : pOtherPlayers) {
-		pOtherPlayer->Render(_pCommandList);
-	}
 
 	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);
-
 	for (auto [name, pUI] : pUIs) {
 		pUI->Render(_pCommandList);
 	}

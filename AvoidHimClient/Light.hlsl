@@ -69,7 +69,7 @@ float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera, float4 _c
 		specularFactor = pow(max(dot(reflectVector, _toCamera), 0.0f), specular.a);
 	}
 
-    return ((lights[_nIndex].ambient * ambient) + _color * (lights[_nIndex].diffuse * max(diffuseFactor, 0) * diffuse) + (lights[_nIndex].specular * specularFactor * specular));
+    return (_color * (lights[_nIndex].diffuse * max(diffuseFactor, 0) * diffuse) + (lights[_nIndex].specular * specularFactor * specular));
 }
 
 
@@ -94,7 +94,7 @@ float4 PointLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamer
 		}
 		// 1/(x+y*d+z*d*d). distance = 0일 경우 1/x
         float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, distance, distance*distance));
-        color = ((lights[_nIndex].ambient * ambient) + _color * (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular)) * attenuationFactor;
+        color = (_color * (lights[_nIndex].diffuse * diffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular)) * attenuationFactor;
     }
 	return color;
 }
@@ -126,7 +126,7 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
         float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, fDistance, fDistance * fDistance));
 				
 				// 각 계수를 구한 빛에 대해 곱
-        color = ((lights[_nIndex].ambient * ambient) + _color * (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * fSpecularFactor * specular)) * attenuationFactor * spotFactor;
+        color = (_color * (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * fSpecularFactor * specular)) * attenuationFactor * spotFactor;
     }
     return color;
 }
@@ -134,7 +134,7 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
 
 float4 CalculateLight(float4 color, float3 _Position, float3 _Normal) {
     float alpha = color.a;
-    float4 newColor = float4(0, 0, 0, 1);
+    float4 newColor = float4(0, 0, 0, alpha);
     float3 toCamera = normalize(cameraPosition - _Position);
 	 //float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
 	//color = float4(1.0f, 1.0f, 1.0f, 0.0f);
@@ -156,7 +156,6 @@ float4 CalculateLight(float4 color, float3 _Position, float3 _Normal) {
     }
 
     newColor += color * globalAmbient;
-    newColor.a = 0.5;
     return newColor;
 }
 

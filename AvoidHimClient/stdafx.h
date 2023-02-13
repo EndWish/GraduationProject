@@ -10,7 +10,7 @@
 #define GRAVITY 9.8f
 #define C_WIDTH 800
 #define C_HEIGHT 600
-//#define USING_INSTANCING
+#define USING_INSTANCING
 //#define DEBUG
 #define DRAW_BOUNDING
 
@@ -287,6 +287,11 @@ namespace Vector3 {
 		return xmf3Result.x;
 	}
 
+	inline float LengthSq(const XMFLOAT3& _vector) {
+		XMFLOAT3 xmf3Result;
+		XMStoreFloat3(&xmf3Result, XMVector3LengthSq(XMLoadFloat3(&_vector)));
+		return xmf3Result.x;
+	}
 }
 
 namespace Vector4 {

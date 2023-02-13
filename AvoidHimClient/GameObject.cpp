@@ -11,6 +11,7 @@ unordered_map<string, Instancing_Data> GameObject::instanceDatas;
 
 void GameObject::RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
+	gameFramework.GetShader("InstancingShader")->PrepareRender(_pCommandList);
 	GameObjectManager& gameObjManager = gameFramework.GetGameObjectManager();
 
 	for (auto& [name, instanceData] : instanceDatas) {
@@ -34,6 +35,7 @@ GameObject::GameObject() {
 	isOOBBCover = false;
 	id = 0;
 	isSkinnedObject = false;
+	shaderType = ShaderType::none;
 }
 GameObject::~GameObject() {
 
@@ -171,10 +173,10 @@ const BoundingOrientedBox& GameObject::GetBaseBoundingBox() const {
 }
 
 shared_ptr<GameObject> GameObject::GetObj() {
-	if (!pParent.lock()) return pChildren[0];
+	if (pChildren.size() > 0) return pChildren[0];
 	else {
 		cout << "메서드가 호출된 오브젝트는 인스턴스가 아닙니다.\n";
-		return shared_from_this();
+		return nullptr;
 	}
 }
 void GameObject::SetLocalPosition(const XMFLOAT3& _position) {
@@ -278,6 +280,10 @@ void GameObject::QueryInteract() {
 void GameObject::Interact() {
 }
 
+ShaderType GameObject::GetShaderType() const {
+	return shaderType;
+}
+
 
 shared_ptr<GameObject> GameObject::FindFrame(const string& _name) {
 	if (name == _name) {
@@ -311,8 +317,21 @@ bool GameObject::CheckRemove() const {
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	if (pMesh) {	// 메쉬가 있을 경우에만 렌더링을 한다.
 		GameFramework& gameFramework = GameFramework::Instance();
-		gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
+		UpdateShaderVariable(_pCommandList);
 
+		// 각 마테리얼에 맞는 서브메쉬를 그린다.
+		for (int i = 0; i < materials.size(); ++i) {
+			// 해당 서브매쉬와 매칭되는 마테리얼을 Set 해준다.
+
+			materials[i]->UpdateShaderVariable(_pCommandList);
+			pMesh->Render(_pCommandList, i);
+		}
+	}
+}
+
+void GameObject::RenderAll(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	if (pMesh) {	// 메쉬가 있을 경우에만 렌더링을 한다.
+		GameFramework& gameFramework = GameFramework::Instance();
 
 		UpdateShaderVariable(_pCommandList);
 
@@ -383,6 +402,8 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 
 	// nameSize (UINT) / name(string)
 	ReadStringBinary(name, _file);
+	// ShaderType(char)
+	_file.read((char*)&shaderType, sizeof(ShaderType));
 
 	// localTransform(float3, 3, 4)
 	_file.read((char*)&localPosition, sizeof(XMFLOAT3));
@@ -439,6 +460,8 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 }
 
 void GameObject::CopyObject(const GameObject& _other) {
+	GameFramework& gameFramework = GameFramework::Instance();
+
 	name = _other.name;
 	worldTransform = _other.worldTransform;
 	localTransform = _other.localTransform;
@@ -450,6 +473,25 @@ void GameObject::CopyObject(const GameObject& _other) {
 	localRotation = _other.localRotation;
 	pMesh = _other.pMesh;
 	materials = _other.materials;
+	shaderType = _other.shaderType;
+
+	switch (shaderType) {
+	case ShaderType::basic: {
+		// 인스턴싱을 사용하지 않고, 불투명한 오브젝트를 그리는 쉐이더
+		gameFramework.GetShader("BasicShader")->AddObject(shared_from_this());
+		break;
+	}
+	case ShaderType::blending: {
+		// 인스턴싱을 사용하지 않고, 반투명한 오브젝트를 그리는 쉐이더
+		gameFramework.GetShader("BlendingShader")->AddObject(shared_from_this());
+		break;
+	}
+	case ShaderType::skinned: {
+		gameFramework.GetShader("SkinnedShader")->AddObject(shared_from_this());
+		break;
+	}
+	}
+
 
 	for (int i = 0; i < _other.pChildren.size(); ++i) {
 		shared_ptr<GameObject> child;
@@ -494,7 +536,8 @@ void SkinnedGameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>
 	aniController.LoadFromFile(_file, nBone);
 
 	GameObject::LoadFromFile(_file, _pDevice, _pCommandList, _coverObject);
-	
+	// ShaderType은 강제로 SkinnedShader로 바꾸어준다.
+
 	// 이름을 가지고 뼈를 찾는다.
 	pBones.assign(nBone, nullptr);
 	for (UINT i = 0; i < nBone; ++i) {
@@ -506,7 +549,6 @@ void SkinnedGameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>
 void SkinnedGameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	if (pMesh) {
 		GameFramework& gameFramework = GameFramework::Instance();
-		gameFramework.GetShader("SkinnedShader")->PrepareRender(_pCommandList);
 		// 메쉬가 있을 경우에만 렌더링을 한다.
 		// 애니메이션에 따라 본들의 행렬을 변경하고 Update한다.	[이 부분은 추후 Animation에서 하도록 수정한다.]
 		aniController.AddTime(1.f / 300.f);

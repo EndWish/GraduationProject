@@ -30,6 +30,7 @@ public:
 	static unordered_map<string, Instancing_Data>& GetInstanceDatas() { return instanceDatas; };
 	static void RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 protected:
+	ShaderType shaderType;
 	bool isSkinnedObject;
 	UINT id;
 	string name;
@@ -142,6 +143,8 @@ public:
 	// 오브젝트와 플레이어의 상호작용
 	virtual void Interact();
 
+
+	ShaderType GetShaderType() const;
 	// 충돌 체크
 	// 애니메이션
 	shared_ptr<GameObject> FindFrame(const string& _name);	// 이름으로 자식(자신포함)을 오브젝트를 찾는다.
@@ -153,6 +156,7 @@ public:
 
 	// 렌더
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void RenderAll(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, Instancing_Data& _instanceData);
 
 	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox);

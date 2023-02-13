@@ -1,10 +1,12 @@
 #pragma once
 
 class Texture;
-
+class GameObject;
+class Camera;
 class Shader {
-
 protected:
+	static weak_ptr<Camera> wpCamera;
+
 	static ComPtr<ID3D12DescriptorHeap>			cbvSrvDescriptorHeap;
 	static D3D12_CPU_DESCRIPTOR_HANDLE			cbvCPUDescriptorStartHandle;
 	static D3D12_GPU_DESCRIPTOR_HANDLE			cbvGPUDescriptorStartHandle;
@@ -27,12 +29,15 @@ public:
 
 	static void CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, int nResources, ID3D12Resource** ppd3dResources, DXGI_FORMAT* pdxgiSrvFormats);
 
+	static void SetCamera(const weak_ptr<Camera>& _wpCamera);
 protected:
 	ComPtr<ID3DBlob> pVSBlob, pPSBlob;
 	ComPtr<ID3D12PipelineState> pPipelineState;
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc;
 	vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
 
+	// 해당 쉐이더로 그릴 게임 오브젝트들의 포인터 벡터
+	vector<weak_ptr<GameObject>> wpGameObjects;
 public:
 	// 생성 관련 함수들
 	Shader();
@@ -51,7 +56,8 @@ public:
 
 	virtual void PrepareRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
-
+	virtual void AddObject(const weak_ptr<GameObject>& _pGameObject);
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUCbvDescriptorStartHandle() { return cbvGPUDescriptorStartHandle; }
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUSrvDescriptorStartHandle() { return srvGPUDescriptorStartHandle; };
 
@@ -110,6 +116,23 @@ public:
 
 	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+};
+
+
+class BlendingShader : public Shader {
+private:
+
+public:
+	BlendingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~BlendingShader();
+
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+	virtual D3D12_BLEND_DESC CreateBlendState() final;
+	virtual D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState();
+
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	
 };
 /////////////////////////    Shader Manager   ////////////////////////////////
 

@@ -84,9 +84,7 @@ float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET {
     // 노멀값 조정
     if (drawMask & MATERIAL_NORMAL_MAP)
     {
-        float3x3 TBN = float3x3(normalize(input.tangent), normalize(input.biTangent), normalize(input.normal));
-        float3 vNormal = normalize(normalMap.Sample(gssWrap, input.uv).rgb * 2.0f - 1.0f); //[0, 1] → [-1, 1]
-        input.normal = normalize(mul(vNormal, TBN));
+
     }
     else
     {

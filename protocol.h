@@ -44,6 +44,7 @@ enum class SectorLayer : char {
 	player,
 	obstacle,
 	attack,
+	light,
 	num,
 	etc
 };
@@ -59,8 +60,17 @@ enum class ObjectType : char {
 	professorStartPosition,
 	computer,
 	prison,
-};
+	light,
 
+};
+enum class ShaderType : char {
+	none,
+	basic,
+	instancing,
+	blending,
+	skinned,
+	num,
+};
 #pragma pack(push, 1)
 
 // 클라 -> 서버

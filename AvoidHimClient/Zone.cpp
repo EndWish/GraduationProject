@@ -328,14 +328,14 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	GameFramework& gameFramework = GameFramework::Instance();
 
 
+
 #ifdef USING_INSTANCING
-	gameFramework.GetShader("InstancingShader")->PrepareRender(_pCommandList);
+	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
+	gameFramework.GetShader("BasicShader")->Render(_pCommandList);
 	GameObject::RenderInstanceObjects(_pCommandList);
-	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
-	for (auto [objectID, pGameObject] : pInteractObjTable) {
-		pGameObject->Render(_pCommandList);
-	}
-	//gameFramework.GetShader("SkinnedShader")->PrepareRender(_pCommandList);
+
+	// 반투명한 오브젝트를 마지막에 그린다.
+	gameFramework.GetShader("BlendingShader")->Render(_pCommandList);
 
 #else
 	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
@@ -407,9 +407,9 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		// nameSize(UINT) / fileName (string)
 		ReadStringBinary(objName, file);
 
-		// objectType(char)
+		// SectorLayer(char)
 		file.read((char*)&objLayer, sizeof(SectorLayer));
-		// objectType(char)
+		// ObjectType(char)
 		file.read((char*)&objType, sizeof(ObjectType));
 
 		// position(float * 3) / scale(float * 3) / rotation(float * 3)
@@ -417,24 +417,33 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		file.read((char*)&scale, sizeof(XMFLOAT3));
 		file.read((char*)&rotation, sizeof(XMFLOAT4));
 
+		shared_ptr<GameObject> pGameObject;
 		switch (objLayer) {
 		case SectorLayer::obstacle: {
-			shared_ptr<GameObject> pGameObject;
-
-			if(objType == ObjectType::Rdoor || objType == ObjectType::Ldoor) 
+			switch (objType) {
+			case ObjectType::Rdoor:
+			case ObjectType::Ldoor: {
 				pGameObject = make_shared<Door>(objType);
-			else if (objType == ObjectType::lever)
-				pGameObject = make_shared<Lever>();
-			else if (objType == ObjectType::waterDispenser)
-				pGameObject = make_shared<WaterDispenser>();
-
-			if (objType == ObjectType::wall)
-				pGameObject = make_shared<GameObject>();
-			else {
 				AddInteractObject(objectID, pGameObject, GetIndex(position));
 				pInteractObjTable[objectID] = pGameObject;
+				break;
 			}
-
+			case ObjectType::lever: {
+				pGameObject = make_shared<Lever>();
+				AddInteractObject(objectID, pGameObject, GetIndex(position));
+				pInteractObjTable[objectID] = pGameObject;
+				break;
+			}
+			case ObjectType::waterDispenser: {
+				pGameObject = make_shared<WaterDispenser>();
+				AddInteractObject(objectID, pGameObject, GetIndex(position));
+				pInteractObjTable[objectID] = pGameObject;
+				break;
+			}
+			default: {
+				pGameObject = make_shared<GameObject>();
+			}
+			}
 			pGameObject->Create(objName, _pDevice, _pCommandList);
 			pGameObject->SetLocalPosition(position);
 			pGameObject->SetLocalScale(scale);
@@ -442,10 +451,12 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pGameObject->UpdateObject();
 			pGameObject->SetID(objectID);
 
+			// 섹터에 오브젝트를 추가한다. (충돌체크, 프러스텀 컬링용)
 			AddObject(objLayer, objectID, pGameObject, GetIndex(position));
-			// 쉐이더에서는 읽는 기준이 달라지므로 전치행렬로 바꾸어준다. 
-
-			if (objType == ObjectType::none || objType == ObjectType::wall) {
+			
+			if (pGameObject->GetObj()->GetShaderType() == ShaderType::instancing) {
+				// 인스턴싱을 사용하는 불투명한 오브젝트를 그리는 쉐이더
+				// 쉐이더에서는 읽는 기준이 달라지므로 전치행렬로 바꾸어준다.
 				world = pGameObject->GetWorldTransform();
 				XMStoreFloat4x4(&temp, XMMatrixTranspose(XMLoadFloat4x4(&world)));
 				instanceDatas[objName].push_back(temp);
@@ -453,7 +464,6 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			break;
 		}
 		}
-
 	}
 #ifdef USING_INSTANCING
 	gameFramework.GetGameObjectManager().InitInstanceResource(_pDevice, _pCommandList, instanceDatas);
