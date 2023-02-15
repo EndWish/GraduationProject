@@ -9,7 +9,7 @@ Texture::Texture(int _nTexture, UINT _textureType, int _nSampler, int _nRootPara
 	// nTextureType : 텍스처의 타입
 	// nSamplers : 샘플러의 개수. 정적 샘플러를 사용시 여기는 사용하지 않는다
 	// nRootParameters : 루트 파라미터의 개수
-	// 알베도, 노말맵을 사용하게 된다면 Texture(2, RESOURCE_TEXTURE2DARRAY, 0, 1);이 될것이다.
+	// 알베도, 노말맵을 사용하게 된다면 Texture(2, RESOURCE_TEXTURE2D, 0, 1);이 될것이다.
 	textureType = _textureType;
 
 	nTexture = _nTexture;

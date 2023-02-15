@@ -138,13 +138,8 @@ public:
 	// 오브젝트 내용 전체적으로 갱신
 	virtual void UpdateObject();
 
-	// 서버에게 상호작용이 가능한 상태인지 질의
-	virtual void QueryInteract();
-	// 오브젝트와 플레이어의 상호작용
-	virtual void Interact();
-
-
 	ShaderType GetShaderType() const;
+	void SetShaderType(ShaderType _shaderType);
 	// 충돌 체크
 	// 애니메이션
 	shared_ptr<GameObject> FindFrame(const string& _name);	// 이름으로 자식(자신포함)을 오브젝트를 찾는다.
@@ -227,7 +222,26 @@ public:
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
 };
 
-class Door : public GameObject {
+class InteractObject : public GameObject { 
+private:
+
+public:
+	InteractObject();
+	~InteractObject();
+	// 서버에게 상호작용이 가능한 상태인지 질의
+	virtual void QueryInteract() = 0;
+
+	// 오브젝트와 플레이어의 상호작용
+	virtual void Interact() = 0;
+
+	virtual bool IsEnable();
+	
+	// 상호작용을 끝냈을 때 (일부만 사용)
+	virtual void EndInteract();
+
+};
+
+class Door : public InteractObject {
 private:
 	bool isLeft;
 	float openAngle;
@@ -238,10 +252,11 @@ public:
 	virtual void QueryInteract();
 	virtual void Interact();
 
+
 	virtual void Animate(float _timeElapsed);
 };
 
-class WaterDispenser : public GameObject {
+class WaterDispenser : public InteractObject {
 protected:
 	float coolTime;
 
@@ -250,12 +265,13 @@ public:
 	~WaterDispenser();
 	virtual void QueryInteract();
 	virtual void Interact();
+	virtual bool IsEnable();
 
 	virtual void Animate(float _timeElapsed);
 
 };
 
-class Lever : public GameObject {
+class Lever : public InteractObject {
 private:
 
 public:
@@ -264,4 +280,42 @@ public:
 	virtual void QueryInteract();
 	virtual void Interact();
 
+};
+
+class Computer : public InteractObject {
+private:
+
+	bool power;			// 전원이 켜져있는지 여부
+	float hackingRate;	// 해킹률
+	UINT use;			// 현재 사용중인 플레이어의 objectID (미사용시 0)
+	
+public:
+	Computer();
+	~Computer();
+	virtual void QueryInteract();
+	virtual void Interact();
+	virtual bool IsEnable();
+	void SetHackingRate(float _rate);
+	void SetUse(UINT _use);
+	void SetPower(bool _power);
+
+	virtual void Animate(float _timeElapsed);
+	virtual void EndInteract();
+	float GetHackingRate() const;
+	UINT GetUse() const;
+};
+
+
+////////////////// SkyBox //////////////////
+
+
+class SkyBox {
+
+	array<shared_ptr<SkyBoxMesh>, 6> pMeshs;
+	array<shared_ptr<Texture>, 6> pTextures;
+public:
+	SkyBox(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	~SkyBox();
+		
+	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };

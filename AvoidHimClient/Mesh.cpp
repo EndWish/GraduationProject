@@ -348,4 +348,139 @@ void FrustumMesh::UpdateMesh(shared_ptr<BoundingFrustum> _pBoundingFrustum) {
 	pPositionBuffer->Unmap(0, NULL);
 }
 
+SkyBoxMesh::SkyBoxMesh(int _id, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	primitiveTopology = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	float sz = 20.0f;
+	array<XMFLOAT3, 6> vertices;
+	array<XMFLOAT2, 6> uvs;
+	// pos
+	{
+		if (_id == 0)
+		{
+			vertices[0] = XMFLOAT3(-sz, -sz, -sz);
+			vertices[1] = XMFLOAT3(+sz, +sz, -sz);
+			vertices[2] = XMFLOAT3(-sz, +sz, -sz);
+			vertices[3] = XMFLOAT3(+sz, +sz, -sz);
+			vertices[4] = XMFLOAT3(-sz, -sz, -sz);
+			vertices[5] = XMFLOAT3(+sz, -sz, -sz);
+		}
+		if (_id == 1) {
+			vertices[0] = XMFLOAT3(-sz, -sz, +sz);
+			vertices[1] = XMFLOAT3(+sz, +sz, +sz);
+			vertices[2] = XMFLOAT3(+sz, -sz, +sz);
+			vertices[3] = XMFLOAT3(+sz, +sz, +sz);
+			vertices[4] = XMFLOAT3(-sz, -sz, +sz);
+			vertices[5] = XMFLOAT3(-sz, +sz, +sz);
+		}
+		if (_id == 2) {
+			vertices[0] = XMFLOAT3(-sz, +sz, +sz);
+			vertices[1] = XMFLOAT3(-sz, +sz, -sz);
+			vertices[2] = XMFLOAT3(+sz, +sz, -sz);
+			vertices[3] = XMFLOAT3(+sz, +sz, -sz);
+			vertices[4] = XMFLOAT3(+sz, +sz, +sz);
+			vertices[5] = XMFLOAT3(-sz, +sz, +sz);
+		}
+		if (_id == 3) {
+			vertices[0] = XMFLOAT3(-sz, -sz, +sz);
+			vertices[1] = XMFLOAT3(+sz, -sz, +sz);
+			vertices[2] = XMFLOAT3(+sz, -sz, -sz);
+			vertices[3] = XMFLOAT3(+sz, -sz, -sz);
+			vertices[4] = XMFLOAT3(-sz, -sz, -sz);
+			vertices[5] = XMFLOAT3(-sz, -sz, +sz);
+		}
+		if (_id == 4) {
+			vertices[0] = XMFLOAT3(-sz, -sz, +sz);
+			vertices[1] = XMFLOAT3(-sz, -sz, -sz);
+			vertices[2] = XMFLOAT3(-sz, +sz, -sz);
+			vertices[3] = XMFLOAT3(-sz, +sz, -sz);
+			vertices[4] = XMFLOAT3(-sz, +sz, +sz);
+			vertices[5] = XMFLOAT3(-sz, -sz, +sz);
+		}
+		if (_id == 5) {
+			vertices[0] = XMFLOAT3(+sz, -sz, +sz);
+			vertices[1] = XMFLOAT3(+sz, +sz, +sz);
+			vertices[2] = XMFLOAT3(+sz, +sz, -sz);
+			vertices[3] = XMFLOAT3(+sz, +sz, -sz);
+			vertices[4] = XMFLOAT3(+sz, -sz, -sz);
+			vertices[5] = XMFLOAT3(+sz, -sz, +sz);
+		}
+	}
+
+	// uv
+	{
+		if (_id == 0) {
+			uvs[0] = XMFLOAT2(1.0f, 0.0f);
+			uvs[1] = XMFLOAT2(0.0f, 1.0f);
+			uvs[2] = XMFLOAT2(1.0f, 1.0f);
+			uvs[3] = XMFLOAT2(0.0f, 1.0f);
+			uvs[4] = XMFLOAT2(1.0f, 0.0f);
+			uvs[5] = XMFLOAT2(0.0f, 0.0f);
+		}
+		if (_id == 1) {
+			uvs[0] = XMFLOAT2(0.0f, 0.0f);
+			uvs[1] = XMFLOAT2(1.0f, 1.0f);
+			uvs[2] = XMFLOAT2(1.0f, 0.0f);
+			uvs[3] = XMFLOAT2(1.0f, 1.0f);
+			uvs[4] = XMFLOAT2(0.0f, 0.0f);
+			uvs[5] = XMFLOAT2(0.0f, 1.0f);
+		}
+		if (_id == 2) {
+			uvs[0] = XMFLOAT2(0.0f, 0.0f);
+			uvs[1] = XMFLOAT2(0.0f, 1.0f);
+			uvs[2] = XMFLOAT2(1.0f, 1.0f);
+			uvs[3] = XMFLOAT2(1.0f, 1.0f);
+			uvs[4] = XMFLOAT2(1.0f, 0.0f);
+			uvs[5] = XMFLOAT2(0.0f, 0.0f);
+		}
+		if (_id == 3) {
+			uvs[0] = XMFLOAT2(0.0f, 1.0f);
+			uvs[1] = XMFLOAT2(1.0f, 1.0f);
+			uvs[2] = XMFLOAT2(1.0f, 0.0f);
+			uvs[3] = XMFLOAT2(1.0f, 0.0f);
+			uvs[4] = XMFLOAT2(0.0f, 0.0f);
+			uvs[5] = XMFLOAT2(0.0f, 1.0f);
+		}
+		if (_id == 4) {
+			uvs[0] = XMFLOAT2(1.0f, 0.0f);
+			uvs[1] = XMFLOAT2(0.0f, 0.0f);
+			uvs[2] = XMFLOAT2(0.0f, 1.0f);
+			uvs[3] = XMFLOAT2(0.0f, 1.0f);
+			uvs[4] = XMFLOAT2(1.0f, 1.0f);
+			uvs[5] = XMFLOAT2(1.0f, 0.0f);
+		}
+		if (_id == 5) {
+			uvs[0] = XMFLOAT2(0.0f, 0.0f);
+			uvs[1] = XMFLOAT2(0.0f, 1.0f);
+			uvs[2] = XMFLOAT2(1.0f, 1.0f);
+			uvs[3] = XMFLOAT2(1.0f, 1.0f);
+			uvs[4] = XMFLOAT2(1.0f, 0.0f);
+			uvs[5] = XMFLOAT2(0.0f, 0.0f);
+		}
+	}
+
+	pPositionBuffer = CreateBufferResource(_pDevice, _pCommandList, vertices.data(), sizeof(XMFLOAT3) * 6, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pPositionUploadBuffer);
+	positionBufferView.BufferLocation = pPositionBuffer->GetGPUVirtualAddress();
+	positionBufferView.StrideInBytes = sizeof(XMFLOAT3);
+	positionBufferView.SizeInBytes = sizeof(XMFLOAT3) * 6;
+
+	pTexCoord0Buffer = CreateBufferResource(_pDevice, _pCommandList, uvs.data(), sizeof(XMFLOAT2) * 6, D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pTexCoord0UploadBuffer);
+	texCoord0BufferView.BufferLocation = pTexCoord0Buffer->GetGPUVirtualAddress();
+	texCoord0BufferView.StrideInBytes = sizeof(XMFLOAT2);
+	texCoord0BufferView.SizeInBytes = sizeof(XMFLOAT2) * 6;
+
+}
+
+SkyBoxMesh::~SkyBoxMesh() {
+
+}
+
+void SkyBoxMesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferViews[2] = { positionBufferView, texCoord0BufferView };
+	_pCommandList->IASetVertexBuffers(0, 2, vertexBufferViews);
+
+	_pCommandList->DrawInstanced(6, 1, 0, 0);
+}
+
+
 

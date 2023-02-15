@@ -99,6 +99,7 @@ private:
 	// 다른 플레이어들도 추가
 	UINT professorObjectID;
 	unordered_map<UINT, shared_ptr<InterpolateMoveGameObject>> pOtherPlayers;
+	vector<shared_ptr<Computer>> pEnableComputers;
 	shared_ptr<Zone> pZone;
 
 	ComPtr<ID3D12Resource> pLightsBuffer;
@@ -110,8 +111,9 @@ private:
 	XMFLOAT4 globalAmbient;
 	
 	// 현재 상호작용 가능한 오브젝트의 포인터
-	shared_ptr<GameObject> pInteractableObject;
+	shared_ptr<InteractObject> pInteractableObject;
 
+	shared_ptr<SkyBox> pSkyBox;
 	
 public:
 	PlayScene();
@@ -129,6 +131,7 @@ public:
 	virtual void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);
 	virtual void ProcessCursorMove(XMFLOAT2 _delta);
 
+	void AddComputer(const shared_ptr<Computer>& _pComputer);
 	void UpdateTimeText();
 	void SetPlayer(shared_ptr<Player>& _pPlayer);
 	virtual char CheckCollision(float _timeElapsed);

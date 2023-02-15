@@ -133,3 +133,24 @@ public:
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void UpdateMesh(shared_ptr< BoundingFrustum> _pBoundingFrustum);
 };
+
+class SkyBoxMesh {
+private:
+	D3D12_PRIMITIVE_TOPOLOGY primitiveTopology;
+
+	ComPtr<ID3D12Resource> pPositionBuffer;
+	ComPtr<ID3D12Resource> pPositionUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW positionBufferView;
+
+
+	ComPtr<ID3D12Resource> pTexCoord0Buffer;	// 텍스처 좌표의 정보
+	ComPtr<ID3D12Resource> pTexCoord0UploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW texCoord0BufferView;
+
+public:
+	SkyBoxMesh(int _id, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	~SkyBoxMesh();
+
+	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
+};

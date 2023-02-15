@@ -47,7 +47,7 @@ void Sector::AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pGameObje
 	auto it = pInteractionObjects.find(_objectID);
 
 	if (it == pInteractionObjects.end()) {		// 객체가 존재하지 않을 경우
-		pInteractionObjects[_objectID] = _pGameObject;	// 추가한다.
+		pInteractionObjects[_objectID] = reinterpret_pointer_cast<InteractObject>(_pGameObject);	// 추가한다.
 	}
 	else {
 		cout << _objectID << "오류! ";
@@ -173,18 +173,23 @@ bool Sector::CheckObstacleBetweenPlayerAndCamera(const XMVECTOR& _origin, const 
 	return false;
 }
 
-pair<float, shared_ptr<GameObject>> Sector::GetNearestInteractObject(const XMFLOAT3& _playerPosition, const XMFLOAT3& _playerLookVector) {
+pair<float, shared_ptr<InteractObject>> Sector::GetNearestInteractObject(const shared_ptr<Player>& _pPlayer) {
 	float minDist = 1.0f;
 	float dist = 0.f;
-	shared_ptr<GameObject> pNearestObject;
+	shared_ptr<InteractObject> pNearestObject;
 	for (auto [gid, pGameObject] : pInteractionObjects) {
 
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
-		if (boundingBox.Intersects(XMLoadFloat3(&_playerPosition), XMLoadFloat3(&_playerLookVector), dist)) {
-			if (minDist > dist) {
-				minDist = dist;
-				pNearestObject = pGameObject;
-			}
+		BoundingOrientedBox playerBoundingBox = _pPlayer->GetBoundingBox();
+		// 거리값을 근사. 거리가 되지 않을경우 충돌체크를 하지 않는다.
+		if (Vector3::Length(boundingBox.Center, playerBoundingBox.Center) - boundingBox.Extents.x -boundingBox.Extents.z > minDist) {
+			continue;
+		}
+		// 플레이어가 바라보는 방향으로 바운딩 박스를 이동시켜본다.
+		playerBoundingBox.Center = Vector3::Add(playerBoundingBox.Center, _pPlayer->GetWorldLookVector(), playerBoundingBox.Extents.z * 2);
+		if (playerBoundingBox.Intersects(boundingBox)) {
+			minDist = dist;
+			pNearestObject = pGameObject;
 		}
 	}
 	return make_pair(dist, pNearestObject);
@@ -354,6 +359,8 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	}*/
 
 
+
+#endif
 #ifdef DRAW_BOUNDING
 	HitBoxMesh& hitBoxMesh = gameFramework.GetHitBoxMesh();
 	gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
@@ -368,14 +375,12 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	}
 
 #endif
-#endif
-
 
 }
 
 
 
-void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const array<UINT, MAX_PARTICIPANT>& _enableComputers) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	ifstream file("Map", ios::binary);
@@ -400,11 +405,13 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 	XMFLOAT3 position, scale;
 	XMFLOAT4 rotation;
 
+	bool activeComputer;
 	// nInstance (UINT)
 	file.read((char*)&nInstance, sizeof(UINT));
 
 	for (UINT objectID = 1; objectID <= nInstance; ++objectID) {
 		// nameSize(UINT) / fileName (string)
+		activeComputer = false;
 		ReadStringBinary(objName, file);
 
 		// SectorLayer(char)
@@ -425,19 +432,37 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			case ObjectType::Ldoor: {
 				pGameObject = make_shared<Door>(objType);
 				AddInteractObject(objectID, pGameObject, GetIndex(position));
-				pInteractObjTable[objectID] = pGameObject;
+				pInteractObjTable[objectID] = reinterpret_pointer_cast<InteractObject>(pGameObject);
 				break;
 			}
 			case ObjectType::lever: {
 				pGameObject = make_shared<Lever>();
 				AddInteractObject(objectID, pGameObject, GetIndex(position));
-				pInteractObjTable[objectID] = pGameObject;
+				pInteractObjTable[objectID] = reinterpret_pointer_cast<InteractObject>(pGameObject);
 				break;
 			}
 			case ObjectType::waterDispenser: {
 				pGameObject = make_shared<WaterDispenser>();
 				AddInteractObject(objectID, pGameObject, GetIndex(position));
-				pInteractObjTable[objectID] = pGameObject;
+				pInteractObjTable[objectID] = reinterpret_pointer_cast<InteractObject>(pGameObject);
+				break;
+			}
+			case ObjectType::computer: {
+				// 활성화된 컴퓨터일 경우
+				if (find(_enableComputers.begin(), _enableComputers.end(), objectID) != _enableComputers.end()) {
+					pGameObject = make_shared<Computer>();
+					// Basic Shader로 그린다.
+					gameFramework.GetShader("BasicShader")->AddObject(pGameObject);
+					activeComputer = true;
+					AddInteractObject(objectID, pGameObject, GetIndex(position));
+					pInteractObjTable[objectID] = reinterpret_pointer_cast<InteractObject>(pGameObject);
+					pScene->AddComputer(reinterpret_pointer_cast<Computer>(pGameObject));
+				}
+				else {
+					continue;
+					pGameObject = make_shared<GameObject>();
+
+				}
 				break;
 			}
 			default: {
@@ -454,6 +479,10 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			// 섹터에 오브젝트를 추가한다. (충돌체크, 프러스텀 컬링용)
 			AddObject(objLayer, objectID, pGameObject, GetIndex(position));
 			
+			if (activeComputer) {
+				pGameObject->GetObj()->SetShaderType(ShaderType::basic);
+			}
+
 			if (pGameObject->GetObj()->GetShaderType() == ShaderType::instancing) {
 				// 인스턴싱을 사용하는 불투명한 오브젝트를 그리는 쉐이더
 				// 쉐이더에서는 읽는 기준이 달라지므로 전치행렬로 바꾸어준다.
@@ -553,15 +582,15 @@ void Zone::AnimateObjects(float _timeElapsed) {
 	}
 }
 
-shared_ptr<GameObject> Zone::UpdateInteractableObject() {
-	shared_ptr<GameObject> nearestObject;
+shared_ptr<InteractObject> Zone::UpdateInteractableObject() {
+	shared_ptr<InteractObject> nearestObject = nullptr;
 	float minDist = FLT_MAX;
 
 	vector<Sector*> checkSector = GetAroundSectors(pindex);
 	// 섹터마다 플레이어가 바라보고 있으면서 가장 가까운 오브젝트를 반환
 	for (auto& sector : checkSector) {
 
-		auto [dist, pGameObject] = sector->GetNearestInteractObject(pPlayer->GetWorldPosition(), pPlayer->GetWorldLookVector());
+		auto [dist, pGameObject] = sector->GetNearestInteractObject(pPlayer);
 		if (pGameObject) {
 			if (minDist > dist) {
 				minDist = dist;
@@ -575,8 +604,8 @@ shared_ptr<GameObject> Zone::UpdateInteractableObject() {
 	return nearestObject;
 }
 
-void Zone::InteractObject(UINT _objectID) {
-	shared_ptr<GameObject> pGameObject = pInteractObjTable[_objectID];
+void Zone::Interact(UINT _objectID) {
+	shared_ptr<InteractObject> pGameObject = pInteractObjTable[_objectID];
 	if (pGameObject)
 		pGameObject->Interact();
 	else

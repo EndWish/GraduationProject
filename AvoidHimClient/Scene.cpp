@@ -501,6 +501,10 @@ PlayScene::~PlayScene() {
 	pLightsBuffer->Unmap(0, NULL);
 }
 
+void PlayScene::AddComputer(const shared_ptr<Computer>& _pComputer) {
+	pEnableComputers.push_back(_pComputer);
+}
+
 void PlayScene::UpdateTimeText() {
 	UINT UINTTime = (UINT)remainTime;
 
@@ -543,17 +547,18 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 		// 부딪힐 경우 
 			
 		XMFLOAT3 knockBack = XMFLOAT3();
-		XMFLOAT3 lookVector, direcVector;
+		XMFLOAT3 lookVector, direcVector, rightVector;
 
 		for (auto& collideObj : collideObjs) {
 			// 물체의 룩벡터와 두 OOBB의 방향의 각을 비교해 룩벡터가 반대쪽에 있을경우 -1을 곱해준다.
 				
 			lookVector = collideObj->GetWorldLookVector();
+			rightVector = collideObj->GetWorldRightVector();
 			direcVector = Vector3::Subtract(pPlayer->GetBoundingBox().Center, collideObj->GetBoundingBox().Center);
 			direcVector.y = 0;
 			if (Vector3::Angle(direcVector, lookVector, false) > 90.0f) {
 				lookVector = Vector3::ScalarProduct(lookVector, -1.f);
-			}
+			}	
 			knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(Vector3::Normalize(lookVector), 0.01f));
 		}
 		// 부딪힌 오브젝트들의 룩벡터 방향들을 모아 그 방향으로 밀어준다.
@@ -593,15 +598,21 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	
 	pUIs["2DUI_interact"] = make_shared<Image2D>("2DUI_interact", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	 
+	pUIs["2DUI_hacking"] = make_shared<Image2D>("2DUI_hacking", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+	pUIs["2DUI_hackingFrame"] = make_shared<Image2D>("2DUI_hackingFrame", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+	
 	pTexts["remainTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.1f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, true);
 
 
 	SC_GAME_START* recvPacket = GetPacket<SC_GAME_START>();
-
+	array<UINT, MAX_PARTICIPANT> enComID;
+	for (int i = 0; i < MAX_PARTICIPANT; ++i) {
+		enComID[i] = recvPacket->activeComputerObjectID[i];
+	}
 	// Zone을 생성 후 맵파일을 읽어 오브젝트들을 로드한다.
+
 	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
-	pZone->LoadZoneFromFile(_pDevice, _pCommandList);
+	pZone->LoadZoneFromFile(_pDevice, _pCommandList, enComID);
 	
 	professorObjectID = recvPacket->professorObjectID;
 
@@ -645,6 +656,8 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pPlayer->UpdateObject();
 	camera = pPlayer->GetCamera();
 
+	pSkyBox = make_shared<SkyBox>(_pDevice, _pCommandList);
+
 	// 빛을 추가
 	shared_ptr<Light> baseLight = make_shared<Light>();
 
@@ -677,13 +690,14 @@ void PlayScene::ReleaseUploadBuffers() {
 void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	bool move = false;
+
 	GameFramework& gameFramework = GameFramework::Instance();
 	// 등속운동은 미리 timeElapsed를 곱해준다
 
 
 	if (_keyDownBuffer['E']) {
 		// 상호작용 키
-		if (pInteractableObject)
+		if (pInteractableObject && pInteractableObject->IsEnable())
 			pInteractableObject->QueryInteract();
 	}
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
@@ -719,9 +733,7 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 	if (move && !Vector3::IsSame(XMFLOAT3(), moveVector)) {
 		moveVector = Vector3::Normalize(moveVector);
 		pPlayer->RotateMoveHorizontal(moveVector, angleSpeed, moveSpeed);
-		pInteractableObject = pZone->UpdateInteractableObject();
-		bool enable = pInteractableObject == nullptr ? false : true;
-		pUIs["2DUI_interact"]->SetEnable(enable);
+
 	}
 	if (_keysBuffers[VK_SPACE] & 0xF0) {
 		pPlayer->Jump(500.0f);
@@ -732,28 +744,62 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 	pPlayer->Animate(_collideCheck, _timeElapsed);
 
+	bool enable = false;
+	// 현재 플레이어가 상호작용 가능한 오브젝트를 찾는다.
+	auto pObject = pZone->UpdateInteractableObject();
+
+	// 주변에 상호작용 오브젝트가 있다가 없어진 경우
+	if (pInteractableObject && !pObject) {
+		pInteractableObject->EndInteract();
+	}
+	pInteractableObject = pObject;
+
+	auto pComputer = pEnableComputers.end();
+
+
 	if (pInteractableObject) {
 
-		XMFLOAT2 pos = GetWorldToScreenCoord(pInteractableObject->GetBoundingBox().Center, camera->GetViewTransform(), camera->GetProjectionTransform());
-		// 상호작용 UI의 좌표를 갱신해준다.
-		// 뷰포트 좌표계 -1~1 -> UI좌표계 0~2
-		pUIs["2DUI_interact"]->SetPosition(XMFLOAT2(pos.x + 1, pos.y + 1));
-
+		// 현재 플레이어가 해킹중인 컴퓨터가 있는지 확인
+		// 현재 주변에 상호작용 오브젝트가 있으며 사용 가능할 경우
+		enable = pInteractableObject->IsEnable();
+		if (enable) {
+			XMFLOAT2 pos = GetWorldToScreenCoord(pInteractableObject->GetBoundingBox().Center, camera->GetViewTransform(), camera->GetProjectionTransform());
+			// 상호작용 UI의 좌표를 갱신해준다.
+			// 뷰포트 좌표계 -1~1 -> UI좌표계 0~2        
+			pUIs["2DUI_interact"]->SetPosition(XMFLOAT2(pos.x + 1, pos.y + 1));
+		}
+		// 내가 사용중인 컴퓨터인 경우
+		else {
+			pComputer = ranges::find(pEnableComputers, myObjectID, &Computer::GetUse);
+			if (pComputer != pEnableComputers.end()) {
+				float hackingRate = (*pComputer)->GetHackingRate();
+				pUIs["2DUI_hacking"]->SetEnable(true);
+				pUIs["2DUI_hacking"]->SetSizeUV(XMFLOAT2(hackingRate / 100, 1.f));
+				pUIs["2DUI_hackingFrame"]->SetEnable(true);
+			}
+		}
 	}
+	if (pComputer == pEnableComputers.end()) {
+		pUIs["2DUI_hacking"]->SetEnable(false);
+		pUIs["2DUI_hackingFrame"]->SetEnable(false);
+	}
+
+	pUIs["2DUI_interact"]->SetEnable(enable);
+	pUIs["2DUI_stamina"]->SetSizeUV(XMFLOAT2(pPlayer->GetMP() / 100, 1.f));
 
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
 		XMINT3 prevIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
 		pOtherPlayer->Animate(_timeElapsed);
 		XMINT3 nextIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
 
-		// 이전 인덱스와 비교해서 바뀌었다면 
+		// 이전 인덱스와 비교해서 바뀌었다면 섹터를 바꾸어준다.
 		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z)
 		{
 			pZone->HandOffObject(SectorLayer::obstacle, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
 		}
 	}
 
-	pZone->UpdatePlayerSector( );
+	pZone->UpdatePlayerSector();
 
 	for (auto& pLight : pLights) {
 		if (pLight) {
@@ -767,7 +813,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 	pZone->AnimateObjects(_timeElapsed);
 
-	pUIs["2DUI_stamina"]->SetSizeUV(XMFLOAT2(pPlayer->GetMP() / 100 , 1.f));
+	
 }
 
 void PlayScene::ProcessSocketMessage() 
@@ -795,19 +841,36 @@ void PlayScene::ProcessSocketMessage()
 	case SC_PACKET_TYPE::toggleDoor: {
 		SC_TOGGLE_DOOR* packet = GetPacket<SC_TOGGLE_DOOR>();
 		// 해당 오브젝트에 대한 상호작용을 한다.
-		pZone->InteractObject(packet->objectID);
-		cout << "문을 열어라. " << packet->objectID << "\n";
+		pZone->Interact(packet->objectID);
 		break;
 	}
 	case SC_PACKET_TYPE::useWaterDispenser: {
 		SC_USE_WATER_DISPENSER* packet = GetPacket<SC_USE_WATER_DISPENSER>();
 		// 해당 오브젝트에 대한 상호작용을 한다.
-		cout << "정수기ID" << packet->waterDispenserObjectID << "\n";
-		pZone->InteractObject(packet->waterDispenserObjectID);
-		cout << "objectID : " << packet->playerObjectID << "가 정수기를 사용했다.\n";
+		pZone->Interact(packet->waterDispenserObjectID);
 		if (packet->playerObjectID == myObjectID) {	// 자신이 정수기를 사용했을 경우
 			// 스테미너를 충전한다.
 			pPlayer->SetMP(100.f);
+		}
+		break;
+	}
+	case SC_PACKET_TYPE::hackingRate: {
+		// 어떤 플레이어가 해킹한 내용을 저장하고 사용중이지 않은 상태로 바꾸어준다.
+		SC_HACKING_RATE* packet = GetPacket<SC_HACKING_RATE>();
+
+		auto pComputer = ranges::find(pEnableComputers, packet->computerObjectID, &Computer::GetID);
+		(*pComputer)->SetHackingRate(packet->rate);
+		(*pComputer)->SetUse(0);
+		break;
+	}
+	case SC_PACKET_TYPE::useComputer: {
+		SC_USE_COMPUTER* packet = GetPacket<SC_USE_COMPUTER>();
+		auto pComputer = ranges::find(pEnableComputers, packet->computerObjectID, &Computer::GetID);
+		(*pComputer)->SetUse(packet->playerObjectID);
+		cout << "!";
+		// 내가 사용하게 될 경우
+		if (packet->playerObjectID == myObjectID) {
+			(*pComputer)->Interact();
 		}
 		break;
 	}
@@ -899,6 +962,10 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 
 	Shader::SetDescriptorHeap(_pCommandList);
 
+
+	gameFramework.GetShader("SkyBoxShader")->PrepareRender(_pCommandList);
+	pSkyBox->Render(_pCommandList);
+
 	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
 
 
@@ -909,6 +976,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	for (auto [name, pButton] : pButtons) {
 		pButton->Render(_pCommandList);
 	}
+
 	//gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
 	//pFrustumMesh->UpdateMesh(camera->GetBoundingFrustum());
 	//pFrustumMesh->Render(_pCommandList);

@@ -1,7 +1,7 @@
 cbuffer cbCameraInfo : register(b1) {
 	matrix view : packoffset(c0);
 	matrix projection : packoffset(c4);
-    float3 cameraPosition : packoffset(c36);
+    float3 cameraPosition : packoffset(c8);
 };
 
 cbuffer cbGameObjectInfo : register(b2) {
@@ -322,4 +322,36 @@ float4 InstancePixelShader(VS_OUTPUT input) : SV_TARGET
     //color = cColor;
 
     return color;
+}
+
+struct VS_S_IN
+{
+    float3 position : POSITION;
+    float2 uv : TEXCOORD;
+};
+
+struct VS_S_OUT
+{
+    float4 position : SV_POSITION;
+    float2 uv : TEXCOORD;
+};
+
+
+VS_S_OUT SkyBoxVertexShader(VS_S_IN input)
+{
+    
+    float3 pos = input.position + cameraPosition;
+    VS_S_OUT output;
+    
+    output.position = mul(mul(float4(pos, 1.0f), view), projection).xyww;
+    output.uv = input.uv;
+    return output;
+}
+
+float4 SkyBoxPixelShader(VS_S_OUT input) : SV_TARGET
+{
+    float2 uv = input.uv;
+    uv.y = 1 - uv.y;
+    float4 cColor = albedoMap.Sample(gssClamp, uv);
+    return cColor;
 }

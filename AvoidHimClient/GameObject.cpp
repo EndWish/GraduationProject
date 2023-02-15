@@ -274,14 +274,13 @@ void GameObject::UpdateObject() {
 	UpdateOOBB();
 }
 
-void GameObject::QueryInteract() {
-}
-
-void GameObject::Interact() {
-}
 
 ShaderType GameObject::GetShaderType() const {
 	return shaderType;
+}
+
+void GameObject::SetShaderType(ShaderType _shaderType) {
+	shaderType = _shaderType;
 }
 
 
@@ -723,6 +722,28 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 ///////////////////////////////////////////////////////////////////////////////
 ///
 
+
+InteractObject::InteractObject() {
+}
+
+InteractObject::~InteractObject() {
+}
+
+void InteractObject::Interact()
+{
+}
+
+void InteractObject::EndInteract() {
+
+}
+
+bool InteractObject::IsEnable() {
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///
+
 Door::Door(ObjectType _type) {
 	isLeft = _type == ObjectType::Ldoor ? true : false;
 	openAngle = 0.f;
@@ -798,6 +819,10 @@ void WaterDispenser::Animate(float _timeElapsed) {
 	}
 }
 
+bool WaterDispenser::IsEnable() {
+	return coolTime <= 0;
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ///
 
@@ -812,4 +837,126 @@ void Lever::QueryInteract() {
 }
 
 void Lever::Interact() {
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///
+
+Computer::Computer() {
+	power = true;
+	hackingRate = 0.f;
+	use = false;
+}
+Computer::~Computer() {
+	
+}
+
+void Computer::QueryInteract() {
+	if (IsEnable()) {
+		CS_QUERY_USE_COMPUTER sendPacket;
+		sendPacket.cid = cid;
+		sendPacket.playerObjectID = myObjectID;
+		sendPacket.computerObjectID = id;
+		SendFixedPacket(sendPacket);
+	}
+}
+
+void Computer::Interact() {
+	cout << " 컴퓨터 해킹 시작 \n";
+}
+
+bool Computer::IsEnable() {
+	// 전원이 들어와있으며 아무도 사용하지 않고, 해독완료되지 않은 컴퓨터
+	return (use == 0 && power && hackingRate < 100.f);
+}
+
+void Computer::SetHackingRate(float _rate) {
+	hackingRate = _rate;
+}
+
+void Computer::SetUse(UINT _use) {
+	use = _use;
+}
+
+void Computer::SetPower(bool _power) {
+	power = _power;
+}
+
+
+void Computer::Animate(float _timeElapsed) {
+	float hackingSpeed = 5.0f;
+	// 내가 컴퓨터를 사용중일 경우
+	if (hackingRate < 100.0f && use == myObjectID && power) {
+		cout << hackingRate << " % 해킹완료\n";
+		hackingRate += 5.0f * _timeElapsed;
+	}
+	else if (hackingRate >= 100.0f && use == myObjectID) {
+		use = 0;
+		CS_HACKING_RATE sendPacket;
+		sendPacket.cid = cid;
+		sendPacket.computerObjectID = id;
+		sendPacket.rate = hackingRate;
+		SendFixedPacket(sendPacket);
+		cout << "해킹 완료.\n";
+	}
+}
+void Computer::EndInteract() {
+	if (use == myObjectID) {
+		use = 0;
+		CS_HACKING_RATE sendPacket;
+		sendPacket.cid = cid;
+		sendPacket.computerObjectID = id;
+		sendPacket.rate = hackingRate;
+		SendFixedPacket(sendPacket);
+		cout << "해킹 취소 \n ";
+	}
+}
+
+float Computer::GetHackingRate() const {
+	return hackingRate;
+}
+
+UINT Computer::GetUse() const {
+	return use;
+}
+///////////////////////////////////////////////////////////////////////////////
+///
+
+SkyBox::SkyBox(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	// 큐브 오브젝트 리소스 생성
+	for (int i = 0; i < 6; i++) {
+		pMeshs[i] = make_shared<SkyBoxMesh>(i, _pDevice, _pCommandList);
+		pTextures[i] = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
+	}
+	// 앞뒤, 상하, 왼오
+	pTextures[0]->LoadFromFile("SkyBox_Back_0", _pDevice, _pCommandList, RESOURCE_TEXTURE2D, 0, 4);
+	pTextures[1]->LoadFromFile("SkyBox_Front_0", _pDevice, _pCommandList, RESOURCE_TEXTURE2D, 0, 4);
+	pTextures[2]->LoadFromFile("SkyBox_Top_0", _pDevice, _pCommandList, RESOURCE_TEXTURE2D, 0, 4);
+	pTextures[3]->LoadFromFile("SkyBox_Bottom_0", _pDevice, _pCommandList, RESOURCE_TEXTURE2D, 0, 4);
+	pTextures[4]->LoadFromFile("SkyBox_Left_0", _pDevice, _pCommandList, RESOURCE_TEXTURE2D, 0, 4);
+	pTextures[5]->LoadFromFile("SkyBox_Right_0", _pDevice, _pCommandList, RESOURCE_TEXTURE2D, 0, 4);
+
+
+	// SRV 적재
+	for (int i = 0; i < 6; i++) {
+		Shader::CreateShaderResourceViews(_pDevice, pTextures[i], 0, 4);
+	}
+
+}
+
+
+
+
+SkyBox::~SkyBox() {
+}
+
+void SkyBox::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+
+	for (int i = 0; i < 6; ++i) {
+		if (pTextures[i]) {
+			pTextures[i]->UpdateShaderVariable(_pCommandList);
+			if (pMeshs[i])
+				pMeshs[i]->Render(_pCommandList);
+		}
+	}
 }

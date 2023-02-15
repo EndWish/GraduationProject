@@ -15,7 +15,7 @@
 #define DRAW_BOUNDING
 
 #define SEND_PACKET_PERIOD (1 / 30.f)
-#define BUFSIZE 256
+
 
 // Windows 헤더 파일
 #include <windows.h>
@@ -281,6 +281,12 @@ namespace Vector3 {
 		return xmf3Result.x;
 	}
 
+	inline float Length(const XMFLOAT3& _vector1, const XMFLOAT3& _vector2) {
+		XMFLOAT3 xmf3Result;
+		XMStoreFloat3(&xmf3Result, XMVector3Length(XMLoadFloat3(&_vector1) - XMLoadFloat3(&_vector2)));
+		return xmf3Result.x;
+	}
+
 	inline float LengthEst(const XMFLOAT3& _vector) {
 		XMFLOAT3 xmf3Result;
 		XMStoreFloat3(&xmf3Result, XMVector3LengthEst(XMLoadFloat3(&_vector)));
@@ -292,6 +298,7 @@ namespace Vector3 {
 		XMStoreFloat3(&xmf3Result, XMVector3LengthSq(XMLoadFloat3(&_vector)));
 		return xmf3Result.x;
 	}
+
 }
 
 namespace Vector4 {

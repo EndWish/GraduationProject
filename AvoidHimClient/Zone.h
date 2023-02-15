@@ -1,6 +1,7 @@
 #pragma once
 
 class GameObject;
+class InteractObject;
 class Camera;
 class Player;
 class PlayScene;
@@ -11,7 +12,7 @@ class Sector {
 
 private:
 	vector<Layer> pGameObjectLayers;
-	unordered_map<UINT, shared_ptr<GameObject>> pInteractionObjects;
+	unordered_map<UINT, shared_ptr<InteractObject>> pInteractionObjects;
 public:
 	Sector();
 	~Sector();
@@ -37,7 +38,7 @@ public:
 	// 카메라시야와 벽이 출동하는지 확인
 	bool CheckObstacleBetweenPlayerAndCamera(const XMVECTOR& _origin, const XMVECTOR& _direction, float _curDistance);
 
-	pair<float, shared_ptr<GameObject>> GetNearestInteractObject(const XMFLOAT3& _playerPosition, const XMFLOAT3& _playerLookVector);
+	pair<float, shared_ptr<InteractObject>> GetNearestInteractObject(const shared_ptr<Player>& _pPlayer);
 };
 
 class Zone {
@@ -59,7 +60,7 @@ private:
 	shared_ptr<PlayScene> pScene; // 씬에 대한 포인터
 	unordered_map<string, vector<XMFLOAT4X4>> initVector; // 인스턴싱에 필요한 초기 벡터
 
-	unordered_map<UINT, shared_ptr<GameObject>> pInteractObjTable; // 패킷 도착시 오브젝트를 빠르게 찾기 위한 테이블
+	unordered_map<UINT, shared_ptr<InteractObject>> pInteractObjTable; // 패킷 도착시 오브젝트를 빠르게 찾기 위한 테이블
 
 public:
 	// 생성자, 소멸자
@@ -102,7 +103,7 @@ public:
 	// 뷰프러스텀과 충돌하는 섹터 얻기
 	vector<Sector*> GetFrustumSectors(const BoundingFrustum& _frustum);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum);
-	void LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const array<UINT, MAX_PARTICIPANT>& _enableComputers);
 	
 	// 회전에 대한 충돌을 확인하는 함수
 	vector<shared_ptr<GameObject>> CheckCollisionRotate(shared_ptr<GameObject> _pFloor = nullptr);
@@ -116,9 +117,9 @@ public:
 	bool CheckObstacleBetweenPlayerAndCamera(shared_ptr<Camera> _pCamera);
 	
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 갱신하는 함수
-	shared_ptr<GameObject> UpdateInteractableObject();
+	shared_ptr<InteractObject> UpdateInteractableObject();
 	// 특정 오브젝트에 대한 상호작용을 수행하는 함수
-	void InteractObject(UINT _objectID);
+	void Interact(UINT _objectID);
 	// 현재 플레이어가 위치한 섹터의 인덱스를 업데이트
 	void UpdatePlayerSector();
 

@@ -14,6 +14,7 @@
 #include <DirectXMath.h>
 using namespace DirectX;
 
+#define BUFSIZE 300
 #define MAX_PARTICIPANT 5
 #define SERVER_PERIOD (1.f / 10)
 #define WATER_DISPENSER_COOLTIME 10.f
@@ -21,13 +22,13 @@ using namespace DirectX;
 
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
-	toggleDoor, useWaterDispenser
+	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate
 };
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail, 
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID, 
-	playersInfo, toggleDoor, useWaterDispenser
+	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate
 
 };
 
@@ -59,7 +60,7 @@ enum class ObjectType : char {
 	studentStartPosition,
 	professorStartPosition,
 	computer,
-	prison,
+	prisonDoor,
 	light,
 
 };
@@ -126,6 +127,18 @@ struct CS_USE_WATER_DISPENSER {	// 해당 정수기를 사용하겠다고 보냄
 	UINT playerObjectID = 0;
 	UINT objectID = 0;
 };
+struct CS_QUERY_USE_COMPUTER {    // 해당 정수기를 사용하겠다고 보냄
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::queryUseComputer;
+	UINT cid = 0;
+	UINT playerObjectID = 0;
+	UINT computerObjectID = 0;
+};
+struct CS_HACKING_RATE {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::hackingRate;
+	UINT cid = 0;
+	UINT computerObjectID = 0;
+	float rate = 0.f;
+};
 
 /// 서버->클라
 struct SC_GIVE_CLIENT_ID {
@@ -176,8 +189,12 @@ struct SC_GAME_START {	// 방장이 시작을 눌렀을 떄 시작 가능한 상태인지 확인하여 
 	UINT professorObjectID = 0;
 	UINT nPlayer = 0;
 	SC_PLAYER_INFO playerInfo[MAX_PARTICIPANT];
+	UINT activeComputerObjectID[MAX_PARTICIPANT];
 	// SC_PLAYER_INFO 를 nPlayer만큼 추가로 전송한다.
 };
+
+
+
 struct SC_YOUR_PLAYER_OBJECTID {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::yourPlayerObjectID;
 	UINT objectID = 0;
@@ -221,5 +238,15 @@ struct SC_USE_WATER_DISPENSER {	// 해당 정수기를 cid 플레이어가 사용했다고 보냄
 	UINT waterDispenserObjectID = 0;
 };
 
+struct SC_USE_COMPUTER {    // 해당 정수기를 cid 플레이어가 사용했다고 보냄
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::useComputer;
+	UINT playerObjectID = 0;
+	UINT computerObjectID = 0;
+};
+struct SC_HACKING_RATE {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::hackingRate;
+	UINT computerObjectID = 0;
+	float rate = 0.f;
+};
 
 #pragma pack(pop)
