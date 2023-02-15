@@ -14,7 +14,6 @@
 //#define DEBUG
 #define DRAW_BOUNDING
 
-#define SEND_PACKET_PERIOD (1 / 30.f)
 
 
 // Windows 헤더 파일
@@ -30,6 +29,7 @@
 #include <string>
 #include <wrl.h>
 #include <shellapi.h>
+#include <mmsystem.h>
 
 // directX 헤더 파일
 #include <d3d11.h>
@@ -45,6 +45,7 @@
 #include <DirectXPackedVector.h>
 #include <DirectXColors.h>
 #include <DirectXCollision.h>
+#include <dsound.h>
 
 #include <mmsystem.h>
 
@@ -61,6 +62,7 @@
 #pragma comment(lib, "dxguid.lib")
 #pragma comment(lib, "d2d1.lib")
 #pragma comment(lib, "dwrite.lib")
+#pragma comment(lib, "dsound.lib")
 
 #include <SDKDDKVer.h>
 
@@ -108,9 +110,12 @@ extern UINT myObjectID;
 // 현재 클라이언트 크기
 extern RECT clientRect;
 
+
+extern UINT packetIDCount;
 // 고정 길이 패킷을 담을 버퍼
 
-extern array<char, BUFSIZE> buffer;
+extern array<char, BUFSIZE> sendBuffer;
+extern array<char, BUFSIZE> recvBuffer;
 
 using Microsoft::WRL::ComPtr;
 
@@ -142,13 +147,15 @@ XMFLOAT2 GetWorldToScreenCoord(const XMFLOAT3& _position, const XMFLOAT4X4& _vie
 // 마우스 클릭시 해당 좌표를 뷰포트 좌표계로 변경
 XMFLOAT2 GetViewportCoord(POINT _point);
 
-int RecvFixedPacket();
+int RecvFixedPacket(int _recvByte);
 
 // 패킷의 크기만큼에서 패킷의 타입 크기만큼을 제외한 실제 패킷의 내용만 Recv하는 함수
 template <class Packet>
 int SendFixedPacket(Packet& _packet) {
-	memcpy(buffer.data(), (char*)&_packet, sizeof(_packet));
-	int result = send(server_sock, buffer.data(), BUFSIZE, 0);
+	cout << (UINT)_packet.type << "타입의 패킷 전송!! packetID = " << packetIDCount << ", SendByte = ";
+	_packet.pid = packetIDCount++;
+	memcpy(sendBuffer.data(), (char*)&_packet, sizeof(_packet));
+	int result = send(server_sock, sendBuffer.data(), BUFSIZE, 0);
 	if (result == SOCKET_ERROR) {
 		if (WSAGetLastError() != WSAEWOULDBLOCK) {
 			// wouldblock이 아닐 경우 오류를 출력한다.
@@ -159,12 +166,13 @@ int SendFixedPacket(Packet& _packet) {
 			return result;
 		}
 	}
+	cout << result << "\n";
 	return result;
 }
 
 template <class Packet>
 Packet* GetPacket() {
-	return reinterpret_cast<Packet*>(buffer.data());
+	return reinterpret_cast<Packet*>(recvBuffer.data());
 }
 
 

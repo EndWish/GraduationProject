@@ -100,7 +100,7 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 
 	// 서버에게 움직인만큼 전송해준다.
 
-	if (sendMovePacketTime > SEND_PACKET_PERIOD) {
+	if (sendMovePacketTime > SERVER_PERIOD) {
 		sendMovePacketTime = 0.f;
 		CS_PLAYER_INFO packet;
 		packet.cid = cid;
@@ -108,8 +108,6 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		packet.rotation = localRotation;
 		packet.scale = localScale;
 		packet.objectID = id;
-		if (packet.cid == 0)
-			cout << name << "\n";
 		SendFixedPacket(packet);
 	}
 

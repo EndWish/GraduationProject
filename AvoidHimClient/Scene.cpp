@@ -137,9 +137,28 @@ void LobbyScene::ProcessSocketMessage() {
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	// 고정길이의 패킷을 Recv받는다.
-	RecvFixedPacket();
+	static int recvByte = 0;
+
+	int result = RecvFixedPacket(recvByte);
+	if (result != SOCKET_ERROR) {
+		recvByte += result;
+		// 덜 받은 경우
+		if (recvByte < BUFSIZE) {
+			return;
+		}
+		// 모두 받았을 경우
+		else {
+			recvByte = 0;
+		}
+	}
+	else {
+		// EWOULDBLOCK
+		return;
+	}
+	
+	
 	// 첫바이트를 읽어 패킷 타입을 알아낸다.
-	SC_PACKET_TYPE packetType = (SC_PACKET_TYPE)buffer[0];
+	SC_PACKET_TYPE packetType = (SC_PACKET_TYPE)recvBuffer[0];
 
 	switch (packetType) {
 	case SC_PACKET_TYPE::giveClientID: { // 처음 접속시 플레이어 cid를 부여받는 패킷
@@ -795,6 +814,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		// 이전 인덱스와 비교해서 바뀌었다면 섹터를 바꾸어준다.
 		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z)
 		{
+
 			pZone->HandOffObject(SectorLayer::obstacle, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
 		}
 	}
@@ -820,8 +840,26 @@ void PlayScene::ProcessSocketMessage()
 {
 	GameFramework& gameFramework = GameFramework::Instance();
 
-	RecvFixedPacket();
-	SC_PACKET_TYPE packetType = (SC_PACKET_TYPE)buffer[0];
+	// 고정길이의 패킷을 Recv받는다.
+	static int recvByte = 0;
+
+	int result = RecvFixedPacket(recvByte);
+	if (result != SOCKET_ERROR) {
+		recvByte += result;
+		// 덜 받은 경우
+		if (recvByte < BUFSIZE) {
+			return;
+		}
+		// 모두 받았을 경우
+		else {
+			recvByte = 0;
+		}
+	}
+	else {
+		// EWOULDBLOCK
+		return;
+	}
+	SC_PACKET_TYPE packetType = (SC_PACKET_TYPE)recvBuffer[0];
 	
 	switch (packetType) {
 	case SC_PACKET_TYPE::playersInfo: {

@@ -45,10 +45,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     if (server_sock == INVALID_SOCKET) SockErrorQuit("socket()");
 
 
-    string serverIP = "172.30.1.49";
+    string serverIP = "172.30.1.69";
     //string serverIP = "172.30.1.55";
     //string serverIP = "127.0.0.1";
-    
+
     // connect()
     struct sockaddr_in serveraddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
@@ -64,7 +64,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     // WSAAsyncSelect()
     result = WSAAsyncSelect(server_sock, hWnd, WM_SOCKET, FD_READ | FD_CLOSE);
     if (result == SOCKET_ERROR) SockErrorQuit("WSAAsyncSelect()");
-
+  
+    DWORD optval = 1;
+    setsockopt(server_sock, IPPROTO_TCP, TCP_NODELAY, (const char*)&optval, sizeof(optval));
 
     // 기본 메시지 루프입니다:
     while (true)

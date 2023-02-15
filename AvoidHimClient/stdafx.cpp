@@ -12,12 +12,14 @@ SOCKET server_sock = 0;
 
 UINT cid = 0;
 UINT myObjectID = 0;
+UINT packetIDCount = 0;
 
 RECT clientRect;
 random_device rd;
 mt19937 gen;
 
-array<char, BUFSIZE> buffer;
+array<char, BUFSIZE> sendBuffer;
+array<char, BUFSIZE> recvBuffer;
 
 
 
@@ -283,8 +285,8 @@ XMFLOAT2 GetViewportCoord(POINT _point)
 	return pf;
 }
 
-int RecvFixedPacket() {
-	int result = recv(server_sock, buffer.data(), BUFSIZE, 0);
+int RecvFixedPacket(int _recvByte) {
+	int result = recv(server_sock, recvBuffer.data() + _recvByte, BUFSIZE - _recvByte, 0);
 	if (result == SOCKET_ERROR) {
 		if (WSAGetLastError() != WSAEWOULDBLOCK) {
 			// wouldblock이 아닐 경우 오류를 출력한다.
@@ -295,5 +297,6 @@ int RecvFixedPacket() {
 			return result;
 		}
 	}
+	cout << "recvByte = " << result << "\n";
 	return result;
 }
