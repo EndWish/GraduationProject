@@ -22,7 +22,9 @@ private:
 	Room* pCurrentRoom;
 	PlayInfo* pCurrentPlayInfo;
 	
-	array<char, bufferSize> remainBuffer;
+	array<char, BUFSIZE> remainBuffer;
+	array<char, BUFSIZE> recvBuffer;
+	int recvByte;
 	// 최근 받은 패킷의 타입을 저장
 	CS_PACKET_TYPE lastPacketType;
 
@@ -32,8 +34,12 @@ public:
 	~Client();
 
 	// Get + Set 함수
-	array<char, bufferSize>& GetRemainBuffer() { return remainBuffer; }
-	void CopyRemainBuffer() { memcpy(remainBuffer.data(), buffer.data(), bufferSize); }
+	array<char, BUFSIZE>& GetRemainBuffer() { return remainBuffer; }
+	void CopyRemainBuffer() { memcpy(remainBuffer.data(), buffer.data(), BUFSIZE); }
+
+	array<char, BUFSIZE>& GetRecvBuffer() { return recvBuffer; }
+	
+	int& GetRecvByte() { return recvByte; }
 
 	void SetLastPacketType(CS_PACKET_TYPE _type) { lastPacketType = _type; }
 	CS_PACKET_TYPE GetLastPacketType() const { return lastPacketType; }

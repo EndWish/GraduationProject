@@ -50,6 +50,15 @@ enum class SectorLayer : char {
 	etc
 };
 
+enum class ShaderType : char {
+	none,
+	basic,
+	instancing,
+	blending,
+	skinned,
+	num
+};
+
 enum class ObjectType : char {
 	none,
 	wall,
@@ -61,16 +70,7 @@ enum class ObjectType : char {
 	professorStartPosition,
 	computer,
 	prisonDoor,
-	light,
-
-};
-enum class ShaderType : char {
-	none,
-	basic,
-	instancing,
-	blending,
-	skinned,
-	num,
+	light
 };
 #pragma pack(push, 1)
 
@@ -112,7 +112,7 @@ struct CS_PLAYER_INFO {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::playerInfo;
 	UINT cid = 0;
 	UINT objectID = 0;
-	XMFLOAT3 position = XMFLOAT3(0,0,0);
+	XMFLOAT3 position = XMFLOAT3(0, 0, 0);
 	XMFLOAT4 rotation = XMFLOAT4(0, 0, 0, 1);
 	XMFLOAT3 scale = XMFLOAT3(1, 1, 1);
 	float aniTime = 0.0f;
@@ -170,7 +170,6 @@ struct SC_ROOMLIST_INFO {	// 로비에서 볼때 필요한 방들에 대한 정보를 보내는 패킷
 	SC_SUB_ROOMLIST_INFO roomInfo[6];
 	// nRoom 개수만큼 "SC_SUB_ROOMLIST_INFO"를 전송한다.
 	UINT pid = 100'000;
-
 };
 struct SC_SUB_ROOM_PLAYERS_INFO {
 	UINT clientID = 0;
@@ -183,8 +182,8 @@ struct SC_ROOM_PLAYERS_INFO {	// 방에 입장했을때 존재하는 플레이어들의 정보를 보
 	UINT hostID = 0;
 	UINT nParticipant = 0;
 	SC_SUB_ROOM_PLAYERS_INFO participantInfos[MAX_PARTICIPANT];
+	UINT pid = 100'000;
 };
-
 struct SC_PLAYER_INFO {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::playerInfo;
 	UINT objectID = 0;
@@ -194,20 +193,18 @@ struct SC_PLAYER_INFO {
 	float aniTime = 0.0f;
 	UINT pid = 100'000;
 };
-
 struct SC_PLAYERS_INFO {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::playersInfo;
 	UINT nPlayer = 0;
 	SC_PLAYER_INFO playersInfo[MAX_PARTICIPANT];
 	UINT pid = 100'000;
 };
-
 struct SC_GAME_START {	// 방장이 시작을 눌렀을 떄 시작 가능한 상태인지 확인하여 보내줌
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::gameStart;
 	UINT professorObjectID = 0;
 	UINT nPlayer = 0;
 	SC_PLAYER_INFO playerInfo[MAX_PARTICIPANT];
-	UINT activeComputerObjectID[MAX_PARTICIPANT];
+	UINT activeComputerObjectID[MAX_PARTICIPANT]{ 0,0,0,0,0 };
 	// SC_PLAYER_INFO 를 nPlayer만큼 추가로 전송한다.
 	UINT pid = 100'000;
 };
@@ -219,7 +216,6 @@ struct SC_YOUR_PLAYER_OBJECTID {
 	UINT objectID = 0;
 	UINT pid = 100'000;
 };
-
 struct SC_ROOM_VISIT_PLAYER_INFO {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::roomVisitPlayerInfo;
 	UINT visitClientID = 0;
@@ -246,7 +242,6 @@ struct SC_All_PLAYER_LOADING_COMPLETE {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::allPlayerLoadingComplete;
 	UINT pid = 100'000;
 };
-
 struct SC_ANICLIP_CHANGE {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::aniClipChange;
 	UINT clientID = 0;
@@ -258,15 +253,13 @@ struct SC_TOGGLE_DOOR {
 	UINT objectID = 0;
 	UINT pid = 100'000;
 };
-
 struct SC_USE_WATER_DISPENSER {	// 해당 정수기를 cid 플레이어가 사용했다고 보냄
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::useWaterDispenser;
 	UINT playerObjectID = 0;
 	UINT waterDispenserObjectID = 0;
 	UINT pid = 100'000;
 };
-
-struct SC_USE_COMPUTER {    // 해당 정수기를 cid 플레이어가 사용했다고 보냄
+struct SC_USE_COMPUTER {	// 해당 정수기를 cid 플레이어가 사용했다고 보냄
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::useComputer;
 	UINT playerObjectID = 0;
 	UINT computerObjectID = 0;

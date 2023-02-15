@@ -30,7 +30,6 @@ ServerFramework& ServerFramework::Instance() {
 ServerFramework::ServerFramework() {
     windowHandle = HWND();
 
-    //timer = Timer();
     lastTime = chrono::system_clock::now();
 
 	clientIDCount = 1;
@@ -69,6 +68,9 @@ void ServerFramework::ProcessSocketMessage(HWND _hWnd, UINT _message, WPARAM _wP
         }
         cout << format("클라이언트 접속 : IP 주소={0}, 포트 번호={1}\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 
+        int optVal = 300 * 50;
+        setsockopt(clientSocket, SOL_SOCKET, SO_RCVBUF, (char*)&optVal, sizeof(optVal));
+
         // 새로운 클라이언트를 추가한다. (컨테이너에 추가)
         Client* pNewClient = new Client(clientSocket);
         AddClient(pNewClient);
@@ -93,7 +95,7 @@ void ServerFramework::ProcessSocketMessage(HWND _hWnd, UINT _message, WPARAM _wP
     case FD_WRITE: {  // https://m.blog.naver.com/PostView.naver?isHttpsRedirect=true&blogId=kkum04&logNo=150048096101 
         auto& remainBuffer = pClients[socketAndIdTable[(SOCKET)_wParam]]->GetRemainBuffer();
         if (remainBuffer[0] != 0)
-            cout << "FD_WRITE - send Byte : " << send((SOCKET)_wParam, remainBuffer.data(), bufferSize, 0) << "\n";
+            cout << "FD_WRITE - send Byte : " << send((SOCKET)_wParam, remainBuffer.data(), BUFSIZE, 0) << "\n";
         break;
     }
 
@@ -105,39 +107,55 @@ void ServerFramework::ProcessSocketMessage(HWND _hWnd, UINT _message, WPARAM _wP
     }
 }
 void ServerFramework::ProcessRecv(SOCKET _socket) {
-    Client* pClient;
+    Client* pClient = nullptr;
     if (socketAndIdTable.contains(_socket)) {
         pClient = pClients[socketAndIdTable[_socket]];
     }
     else {
         pClient = nullptr;
-    }
-
-    if (recv(_socket, buffer.data(), bufferSize, 0) == SOCKET_ERROR) {
-        SockErrorDisplay("recv() : ");
-        if (WSAGetLastError() == WSAEWOULDBLOCK)
-            cout << "WARINNG : WSAEWOULDBLOCK\n";
         return;
     }
 
+    int& recvByte = pClient->GetRecvByte();
+    auto& recvBuffer = pClient->GetRecvBuffer();
+    int result = recv(_socket, recvBuffer.data() + recvByte, BUFSIZE - recvByte, 0);
+    if (result == SOCKET_ERROR) {
+        if (WSAGetLastError() == WSAEWOULDBLOCK)
+            cout << "WARNING : WSAEWOULDBLOCK\n";
+        else
+            SockErrorDisplay("recv() : ");
+        return;
+    }
+    else {
+        recvByte += result;
+
+        if (recvByte < BUFSIZE) {
+            return;
+        }
+        else {
+            recvByte = 0;
+        }
+    }
+    globalRecvBuffer = move(recvBuffer);
+
     // 패킷타입을 읽는다.
-    CS_PACKET_TYPE packetType;
-    memcpy((char*)&packetType, buffer.data(), sizeof(packetType));
+    CS_PACKET_TYPE& packetType = GetPacket<CS_PACKET_TYPE>();
+
+    memcpy((char*)&packetType, globalRecvBuffer.data(), sizeof(packetType));
 
     switch (packetType) {
     case CS_PACKET_TYPE::makeRoom: {
-        CS_MAKE_ROOM recvPacket;
-        RecvContents(recvPacket);
-        cout << format("CS_MAKE_ROOM : hostID - {} \n", recvPacket.hostID);
+        CS_MAKE_ROOM& recvPacket = GetPacket<CS_MAKE_ROOM>();
+
+        cout << format("CS_MAKE_ROOM : hostID - {}, pid - {} \n", recvPacket.hostID, recvPacket.pid);
 
         AddRoom(recvPacket.hostID);
         break;
     }
     case CS_PACKET_TYPE::queryRoomlistInfo: {
         // 데이터 받기
-        CS_QUERY_ROOMLIST_INFO recvPacket;
-        RecvContents(recvPacket);
-        cout << format("CS_QUERY_ROOMLIST_INFO : cid - {}, roomPage - {} \n", recvPacket.cid, recvPacket.roomPage);
+        CS_QUERY_ROOMLIST_INFO& recvPacket = GetPacket<CS_QUERY_ROOMLIST_INFO>();
+        cout << format("CS_QUERY_ROOMLIST_INFO : cid - {}, roomPage - {}, pid - {}  \n", recvPacket.cid, recvPacket.roomPage, recvPacket.pid);
 
         // 방 리스트에 대한 데이터를 만든다.
         SendRoomlistInfo(pClient, recvPacket.roomPage);
@@ -145,9 +163,8 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     }
     case CS_PACKET_TYPE::visitRoom: {
         // 데이터 받기
-        CS_QUERY_VISIT_ROOM recvPacket;
-        RecvContents(recvPacket);
-        cout << format("CS_QUERY_VISIT_ROOM : cid - {}, visitRoomID - {} \n", recvPacket.cid, recvPacket.visitRoomID);
+        CS_QUERY_VISIT_ROOM& recvPacket = GetPacket<CS_QUERY_VISIT_ROOM>();
+        cout << format("CS_QUERY_VISIT_ROOM : cid - {}, visitRoomID - {}, pid - {}  \n", recvPacket.cid, recvPacket.visitRoomID, recvPacket.pid);
 
         // 방이 존재하지 않은 경우
         if (!pRooms.contains(recvPacket.visitRoomID)) { 
@@ -194,9 +211,8 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     }
     case CS_PACKET_TYPE::outRoom: {
         // 데이터 받기
-        CS_OUT_ROOM recvPacket;
-        RecvContents(recvPacket);
-        cout << format("CS_OUT_ROOM : cid - {}\n", recvPacket.cid);
+        CS_OUT_ROOM& recvPacket = GetPacket<CS_OUT_ROOM>();
+        cout << format("CS_OUT_ROOM : cid - {}, pid - {} \n", recvPacket.cid, recvPacket.pid);
 
         // 1. 플레이어를 방에서 내보낸다.
         Room* pRoom = pClients[recvPacket.cid]->GetCurrentRoom();
@@ -209,9 +225,8 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         break;
     }
     case CS_PACKET_TYPE::ready: {
-        CS_READY recvPacket;
-        RecvContents(recvPacket);
-        cout << format("CS_READY : cid - {}\n", recvPacket.cid);
+        CS_READY& recvPacket = GetPacket<CS_READY>();
+        cout << format("CS_READY : cid - {}, pid - {} \n", recvPacket.cid, recvPacket.pid);
 
         Client* pClient = pClients[recvPacket.cid];
         Room* pRoom = pClient->GetCurrentRoom();
@@ -260,47 +275,31 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         break;
     }
     case CS_PACKET_TYPE::loadingComplete: {
-        CS_LOADING_COMPLETE recvPacket;
-        RecvContents(recvPacket);
-        cout << format("CS_LOADING_COMPLETE : cid - {}, roomID - {} \n", recvPacket.cid, recvPacket.roomID);
+        CS_LOADING_COMPLETE& recvPacket = GetPacket<CS_LOADING_COMPLETE>();
+        cout << format("CS_LOADING_COMPLETE : cid - {}, roomID - {}, pid - {} \n", recvPacket.cid, recvPacket.roomID, recvPacket.pid);
 
         cout << recvPacket.roomID << " 번 방 로딩 완료 ! \n";
         PlayInfo* pPlayInfo = pPlayInfos[recvPacket.roomID];
         pPlayInfo->LoadingComplete(recvPacket.cid);
         break;
     }
-    case CS_PACKET_TYPE::playerInfo: {
-        CS_PLAYER_INFO recvPacket;
-        RecvContents(recvPacket);
-        cout << format("CS_PLAYER_INFO : cid - {}, objectID - {} \n", recvPacket.cid, recvPacket.objectID);
 
-        PlayInfo* pPlayInfo = pClients[recvPacket.cid]->GetCurrentPlayInfo();
-        pPlayInfo->ApplyCSPlayerInfo(recvPacket);
+    case CS_PACKET_TYPE::playerInfo:
+    case CS_PACKET_TYPE::toggleDoor:
+    case CS_PACKET_TYPE::useWaterDispenser:
+    case CS_PACKET_TYPE::queryUseComputer:
+    case CS_PACKET_TYPE::hackingRate: 
+    {
+        READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
+        //cout << format("READ_CID_IN_PACKET : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);
 
+        pClients[readFrontPart.cid]->GetCurrentPlayInfo()->ProcessRecv(packetType);
         break;
     }
-    case CS_PACKET_TYPE::toggleDoor: {
-        CS_TOGGLE_DOOR recvPacket;
-        RecvContents(recvPacket);
-        cout << format("CS_TOGGLE_DOOR : cid - {}, objectID - {} \n", recvPacket.cid, recvPacket.objectID);
-        
-        PlayInfo* pPlayInfo = pClients[recvPacket.cid]->GetCurrentPlayInfo();
-        pPlayInfo->ApplyToggleDoor(recvPacket.objectID);
 
-        break;
-    }
-    case CS_PACKET_TYPE::useWaterDispenser: {
-        CS_USE_WATER_DISPENSER recvPacket;
-        RecvContents(recvPacket);
-        cout << format("CS_USE_WATER_DISPENSER : cid - {}, objectID - {} \n", recvPacket.cid, recvPacket.objectID);
-
-        PlayInfo* pPlayInfo = pClients[recvPacket.cid]->GetCurrentPlayInfo();
-        pPlayInfo->ApplyUseWaterDispenser(recvPacket);
-
-        break;
-    }
     default:
-        cout << format("잘못된 패킷 번호 : {}, cid - {}\n", (int)packetType, *((UINT*)(buffer.data() + sizeof(CS_PACKET_TYPE))) );
+        READ_CID_IN_PACKET readFrontPart = GetPacket<READ_CID_IN_PACKET>();
+        cout << format("잘못된 패킷 번호 : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);
         break;
     }
 }
@@ -342,6 +341,12 @@ void ServerFramework::RemoveClient(UINT _clientID) {
         PlayInfo* pPlayInfo = pClient->GetCurrentPlayInfo();
         if (pPlayInfo != NULL) {
             pClient->SetDisconnected(true);
+            // 만약 방안의 모든 클라이언트가 disconnected라면 게임을 강제 종료 시킨다.
+            if (pPlayInfo->AllClientDisconnect()) {
+                UINT playInfoID = pPlayInfo->GetID();
+                delete pPlayInfo;
+                pPlayInfos.erase(playInfoID);
+            }
             return;
         }
 
@@ -468,12 +473,18 @@ void ServerFramework::LoadMapFile() {
         case ObjectType::Rdoor:
             if (objType == ObjectType::Ldoor || objType == ObjectType::Rdoor)
                 pObject = new Door();
+            __fallthrough;
         case ObjectType::lever:
             if (objType == ObjectType::lever)
                 pObject = new Lever();
+            __fallthrough;
         case ObjectType::waterDispenser:
             if (objType == ObjectType::waterDispenser)
                 pObject = new WaterDispenser();
+            __fallthrough;
+        case ObjectType::computer:
+            if (objType == ObjectType::computer)
+                pObject = new Computer();
             pObject->SetType(objType);
             pObject->SetID(objectIDStart);
             pInitialObjects.emplace_back(pObject->GetID(), pObject);

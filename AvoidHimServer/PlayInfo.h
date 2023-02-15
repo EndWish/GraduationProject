@@ -4,6 +4,13 @@
 
 class Client;
 
+#pragma pack(push, 1)
+struct READ_CID_IN_PACKET {
+	CS_PACKET_TYPE packetType = CS_PACKET_TYPE::none;
+	UINT cid = 0;
+};
+#pragma pack(pop)
+
 class PlayInfo {
 private:
 	UINT playInfoID;
@@ -20,6 +27,7 @@ private:
 	unordered_map<UINT, Door*> pDoors;	// objectID-object
 	unordered_map<UINT, Lever*> pLevers;	// objectID-object
 	unordered_map<UINT, WaterDispenser*> pWaterDispensers;	// objectID-object
+	unordered_map<UINT, Computer*> pComputers;	// objectID-object
 
 public:
 	// 持失切, 社瑚切
@@ -43,11 +51,10 @@ public:
 	void Init(UINT _roomID);
 	void LoadingComplete(UINT _clientID);
 	void ProcessLoadingComplete();
+	bool AllClientDisconnect();
 
 	void FrameAdvance(float _timeElapsed);
-	bool ApplyCSPlayerInfo(const CS_PLAYER_INFO& _packet);
-	void ApplyToggleDoor(UINT _objectID);
-	void ApplyUseWaterDispenser(const CS_USE_WATER_DISPENSER& _packet);
+	void ProcessRecv(CS_PACKET_TYPE _packetType);
 
 };
 

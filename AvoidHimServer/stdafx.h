@@ -38,8 +38,9 @@ using namespace std;
 extern random_device rd;
 extern UINT objectIDStart;	// Map파일을 읽어오고 나서 (플레이어 포함)추가적으로 생성하는 오브젝트에게 ID를 부여할때 시작할 번호 (objectIDCount는 각 경기마다 있어야 하므로)
 
-#define bufferSize 256
-extern array<char, bufferSize> buffer;
+extern array<char, BUFSIZE> globalRecvBuffer;
+extern array<char, BUFSIZE> buffer;
+extern UINT packetIDCount;
 
 /// 전역 함수
 //xmfloat 출력하기
@@ -54,14 +55,16 @@ void SockErrorDisplay(const char* msg);
 void SockErrorDisplay(int errcode);
 
 template <class Packet>
-void RecvContents(Packet& _packet) {
-	memcpy((char*)&_packet, buffer.data(), sizeof(_packet));
+Packet& GetPacket() {
+	return *reinterpret_cast<Packet*>(globalRecvBuffer.data());
 }
 
 template <class Packet>
-void SendContents(const SOCKET& _socket, array<char, bufferSize>& remainBuffer, const Packet& _packet) {
+void SendContents(const SOCKET& _socket, array<char, BUFSIZE>& remainBuffer, Packet& _packet) {
+	_packet.pid = packetIDCount++;
 	memcpy(buffer.data(), (const char*)&_packet, sizeof(_packet));
-	if (SOCKET_ERROR == send(_socket, buffer.data(), bufferSize, 0))
+	int result = send(_socket, buffer.data(), BUFSIZE, 0);
+	if (SOCKET_ERROR == result)
 	{
 		if (WSAGetLastError() == WSAEWOULDBLOCK) {
 			cout << "send WSAEWOULDBLOCK -> remainBuffer에 저장\n";

@@ -2,7 +2,6 @@
 #include "Client.h"
 #include "Room.h"
 #include "PlayInfo.h"
-#include "Timer.h"
 
 class ServerFramework {
 private:

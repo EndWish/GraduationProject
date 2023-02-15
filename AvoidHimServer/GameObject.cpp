@@ -2,8 +2,6 @@
 #include "GameObject.h"
 
 //////////////////////////////////////////
-
-
 GameObject::GameObject() {
 	name = "unknown";
 	type = ObjectType::none;
@@ -153,6 +151,30 @@ Lever& Lever::operator=(const Lever& _other) {
 	return *this;
 }
 Lever::~Lever() {
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Computer
+
+Computer::Computer() : GameObject() {
+	power = true;
+	hackingRate = 0.f;
+	use = false;
+}
+Computer::Computer(const Computer& _other) : GameObject(_other) {
+	power = _other.power;
+	hackingRate = _other.hackingRate;
+	use = _other.use;
+}
+Computer& Computer::operator=(const Computer& _other) {
+	GameObject::operator=(_other);
+	power = _other.power;
+	hackingRate = _other.hackingRate;
+	use = _other.use;
+	return *this;
+}
+Computer::~Computer() {
 
 }
 

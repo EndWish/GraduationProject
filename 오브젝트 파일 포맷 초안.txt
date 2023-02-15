@@ -18,6 +18,7 @@ nAnimationSet (UINT)		// 애니메이션 클립의 개수
 } ( * nAnimationSet)
 
 nameSize (UINT) / name(string) ( 실제 storage에 들어갈 최상위 오브젝트 )
+ShaderType(char)
 localPosition, Scale, Rotation(float3, float3, float4)
 haveMesh(int) 0일경우 메쉬 정보가 없음. 없다면 아래 메쉬, 마테리얼 스킵. 메쉬 있을경우 1, 스킨드 메쉬 일경우 2
 메쉬 정보

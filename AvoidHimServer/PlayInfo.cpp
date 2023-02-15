@@ -37,6 +37,10 @@ PlayInfo::~PlayInfo() {
 		delete pWaterDispenser;
 	pWaterDispensers.clear();
 
+	for (auto [objectID, pComputer] : pComputers)
+		delete pComputer;
+	pComputers.clear();
+
 }
 
 void PlayInfo::Init(UINT _roomID) {
@@ -49,6 +53,7 @@ void PlayInfo::Init(UINT _roomID) {
 	}
 
 	const vector<XMFLOAT3>& shuffledStudentStartPos = serverFramework.GetShuffledStudentStartPositions();
+	vector<UINT> computersObjectID;
 
 	// 초기 오브젝트들을 복사해서 가져온다.
 	const auto& initObjects = serverFramework.GetinitialObjects();
@@ -69,6 +74,12 @@ void PlayInfo::Init(UINT _roomID) {
 		case ObjectType::waterDispenser: {
 			pNewObject = new WaterDispenser(*static_cast<WaterDispenser*>(pObject));
 			pWaterDispensers.emplace(pNewObject->GetID(), static_cast<WaterDispenser*>(pNewObject));
+			break;
+		}
+		case ObjectType::computer: {
+			computersObjectID.push_back(objectID);
+			/*pNewObject = new Computer(*static_cast<Computer*>(pObject));
+			pComputers.emplace(pNewObject->GetID(), static_cast<Computer*>(pNewObject));*/
 			break;
 		}
 		default:
@@ -106,10 +117,17 @@ void PlayInfo::Init(UINT _roomID) {
 		sendPacket.objectID = pPlayer->GetID();
 		SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 	}
-	// 활성화될 컴퓨터와 레버를 정한다.
+
+	// 활성화될 컴퓨터와 레버를 정한다 => 플레이어 수(학생수 + 1) 만큼 활성화 시킨다.
+	ranges::shuffle(computersObjectID, rd);
+	for (UINT computerObjectID : computersObjectID | views::take(pPlayers.size())) {
+		Computer* pNewObject = new Computer();
+		pNewObject->SetType(ObjectType::computer);
+		pNewObject->SetID(computerObjectID);
+		pComputers.emplace(pNewObject->GetID(), pNewObject);
+	}
 
 	// 참가자들에게 게임이 시작되었다는 패킷을 전송한다.
-	char* bufWriter = buffer.data();
 
 	//	 SC_GAME_START의 내용을 buf에 채운다.
 	SC_GAME_START sendPacket;
@@ -127,6 +145,10 @@ void PlayInfo::Init(UINT _roomID) {
 		playerInfo.scale = pPlayer->GetScale();
 
 		++index;
+	}
+	// activeComputerObjectID 의 내용을 채운다.
+	for (int index = 0; auto [objectID, pObject] : pComputers) {
+		sendPacket.activeComputerObjectID[index++] = objectID;
 	}
 
 	// 내용을 전부다 채운 buf를 각 플레이어들에게 전송한다.
@@ -170,6 +192,14 @@ void PlayInfo::ProcessLoadingComplete() {
 	}
 }
 
+bool PlayInfo::AllClientDisconnect() {
+	for (auto [clientID, participant] : participants) {
+		if (!participant->IsDisconnected())
+			return false;
+	}
+	return true;
+}
+
 void PlayInfo::FrameAdvance(float _timeElapsed) {
 	if (!allPlayerLoadingComplete)
 		return;
@@ -178,7 +208,7 @@ void PlayInfo::FrameAdvance(float _timeElapsed) {
 
 	// 플레이어의 위치를 보내준다.
 	SC_PLAYERS_INFO sendPacket;
-	sendPacket.nPlayer = pPlayers.size();
+	sendPacket.nPlayer = (UINT)pPlayers.size();
 	for (int index = 0; auto [objectID, pPlayer] : pPlayers) {
 		SC_PLAYER_INFO& playerInfo = sendPacket.playersInfo[index];
 
@@ -202,46 +232,96 @@ void PlayInfo::FrameAdvance(float _timeElapsed) {
 
 }
 
-bool PlayInfo::ApplyCSPlayerInfo(const CS_PLAYER_INFO& _packet) {
-	GameObject* pPlayer = pPlayers[_packet.objectID];
-	//[수정] aniTime을 적용시켜 준다.
-	pPlayer->SetPosition(_packet.position);
-	pPlayer->SetRotation(_packet.rotation);
-	pPlayer->SetScale(_packet.scale);
+void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
+	switch (_packetType) {
+	case CS_PACKET_TYPE::playerInfo: {
+		CS_PLAYER_INFO& recvPacket = GetPacket<CS_PLAYER_INFO>();
+		cout << format("CS_PLAYER_INFO : cid - {}, objectID - {}, pid - {} \n", recvPacket.cid, recvPacket.objectID, recvPacket.pid);
 
-	return false;
-}
+		GameObject* pPlayer = pPlayers[recvPacket.objectID];
+		//[수정] aniTime을 적용시켜 준다.
+		pPlayer->SetPosition(recvPacket.position);
+		pPlayer->SetRotation(recvPacket.rotation);
+		pPlayer->SetScale(recvPacket.scale);
 
-void PlayInfo::ApplyToggleDoor(UINT _objectID) {
-	auto it = pDoors.find(_objectID);
-	if (it != pDoors.end()) {
-		Door* pDoor = it->second;
-		pDoor->SetOpen(!pDoor->IsOpen());
+		break;
+	}
+	case CS_PACKET_TYPE::toggleDoor: {
+		CS_TOGGLE_DOOR& recvPacket = GetPacket<CS_TOGGLE_DOOR>();
+		cout << format("CS_TOGGLE_DOOR : cid - {}, objectID - {}, pid - {} \n", recvPacket.cid, recvPacket.objectID, recvPacket.pid);
 
-		SC_TOGGLE_DOOR sendPacket;
-		sendPacket.objectID = _objectID;
+		auto it = pDoors.find(recvPacket.objectID);
+		if (it != pDoors.end()) {
+			Door* pDoor = it->second;
+			pDoor->SetOpen(!pDoor->IsOpen());
 
+			SC_TOGGLE_DOOR sendPacket;
+			sendPacket.objectID = recvPacket.objectID;
+
+			for (auto [participant, pClient] : participants) {
+				SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+			}
+		}
+		else {
+			cout << "\b해당하는 ID의 문이 없습니다.\n";
+		}
+
+		break;
+	}
+	case CS_PACKET_TYPE::useWaterDispenser: {
+		CS_USE_WATER_DISPENSER& recvPacket = GetPacket<CS_USE_WATER_DISPENSER>();
+		cout << format("CS_USE_WATER_DISPENSER : cid - {}, objectID - {}, pid - {} \n", recvPacket.cid, recvPacket.objectID, recvPacket.pid);
+
+		WaterDispenser* pWaterDispenser = pWaterDispensers[recvPacket.objectID];
+
+		if (pWaterDispenser->GetCoolTime() <= 0) {	// 정수기를 사용할 수 있을 경우
+			pWaterDispenser->SetCoolTime(WATER_DISPENSER_COOLTIME);
+			SC_USE_WATER_DISPENSER sendPacket;
+			sendPacket.playerObjectID = recvPacket.playerObjectID;
+			sendPacket.waterDispenserObjectID = recvPacket.objectID;
+
+			for (auto [participant, pClient] : participants) {
+				SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+			}
+		}
+		break;
+	}
+	case CS_PACKET_TYPE::queryUseComputer: {
+		CS_QUERY_USE_COMPUTER& recvPacket = GetPacket<CS_QUERY_USE_COMPUTER>();
+		cout << format("CS_QUERY_USE_COMPUTER : cid - {}, computerObjectID - {}, playerObjectID - {}, pid - {} \n", recvPacket.cid, recvPacket.computerObjectID, recvPacket.playerObjectID, recvPacket.pid);
+
+		Computer* pComputer = pComputers[recvPacket.computerObjectID];
+		if (pComputer->GetPower() && !pComputer->GetUse() && pComputer->GetHackingRate() < 100.f) {
+			pComputer->SetUse(true);
+			SC_USE_COMPUTER sendPacket;
+			sendPacket.computerObjectID = recvPacket.computerObjectID;
+			sendPacket.playerObjectID = recvPacket.playerObjectID;
+			for (auto [participant, pClient] : participants) {
+				SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+			}
+		}
+		
+		break;
+	}
+	case CS_PACKET_TYPE::hackingRate: {
+		CS_HACKING_RATE& recvPacket = GetPacket<CS_HACKING_RATE>();
+		cout << format("CS_HACKING_RATE : cid - {}, computerObjectID - {}, rate - {}, pid - {} \n", recvPacket.cid, recvPacket.computerObjectID, recvPacket.rate, recvPacket.pid);
+		Computer* pComputer = pComputers[recvPacket.computerObjectID];
+		pComputer->SetHackingRate(recvPacket.rate);
+		pComputer->SetUse(false);
+
+		SC_HACKING_RATE sendPacket;
+		sendPacket.computerObjectID = pComputer->GetID();
+		sendPacket.rate = pComputer->GetHackingRate();
 		for (auto [participant, pClient] : participants) {
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
-	}
-	else {
-		cout << "\b해당하는 ID의 문이 없습니다.\n";
+		break;
 	}
 
-}
-
-void PlayInfo::ApplyUseWaterDispenser(const CS_USE_WATER_DISPENSER& _packet) {
-	WaterDispenser* pWaterDispenser = pWaterDispensers[_packet.objectID];
-
-	if (pWaterDispenser->GetCoolTime() <= 0) {	// 정수기를 사용할 수 있을 경우
-		pWaterDispenser->SetCoolTime(WATER_DISPENSER_COOLTIME);
-		SC_USE_WATER_DISPENSER sendPacket;
-		sendPacket.playerObjectID = _packet.playerObjectID;
-		sendPacket.waterDispenserObjectID = _packet.objectID;
-
-		for (auto [participant, pClient] : participants) {
-			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
-		}
+	default:
+		READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
+		cout << format("잘못된 패킷 번호 : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);
+		break;
 	}
 }

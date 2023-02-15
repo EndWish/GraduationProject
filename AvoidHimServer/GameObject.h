@@ -91,7 +91,7 @@ public:
 	virtual ~WaterDispenser();
 
 	float GetCoolTime() { return coolTime; }
-	void SetCoolTime(bool _coolTime) { coolTime = _coolTime; }
+	void SetCoolTime(float _coolTime) { coolTime = _coolTime; }
 	void SubtractCoolTime(float _time) { coolTime -= _time; }
 
 	virtual void Animate(float _timeElapsed);
@@ -113,5 +113,29 @@ public:
 
 	bool GetPower() { return power; }
 	void SetPower(bool _power) { power = _power; }
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
+/// Computer
+
+class Computer : public GameObject {
+protected:
+	bool power;
+	float hackingRate;
+	bool use;
+
+public:
+	Computer();
+	Computer(const Computer& _other);
+	Computer& operator=(const Computer& _other);	// 복사 대입 연산자
+	virtual ~Computer();
+
+	bool GetPower() { return power; }
+	void SetPower(bool _power) { power = _power; }
+	float GetHackingRate() { return hackingRate; }
+	void SetHackingRate(float _hackingRate) { hackingRate = _hackingRate; }
+	bool GetUse() { return use; }
+	void SetUse(bool _use) { use = _use; }
 
 };

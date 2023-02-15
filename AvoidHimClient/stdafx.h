@@ -106,6 +106,7 @@ extern SOCKET server_sock;
 // 현재 클라이언트가 서버에게 부여받은 고유 클라이언트 id
 extern UINT cid;
 extern UINT myObjectID;
+extern UINT packetIDCount;
 
 // 현재 클라이언트 크기
 extern RECT clientRect;
@@ -166,7 +167,6 @@ int SendFixedPacket(Packet& _packet) {
 			return result;
 		}
 	}
-	cout << result << "\n";
 	return result;
 }
 

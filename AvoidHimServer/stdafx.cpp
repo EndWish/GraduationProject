@@ -2,8 +2,10 @@
 
 random_device rd;
 UINT objectIDStart = 1;
+UINT packetIDCount = 100'000;
 
-array<char, bufferSize> buffer;
+array<char, BUFSIZE> globalRecvBuffer;
+array<char, BUFSIZE> buffer;
 
 // 소켓 함수 오류 출력
 //xmfloat 출력하기
