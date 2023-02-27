@@ -108,13 +108,12 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		moveDistance += Vector3::Length(Vector3::Subtract(prevPosition, position));
 	}
 
-	if (moveDistance > 2.0f) {
+	if (moveDistance > 1.0f) {
 		pFootStepSound->Play();
 		moveDistance = 0.f;
 	}
 
 	// 서버에게 움직인만큼 전송해준다.
-	cout << GetWorldPosition() << "\n";
 	if (sendMovePacketTime > SERVER_PERIOD) {
 		sendMovePacketTime = 0.f;
 		CS_PLAYER_INFO packet;

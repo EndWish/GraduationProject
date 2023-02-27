@@ -124,7 +124,7 @@ void Sound::Init(const ComPtr<IDirectSound8>& _pDirectSound, string _name) {
 	cout << bufferSize << " , " << dataSize << "\n";
 	memcpy(bufferPtr, pcmData, dataSize);
 
-	hr = pSecondaryBuffer->Unlock((void**)&bufferPtr, bufferSize, NULL, 0);
+	hr = pSecondaryBuffer->Unlock((void*)bufferPtr, bufferSize, NULL, 0);
 	if (FAILED(hr)) {
 		cout << "Error : Unlock() : " << _name << "\n";
 	}
@@ -177,7 +177,6 @@ void SoundManager::Init(HWND _hwnd) {
 	if (FAILED(pDirectSound->CreateSoundBuffer(&primaryBufferDesc, &pPrimaryBuffer, NULL))) {
 		cout << "Error : primaryBuffer CreateSoundBuffer()\n";
 	}
-
 	WAVEFORMATEX Waveformat{ 0 };
 	Waveformat.cbSize = sizeof(WAVEFORMATEX);
 	Waveformat.wFormatTag = WAVE_FORMAT_PCM;
@@ -194,7 +193,6 @@ void SoundManager::Init(HWND _hwnd) {
 	if (FAILED(hr)) {
 		cout << "Error : QueryInterface() "<< "\n";
 	}
-
 	/////////////////////////////////
 
 	pSounds["audio"] = LoadFile("audio");
@@ -211,12 +209,10 @@ void SoundManager::Play(string _name, bool _loop) {
 	pSounds[_name]->Play(_loop);
 }
 
-void SoundManager::SetPosition(const XMFLOAT3& _pos) {
-	pListener->SetPosition(_pos.x, _pos.y, _pos.z, DS3D_IMMEDIATE);
-}
-
-void SoundManager::SetOrientation(const XMFLOAT3& _look, const XMFLOAT3& _up) {
-	pListener->SetOrientation(_look.x, _look.y, _look.z, _up.x, _up.y, _up.z, DS3D_IMMEDIATE);
+void SoundManager::UpdateListener(const XMFLOAT3& _pos, const XMFLOAT3& _look, const XMFLOAT3& _up) {
+	pListener->SetPosition(_pos.x, _pos.y, _pos.z, DS3D_DEFERRED);
+	pListener->SetOrientation(_look.x, _look.y, _look.z, _up.x, _up.y, _up.z, DS3D_DEFERRED);
+	pListener->CommitDeferredSettings();
 }
 
 

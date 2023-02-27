@@ -699,18 +699,18 @@ void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 	localRotation = Vector4::QuaternionSlerp(prevRotation, nextRotation, t);
 	localScale = Vector3::Lerp(prevScale, nextScale, t);
 
-	XMFLOAT3 position = GetWorldPosition();
+	UpdateObject();
 
+	XMFLOAT3 position = GetWorldPosition();
 	pFootStepSound->SetPosition(position);
 	if (position.y == prevPosition.y) {
 		moveDistance += Vector3::Length(Vector3::Subtract(prevPosition, position));
 	}
-	if (moveDistance > 2.0f) {
+	if (moveDistance > (1.0f * 2)) {
 		pFootStepSound->Play();
 		moveDistance = 0.f;
 	}
 
-	UpdateObject();
 }
 
 void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale) {
@@ -730,6 +730,7 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 	nextScale = _scale;
 
 	UpdateObject();
+	
 	t = 0;
 }
 

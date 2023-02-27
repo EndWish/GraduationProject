@@ -73,7 +73,8 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	gameFramework.GetTextureManager().GetTexture("2DUI_ready", _pDevice, _pCommandList);
 	gameFramework.GetTextureManager().GetTexture("2DUI_host", _pDevice, _pCommandList);
 	gameFramework.GetTextureManager().GetTexture("2DUI_roomInfo", _pDevice, _pCommandList);
-	
+
+	gameFramework.GetSoundManager().Play("audio");
 	pBackGround = make_shared<Image2D>("2DUI_title", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList);
 
 
@@ -614,7 +615,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	shared_ptr<Image2D> pImg;
 	pUIs["2DUI_hp"] = make_shared<Image2D>("2DUI_hp", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	pUIs["2DUI_stamina"] = make_shared<Image2D>("2DUI_stamina", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
-	//pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+	pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	
 	pUIs["2DUI_interact"] = make_shared<Image2D>("2DUI_interact", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	pUIs["2DUI_hacking"] = make_shared<Image2D>("2DUI_hacking", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
@@ -718,7 +719,6 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		// 상호작용 키
 		if (pInteractableObject && pInteractableObject->IsEnable())
 			pInteractableObject->QueryInteract();
-		gameFramework.GetSoundManager().Play("audio");
 	}
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
 		pPlayer->Dash(_timeElapsed);
@@ -762,13 +762,13 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 
 void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
+	cout << "실행\n";
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	pPlayer->Animate(_collideCheck, _timeElapsed);
 
 	// 청자의 위치를 업데이트해준다. ( 부하가 심하다 )
-	gameFramework.GetSoundManager().SetPosition(pPlayer->GetWorldPosition());
-	gameFramework.GetSoundManager().SetOrientation(camera->GetWorldLookVector(), camera->GetWorldUpVector());
+	gameFramework.GetSoundManager().UpdateListener(pPlayer->GetWorldPosition(), camera->GetWorldLookVector(), camera->GetWorldUpVector());
 
 	bool enable = false;
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 찾는다.
@@ -816,12 +816,11 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
 		XMINT3 prevIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
 		pOtherPlayer->Animate(_timeElapsed);
+
 		XMINT3 nextIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
 
 		// 이전 인덱스와 비교해서 바뀌었다면 섹터를 바꾸어준다.
-		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z)
-		{
-
+		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
 			pZone->HandOffObject(SectorLayer::obstacle, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
 		}
 	}
@@ -871,7 +870,7 @@ void PlayScene::ProcessSocketMessage()
 	switch (packetType) {
 	case SC_PACKET_TYPE::playersInfo: {
 		SC_PLAYERS_INFO* packet = GetPacket<SC_PLAYERS_INFO>();
-
+		XMINT3 prevIndex, nextIndex;
 		for (UINT i = 0; i < packet->nPlayer; ++i) {
 			// 본인에 대한 정보일 경우 
 			SC_PLAYER_INFO& pinfo = packet->playersInfo[i];
@@ -879,7 +878,13 @@ void PlayScene::ProcessSocketMessage()
 				continue;
 			// 받은 플레이어의 새 월드정보를 업데이트 해준다.
 			shared_ptr<InterpolateMoveGameObject> pMoveClient = pOtherPlayers.find(pinfo.objectID)->second;
+			prevIndex = pZone->GetIndex(pMoveClient->GetWorldPosition());
 			pMoveClient->SetNextTransform(pinfo.position, pinfo.rotation, pinfo.scale);
+			nextIndex = pZone->GetIndex(pMoveClient->GetWorldPosition());
+			if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
+				pZone->HandOffObject(SectorLayer::obstacle, pMoveClient->GetID(), pMoveClient, prevIndex, nextIndex);
+			}
+			
 		}
 		break;
 	}

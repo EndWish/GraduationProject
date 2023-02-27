@@ -62,6 +62,5 @@ public:
 	void Init(HWND _hwnd);
 	shared_ptr<Sound> LoadFile(string _name);
 	void Play(string _name, bool _loop = false);
-	void SetPosition(const XMFLOAT3& _pos);
-	void SetOrientation(const XMFLOAT3& _look, const XMFLOAT3& _up);
+	void UpdateListener(const XMFLOAT3& _pos, const XMFLOAT3& _look, const XMFLOAT3& _up);
 };
