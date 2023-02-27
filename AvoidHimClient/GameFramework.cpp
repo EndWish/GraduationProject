@@ -21,12 +21,13 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 		gameFramework.CreateDepthStencilView();
 		gameFramework.CreateGraphicsRootSignature();
 
-		//CoInitialize(NULL);
+		CoInitialize(NULL);
 		gameFramework.pCommandList->Reset(gameFramework.pCommandAllocator.Get(), NULL);
 
 		D3D12_CPU_DESCRIPTOR_HANDLE d3dRtvCPUDescriptorHandle = gameFramework.pRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 		d3dRtvCPUDescriptorHandle.ptr += (gameFramework.rtvDescriptorIncrementSize * gameFramework.nSwapChainBuffer);
 
+		gameFramework.pSoundManager.Init(_hMainWnd);
 
 		// ½¦ÀÌ´õ »ý¼º
 		if (!gameFramework.InitShader(gameFramework.pDevice, gameFramework.pRootSignature)) {
@@ -476,6 +477,12 @@ TextureManager& GameFramework::GetTextureManager() {
 GameObjectManager& GameFramework::GetGameObjectManager() {
 	return gameObjectManager;
 }
+
+
+SoundManager& GameFramework::GetSoundManager() {
+	return pSoundManager;
+}
+
 shared_ptr<Shader> GameFramework::GetShader(const string& _name)
 {
 	return shaderManager.GetShader(_name);

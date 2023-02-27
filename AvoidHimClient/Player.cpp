@@ -5,6 +5,7 @@
 
 
 Player::Player() {
+	moveDistance = 0.f;
 	landed = false;
 	mass = 100.0f;
 	velocity = XMFLOAT3();
@@ -40,6 +41,7 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 	SetChild(pCamera);
 	pCamera->UpdateObject();
 
+	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
 	UpdateObject();
 
 }
@@ -50,6 +52,9 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 void Player::Animate(char _collideCheck, float _timeElapsed) {
 
+
+	XMFLOAT3 prevPosition = GetWorldPosition();
+	XMFLOAT3 position;
 	if (speed > 5.f) {
 		// 속도 초기화
 		speed = 5.f;
@@ -59,7 +64,6 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		mp += mpTick * _timeElapsed;
 		mp = min(100.0f, mp);
 	}
-
 
 	sendMovePacketTime += (float)_timeElapsed;
 	// y방향으로 충돌하지 않을 경우
@@ -84,6 +88,7 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		Move(knockBack);
 	}
 
+
 	// 프레임에 모인 이동 및 회전값을 초기화해준다.
 	velocity.x = 0;
 	velocity.z = 0;
@@ -94,12 +99,22 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 	// 속도를 업데이트 해준다.
 	UpdateRigidBody(_timeElapsed);
 
-
 	// 월드행렬을 업데이트 해준다.
 	GameObject::UpdateObject();
+	pFootStepSound->SetPosition(GetWorldPosition());
+
+	position = GetWorldPosition();
+	if (!(_collideCheck & 1)) {
+		moveDistance += Vector3::Length(Vector3::Subtract(prevPosition, position));
+	}
+
+	if (moveDistance > 2.0f) {
+		pFootStepSound->Play();
+		moveDistance = 0.f;
+	}
 
 	// 서버에게 움직인만큼 전송해준다.
-
+	cout << GetWorldPosition() << "\n";
 	if (sendMovePacketTime > SERVER_PERIOD) {
 		sendMovePacketTime = 0.f;
 		CS_PLAYER_INFO packet;

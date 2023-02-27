@@ -1,6 +1,7 @@
 #pragma once
 #include "Timer.h"
 #include "Scene.h"
+#include "Sound.h"
 
 class GameFramework {
 	// 정적 변수 
@@ -56,7 +57,6 @@ private:
 	// 게임 타이머
 	Timer gameTimer;
 
-
 	// 이전 프레임에서의 마우스 커서 위치를 저장하는 변수
 	POINT oldCursorPos;
 
@@ -76,6 +76,10 @@ private:
 	GameObjectManager gameObjectManager;
 	
 	ShaderManager shaderManager;
+
+	// 사운드 매니저
+	SoundManager pSoundManager;
+
 	// 애니메이션 매니저 ? 
 	// 씬
 	stack<shared_ptr<Scene>> pScenes;
@@ -116,6 +120,7 @@ public:
 
 	TextureManager& GetTextureManager();
 	GameObjectManager& GetGameObjectManager();
+	SoundManager& GetSoundManager();
 	shared_ptr<Shader> GetShader(const string& _name);
 	UINT GetCurrentSwapChainIndex() { return swapChainBufferCurrentIndex; };
 

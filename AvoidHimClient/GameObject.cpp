@@ -50,7 +50,6 @@ void GameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice
 	// 인스턴스의 자식으로 그 오브젝트의 정보를 설정
 
 	if (temp) {
-
 		// 인스턴스가 CoverOOBB를 갖게 된다.
 		name = temp->GetName() + "_Instance";
 		isOOBBCover = true;
@@ -682,8 +681,10 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 }
 
 void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework& gameFramework = GameFramework::Instance();
 	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
 	name = "OtherPlayer";
+	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
 }
 
 InterpolateMoveGameObject::~InterpolateMoveGameObject() {
@@ -691,11 +692,24 @@ InterpolateMoveGameObject::~InterpolateMoveGameObject() {
 
 void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 	// 서버의 다음 주기가 돌때를 t = 1로 잡고 보간한다
+	XMFLOAT3 prevPosition = GetWorldPosition();
 	t += _timeElapsed / SERVER_PERIOD; 
 	t = min(t, 1.f);
 	localPosition = Vector3::Lerp(prevPosition, nextPosition, t);
 	localRotation = Vector4::QuaternionSlerp(prevRotation, nextRotation, t);
 	localScale = Vector3::Lerp(prevScale, nextScale, t);
+
+	XMFLOAT3 position = GetWorldPosition();
+
+	pFootStepSound->SetPosition(position);
+	if (position.y == prevPosition.y) {
+		moveDistance += Vector3::Length(Vector3::Subtract(prevPosition, position));
+	}
+	if (moveDistance > 2.0f) {
+		pFootStepSound->Play();
+		moveDistance = 0.f;
+	}
+
 	UpdateObject();
 }
 

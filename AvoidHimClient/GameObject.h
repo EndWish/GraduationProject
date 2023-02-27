@@ -1,6 +1,7 @@
 #pragma once
 #include "Mesh.h"
 #include "Animation.h"
+#include "Sound.h"
 
 #define RESOURCE_TEXTURE1D			0x01
 #define RESOURCE_TEXTURE2D			0x02
@@ -204,6 +205,7 @@ public:
 
 class InterpolateMoveGameObject : public GameObject {
 private:
+	float moveDistance;
 	XMFLOAT3 prevPosition;
 	XMFLOAT4 prevRotation;
 	XMFLOAT3 prevScale;
@@ -213,6 +215,8 @@ private:
 	XMFLOAT3 nextScale;
 
 	float t;
+
+	shared_ptr<Sound> pFootStepSound;
 public:
 	InterpolateMoveGameObject();
 	~InterpolateMoveGameObject();

@@ -7,6 +7,7 @@ class Player : public GameObject {
 //class Player : public GameObject {
 private:
 	// 0~100
+	float moveDistance;
 	float hp;
 	float mp;
 	// 자연 마나 회복량
@@ -21,6 +22,8 @@ private:
 
 	XMFLOAT3 knockBack;
 	shared_ptr<Camera> pCamera;
+
+	shared_ptr<Sound> pFootStepSound;
 
 	shared_ptr<GameObject> pFloor;
 	float sendMovePacketTime;

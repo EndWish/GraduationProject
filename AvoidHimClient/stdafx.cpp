@@ -297,6 +297,5 @@ int RecvFixedPacket(int _recvByte) {
 			return result;
 		}
 	}
-	cout << "recvByte = " << result << "\n";
 	return result;
 }

@@ -26,7 +26,7 @@ enum class RoomState : unsigned char {
 	full,
 };
 
-class Button
+class Button	
 {
 protected:
 	bool enable;				// 버튼이 활성화 된 상태인지 확인

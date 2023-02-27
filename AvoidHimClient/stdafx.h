@@ -153,7 +153,6 @@ int RecvFixedPacket(int _recvByte);
 // 패킷의 크기만큼에서 패킷의 타입 크기만큼을 제외한 실제 패킷의 내용만 Recv하는 함수
 template <class Packet>
 int SendFixedPacket(Packet& _packet) {
-	cout << (UINT)_packet.type << "타입의 패킷 전송!! packetID = " << packetIDCount << ", SendByte = ";
 	_packet.pid = packetIDCount++;
 	memcpy(sendBuffer.data(), (char*)&_packet, sizeof(_packet));
 	int result = send(server_sock, sendBuffer.data(), BUFSIZE, 0);

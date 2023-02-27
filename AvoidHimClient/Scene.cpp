@@ -614,7 +614,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	shared_ptr<Image2D> pImg;
 	pUIs["2DUI_hp"] = make_shared<Image2D>("2DUI_hp", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	pUIs["2DUI_stamina"] = make_shared<Image2D>("2DUI_stamina", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
-	pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+	//pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	
 	pUIs["2DUI_interact"] = make_shared<Image2D>("2DUI_interact", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	pUIs["2DUI_hacking"] = make_shared<Image2D>("2DUI_hacking", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
@@ -718,6 +718,7 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		// 상호작용 키
 		if (pInteractableObject && pInteractableObject->IsEnable())
 			pInteractableObject->QueryInteract();
+		gameFramework.GetSoundManager().Play("audio");
 	}
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
 		pPlayer->Dash(_timeElapsed);
@@ -761,7 +762,13 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 
 void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
+	GameFramework& gameFramework = GameFramework::Instance();
+
 	pPlayer->Animate(_collideCheck, _timeElapsed);
+
+	// 청자의 위치를 업데이트해준다. ( 부하가 심하다 )
+	gameFramework.GetSoundManager().SetPosition(pPlayer->GetWorldPosition());
+	gameFramework.GetSoundManager().SetOrientation(camera->GetWorldLookVector(), camera->GetWorldUpVector());
 
 	bool enable = false;
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 찾는다.
