@@ -46,6 +46,7 @@ enum class SectorLayer : char {
 	obstacle,
 	attack,
 	light,
+	effect,
 	num,
 	etc
 };
@@ -56,6 +57,7 @@ enum class ShaderType : char {
 	instancing,
 	blending,
 	skinned,
+	effect,
 	num
 };
 

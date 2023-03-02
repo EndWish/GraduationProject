@@ -367,7 +367,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pDescriptorRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 	// 루트 시그니처는 이후 계속 수정 
 	
-	D3D12_ROOT_PARAMETER pRootParameters[8];
+	D3D12_ROOT_PARAMETER pRootParameters[9];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
@@ -409,6 +409,12 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[7].Descriptor.ShaderRegister = 8; // 스킨드 오브젝트 월드 변환 행렬
 	pRootParameters[7].Descriptor.RegisterSpace = 0;
 	pRootParameters[7].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pRootParameters[8].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	pRootParameters[8].Constants.Num32BitValues = 3;
+	pRootParameters[8].Constants.ShaderRegister = 9; // 이펙트의 인덱스 정보
+	pRootParameters[8].Constants.RegisterSpace = 0;
+	pRootParameters[8].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	// 정적 샘플러
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[2];
@@ -506,6 +512,10 @@ void GameFramework::FrameAdvance() {
 
 	gameTimer.Tick(0.0f);
 
+	// 명령 할당자와 명령 리스트를 리셋한다.
+	HRESULT hResult = pCommandAllocator->Reset();
+	hResult = pCommandList->Reset(pCommandAllocator.Get(), NULL);
+
 	float timeElapsed = gameTimer.GetTimeElapsed();
 	// 입력을 받을 때 플레이어의 움직임을 저장한다.
 	ProcessInput();
@@ -514,11 +524,6 @@ void GameFramework::FrameAdvance() {
 		// 저장된 이동, 회전으로 먼저 충돌체크를 진행해본 후 실제로 플레이어를 움직인다.
 		pScenes.top()->AnimateObjects(pScenes.top()->CheckCollision(timeElapsed), timeElapsed, pDevice, pCommandList);
 	}
-
-	// 명령 할당자와 명령 리스트를 리셋한다.
-	HRESULT hResult = pCommandAllocator->Reset();
-	
-	hResult = pCommandList->Reset(pCommandAllocator.Get(), NULL);
 
 	// 현재 렌더 타겟에 대한 Present가 끝나기를 기다림.  (PRESENT = 프리젠트 상태, RENDER_TARGET = 렌더 타겟 상태
 	D3D12_RESOURCE_BARRIER resourceBarrier;

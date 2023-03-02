@@ -34,7 +34,6 @@ void Mesh::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, c
 	_file.read((char*)&nVertex, sizeof(UINT));
 
 	name = _obj->GetName();
-
 	// boundingBox (float * 6)
 	XMFLOAT3 oobbCenter, oobbExtents;
 	_file.read((char*)&oobbCenter, sizeof(XMFLOAT3));

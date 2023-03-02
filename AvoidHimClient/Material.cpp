@@ -35,11 +35,7 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 
 	// albedoNameSize(UINT) / albedoName(string) -> 알베도 텍스처 이름
 	// bumpNameSize(UINT) / bumpName(string) -> 노말맵 텍스처 이름
-#ifdef USING_INSTANCING
-	auto pShader = gameFramework.GetShader("InstancingShader");
-#else
-	auto pShader = gameFramework.GetShader("BasicShader");
-#endif
+
 	vector<shared_ptr<Texture>> pTextures(2);
 	string textureName;
 	int i = 0;
@@ -53,6 +49,7 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 
 			if (pTex) {
 				nType += 1 << i++;
+				cout << textureName << "\n";
 			}
 			else {
 				cout << textureName << "로드 실패..\n";

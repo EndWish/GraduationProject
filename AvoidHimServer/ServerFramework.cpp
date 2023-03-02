@@ -136,7 +136,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
             recvByte = 0;
         }
     }
-    globalRecvBuffer = move(recvBuffer);
+    globalRecvBuffer = recvBuffer;
 
     // 패킷타입을 읽는다.
     CS_PACKET_TYPE& packetType = GetPacket<CS_PACKET_TYPE>();

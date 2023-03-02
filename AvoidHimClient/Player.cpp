@@ -114,8 +114,8 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 	}
 
 	// 서버에게 움직인만큼 전송해준다.
-	if (sendMovePacketTime > SERVER_PERIOD) {
-		sendMovePacketTime = 0.f;
+	if (sendMovePacketTime >= SERVER_PERIOD) {
+		sendMovePacketTime -= SERVER_PERIOD;
 		CS_PLAYER_INFO packet;
 		packet.cid = cid;
 		packet.position = localPosition;

@@ -1,7 +1,8 @@
-IsSkinnedObject(bool)		// 스킨드 오브젝트 인지, false일 경우 nBone과 boneName, 애니메이션 정보들이 주어지지 않는다.
+ObjectType(uint)	: 0은 GameObject, 1은 스킨드 오브젝트(nBone과 boneName, 애니메이션 정보가 추가됨), 2는 이펙트
+
+// 1일경우 주어지는 정보들
 nBone(UINT)					// 뼈의 개수
 boneNames(string * nBone)		// 뼈의 이름들
-
 nAnimationSet (UINT)		// 애니메이션 클립의 개수
 {
 	animationSetName (string)	// 애니메이션 클립의 이름
@@ -16,6 +17,15 @@ nAnimationSet (UINT)		// 애니메이션 클립의 개수
 	} ( * nBone)
 
 } ( * nAnimationSet)
+
+// 2일경우 주어지는 정보들
+nIndex(UINT)
+row(UINT)
+col(UINT)
+maxIndexTime(float)
+lifeTime(float)
+
+// 공통으로 주어지는 정보들
 
 nameSize (UINT) / name(string) ( 실제 storage에 들어갈 최상위 오브젝트 )
 ShaderType(char)

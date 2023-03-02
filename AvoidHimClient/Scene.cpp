@@ -642,7 +642,8 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 			pPlayer = make_shared<Player>();
 
-			pPlayer->Create("TRChair_Player"s, _pDevice, _pCommandList);
+			
+			pPlayer->Create("Player"s, _pDevice, _pCommandList);
 			pPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -655,10 +656,11 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			//pid = objectID;
 			//AddObject(objLayer, pid, pPlayer, pindex);
 			//[수정] 애니메이션 정보 갱신
+
 		}
 		else {	// 다른 플레이어의 캐릭터 정보일 경우
 			shared_ptr<InterpolateMoveGameObject> pOtherPlayer = make_shared<InterpolateMoveGameObject>();
-			pOtherPlayer->Create("TRChair_Player"s, _pDevice, _pCommandList);
+			pOtherPlayer->Create("Player"s, _pDevice, _pCommandList);
 			pOtherPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pOtherPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pOtherPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -719,6 +721,14 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		// 상호작용 키
 		if (pInteractableObject && pInteractableObject->IsEnable())
 			pInteractableObject->QueryInteract();
+		else {
+			shared_ptr<GameObject> pGameObject;
+			pGameObject = make_shared<GameObject>();
+			pGameObject->Create("TestEffectObject", _pDevice, _pCommandList);
+			pGameObject->SetLocalPosition(pPlayer->GetWorldPosition());
+			pGameObject->UpdateObject();
+			pEffects.push_back(pGameObject);
+		}
 	}
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
 		pPlayer->Dash(_timeElapsed);
@@ -762,9 +772,10 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 
 void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
-	cout << "실행\n";
 	GameFramework& gameFramework = GameFramework::Instance();
-
+	for (auto& t : pEffects) {
+		t->Animate(_timeElapsed);
+	}
 	pPlayer->Animate(_collideCheck, _timeElapsed);
 
 	// 청자의 위치를 업데이트해준다. ( 부하가 심하다 )
@@ -1017,6 +1028,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	pSkyBox->Render(_pCommandList);
 
 	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
+	gameFramework.GetShader("EffectShader")->Render(_pCommandList);
 
 
 	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);

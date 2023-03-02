@@ -174,8 +174,6 @@ Packet* GetPacket() {
 	return reinterpret_cast<Packet*>(recvBuffer.data());
 }
 
-
-
 namespace Vector3 {
 	inline XMFLOAT3 Normalize(const XMFLOAT3& _vector) {
 		XMFLOAT3 result;

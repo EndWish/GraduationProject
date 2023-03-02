@@ -335,7 +335,7 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 
 
 #ifdef USING_INSTANCING
-	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
+	//gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
 	gameFramework.GetShader("BasicShader")->Render(_pCommandList);
 	GameObject::RenderInstanceObjects(_pCommandList);
 
@@ -452,7 +452,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 				if (find(_enableComputers.begin(), _enableComputers.end(), objectID) != _enableComputers.end()) {
 					pGameObject = make_shared<Computer>();
 					// Basic Shader로 그린다.
-					gameFramework.GetShader("BasicShader")->AddObject(pGameObject);
+
 					activeComputer = true;
 					AddInteractObject(objectID, pGameObject, GetIndex(position));
 					pInteractObjTable[objectID] = reinterpret_pointer_cast<InteractObject>(pGameObject);
@@ -481,6 +481,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			
 			if (activeComputer) {
 				pGameObject->GetObj()->SetShaderType(ShaderType::basic);
+				gameFramework.GetShader("BasicShader")->AddObject(pGameObject->GetObj());
 			}
 
 			if (pGameObject->GetObj()->GetShaderType() == ShaderType::instancing) {

@@ -32,7 +32,7 @@ public:
 	static void RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 protected:
 	ShaderType shaderType;
-	bool isSkinnedObject;
+	UINT objectClass;	// 0은 GameObject, 1은 SkinnedObject, 2는 Effect
 	UINT id;
 	string name;
 
@@ -125,8 +125,8 @@ public:
 	void SetBoundingBox(const BoundingOrientedBox& _box);
 
 	// skinnedObject인지 설정, 얻기
-	void SetSkinnedObject(bool _isSkinnedObject);
-	bool IsSkinnedObject();
+	void SetObjectClass(UINT _objectClass);
+	UINT GetObjectClass();
 
 	void UpdateLocalTransform();
 	// eachTransform를 가지고 worldTransform를 업데이트 한다.
@@ -157,19 +157,41 @@ public:
 
 	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _hitBox);
 	// 월드 변환행렬을 쉐이더로 넘겨준다.
-	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void UpdateHitboxShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject);
 	virtual void CopyObject(const GameObject& _other);
 };
 
+///////////////////////////////////////////////////////////////////////////////
+/// EffectGameObject
+
+class Effect : public GameObject {
+protected:
+	UINT nIndex, row, col;	// 사진의 개수, 행, 열
+	float curIndexTime, maxIndexTime;
+	float lifeTime;
+
+public:
+	Effect();
+	virtual ~Effect();
+
+	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject);
+	virtual void CopyObject(const GameObject& _other);
+
+	virtual void Animate(float _timeElapsed);
+	virtual void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
+	void SetMaxIndexTime(float _maxIndexTime) { maxIndexTime = _maxIndexTime; }
+	void SetLifeTime(float _lifeTime) { lifeTime = _lifeTime; }
+
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 /// SkinnedGameObject
 struct SkinnedWorldTransformFormat {
 	array<XMFLOAT4X4, MAX_BONE> worldTransform;
 };
-
 class SkinnedGameObject : public GameObject {
 protected:
 	static ComPtr<ID3D12Resource> pSkinnedWorldTransformBuffer;
@@ -191,18 +213,8 @@ public:
 	virtual void CopyObject(const GameObject& _other);
 };
 
-class GameObjectManager {
-private:
-	unordered_map<string, shared_ptr<GameObject>> storage;
-	unordered_map<string, ComPtr<ID3D12Resource>> instanceUploadBuffers;
-
-
-public:
-	shared_ptr<GameObject> GetGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	shared_ptr<GameObject> GetExistGameObject(const string& _name);
-	void InitInstanceResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, unordered_map<string, vector<XMFLOAT4X4>>& _instanceDatas);
-};
-
+///////////////////////////////////////////////////////////////////////////////
+/// InterpolateMoveGameObject
 class InterpolateMoveGameObject : public GameObject {
 private:
 	float moveDistance;
@@ -226,6 +238,8 @@ public:
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
 };
 
+///////////////////////////////////////////////////////////////////////////////
+/// InteractObject
 class InteractObject : public GameObject { 
 private:
 
@@ -244,7 +258,6 @@ public:
 	virtual void EndInteract();
 
 };
-
 class Door : public InteractObject {
 private:
 	bool isLeft;
@@ -259,7 +272,6 @@ public:
 
 	virtual void Animate(float _timeElapsed);
 };
-
 class WaterDispenser : public InteractObject {
 protected:
 	float coolTime;
@@ -274,7 +286,6 @@ public:
 	virtual void Animate(float _timeElapsed);
 
 };
-
 class Lever : public InteractObject {
 private:
 
@@ -285,7 +296,6 @@ public:
 	virtual void Interact();
 
 };
-
 class Computer : public InteractObject {
 private:
 
@@ -322,4 +332,19 @@ public:
 	~SkyBox();
 		
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+};
+
+////////////////// GameObjectManager //////////////////
+
+class GameObjectManager {
+private:
+	unordered_map<string, shared_ptr<GameObject>> storage;
+	unordered_map<string, ComPtr<ID3D12Resource>> instanceUploadBuffers;
+
+
+public:
+	bool LoadGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	shared_ptr<GameObject> GetGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	shared_ptr<GameObject> GetExistGameObject(const string& _name);
+	void InitInstanceResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, unordered_map<string, vector<XMFLOAT4X4>>& _instanceDatas);
 };

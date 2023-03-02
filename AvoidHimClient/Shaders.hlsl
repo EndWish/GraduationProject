@@ -1,3 +1,6 @@
+// 루드 시그니처는 64개의 32-비트 배열로 구성됨.
+// 많이 사용하는 매개변수를 앞쪽에 배치하는 것이 좋음.
+
 cbuffer cbCameraInfo : register(b1) {
 	matrix view : packoffset(c0);
 	matrix projection : packoffset(c4);
@@ -7,6 +10,17 @@ cbuffer cbCameraInfo : register(b1) {
 cbuffer cbGameObjectInfo : register(b2) {
 	matrix worldTransform : packoffset(c0);
 };
+
+struct EFFECT_INDEX
+{
+    uint index;
+    uint row;
+    uint col;
+};
+cbuffer cbEffectIndexInfo : register(b9)
+{
+    EFFECT_INDEX indexInfo : packoffset(c0);
+}
 
 #define MAX_BONE 100
 cbuffer cbSkinnedOffsetTransforms : register(b7)
@@ -96,6 +110,52 @@ float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET {
     return color;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// Effect Shader
+
+
+
+struct VS_EFFECT_INPUT
+{
+    float3 position : POSITION;
+    float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 biTangent : BITANGENT;
+    float2 uv : TEXCOORD;
+};
+
+struct VS_EFFECT_OUTPUT
+{
+    float4 position : SV_POSITION;
+    float3 positionW : POSITION;
+    float3 normal : NORMAL;
+    float3 tangent : TANGENT;
+    float3 biTangent : BITANGENT;
+    float2 uv : TEXCOORD;
+};
+
+VS_EFFECT_OUTPUT EffectVertexShader(VS_EFFECT_INPUT input)
+{
+    VS_EFFECT_OUTPUT output;
+
+    output.normal = mul(input.normal, (float3x3) worldTransform);
+    output.tangent = mul(input.tangent, (float3x3) worldTransform);
+    output.biTangent = mul(input.biTangent, (float3x3) worldTransform);
+
+	// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
+    output.positionW = (float3) mul(float4(input.position, 1.0f), worldTransform);
+
+    output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
+    
+    int x = indexInfo.index % indexInfo.col;
+    int y = indexInfo.index / indexInfo.col;
+    float xWid = 1.f / indexInfo.col;
+    float yWid = 1.f / indexInfo.row;
+    float2 startUV = float2(xWid * x, yWid * y);
+    
+    output.uv = startUV + input.uv * float2(xWid, yWid);
+    return output;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 /// 

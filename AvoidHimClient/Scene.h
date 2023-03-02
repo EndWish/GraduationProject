@@ -115,6 +115,7 @@ private:
 
 	shared_ptr<SkyBox> pSkyBox;
 	
+	vector<shared_ptr<GameObject>> pEffects;
 public:
 	PlayScene();
 	~PlayScene();

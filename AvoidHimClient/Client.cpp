@@ -47,8 +47,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 
     //string serverIP = "172.30.1.69";
     //string serverIP = "172.30.1.55";
-   // string serverIP = "127.0.0.1";
-    string serverIP = "192.168.21.123";
+    string serverIP = "127.0.0.1";
+    //string serverIP = "172.30.1.26";
     
     // connect()
     struct sockaddr_in serveraddr;

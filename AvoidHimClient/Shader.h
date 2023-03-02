@@ -135,6 +135,21 @@ public:
 	
 };
 
+class EffectShader : public Shader {
+private:
+
+public:
+	EffectShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~EffectShader();
+
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+	virtual D3D12_BLEND_DESC CreateBlendState() final;
+	virtual D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState();
+
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
+};
 
 class SkyBoxShader : public Shader {
 private:

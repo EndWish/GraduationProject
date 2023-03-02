@@ -34,7 +34,7 @@ GameObject::GameObject() {
 	boundingBox = BoundingOrientedBox();
 	isOOBBCover = false;
 	id = 0;
-	isSkinnedObject = false;
+	objectClass = 0;
 	shaderType = ShaderType::none;
 }
 GameObject::~GameObject() {
@@ -215,11 +215,11 @@ void GameObject::SetBoundingBox(const BoundingOrientedBox& _box) {
 	baseOrientedBox = _box;
 }
 
-void GameObject::SetSkinnedObject(bool _isSkinnedObject) {
-	isSkinnedObject = _isSkinnedObject;
+void GameObject::SetObjectClass(UINT _objectClass) {
+	objectClass = _objectClass;
 }
-bool GameObject::IsSkinnedObject() {
-	return isSkinnedObject;
+UINT GameObject::GetObjectClass() {
+	return objectClass;
 }
 
 void GameObject::UpdateLocalTransform() {
@@ -324,6 +324,7 @@ void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) 
 			materials[i]->UpdateShaderVariable(_pCommandList);
 			pMesh->Render(_pCommandList, i);
 		}
+
 	}
 }
 
@@ -409,6 +410,7 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 	_file.read((char*)&localRotation, sizeof(XMFLOAT4));
 	UpdateLocalTransform();
 
+	
 	int haveMesh;
 	// haveMesh(int)
 
@@ -441,12 +443,15 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 	pChildren.reserve(nChildren);
 		
 	for (int i = 0; i < (int)nChildren; ++i) {
-		bool isSkinnedObject;
-		_file.read((char*)&isSkinnedObject, sizeof(bool));
+		UINT objectType;
+		_file.read((char*)&objectType, sizeof(UINT));
 
 		shared_ptr<GameObject> newObject;
-		if (isSkinnedObject) {
+		if (objectType == 1) {
 			newObject = make_shared<SkinnedGameObject>();
+		}
+		else if (objectType == 2) {
+			newObject = make_shared<Effect>();
 		}
 		else {
 			newObject = make_shared<GameObject>();
@@ -488,19 +493,82 @@ void GameObject::CopyObject(const GameObject& _other) {
 		gameFramework.GetShader("SkinnedShader")->AddObject(shared_from_this());
 		break;
 	}
+	case ShaderType::effect: {
+		gameFramework.GetShader("EffectShader")->AddObject(shared_from_this());
+		break;
+	}
 	}
 
 
 	for (int i = 0; i < _other.pChildren.size(); ++i) {
 		shared_ptr<GameObject> child;
-		if(_other.pChildren[i]->IsSkinnedObject())
+		if(_other.pChildren[i]->GetObjectClass() == 1)
 			child = make_shared<SkinnedGameObject>();
+		else if(_other.pChildren[i]->GetObjectClass() == 2)
+			child = make_shared<Effect>();
 		else
 			child = make_shared<GameObject>();
 
 		child->CopyObject(*_other.pChildren[i]);
 		SetChild(child);
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// EffectGameObject
+Effect::Effect() {
+	objectClass = 2;
+	nIndex = 1; row = 1; col = 1;
+	curIndexTime = 0.f;
+	maxIndexTime = 0.f;
+	lifeTime = 1.f;
+}
+Effect::~Effect()  {
+
+}
+
+void Effect::Animate(float _timeElapsed) {
+	lifeTime -= _timeElapsed;
+
+	curIndexTime += _timeElapsed;
+	while (maxIndexTime <= curIndexTime) {
+		curIndexTime -= maxIndexTime;
+	}
+		
+	GameObject::Animate(_timeElapsed);
+}
+
+void Effect::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	XMINT3 indexInfo;
+	indexInfo.x = (UINT)(nIndex * curIndexTime / maxIndexTime);
+	indexInfo.y = row;
+	indexInfo.z = col;
+	_pCommandList->SetGraphicsRoot32BitConstants(8, 3, &indexInfo, 0);
+	GameObject::UpdateShaderVariable(_pCommandList);
+}
+
+void Effect::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject) {
+	_file.read((char*)&nIndex, sizeof(UINT));
+	_file.read((char*)&row, sizeof(UINT));
+	_file.read((char*)&col, sizeof(UINT));
+	_file.read((char*)&maxIndexTime, sizeof(float));
+	_file.read((char*)&lifeTime, sizeof(float));
+	
+	cout << nIndex << "," << row << " " << col << " " << maxIndexTime << " " << lifeTime << "\n";
+
+	GameObject::LoadFromFile(_file, _pDevice, _pCommandList, _coverObject);
+}
+
+void Effect::CopyObject(const GameObject& _other) {
+	const Effect& other = static_cast<const Effect&>(_other);
+
+	nIndex = other.nIndex;
+	row = other.row;
+	col = other.col;
+	curIndexTime = other.curIndexTime;
+	maxIndexTime = other.maxIndexTime;
+	lifeTime = other.lifeTime;
+	GameObject::CopyObject(_other);
 }
 
 /////////////////////////// SkinnedGameObject /////////////////////
@@ -515,6 +583,7 @@ void SkinnedGameObject::InitSkinnedWorldTransformBuffer(const ComPtr<ID3D12Devic
 }
 
 SkinnedGameObject::SkinnedGameObject() {
+	objectClass = true;
 	aniController = AnimationController();
 }
 SkinnedGameObject::~SkinnedGameObject() {
@@ -590,48 +659,64 @@ void SkinnedGameObject::CopyObject(const GameObject& _other) {
 }
 
 /////////////////////////// GameObjectManager /////////////////////
+bool GameObjectManager::LoadGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	ifstream file("GameObject/" + _name, ios::binary);	// 파일을 연다
+	if (!file) {
+		cout << "GameObject Load Failed : " << _name << "\n";
+		return false;
+	}
+
+	//ObjectType(uint)	: 0은 GameObject, 1은 스킨드 오브젝트(nBone과 boneName, 애니메이션 정보가 추가됨), 2는 이펙트
+	UINT objectType;
+	file.read((char*)&objectType, sizeof(UINT));
+
+	shared_ptr<GameObject> newObject;
+
+	if (objectType == 1) {	// 스킨드 오브젝트
+		newObject = make_shared<SkinnedGameObject>();
+		//newObject->SetSkinnedObject(true);
+	}
+	else if (objectType == 2) {	// 이펙트일 경우
+		newObject = make_shared<Effect>();
+
+	}
+	else {
+		newObject = make_shared<GameObject>();
+	}
+
+	// 최상위 오브젝트를 커버 OOBB로 설정
+	newObject->LoadFromFile(file, _pDevice, _pCommandList, newObject);
+
+	// 최상위 오브젝트는 따로 파일에서 읽어옴
+	BoundingOrientedBox box;
+	file.read((char*)&box.Center, sizeof(XMFLOAT3));
+	file.read((char*)&box.Extents, sizeof(XMFLOAT3));
+
+	newObject->SetBoundingBox(box);
+	// eachTransfrom에 맞게 각 계층의 오브젝트들의 worldTransform을 갱신
+	storage[_name] = newObject;
+	newObject->UpdateObject();
+
+	return true;
+}
+
 shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	if (!storage.contains(_name)) {	// 처음 불러온 오브젝트일 경우
-		ifstream file("GameObject/" + _name, ios::binary);	// 파일을 연다
-		if (!file) {
+		int result = LoadGameObject(_name, _pDevice, _pCommandList);
+		if (!result) {
 			cout << "GameObject Load Failed : " << _name << "\n";
 			return nullptr;
 		}
-
-		bool isSkinnedObject;
-		file.read((char*)&isSkinnedObject, sizeof(bool));
-
-		shared_ptr<GameObject> newObject;
-
-		if (isSkinnedObject) {
-			newObject = make_shared<SkinnedGameObject>();
-		}
-		else {
-			newObject = make_shared<GameObject>();
-		}
-		newObject->SetSkinnedObject(isSkinnedObject);
-
-		// 최상위 오브젝트를 커버 OOBB로 설정
-		//newObject->SetOOBBCover(true);
-		newObject->LoadFromFile(file, _pDevice, _pCommandList, newObject);
-
-		// 최상위 오브젝트는 따로 파일에서 읽어옴
-		BoundingOrientedBox box;
-		file.read((char*)&box.Center, sizeof(XMFLOAT3));
-		file.read((char*)&box.Extents, sizeof(XMFLOAT3));
-		
-
-		newObject->SetBoundingBox(box);
-		// eachTransfrom에 맞게 각 계층의 오브젝트들의 worldTransform을 갱신
-		storage[_name] = newObject;
-		newObject->UpdateObject();
 	}
 
 	// 스토리지 내 오브젝트 정보와 같은 오브젝트를 복사하여 생성한다.
 	shared_ptr<GameObject> Object;
-	if (storage[_name]->IsSkinnedObject()) {
+	if (storage[_name]->GetObjectClass() == 1) {
 		Object = make_shared<SkinnedGameObject>();
+	}
+	else if (storage[_name]->GetObjectClass() == 2) {
+		Object = make_shared<Effect>();
 	}
 	else {
 		Object = make_shared<GameObject>();
@@ -668,6 +753,9 @@ void GameObjectManager::InitInstanceResource(const ComPtr<ID3D12Device>& _pDevic
 		instanceDatas[name] = data;
 	}
 }
+
+///////////////////////////////////////////////////////////////////////////////
+/// InterpolateMoveGameObject
 
 InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	prevPosition = XMFLOAT3();
@@ -735,8 +823,7 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-///
-
+/// InteractObject
 
 InteractObject::InteractObject() {
 }
