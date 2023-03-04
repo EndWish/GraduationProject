@@ -843,7 +843,7 @@ bool InteractObject::IsEnable() {
 ///
 
 Door::Door(ObjectType _type) {
-	isLeft = _type == ObjectType::Ldoor ? true : false;
+	isLeft = (_type == ObjectType::Ldoor || _type == ObjectType::exitLDoor) ? true : false;
 	openAngle = 0.f;
 	isOpen = false;
 }

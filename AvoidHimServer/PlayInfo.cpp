@@ -8,6 +8,8 @@ PlayInfo::PlayInfo(UINT _playInfoID) : playInfoID{ _playInfoID } {
 	allPlayerLoadingComplete = false;
 	professorObjectID = 0;
 	objectIDCount = objectIDStart;
+
+	hackingComplete = false;
 }
 PlayInfo::~PlayInfo() {
 	ServerFramework& serverFramework = ServerFramework::Instance();
@@ -61,7 +63,9 @@ void PlayInfo::Init(UINT _roomID) {
 		GameObject* pNewObject = nullptr;// = new GameObject(*pObject);
 		switch (pObject->GetType()) {
 		case ObjectType::Rdoor:
-		case ObjectType::Ldoor: { 
+		case ObjectType::Ldoor: 
+		case ObjectType::exitLDoor: 
+		case ObjectType::exitRDoor: {
 			pNewObject = new Door(*static_cast<Door*>(pObject));
 			pDoors.emplace(pNewObject->GetID(), static_cast<Door*>(pNewObject));
 			break; 
@@ -78,8 +82,6 @@ void PlayInfo::Init(UINT _roomID) {
 		}
 		case ObjectType::computer: {
 			computersObjectID.push_back(objectID);
-			/*pNewObject = new Computer(*static_cast<Computer*>(pObject));
-			pComputers.emplace(pNewObject->GetID(), static_cast<Computer*>(pNewObject));*/
 			break;
 		}
 		default:
@@ -236,7 +238,7 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 	switch (_packetType) {
 	case CS_PACKET_TYPE::playerInfo: {
 		CS_PLAYER_INFO& recvPacket = GetPacket<CS_PLAYER_INFO>();
-		cout << format("CS_PLAYER_INFO : cid - {}, objectID - {}, pid - {} \n", recvPacket.cid, recvPacket.objectID, recvPacket.pid);
+		//cout << format("CS_PLAYER_INFO : cid - {}, objectID - {}, pid - {} \n", recvPacket.cid, recvPacket.objectID, recvPacket.pid);
 
 		GameObject* pPlayer = pPlayers[recvPacket.objectID];
 		//[수정] aniTime을 적용시켜 준다.
@@ -253,13 +255,17 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		auto it = pDoors.find(recvPacket.objectID);
 		if (it != pDoors.end()) {
 			Door* pDoor = it->second;
-			pDoor->SetOpen(!pDoor->IsOpen());
 
-			SC_TOGGLE_DOOR sendPacket;
-			sendPacket.objectID = recvPacket.objectID;
+			// 일반문이거나 탈출문이지만 해킹이 완료되었을 경우 상호작용한다.
+			if (!pDoor->IsExitDoor() || (pDoor->IsExitDoor() && hackingComplete)) {
+				pDoor->SetOpen(!pDoor->IsOpen());
 
-			for (auto [participant, pClient] : participants) {
-				SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+				SC_TOGGLE_DOOR sendPacket;
+				sendPacket.objectID = recvPacket.objectID;
+
+				for (auto [participant, pClient] : participants) {
+					SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+				}
 			}
 		}
 		else {
@@ -306,20 +312,34 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 	case CS_PACKET_TYPE::hackingRate: {
 		CS_HACKING_RATE& recvPacket = GetPacket<CS_HACKING_RATE>();
 		cout << format("CS_HACKING_RATE : cid - {}, computerObjectID - {}, rate - {}, pid - {} \n", recvPacket.cid, recvPacket.computerObjectID, recvPacket.rate, recvPacket.pid);
+		
+		// 해킹률을 적용한다.
 		Computer* pComputer = pComputers[recvPacket.computerObjectID];
 		pComputer->SetHackingRate(recvPacket.rate);
 		pComputer->SetUse(false);
 
+		// 다른 플레이어에게 해킹률을 알려준다.
 		SC_HACKING_RATE sendPacket;
 		sendPacket.computerObjectID = pComputer->GetID();
 		sendPacket.rate = pComputer->GetHackingRate();
 		for (auto [participant, pClient] : participants) {
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
+
+		// 모든 컴퓨터가 해킹이 완료 되었는지 확인한다.
+		hackingComplete = true;
+		for (auto [objectID, pComputer] : pComputers) {
+			if (pComputer->GetHackingRate() < 100.f) {
+				// 해킹이 덜됬을 경우
+				hackingComplete = false;
+				break;
+			}
+		}
+		cout << "해킹완료? : " << hackingComplete << "\n";
+
 		break;
 	}
-	case CS_PACKET_TYPE::attack: 
-	{
+	case CS_PACKET_TYPE::attack: {
 		CS_ATTACK& recvPacket = GetPacket<CS_ATTACK>();
 		cout << format("CS_ATTACK : cid - {}, attackType - {}, pid - {} \n", recvPacket.cid, (int)recvPacket.attackType, recvPacket.pid);
 
@@ -332,8 +352,7 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		}
 		break;
 	}
-	case CS_PACKET_TYPE::hit:
-	{
+	case CS_PACKET_TYPE::hit: {
 		CS_ATTACK_HIT& recvPacket = GetPacket<CS_ATTACK_HIT>();
 		cout << format("CS_ATTACK_HIT : cid - {}, attackType - {}, attackObjectID - {}, hitPlayerObjectID - {}, pid - {} \n", recvPacket.cid, (int)recvPacket.attackType, recvPacket.attackObjectID, recvPacket.hitPlayerObjectID, recvPacket.pid);
 

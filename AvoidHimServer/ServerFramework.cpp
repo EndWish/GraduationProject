@@ -473,8 +473,14 @@ void ServerFramework::LoadMapFile() {
             // break;가 없는 것에 주의
         case ObjectType::Ldoor:
         case ObjectType::Rdoor:
+        case ObjectType::exitLDoor:
+        case ObjectType::exitRDoor:
             if (objType == ObjectType::Ldoor || objType == ObjectType::Rdoor)
                 pObject = new Door();
+            else if (objType == ObjectType::exitLDoor || objType == ObjectType::exitRDoor) {
+                pObject = new Door();
+                dynamic_cast<Door*>(pObject)->SetExitDoor(true);
+            }
             __fallthrough;
         case ObjectType::lever:
             if (objType == ObjectType::lever)

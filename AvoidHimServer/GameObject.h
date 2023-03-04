@@ -64,6 +64,7 @@ public:
 
 class Door : public GameObject {
 protected:
+	bool isExitDoor;
 	bool isOpen;
 
 public:
@@ -74,6 +75,9 @@ public:
 
 	bool IsOpen() { return isOpen; }
 	void SetOpen(bool _open) { isOpen = _open; }
+
+	bool IsExitDoor(){ return isExitDoor; }
+	void SetExitDoor(bool _isExitDoor){ isExitDoor = _isExitDoor; }
 
 };
 

@@ -481,7 +481,9 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		case SectorLayer::obstacle: {
 			switch (objType) {
 			case ObjectType::Rdoor:
-			case ObjectType::Ldoor: {
+			case ObjectType::Ldoor:
+			case ObjectType::exitRDoor:
+			case ObjectType::exitLDoor: {
 				pGameObject = make_shared<Door>(objType);
 				AddInteractObject(objectID, pGameObject, GetIndex(position));
 				pInteractObjTable[objectID] = dynamic_pointer_cast<InteractObject>(pGameObject);

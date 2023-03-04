@@ -29,6 +29,9 @@ private:
 	unordered_map<UINT, WaterDispenser*> pWaterDispensers;	// objectID-object
 	unordered_map<UINT, Computer*> pComputers;	// objectID-object
 
+	bool hackingComplete;
+	
+
 public:
 	// 持失切, 社瑚切
 	PlayInfo(UINT _playInfoID);

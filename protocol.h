@@ -72,7 +72,9 @@ enum class ObjectType : char {
 	professorStartPosition,
 	computer,
 	prisonDoor,
-	light
+	light,
+	exitRDoor,
+	exitLDoor,
 };
 
 enum class AttackType : char {

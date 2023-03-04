@@ -100,13 +100,16 @@ void GameObject::Animate(float _timeElapsed) {
 /// Door
 
 Door::Door() : GameObject() {
+	isExitDoor = false;
 	isOpen = false;
 }
 Door::Door(const Door& _other) : GameObject(_other) {
+	isExitDoor = _other.isExitDoor;
 	isOpen = _other.isOpen;
 }
 Door& Door::operator=(const Door& _other) {
 	GameObject::operator=(_other);
+	isExitDoor = _other.isExitDoor;
 	isOpen = _other.isOpen;
 	return *this;
 }
@@ -177,4 +180,3 @@ Computer& Computer::operator=(const Computer& _other) {
 Computer::~Computer() {
 
 }
-
