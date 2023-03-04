@@ -146,8 +146,6 @@ public:
 	shared_ptr<GameObject> FindFrame(const string& _name);	// 이름으로 자식(자신포함)을 오브젝트를 찾는다.
 	virtual void PrepareAnimate();
 	virtual void Animate(float _timeElapsed);
-	virtual void Remove();
-	virtual bool CheckRemove() const;
 
 
 	// 렌더
@@ -184,8 +182,59 @@ public:
 
 	void SetMaxIndexTime(float _maxIndexTime) { maxIndexTime = _maxIndexTime; }
 	void SetLifeTime(float _lifeTime) { lifeTime = _lifeTime; }
-
+	float GetMaxIndexTime() const { return maxIndexTime; };
 };
+///////////////////////////////////////////////////////////////////////////////
+/// Attack
+class Attack : public GameObject {
+protected:
+	float lifeTime;
+	AttackType attackType; // 1 = swing, 2 = throw
+	UINT playerObjectID;	// 공격을 가한 플레이어의 오브젝트 ID
+	float damage;
+	bool isRemove;
+public:
+	Attack();
+	Attack(UINT _playerObjectID);
+	~Attack();
+
+
+	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void Animate(float _timeElapsed);
+	void Remove() { isRemove = true; };
+	bool GetIsRemove() const { return isRemove; };
+	AttackType GetAttackType() const { return attackType; };
+	float GetDamage() const { return damage; };
+	UINT GetPlayerObjectID() const { return playerObjectID; };
+};
+
+class SwingAttack : public Attack {
+protected:
+
+public:
+	SwingAttack();
+	SwingAttack(UINT _playerObjectID);
+	~SwingAttack();
+	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void Animate(float _timeElapsed);
+};
+
+class ThrowAttack : public Attack {
+protected:	
+	bool isStuck;
+	XMFLOAT3 velocity;
+	float rotateXSpeed;
+	float acc;
+
+public:
+	ThrowAttack();
+	ThrowAttack(UINT _playerObjectID, const XMFLOAT3& _lookVector);
+	~ThrowAttack();
+	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void Animate(float _timeElapsed);
+	void SetIsStuck(bool _isStuck);
+};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// SkinnedGameObject
@@ -214,7 +263,7 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/// InterpolateMoveGameObject
+/// InterpolateMoveGameObject ( 적 오브젝트 )
 class InterpolateMoveGameObject : public GameObject {
 private:
 	float moveDistance;

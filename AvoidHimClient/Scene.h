@@ -21,7 +21,7 @@ public:
 	virtual void ReleaseUploadBuffers() = 0;
 	virtual void ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 	virtual void AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
-	virtual void ProcessSocketMessage() = 0;
+	virtual void ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) = 0;
 	virtual void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);
 	virtual void ProcessCursorMove(XMFLOAT2 _delta);
 
@@ -78,7 +78,7 @@ public:
 	virtual void ReleaseUploadBuffers();
 	virtual void ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	virtual void ProcessSocketMessage();
+	virtual void ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -124,7 +124,7 @@ public:
 	virtual void ReleaseUploadBuffers();
 	virtual void ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	virtual void ProcessSocketMessage();
+	virtual void ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
@@ -138,4 +138,8 @@ public:
 	virtual char CheckCollision(float _timeElapsed);
 	void AddLight(const shared_ptr<Light>& _pLight);
 	void UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	
+	// 오브젝트 ID로 해당 플레이어 인스턴스 포인터를 찾아 반환
+	shared_ptr<GameObject> FindPlayerObject(UINT _objectID) const;
+	UINT GetProfessorObjectID() const;
 };

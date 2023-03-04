@@ -1,8 +1,7 @@
 #include "stdafx.h"
 #include "Zone.h"
 #include "GameFramework.h"
-#include "GameObject.h"
-#include "Camera.h"
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,7 +46,7 @@ void Sector::AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pGameObje
 	auto it = pInteractionObjects.find(_objectID);
 
 	if (it == pInteractionObjects.end()) {		// 객체가 존재하지 않을 경우
-		pInteractionObjects[_objectID] = reinterpret_pointer_cast<InteractObject>(_pGameObject);	// 추가한다.
+		pInteractionObjects[_objectID] = dynamic_pointer_cast<InteractObject>(_pGameObject);	// 추가한다.
 	}
 	else {
 		cout << _objectID << "오류! ";
@@ -103,13 +102,16 @@ void Sector::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 	}
 }
 
+void Sector::SetBoundingBox(const BoundingBox& _boundingBox) {
+	boundingBox = _boundingBox;
+}
+
+const BoundingBox& Sector::GetBoundingBox() const {
+	return boundingBox;
+}
+
 vector<shared_ptr<GameObject>>  Sector::CheckCollisionRotate(BoundingOrientedBox& _boundingBox, shared_ptr<GameObject> _pFloor) {
-	
-	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::attack]) {
-		if (pGameObject->GetBoundingBox().Intersects(_boundingBox)) {
-			// 충돌한 pGameObject에 대한 처리 및 플레이어의 체력을 깎는다.
-		}
-	}
+
 	vector<shared_ptr<GameObject>> result;
 	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		if (_pFloor && _pFloor == pGameObject) continue;
@@ -161,6 +163,41 @@ shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boun
 	}
 	return nullptr;
 }
+
+void Sector::CheckCollisionWithAttack(shared_ptr<Player> _pPlayer) {
+	BoundingOrientedBox playerOOBB = _pPlayer->GetBoundingBox();
+	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::attack]) {
+
+		shared_ptr<Attack> pAttack = dynamic_pointer_cast<Attack>(pGameObject);
+		// 본인이 시전한 공격일경우 무시
+		if (pAttack->GetPlayerObjectID() == myObjectID) continue;
+
+		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
+		if (boundingBox.Intersects(playerOOBB)) {
+			_pPlayer->AddHP(-pAttack->GetDamage());
+
+			CS_ATTACK_HIT sendPacket;
+			sendPacket.attackObjectID = gid;
+			sendPacket.attackType = pAttack->GetAttackType();
+			sendPacket.hitPlayerObjectID = myObjectID;
+			sendPacket.cid = cid;
+
+			SendFixedPacket(sendPacket);
+			// 플레이어에게 무적시간을 잠시 적용
+			pAttack->Remove();
+		}
+	}
+}
+
+bool Sector::CheckCollisionProjectileWithObstacle(const BoundingOrientedBox& _boundingBox) {
+	for (auto [gid, pObstacle] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
+		if (pObstacle->GetBoundingBox().Intersects(_boundingBox)) {
+			return true;
+		}
+	}
+	return false;
+}
+
 
 bool Sector::CheckObstacleBetweenPlayerAndCamera(const XMVECTOR& _origin, const XMVECTOR& _direction, float _curDistance) {
 	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
@@ -214,6 +251,18 @@ Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div, shared_ptr<PlayScene> _pSc
 	startPoint = XMFLOAT3(-50, -50, -50);
 	pindex = XMINT3(0, 0, 0);
 	pid = 0;
+
+	BoundingBox boundingBox;
+	boundingBox.Extents = Vector3::ScalarProduct(sectorSize, 0.5f);
+	for (int x = 0; x < _div.x; ++x) {
+		for (int y = 0; y < _div.y; ++y) {
+			for (int z = 0; z < _div.z; ++z) {
+				// startPoint + (x,y,z = 인덱스) * (sectorSize) + Extents;
+				boundingBox.Center = Vector3::Add(Vector3::Add(startPoint,  Vector3::Multiple(XMFLOAT3(x, y, z), sectorSize)), boundingBox.Extents);
+				sectors[x][y][z].SetBoundingBox(boundingBox);
+			}
+		}
+	}
 }
 Zone::~Zone() {
 }
@@ -239,6 +288,7 @@ Sector* Zone::GetSector(const XMINT3& _index) {
 // 오브젝트 추가
 void Zone::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos) {
 	Sector* sector = GetSector(_pos);
+	cout << "Add " << _objectID << " at " << GetIndex(_pos) << "\n";
 	sector->AddObject(_sectorLayer, _objectID, _pObject);
 }
 void Zone::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index) {
@@ -282,6 +332,7 @@ void Zone::HandOffObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<Ga
 }
 void Zone::HandOffObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _preIndex, const XMINT3& _nextIndex) {
 	AddObject(_sectorLayer, _objectID, _pObject, _nextIndex);		// 새로추가하고
+	cout << "Remove : " << _objectID << " at " << _preIndex << "\n";
 	RemoveObject(_sectorLayer, _objectID, _pObject, _preIndex);	// 이전위치에서는 제거
 }
 // 같은 섹터인지를 리턴하는 함수
@@ -306,6 +357,7 @@ vector<Sector*> Zone::GetAroundSectors(const XMINT3& _index) {
 	}
 	return sectors;
 }
+
 
 // 뷰프러스텀과 충돌하는 섹터 얻기
 vector<Sector*> Zone::GetFrustumSectors(const BoundingFrustum& _frustum) {
@@ -413,7 +465,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		// nameSize(UINT) / fileName (string)
 		activeComputer = false;
 		ReadStringBinary(objName, file);
-
+		cout << objName << "\n";
 		// SectorLayer(char)
 		file.read((char*)&objLayer, sizeof(SectorLayer));
 		// ObjectType(char)
@@ -432,19 +484,19 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			case ObjectType::Ldoor: {
 				pGameObject = make_shared<Door>(objType);
 				AddInteractObject(objectID, pGameObject, GetIndex(position));
-				pInteractObjTable[objectID] = reinterpret_pointer_cast<InteractObject>(pGameObject);
+				pInteractObjTable[objectID] = dynamic_pointer_cast<InteractObject>(pGameObject);
 				break;
 			}
 			case ObjectType::lever: {
 				pGameObject = make_shared<Lever>();
 				AddInteractObject(objectID, pGameObject, GetIndex(position));
-				pInteractObjTable[objectID] = reinterpret_pointer_cast<InteractObject>(pGameObject);
+				pInteractObjTable[objectID] = dynamic_pointer_cast<InteractObject>(pGameObject);
 				break;
 			}
 			case ObjectType::waterDispenser: {
 				pGameObject = make_shared<WaterDispenser>();
 				AddInteractObject(objectID, pGameObject, GetIndex(position));
-				pInteractObjTable[objectID] = reinterpret_pointer_cast<InteractObject>(pGameObject);
+				pInteractObjTable[objectID] = dynamic_pointer_cast<InteractObject>(pGameObject);
 				break;
 			}
 			case ObjectType::computer: {
@@ -455,8 +507,8 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 
 					activeComputer = true;
 					AddInteractObject(objectID, pGameObject, GetIndex(position));
-					pInteractObjTable[objectID] = reinterpret_pointer_cast<InteractObject>(pGameObject);
-					pScene->AddComputer(reinterpret_pointer_cast<Computer>(pGameObject));
+					pInteractObjTable[objectID] = dynamic_pointer_cast<InteractObject>(pGameObject);
+					pScene->AddComputer(dynamic_pointer_cast<Computer>(pGameObject));
 				}
 				else {
 					continue;
@@ -484,6 +536,23 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 				gameFramework.GetShader("BasicShader")->AddObject(pGameObject->GetObj());
 			}
 
+			if (pGameObject->GetObj()->GetShaderType() == ShaderType::instancing) {
+				// 인스턴싱을 사용하는 불투명한 오브젝트를 그리는 쉐이더
+				// 쉐이더에서는 읽는 기준이 달라지므로 전치행렬로 바꾸어준다.
+				world = pGameObject->GetWorldTransform();
+				XMStoreFloat4x4(&temp, XMMatrixTranspose(XMLoadFloat4x4(&world)));
+				instanceDatas[objName].push_back(temp);
+			}
+			break;
+		}
+		case SectorLayer::sprite: {
+			pGameObject = make_shared<GameObject>();
+			pGameObject->Create(objName, _pDevice, _pCommandList);
+			pGameObject->SetLocalPosition(position);
+			pGameObject->SetLocalScale(scale);
+			pGameObject->SetLocalRotation(rotation);
+			pGameObject->UpdateObject();
+			pGameObject->SetID(objectID);
 			if (pGameObject->GetObj()->GetShaderType() == ShaderType::instancing) {
 				// 인스턴싱을 사용하는 불투명한 오브젝트를 그리는 쉐이더
 				// 쉐이더에서는 읽는 기준이 달라지므로 전치행렬로 바꾸어준다.
@@ -557,6 +626,31 @@ shared_ptr<GameObject> Zone::CheckCollisionVertical(float _timeElapsed) {
 	return nullptr;
 }
 
+void Zone::CheckCollisionWithAttack() {
+	vector<Sector*> checkSector = GetAroundSectors(pindex);
+	for (auto& sector : checkSector) {
+		sector->CheckCollisionWithAttack(pPlayer);
+	}
+}
+
+void Zone::CheckCollisionProjectileWithObstacle() {
+
+	BoundingOrientedBox boundingBox;
+	for (auto& [objectID, pAttack] : pAttackObjTable) {
+		if (pAttack->GetAttackType() == AttackType::throwAttack) {	// 투사체일 경우
+			boundingBox = pAttack->GetBoundingBox();
+			// 주변섹터의 장애물들과 충돌체크를 한다.
+			vector<Sector*> pSectors = GetAroundSectors(GetIndex(pAttack->GetWorldPosition()));
+
+			for (const auto& pSector : pSectors) {
+				if (pSector->CheckCollisionProjectileWithObstacle(boundingBox)) {
+					dynamic_pointer_cast<ThrowAttack>(pAttack)->SetIsStuck(true);
+				}
+			}
+		}
+	}
+}
+
 bool Zone::CheckObstacleBetweenPlayerAndCamera(shared_ptr<Camera> _pCamera) {
 	XMFLOAT3 cameraWorldPosition = _pCamera->GetWorldPosition();
 	XMFLOAT3 cameraWorldLookVector = _pCamera->GetWorldLookVector();
@@ -578,8 +672,30 @@ void Zone::UpdatePlayerSector() {
 }
 
 void Zone::AnimateObjects(float _timeElapsed) {
-	for (auto [objectID, pGameObject] : pInteractObjTable) {
+	XMINT3 prevIndex, nextIndex;
+	for (auto [objectID, pGameObject] : pInteractObjTable) {	// 상호작용 오브젝트
 		pGameObject->Animate(_timeElapsed);
+	}
+
+	for (auto& [objectID, pAttack] : pAttackObjTable) {	// 공격 오브젝트
+		prevIndex = GetIndex(pAttack->GetWorldPosition());
+		// 사라져야할 공격은 삭제, 소속 섹터 업데이트
+		if (pAttack->GetIsRemove()) {
+			cout << pAttack.use_count();
+			GetSector(pAttack->GetWorldPosition())->RemoveObject(SectorLayer::attack, objectID, pAttack);
+			pAttackObjTable.erase(objectID);
+
+			continue;
+		}
+		
+		pAttack->Animate(_timeElapsed);
+		nextIndex = GetIndex(pAttack->GetWorldPosition());
+
+		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
+			cout << prevIndex << " , " << nextIndex << "\n";
+			HandOffObject(SectorLayer::attack, pAttack->GetID(), pAttack, prevIndex, nextIndex);
+
+		}
 	}
 }
 
@@ -603,6 +719,38 @@ shared_ptr<InteractObject> Zone::UpdateInteractableObject() {
 	}
 	// 바라보는 방향의 가장 가까운 오브젝트를 반환한다.
 	return nearestObject;
+}
+
+void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	shared_ptr<Attack> pAttack;
+	// 해당 플레이어의 위치, 회전값을 적용하고 위치에 맞는 섹터에 추가한다.
+	if (_attackType == AttackType::swingAttack) {
+		
+		pAttack = make_shared<SwingAttack>(_pPlayerObject->GetID());
+		pAttack->Create("SwingAttack", _pDevice, _pCommandList);
+		pAttack->SetLocalPosition(_pPlayerObject->GetWorldPosition());
+		pAttack->SetLocalRotation(_pPlayerObject->GetLocalRotate());
+		pAttack->UpdateObject();
+		AddObject(SectorLayer::attack, _objectID, pAttack, pAttack->GetWorldPosition());
+
+		pAttack->SetID(_objectID);
+	}
+	else if (_attackType == AttackType::throwAttack) {
+
+		pAttack = make_shared<ThrowAttack>(_pPlayerObject->GetID(), _pPlayerObject->GetWorldLookVector());
+		pAttack->Create("ThrowAttack", _pDevice, _pCommandList);
+		pAttack->SetLocalPosition(_pPlayerObject->GetWorldPosition());
+		pAttack->SetLocalRotation(_pPlayerObject->GetLocalRotate());
+		pAttack->UpdateObject();
+		AddObject(SectorLayer::attack, _objectID, pAttack, pAttack->GetWorldPosition());
+
+		pAttack->SetID(_objectID);
+	}
+	pAttackObjTable[_objectID] = pAttack;
+}
+
+void Zone::RemoveAttack(UINT _objectID) {
+	pAttackObjTable[_objectID]->Remove();
 }
 
 void Zone::Interact(UINT _objectID) {

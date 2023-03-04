@@ -305,13 +305,6 @@ void GameObject::Animate(float _timeElapsed) {
 	}
 }
 
-
-void GameObject::Remove() {
-};
-bool GameObject::CheckRemove() const {
-	return false;
-}
-
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	if (pMesh) {	// 메쉬가 있을 경우에만 렌더링을 한다.
 		GameFramework& gameFramework = GameFramework::Instance();
@@ -421,7 +414,9 @@ void GameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDev
 		if(haveMesh == 1)
 			pMesh = make_shared<Mesh>();
 		else
+		{
 			pMesh = make_shared<SkinnedMesh>();
+		}
 		pMesh->LoadFromFile(_file, _pDevice, _pCommandList, shared_from_this());
 
 		// 마테리얼 정보
@@ -560,7 +555,7 @@ void Effect::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice,
 }
 
 void Effect::CopyObject(const GameObject& _other) {
-	const Effect& other = static_cast<const Effect&>(_other);
+	const Effect& other = dynamic_cast<const Effect&>(_other);
 
 	nIndex = other.nIndex;
 	row = other.row;
@@ -646,7 +641,7 @@ void SkinnedGameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 }
 
 void SkinnedGameObject::CopyObject(const GameObject& _other) {
-	const SkinnedGameObject& other = static_cast<const SkinnedGameObject&>(_other);
+	const SkinnedGameObject& other = dynamic_cast<const SkinnedGameObject&>(_other);
 
 	aniController = other.aniController;
 	GameObject::CopyObject(_other);
@@ -671,9 +666,10 @@ bool GameObjectManager::LoadGameObject(const string& _name, const ComPtr<ID3D12D
 	file.read((char*)&objectType, sizeof(UINT));
 
 	shared_ptr<GameObject> newObject;
-
+	cout << objectType << "\n";
 	if (objectType == 1) {	// 스킨드 오브젝트
 		newObject = make_shared<SkinnedGameObject>();
+
 		//newObject->SetSkinnedObject(true);
 	}
 	else if (objectType == 2) {	// 이펙트일 경우
@@ -862,7 +858,6 @@ void Door::QueryInteract() {
 	SendFixedPacket(packet);
 
 }
-
 
 void Door::Interact() {
 	isOpen = !isOpen;
@@ -1061,4 +1056,108 @@ void SkyBox::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 				pMeshs[i]->Render(_pCommandList);
 		}
 	}
+}
+
+
+
+Attack::Attack() {
+	lifeTime = FLT_MAX;
+	attackType = AttackType::none;
+	playerObjectID = 0;
+	damage = 0;
+	isRemove = false;
+}
+
+Attack::Attack(UINT _playerObjectID) : Attack() {
+	playerObjectID = _playerObjectID;
+}
+
+Attack::~Attack() {
+
+}
+
+void Attack::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
+	if (GetObj()->GetObjectClass() != 2) {
+		cout << _ObjectName << " 공격 생성 에러 : Effect가 아닙니다.\n";
+		// 오브젝트는 항상 Effect여야 한다.
+		return;
+	}
+}
+
+void Attack::Animate(float _timeElapsed) {
+	GameObject::Animate(_timeElapsed);
+}
+
+
+SwingAttack::SwingAttack() {
+	attackType = AttackType::swingAttack;
+}
+
+SwingAttack::SwingAttack(UINT _playerObjectID) : SwingAttack() {
+	playerObjectID = _playerObjectID;
+}
+
+SwingAttack::~SwingAttack() {
+
+}
+
+void SwingAttack::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+
+	Attack::Create(_ObjectName, _pDevice, _pCommandList);
+	auto ObjInfo = dynamic_pointer_cast<Effect>(GetObj());
+	
+	damage = 20.0f;
+	lifeTime = ObjInfo->GetMaxIndexTime();
+}
+
+void SwingAttack::Animate(float _timeElapsed) {
+	Attack::Animate(_timeElapsed);
+	lifeTime -= _timeElapsed;
+	if (lifeTime < 0) {
+		isRemove = true;
+	}
+}
+
+ThrowAttack::ThrowAttack() {
+	isStuck = false;
+	lifeTime = 5.0f;
+	attackType = AttackType::throwAttack;
+	velocity = XMFLOAT3(0, 0, 0);
+	acc = 0.f;
+	rotateXSpeed = 1080.0f;
+}
+
+ThrowAttack::ThrowAttack(UINT _playerObjectID, const XMFLOAT3& _lookVector) : ThrowAttack() {
+	playerObjectID = _playerObjectID;
+	velocity = Vector3::ScalarProduct(_lookVector, 25.0f);
+
+}
+
+ThrowAttack::~ThrowAttack() {
+}
+
+void ThrowAttack::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	Attack::Create(_ObjectName, _pDevice, _pCommandList);
+}
+
+void ThrowAttack::Animate(float _timeElapsed) {
+	Attack::Animate(_timeElapsed);
+	if (!isStuck) {
+		Move(velocity, _timeElapsed);
+		Rotate(GetLocalRightVector(), rotateXSpeed, _timeElapsed);
+		acc += GRAVITY * _timeElapsed;
+		velocity.y -= acc * _timeElapsed;
+		UpdateObject();
+	}
+
+	lifeTime -= _timeElapsed;
+	if (lifeTime < 0) {
+		isRemove = true;
+	}
+
+}
+
+void ThrowAttack::SetIsStuck(bool _isStuck) {
+	isStuck = _isStuck;
 }

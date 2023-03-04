@@ -126,7 +126,10 @@ std::ostream& operator<<(std::ostream& os, const XMFLOAT4X4& f4x4) {
 	}
 	return os;
 }
-
+std::ostream& operator<<(std::ostream& os, const XMINT3& i3) {
+	os << "(" << i3.x << " " << i3.y << " " << i3.z << ")";
+	return os;
+}
 
 void SynchronizeResourceTransition(ID3D12GraphicsCommandList* pd3dCommandList, ID3D12Resource* pd3dResource, D3D12_RESOURCE_STATES d3dStateBefore, D3D12_RESOURCE_STATES d3dStateAfter)
 {

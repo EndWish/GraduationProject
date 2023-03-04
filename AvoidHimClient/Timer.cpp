@@ -20,7 +20,8 @@ Timer::~Timer() {
 }
 
 float Timer::GetTimeElapsed() const {
-	return (float)timeElapsed;
+	// 최저 프레임
+	return min((float)timeElapsed, 0.25f);
 }
 
 int Timer::GetFPS() const {

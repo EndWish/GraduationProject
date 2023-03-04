@@ -108,6 +108,8 @@ extern UINT cid;
 extern UINT myObjectID;
 extern UINT packetIDCount;
 
+
+
 // 현재 클라이언트 크기
 extern RECT clientRect;
 
@@ -130,11 +132,13 @@ void SynchronizeResourceTransition(ID3D12GraphicsCommandList* pd3dCommandList, I
 // 리소스 생성
 ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* _pData, UINT _byteSize, D3D12_HEAP_TYPE _heapType, D3D12_RESOURCE_STATES _resourceStates, ComPtr<ID3D12Resource>& _pUploadBuffer);
 
-//xmfloat 출력하기
+//xmfloat, xmint 출력하기
 std::ostream& operator<<(std::ostream& os, const XMFLOAT2& f2);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT3& f3);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4& f4);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4X4& f4x4);
+std::ostream& operator<<(std::ostream& os, const XMINT3& i3);
+
 
 ComPtr<ID3D12Resource> CreateTextureResourceFromDDSFile(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, const wchar_t* pszFileName, ID3D12Resource** ppd3dUploadBuffer, D3D12_RESOURCE_STATES d3dResourceStates);
 ComPtr<ID3D12Resource> CreateTexture2DResource(ID3D12Device* pd3dDevice, UINT nWidth, UINT nHeight, UINT nElements, UINT nMipLevels, DXGI_FORMAT dxgiFormat, D3D12_RESOURCE_FLAGS d3dResourceFlags, D3D12_RESOURCE_STATES d3dResourceStates, D3D12_CLEAR_VALUE* pd3dClearValue);

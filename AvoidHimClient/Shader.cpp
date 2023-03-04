@@ -183,20 +183,20 @@ void Shader::AddObject(const weak_ptr<GameObject>& _pGameObject) {
 
 void Shader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	// 쉐이더를 파이프라인에 연결한다.
-	if (wpGameObjects.size() > 0) PrepareRender(_pCommandList);
-
-	auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
-		// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
-		if (!pGameObject)
-			return true;
-		// 해당 오브젝트가 존재한다면 렌더링한다.
-		pGameObject->Render(_pCommandList);
-		return false;
-	};
-
-	wpGameObjects.erase(
-		ranges::remove_if(wpGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
-		wpGameObjects.end());
+	if (wpGameObjects.size() > 0) {
+		PrepareRender(_pCommandList);
+		auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
+			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
+			if (!pGameObject)
+				return true;
+			// 해당 오브젝트가 존재한다면 렌더링한다.
+			pGameObject->Render(_pCommandList);
+			return false;
+		};
+		wpGameObjects.erase(
+			ranges::remove_if(wpGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
+			wpGameObjects.end());
+	}
 }
 
 void Shader::PrepareRenderSO(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -668,6 +668,7 @@ void BlendingShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLi
 	auto func = [cameraPos](const shared_ptr<GameObject>& _a, const shared_ptr<GameObject>& _b) {
 		return Vector3::LengthSq(Vector3::Subtract(cameraPos, _a->GetWorldPosition())) > Vector3::LengthSq(Vector3::Subtract(cameraPos, _b->GetWorldPosition()));
 	};
+	
 	ranges::sort(wpGameObjects, func, &weak_ptr<GameObject>::lock);
 
 	Shader::Render(_pCommandList);
@@ -777,6 +778,9 @@ void EffectShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 
 	// 카메라와의 거리를 비교하여 멀리 있는 오브젝트를 먼저 그린다.
 	auto func = [cameraPos](const shared_ptr<GameObject>& _a, const shared_ptr<GameObject>& _b) {
+		// Effect의 경우 삭제된 오브젝트가 있을 수 있으므로 이 경우 뒤로 보내준다.
+		if (!_a) return false;
+		if (!_b) return true;
 		return Vector3::LengthSq(Vector3::Subtract(cameraPos, _a->GetWorldPosition())) > Vector3::LengthSq(Vector3::Subtract(cameraPos, _b->GetWorldPosition()));
 	};
 	ranges::sort(wpGameObjects, func, &weak_ptr<GameObject>::lock);

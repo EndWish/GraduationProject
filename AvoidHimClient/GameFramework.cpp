@@ -118,7 +118,7 @@ void GameFramework::ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam,
 	// 메시지 처리
 	switch (WSAGETSELECTEVENT(_lParam)) {
 	case FD_READ:
-		if (pScenes.top()) pScenes.top()->ProcessSocketMessage();
+		if (pScenes.top()) pScenes.top()->ProcessSocketMessage(pDevice, pCommandList);
 		break;
 	case FD_WRITE:
 		send(server_sock, sendBuffer.data(), BUFSIZE, 0);

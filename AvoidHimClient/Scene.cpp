@@ -134,7 +134,7 @@ void LobbyScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Co
 
 }
 
-void LobbyScene::ProcessSocketMessage() {
+void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	// 고정길이의 패킷을 Recv받는다.
@@ -351,7 +351,7 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		// 누른 방 번호를 서버로 보내 입장 가능한지 물어본다.
 		CS_QUERY_VISIT_ROOM sPacket;
 		sPacket.cid = cid;
-		sPacket.visitRoomID = reinterpret_pointer_cast<RoomButton>(_pButton)->GetRoomIndex();
+		sPacket.visitRoomID = dynamic_pointer_cast<RoomButton>(_pButton)->GetRoomIndex();
 		SendFixedPacket(sPacket);
 		break;
 	}
@@ -469,7 +469,7 @@ void LobbyScene::UpdateRoomText() {
 			}
 			else state = RoomState::joinable;
 		}
-		reinterpret_cast<RoomButton*>(pButtons[baseName].get())->UpdateState(roomList[i].roomID, roomList[i].nParticipant ,state);
+		dynamic_cast<RoomButton*>(pButtons[baseName].get())->UpdateState(roomList[i].roomID, roomList[i].nParticipant ,state);
 	}
 }
 
@@ -538,6 +538,11 @@ void PlayScene::SetPlayer(shared_ptr<Player>& _pPlayer) {
 char PlayScene::CheckCollision(float _timeElapsed) {
 	char result = 0;
 	XMFLOAT3 velocity = pPlayer->GetVelocity();
+
+	// 공격과 플레이어의 충돌처리
+	pZone->CheckCollisionWithAttack();
+	// 투사체와 장애물간의 충돌을 처리
+	pZone->CheckCollisionProjectileWithObstacle();
 
 	shared_ptr<GameObject> collideObj = pZone->CheckCollisionVertical(_timeElapsed);
 
@@ -611,6 +616,9 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	gameFramework.GetTextureManager().GetTexture("2DUI_hp", _pDevice, _pCommandList);
 	gameFramework.GetTextureManager().GetTexture("2DUI_stamina", _pDevice, _pCommandList);
 	gameFramework.GetTextureManager().GetTexture("2DUI_staminaFrame", _pDevice, _pCommandList);
+
+	gameFramework.GetGameObjectManager().LoadGameObject("SwingAttack", _pDevice, _pCommandList);
+	gameFramework.GetGameObjectManager().LoadGameObject("ThrowAttack", _pDevice, _pCommandList);
 
 	shared_ptr<Image2D> pImg;
 	pUIs["2DUI_hp"] = make_shared<Image2D>("2DUI_hp", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
@@ -730,6 +738,24 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 			pEffects.push_back(pGameObject);
 		}
 	}
+	if (_keyDownBuffer['R']) {
+		// 휘두르기 공격
+		CS_ATTACK sendPacket;
+		sendPacket.attackType = AttackType::swingAttack;
+		sendPacket.cid = cid;
+		sendPacket.playerObjectID = myObjectID;
+
+		SendFixedPacket(sendPacket);
+	}
+	if (_keyDownBuffer['T']) {
+		// 투사체 공격
+		CS_ATTACK sendPacket;
+		sendPacket.attackType = AttackType::throwAttack;
+		sendPacket.cid = cid;
+		sendPacket.playerObjectID = myObjectID;
+
+		SendFixedPacket(sendPacket);
+	}
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
 		pPlayer->Dash(_timeElapsed);
 	} 
@@ -778,7 +804,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	}
 	pPlayer->Animate(_collideCheck, _timeElapsed);
 
-	// 청자의 위치를 업데이트해준다. ( 부하가 심하다 )
+	// 청자의 위치를 업데이트해준다. ( 최초 Play 전 호출시 프레임 드랍 )
 	gameFramework.GetSoundManager().UpdateListener(pPlayer->GetWorldPosition(), camera->GetWorldLookVector(), camera->GetWorldUpVector());
 
 	bool enable = false;
@@ -822,7 +848,9 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	}
 
 	pUIs["2DUI_interact"]->SetEnable(enable);
+	pUIs["2DUI_hp"]->SetSizeUV(XMFLOAT2(pPlayer->GetHP() / 100, 1.f));
 	pUIs["2DUI_stamina"]->SetSizeUV(XMFLOAT2(pPlayer->GetMP() / 100, 1.f));
+	
 
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
 		XMINT3 prevIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
@@ -849,11 +877,9 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	remainTime -= _timeElapsed;
 
 	pZone->AnimateObjects(_timeElapsed);
-
-	
 }
 
-void PlayScene::ProcessSocketMessage() 
+void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)
 {
 	GameFramework& gameFramework = GameFramework::Instance();
 
@@ -892,6 +918,7 @@ void PlayScene::ProcessSocketMessage()
 			prevIndex = pZone->GetIndex(pMoveClient->GetWorldPosition());
 			pMoveClient->SetNextTransform(pinfo.position, pinfo.rotation, pinfo.scale);
 			nextIndex = pZone->GetIndex(pMoveClient->GetWorldPosition());
+			// 위치에 의해 섹터가 바뀌었다면 오브젝트를 옮겨준다.
 			if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
 				pZone->HandOffObject(SectorLayer::obstacle, pMoveClient->GetID(), pMoveClient, prevIndex, nextIndex);
 			}
@@ -928,12 +955,24 @@ void PlayScene::ProcessSocketMessage()
 		SC_USE_COMPUTER* packet = GetPacket<SC_USE_COMPUTER>();
 		auto pComputer = ranges::find(pEnableComputers, packet->computerObjectID, &Computer::GetID);
 		(*pComputer)->SetUse(packet->playerObjectID);
-		cout << "!";
+
 		// 내가 사용하게 될 경우
 		if (packet->playerObjectID == myObjectID) {
 			(*pComputer)->Interact();
 		}
 		break;
+	}
+	case SC_PACKET_TYPE::attack: {
+		// 알맞은 섹터에 공격을 추가한다.
+		SC_ATTACK* packet = GetPacket<SC_ATTACK>();
+		pZone->AddAttack(packet->attackType, packet->attackObjectID, FindPlayerObject(packet->playerObjectID), _pDevice, _pCommandList);
+		break;
+	}
+	case SC_PACKET_TYPE::hit: {
+		SC_ATTACK_HIT* packet = GetPacket<SC_ATTACK_HIT>();
+		pZone->RemoveAttack(packet->attackObjectID);
+		break;
+		// 해당플레이어의 체력을 깎고, 해당 오브젝트를 삭제한다.
 	}
 	default:
 		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
@@ -954,6 +993,27 @@ void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandLis
 	D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pLightsBuffer->GetGPUVirtualAddress();
 	_pCommandList->SetGraphicsRootConstantBufferView(2, gpuVirtualAddress);
 
+}
+
+shared_ptr<GameObject> PlayScene::FindPlayerObject(UINT _objectID) const {
+	shared_ptr<GameObject> pPlayerObject = nullptr;
+
+	if (_objectID == myObjectID) {
+		pPlayerObject = pPlayer;
+	}
+	else {
+		for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
+			if (_objectID == objectID) {
+				pPlayerObject = pOtherPlayer;
+				break;
+			}
+		}
+	}
+	return pPlayerObject;
+}
+
+UINT PlayScene::GetProfessorObjectID() const {
+	return professorObjectID;
 }
 
 void PlayScene::ReActButton(shared_ptr<Button> _pButton)

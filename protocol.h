@@ -22,16 +22,15 @@ using namespace DirectX;
 
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
-	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate
+	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit
 };
 
 enum class SC_PACKET_TYPE : char {
-	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail, 
-	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID, 
-	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate
+	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail,
+	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
+	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit
 
 };
-
 enum class SC_FAIL_TYPE : int {
 	unknown = 1,	//  초기값
 	noExistRoom,	// 방이 존재하지 않을때
@@ -47,6 +46,7 @@ enum class SectorLayer : char {
 	attack,
 	light,
 	effect,
+	sprite,
 	num,
 	etc
 };
@@ -55,7 +55,7 @@ enum class ShaderType : char {
 	none,
 	basic,
 	instancing,
-	blending,
+	blending,   
 	skinned,
 	effect,
 	num
@@ -74,6 +74,13 @@ enum class ObjectType : char {
 	prisonDoor,
 	light
 };
+
+enum class AttackType : char {
+	none,
+	swingAttack,
+	throwAttack,
+};
+
 #pragma pack(push, 1)
 
 // 클라 -> 서버
@@ -151,6 +158,21 @@ struct CS_HACKING_RATE {
 	UINT cid = 0;
 	UINT computerObjectID = 0;
 	float rate = 0.f;
+	UINT pid = 0;
+};
+struct CS_ATTACK {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::attack;
+	UINT cid = 0;
+	AttackType attackType = AttackType::none;
+	UINT playerObjectID = 0;
+	UINT pid = 0;
+};
+struct CS_ATTACK_HIT {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::hit;
+	UINT cid = 0;
+	AttackType attackType = AttackType::none;
+	UINT hitPlayerObjectID = 0;
+	UINT attackObjectID = 0;
 	UINT pid = 0;
 };
 
@@ -273,5 +295,18 @@ struct SC_HACKING_RATE {
 	float rate = 0.f;
 	UINT pid = 100'000;
 };
-
+struct SC_ATTACK {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::attack;
+	UINT attackObjectID = 0;
+	AttackType attackType = AttackType::none;
+	UINT playerObjectID = 0;
+	UINT pid = 0;
+};
+struct SC_ATTACK_HIT {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::hit;
+	AttackType attackType = AttackType::none;
+	UINT hitPlayerObjectID = 0;
+	UINT attackObjectID = 0;
+	UINT pid = 0;
+};
 #pragma pack(pop)
