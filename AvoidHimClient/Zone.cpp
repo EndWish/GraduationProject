@@ -677,10 +677,10 @@ void Zone::CheckCollisionProjectileWithObstacle() {
 			boundingBox = pAttack->GetBoundingBox();
 			// 주변섹터의 장애물들과 충돌체크를 한다.
 			vector<Sector*> pSectors = GetAroundSectors(GetIndex(pAttack->GetWorldPosition()));
-
+			auto pThrowAttack = dynamic_pointer_cast<ThrowAttack>(pAttack);
 			for (const auto& pSector : pSectors) {
-				if (pSector->CheckCollisionProjectileWithObstacle(boundingBox)) {
-					dynamic_pointer_cast<ThrowAttack>(pAttack)->SetIsStuck(true);
+				if (!pThrowAttack->GetIsStuck() && pSector->CheckCollisionProjectileWithObstacle(boundingBox)) {
+					pThrowAttack->SetIsStuck(true);
 				}
 			}
 		}

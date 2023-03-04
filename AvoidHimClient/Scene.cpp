@@ -860,7 +860,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 		// 이전 인덱스와 비교해서 바뀌었다면 섹터를 바꾸어준다.
 		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
-			pZone->HandOffObject(SectorLayer::obstacle, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
+			pZone->HandOffObject(SectorLayer::otherPlayer, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
 		}
 	}
 
