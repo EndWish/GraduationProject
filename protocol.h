@@ -41,7 +41,7 @@ enum class SC_FAIL_TYPE : int {
 };
 
 enum class SectorLayer : char {
-	player,
+	otherPlayer,
 	obstacle,
 	attack,
 	light,

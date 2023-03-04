@@ -677,7 +677,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			pOtherPlayers.emplace(pOtherPlayer->GetID(), pOtherPlayer);
 			
 			// 충돌처리를 위해 Sector에 추가한다.
-			pZone->AddObject(SectorLayer::obstacle, recvPacket->playerInfo[i].objectID, pOtherPlayer, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
+			pZone->AddObject(SectorLayer::otherPlayer, recvPacket->playerInfo[i].objectID, pOtherPlayer, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
 			//[수정] 애니메이션 정보 갱신
 		}
 
@@ -970,6 +970,14 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 	}
 	case SC_PACKET_TYPE::hit: {
 		SC_ATTACK_HIT* packet = GetPacket<SC_ATTACK_HIT>();
+		// 내가 맞은 패킷은 받지 않는다.
+		auto pHitPlayerObject = dynamic_pointer_cast<InterpolateMoveGameObject>(FindPlayerObject(packet->hitPlayerObjectID));
+		if (pHitPlayerObject) {
+			pHitPlayerObject->AddHP(-pZone->GetAttack(packet->attackObjectID)->GetDamage());
+		}
+		else {
+			cout << "해당 플레이어가 없습니다!!\n";
+		}
 		pZone->RemoveAttack(packet->attackObjectID);
 		break;
 		// 해당플레이어의 체력을 깎고, 해당 오브젝트를 삭제한다.

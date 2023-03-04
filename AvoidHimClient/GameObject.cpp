@@ -762,6 +762,7 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	nextRotation = Vector4::QuaternionIdentity();
 	nextScale = XMFLOAT3(1,1,1);
 	t = 0;
+	hp = 100.0f;
 }
 
 void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -1160,4 +1161,8 @@ void ThrowAttack::Animate(float _timeElapsed) {
 
 void ThrowAttack::SetIsStuck(bool _isStuck) {
 	isStuck = _isStuck;
+}
+
+bool ThrowAttack::GetIsStuck() const {
+	return isStuck;
 }

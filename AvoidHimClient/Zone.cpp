@@ -119,6 +119,12 @@ vector<shared_ptr<GameObject>>  Sector::CheckCollisionRotate(BoundingOrientedBox
 			result.push_back(pGameObject);
 		}
 	}
+	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::otherPlayer]) {
+		if (_pFloor && _pFloor == pGameObject) continue;
+		if (pGameObject->GetBoundingBox().Intersects(_boundingBox)) {
+			result.push_back(pGameObject);
+		}
+	}
 	return result;
 }
 
@@ -128,6 +134,20 @@ shared_ptr<GameObject> Sector::CheckCollisionHorizontal(BoundingOrientedBox& _bo
 	float bias = 0.2f;
 
 	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
+		if (_pFloor && _pFloor == pGameObject) continue;
+		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
+
+		if (boundingBox.Intersects(_boundingBox)) {
+			// 부딪혔지만 충분히 올라갈만한 높이일 경우
+			float heightGap = boundingBox.Extents.y + boundingBox.Center.y + _boundingBox.Extents.y - _boundingBox.Center.y;
+			if (heightGap < bias) {
+				// 플레이어를 그 높이만큼 이동
+				_pPlayer->MoveUp(bias);
+			}
+			else return pGameObject;
+		}
+	}
+	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::otherPlayer]) {
 		if (_pFloor && _pFloor == pGameObject) continue;
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 
@@ -161,6 +181,19 @@ shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boun
 			}
 		}
 	}
+	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::otherPlayer]) {
+		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
+		if (boundingBox.Intersects(_boundingBox)) {
+			// 이동 하기전 바운딩박스가 물체의 위쪽에 있던것인지 확인
+			if (_boundingBox.Center.y - _boundingBox.Extents.y - displacement >= boundingBox.Center.y + boundingBox.Extents.y) {
+				return pGameObject;
+			}
+			// 천장에서 부딪힌 경우
+			if (boundingBox.Center.y - boundingBox.Extents.y > _boundingBox.Center.y + _boundingBox.Extents.y - displacement) {
+				_pPlayer->SetVelocity(XMFLOAT3(vel.x, 0.f, vel.z));
+			}
+		}
+	}
 	return nullptr;
 }
 
@@ -171,6 +204,8 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Player> _pPlayer) {
 		shared_ptr<Attack> pAttack = dynamic_pointer_cast<Attack>(pGameObject);
 		// 본인이 시전한 공격일경우 무시
 		if (pAttack->GetPlayerObjectID() == myObjectID) continue;
+		// 지형에 박혀있는 공격일경우 무시
+		if (dynamic_pointer_cast<ThrowAttack>(pAttack)->GetIsStuck()) continue;
 
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 		if (boundingBox.Intersects(playerOOBB)) {
@@ -719,6 +754,11 @@ shared_ptr<InteractObject> Zone::UpdateInteractableObject() {
 	}
 	// 바라보는 방향의 가장 가까운 오브젝트를 반환한다.
 	return nearestObject;
+}
+
+shared_ptr<Attack> Zone::GetAttack(UINT _objectID) {
+	if (pAttackObjTable[_objectID]) return pAttackObjTable[_objectID];
+	return nullptr;
 }
 
 void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
