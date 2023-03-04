@@ -205,7 +205,10 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Player> _pPlayer) {
 		// 본인이 시전한 공격일경우 무시
 		if (pAttack->GetPlayerObjectID() == myObjectID) continue;
 		// 지형에 박혀있는 공격일경우 무시
-		if (dynamic_pointer_cast<ThrowAttack>(pAttack)->GetIsStuck()) continue;
+		auto isThrowAttack = dynamic_pointer_cast<ThrowAttack>(pAttack);
+		if (isThrowAttack) {
+			if(isThrowAttack->GetIsStuck()) continue;
+		}
 
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 		if (boundingBox.Intersects(playerOOBB)) {
@@ -227,6 +230,7 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Player> _pPlayer) {
 bool Sector::CheckCollisionProjectileWithObstacle(const BoundingOrientedBox& _boundingBox) {
 	for (auto [gid, pObstacle] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		if (pObstacle->GetBoundingBox().Intersects(_boundingBox)) {
+			cout << pObstacle->GetName() << "과 충돌!\n";
 			return true;
 		}
 	}
@@ -323,7 +327,6 @@ Sector* Zone::GetSector(const XMINT3& _index) {
 // 오브젝트 추가
 void Zone::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos) {
 	Sector* sector = GetSector(_pos);
-	cout << "Add " << _objectID << " at " << GetIndex(_pos) << "\n";
 	sector->AddObject(_sectorLayer, _objectID, _pObject);
 }
 void Zone::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index) {
@@ -367,7 +370,6 @@ void Zone::HandOffObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<Ga
 }
 void Zone::HandOffObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _preIndex, const XMINT3& _nextIndex) {
 	AddObject(_sectorLayer, _objectID, _pObject, _nextIndex);		// 새로추가하고
-	cout << "Remove : " << _objectID << " at " << _preIndex << "\n";
 	RemoveObject(_sectorLayer, _objectID, _pObject, _preIndex);	// 이전위치에서는 제거
 }
 // 같은 섹터인지를 리턴하는 함수
@@ -500,7 +502,6 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 		// nameSize(UINT) / fileName (string)
 		activeComputer = false;
 		ReadStringBinary(objName, file);
-		cout << objName << "\n";
 		// SectorLayer(char)
 		file.read((char*)&objLayer, sizeof(SectorLayer));
 		// ObjectType(char)
@@ -716,7 +717,7 @@ void Zone::AnimateObjects(float _timeElapsed) {
 		prevIndex = GetIndex(pAttack->GetWorldPosition());
 		// 사라져야할 공격은 삭제, 소속 섹터 업데이트
 		if (pAttack->GetIsRemove()) {
-			cout << pAttack.use_count();
+
 			GetSector(pAttack->GetWorldPosition())->RemoveObject(SectorLayer::attack, objectID, pAttack);
 			pAttackObjTable.erase(objectID);
 
@@ -727,7 +728,6 @@ void Zone::AnimateObjects(float _timeElapsed) {
 		nextIndex = GetIndex(pAttack->GetWorldPosition());
 
 		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
-			cout << prevIndex << " , " << nextIndex << "\n";
 			HandOffObject(SectorLayer::attack, pAttack->GetID(), pAttack, prevIndex, nextIndex);
 
 		}
