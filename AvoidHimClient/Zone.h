@@ -135,7 +135,12 @@ public:
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 갱신하는 함수
 	shared_ptr<InteractObject> UpdateInteractableObject();
 
+	// objectID로 해당 공격을 찾는 함수
+	shared_ptr<Attack> GetAttack(UINT _objectID);
+
 	void AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	
+	// 공격의 경우 RemoveObject가 아닌 이 함수로 삭제해야한다.
 	void RemoveAttack(UINT _objectID);
 	// 특정 오브젝트에 대한 상호작용을 수행하는 함수
 	void Interact(UINT _objectID);

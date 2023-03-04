@@ -81,7 +81,7 @@ shared_ptr<GameObject> Sector::FindObject(SectorLayer _sectorLayer, UINT _object
 		cout << "찾으려는 오브젝트가 없습니다.\n";
 		return NULL;
 	}
-} 
+}
 
 void Sector::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
@@ -123,7 +123,7 @@ vector<shared_ptr<GameObject>>  Sector::CheckCollisionRotate(BoundingOrientedBox
 }
 
 shared_ptr<GameObject> Sector::CheckCollisionHorizontal(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, shared_ptr<GameObject> _pFloor) {
-	
+
 	// 점프없이 올라갈 수 있는 최대 높이값
 	float bias = 0.2f;
 
@@ -219,7 +219,7 @@ pair<float, shared_ptr<InteractObject>> Sector::GetNearestInteractObject(const s
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 		BoundingOrientedBox playerBoundingBox = _pPlayer->GetBoundingBox();
 		// 거리값을 근사. 거리가 되지 않을경우 충돌체크를 하지 않는다.
-		if (Vector3::Length(boundingBox.Center, playerBoundingBox.Center) - boundingBox.Extents.x -boundingBox.Extents.z > minDist) {
+		if (Vector3::Length(boundingBox.Center, playerBoundingBox.Center) - boundingBox.Extents.x - boundingBox.Extents.z > minDist) {
 			continue;
 		}
 		// 플레이어가 바라보는 방향으로 바운딩 박스를 이동시켜본다.
@@ -258,7 +258,7 @@ Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div, shared_ptr<PlayScene> _pSc
 		for (int y = 0; y < _div.y; ++y) {
 			for (int z = 0; z < _div.z; ++z) {
 				// startPoint + (x,y,z = 인덱스) * (sectorSize) + Extents;
-				boundingBox.Center = Vector3::Add(Vector3::Add(startPoint,  Vector3::Multiple(XMFLOAT3(x, y, z), sectorSize)), boundingBox.Extents);
+				boundingBox.Center = Vector3::Add(Vector3::Add(startPoint, Vector3::Multiple(XMFLOAT3(x, y, z), sectorSize)), boundingBox.Extents);
 				sectors[x][y][z].SetBoundingBox(boundingBox);
 			}
 		}
@@ -532,7 +532,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 
 			// 섹터에 오브젝트를 추가한다. (충돌체크, 프러스텀 컬링용)
 			AddObject(objLayer, objectID, pGameObject, GetIndex(position));
-			
+
 			if (activeComputer) {
 				pGameObject->GetObj()->SetShaderType(ShaderType::basic);
 				gameFramework.GetShader("BasicShader")->AddObject(pGameObject->GetObj());
@@ -585,7 +585,7 @@ vector<shared_ptr<GameObject>> Zone::CheckCollisionRotate(shared_ptr<GameObject>
 		objs = sector->CheckCollisionRotate(boundingBox, _pFloor);
 		for (auto& obj : objs) {
 			result.push_back(obj);
-		}               
+		}
 	}
 	return result;
 }
@@ -643,12 +643,16 @@ void Zone::CheckCollisionProjectileWithObstacle() {
 			boundingBox = pAttack->GetBoundingBox();
 			// 주변섹터의 장애물들과 충돌체크를 한다.
 			vector<Sector*> pSectors = GetAroundSectors(GetIndex(pAttack->GetWorldPosition()));
+			<<<<<< < Updated upstream
+				====== =
+				auto pThrowAttack = dynamic_pointer_cast<ThrowAttack>(pAttack);
+			>>>>>> > Stashed changes
 
-			for (const auto& pSector : pSectors) {
-				if (pSector->CheckCollisionProjectileWithObstacle(boundingBox)) {
-					dynamic_pointer_cast<ThrowAttack>(pAttack)->SetIsStuck(true);
+				for (const auto& pSector : pSectors) {
+					if (pSector->CheckCollisionProjectileWithObstacle(boundingBox)) {
+						dynamic_pointer_cast<ThrowAttack>(pAttack)->SetIsStuck(true);
+					}
 				}
-			}
 		}
 	}
 }
@@ -689,7 +693,7 @@ void Zone::AnimateObjects(float _timeElapsed) {
 
 			continue;
 		}
-		
+
 		pAttack->Animate(_timeElapsed);
 		nextIndex = GetIndex(pAttack->GetWorldPosition());
 
@@ -725,12 +729,12 @@ shared_ptr<InteractObject> Zone::UpdateInteractableObject() {
 
 void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	shared_ptr<Attack> pAttack;
+	XMFLOAT3 offset = XMFLOAT3(0.f, 0.8f, 0.f);	// 공격의 생성 위치 오프셋
 	// 해당 플레이어의 위치, 회전값을 적용하고 위치에 맞는 섹터에 추가한다.
 	if (_attackType == AttackType::swingAttack) {
-		
 		pAttack = make_shared<SwingAttack>(_pPlayerObject->GetID());
 		pAttack->Create("SwingAttack", _pDevice, _pCommandList);
-		pAttack->SetLocalPosition(_pPlayerObject->GetWorldPosition());
+		pAttack->SetLocalPosition(Vector3::Add(_pPlayerObject->GetWorldPosition(), offset));
 		pAttack->SetLocalRotation(_pPlayerObject->GetLocalRotate());
 		pAttack->UpdateObject();
 		AddObject(SectorLayer::attack, _objectID, pAttack, pAttack->GetWorldPosition());
@@ -741,7 +745,7 @@ void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObje
 
 		pAttack = make_shared<ThrowAttack>(_pPlayerObject->GetID(), _pPlayerObject->GetWorldLookVector());
 		pAttack->Create("ThrowAttack", _pDevice, _pCommandList);
-		pAttack->SetLocalPosition(_pPlayerObject->GetWorldPosition());
+		pAttack->SetLocalPosition(Vector3::Add(_pPlayerObject->GetWorldPosition(), offset));
 		pAttack->SetLocalRotation(_pPlayerObject->GetLocalRotate());
 		pAttack->UpdateObject();
 		AddObject(SectorLayer::attack, _objectID, pAttack, pAttack->GetWorldPosition());

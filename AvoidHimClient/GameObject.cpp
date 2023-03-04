@@ -762,6 +762,7 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	nextRotation = Vector4::QuaternionIdentity();
 	nextScale = XMFLOAT3(1,1,1);
 	t = 0;
+	hp = 100.0f;
 }
 
 void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -1087,11 +1088,13 @@ void Attack::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 
 void Attack::Animate(float _timeElapsed) {
 	GameObject::Animate(_timeElapsed);
+
 }
 
 
 SwingAttack::SwingAttack() {
 	attackType = AttackType::swingAttack;
+	damage = 20.0f;
 }
 
 SwingAttack::SwingAttack(UINT _playerObjectID) : SwingAttack() {
@@ -1107,7 +1110,6 @@ void SwingAttack::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevic
 	Attack::Create(_ObjectName, _pDevice, _pCommandList);
 	auto ObjInfo = dynamic_pointer_cast<Effect>(GetObj());
 	
-	damage = 20.0f;
 	lifeTime = ObjInfo->GetMaxIndexTime();
 }
 
@@ -1124,6 +1126,7 @@ ThrowAttack::ThrowAttack() {
 	lifeTime = 5.0f;
 	attackType = AttackType::throwAttack;
 	velocity = XMFLOAT3(0, 0, 0);
+	damage = 20.0f;
 	acc = 0.f;
 	rotateXSpeed = 1080.0f;
 }
@@ -1139,6 +1142,7 @@ ThrowAttack::~ThrowAttack() {
 
 void ThrowAttack::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	Attack::Create(_ObjectName, _pDevice, _pCommandList);
+	damage = 20.0f;
 }
 
 void ThrowAttack::Animate(float _timeElapsed) {
@@ -1160,4 +1164,8 @@ void ThrowAttack::Animate(float _timeElapsed) {
 
 void ThrowAttack::SetIsStuck(bool _isStuck) {
 	isStuck = _isStuck;
+}
+
+bool ThrowAttack::GetIsStuck() const {
+	return isStuck;
 }

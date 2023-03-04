@@ -17,6 +17,9 @@ Player::Player() {
 	hp = 100.0f;
 	mp = 100.0f;
 	mpTick = 1.f;
+	attackRemainCoolTime.fill(0.f);
+	attackMaxCoolTime[(size_t)AttackType::swingAttack] = 1.0f;
+	attackMaxCoolTime[(size_t)AttackType::throwAttack] = 2.0f;
 }
 
 Player::~Player() {
@@ -42,6 +45,8 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 	pCamera->UpdateObject();
 
 	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
+
+
 	UpdateObject();
 
 }
@@ -107,6 +112,11 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 	if (!(_collideCheck & 1)) {
 		moveDistance += Vector3::Length(Vector3::Subtract(prevPosition, position));
 	}
+
+	for (auto& coolTime : attackRemainCoolTime) {
+		if (coolTime >= 0.f) coolTime -= _timeElapsed;
+	}
+
 
 	if (moveDistance > 1.0f) {
 		pFootStepSound->Play();
@@ -182,4 +192,17 @@ void Player::Dash(float _timeElapsed) {
 		speed = 7.5f;
 		mp -= costPerSec * _timeElapsed;
 	}
+}
+
+
+void Player::SetCoolTime(AttackType _type, float _coolTime) {
+	attackRemainCoolTime[(size_t)_type] = _coolTime;
+}
+
+void Player::Reload(AttackType _type) {
+	SetCoolTime(_type, attackMaxCoolTime[(size_t)_type]);
+}
+
+float Player::GetCoolTime(AttackType _type) const {
+	return attackRemainCoolTime[(size_t)_type];
 }

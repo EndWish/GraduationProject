@@ -27,6 +27,8 @@ private:
 
 	shared_ptr<GameObject> pFloor;
 	float sendMovePacketTime;
+	array<float, (size_t)AttackType::num> attackRemainCoolTime;
+	array<float, (size_t)AttackType::num> attackMaxCoolTime;
 public:
 	Player();
 	~Player();
@@ -66,6 +68,10 @@ public:
 	void AddMP(float _mp) { mp += _mp; };
 
 	float GetSpeed() const { return speed; };
+	void SetSpeed(float _speed) { speed = _speed; };
 	void Dash(float _timeElapsed);
 
+	void SetCoolTime(AttackType _type, float _coolTime);
+	void Reload(AttackType _type);
+	float GetCoolTime(AttackType _type) const;
 };

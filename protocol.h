@@ -41,7 +41,7 @@ enum class SC_FAIL_TYPE : int {
 };
 
 enum class SectorLayer : char {
-	player,
+	otherPlayer,
 	obstacle,
 	attack,
 	light,
@@ -81,6 +81,7 @@ enum class AttackType : char {
 	none,
 	swingAttack,
 	throwAttack,
+	num,
 };
 
 #pragma pack(push, 1)

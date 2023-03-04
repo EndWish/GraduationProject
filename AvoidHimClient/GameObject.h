@@ -187,6 +187,7 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 /// Attack
 class Attack : public GameObject {
+
 protected:
 	float lifeTime;
 	AttackType attackType; // 1 = swing, 2 = throw
@@ -233,6 +234,7 @@ public:
 	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void Animate(float _timeElapsed);
 	void SetIsStuck(bool _isStuck);
+	bool GetIsStuck() const;
 };
 
 
@@ -276,7 +278,7 @@ private:
 	XMFLOAT3 nextScale;
 
 	float t;
-
+	float hp;
 	shared_ptr<Sound> pFootStepSound;
 public:
 	InterpolateMoveGameObject();
@@ -285,6 +287,10 @@ public:
 
 	virtual void Animate(float _timeElapsed);
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
+	
+	float GetHP() const { return hp; };
+	void SetHP(float _hp) { hp = _hp; };
+	void AddHP(float _hp) { hp += _hp; };
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -515,6 +515,7 @@ PlayScene::PlayScene() {
 	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
 	remainTime = 1000.f;
 	professorObjectID = 0;
+	isPlayerProfesser = false;
 }
 
 PlayScene::~PlayScene() {
@@ -649,7 +650,14 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 		if (recvPacket->playerInfo[i].objectID == myObjectID) {	// 내가 조종할 캐릭터일 경우
 
 			pPlayer = make_shared<Player>();
+			if (professorObjectID == recvPacket->playerInfo[i].objectID) {	// 교수 플레이어일 경우
 
+				isPlayerProfesser = true;
+				pPlayer->SetSpeed(1.2f * pPlayer->GetSpeed()); // 교수 플레이어는 조금 더 빠르다.
+			}
+			else { // 학생일 경우
+				pPlayer->Create("Player"s, _pDevice, _pCommandList);
+			}
 			
 			pPlayer->Create("Player"s, _pDevice, _pCommandList);
 			pPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
@@ -657,7 +665,6 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			pPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
 			pPlayer->UpdateObject();
 			pPlayer->SetID(recvPacket->playerInfo[i].objectID);
-			cout << recvPacket->playerInfo[i].position << "\n";
 			SetPlayer(pPlayer);
 			pZone->SetPlayer(pPlayer);
 			//pindex = GetIndex(position);
@@ -668,7 +675,15 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 		}
 		else {	// 다른 플레이어의 캐릭터 정보일 경우
 			shared_ptr<InterpolateMoveGameObject> pOtherPlayer = make_shared<InterpolateMoveGameObject>();
-			pOtherPlayer->Create("Player"s, _pDevice, _pCommandList);
+
+			if (professorObjectID == recvPacket->playerInfo[i].objectID) {	// 교수 플레이어일 경우
+
+			}
+			else { // 학생일 경우
+				pOtherPlayer->Create("Player"s, _pDevice, _pCommandList);
+			}
+			
+
 			pOtherPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pOtherPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pOtherPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -677,7 +692,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			pOtherPlayers.emplace(pOtherPlayer->GetID(), pOtherPlayer);
 			
 			// 충돌처리를 위해 Sector에 추가한다.
-			pZone->AddObject(SectorLayer::obstacle, recvPacket->playerInfo[i].objectID, pOtherPlayer, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
+			pZone->AddObject(SectorLayer::otherPlayer, recvPacket->playerInfo[i].objectID, pOtherPlayer, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
 			//[수정] 애니메이션 정보 갱신
 		}
 
@@ -748,13 +763,7 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		SendFixedPacket(sendPacket);
 	}
 	if (_keyDownBuffer['T']) {
-		// 투사체 공격
-		CS_ATTACK sendPacket;
-		sendPacket.attackType = AttackType::throwAttack;
-		sendPacket.cid = cid;
-		sendPacket.playerObjectID = myObjectID;
-
-		SendFixedPacket(sendPacket);
+		
 	}
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
 		pPlayer->Dash(_timeElapsed);
@@ -860,7 +869,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 		// 이전 인덱스와 비교해서 바뀌었다면 섹터를 바꾸어준다.
 		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
-			pZone->HandOffObject(SectorLayer::obstacle, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
+			pZone->HandOffObject(SectorLayer::otherPlayer, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
 		}
 	}
 
@@ -963,13 +972,24 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		break;
 	}
 	case SC_PACKET_TYPE::attack: {
-		// 알맞은 섹터에 공격을 추가한다.
+		// 알맞은 섹터에 공격을 추가하고 본인이 공격한 경우 쿨타임을 적용한다.
 		SC_ATTACK* packet = GetPacket<SC_ATTACK>();
 		pZone->AddAttack(packet->attackType, packet->attackObjectID, FindPlayerObject(packet->playerObjectID), _pDevice, _pCommandList);
+		if (packet->playerObjectID == myObjectID) {
+			pPlayer->Reload(packet->attackType);
+		}
 		break;
 	}
 	case SC_PACKET_TYPE::hit: {
 		SC_ATTACK_HIT* packet = GetPacket<SC_ATTACK_HIT>();
+		// 내가 맞은 패킷은 받지 않는다.
+		auto pHitPlayerObject = dynamic_pointer_cast<InterpolateMoveGameObject>(FindPlayerObject(packet->hitPlayerObjectID));
+		if (pHitPlayerObject) {
+			pHitPlayerObject->AddHP(-pZone->GetAttack(packet->attackObjectID)->GetDamage());
+		}
+		else {
+			cout << "해당 플레이어가 없습니다!!\n";
+		}
 		pZone->RemoveAttack(packet->attackObjectID);
 		break;
 		// 해당플레이어의 체력을 깎고, 해당 오브젝트를 삭제한다.
@@ -1033,6 +1053,19 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 	case WM_LBUTTONUP:
 		SetCapture(hWnd);
 		gameFramework.InitOldCursor();
+		break;
+	case WM_RBUTTONDOWN:
+		// 투사체 공격
+		if (pPlayer->GetCoolTime(AttackType::throwAttack) <= 0.f) {
+			CS_ATTACK sendPacket;
+			sendPacket.attackType = AttackType::throwAttack;
+			sendPacket.cid = cid;
+			sendPacket.playerObjectID = myObjectID;
+			// 서버가 늦어질 경우 이곳에서 대기 쿨타임을 주지 않을경우 계속해서 패킷을 전송하게 된다.
+			// 이후 서버에게 패킷을 받아 실제로 공격을 생성할 때 다시 쿨타임을 적용한다.
+			pPlayer->Reload(AttackType::throwAttack);
+			SendFixedPacket(sendPacket);
+		}		
 		break;
 }
 }
