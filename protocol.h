@@ -164,15 +164,15 @@ struct CS_ATTACK {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::attack;
 	UINT cid = 0;
 	AttackType attackType = AttackType::none;
-	UINT playerObjectID = 0;
+	UINT playerObjectID = 0;	// 시전자 ID
 	UINT pid = 0;
 };
 struct CS_ATTACK_HIT {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::hit;
 	UINT cid = 0;
 	AttackType attackType = AttackType::none;
-	UINT hitPlayerObjectID = 0;
-	UINT attackObjectID = 0;
+	UINT hitPlayerObjectID = 0;	// 맞은 애 ID
+	UINT attackObjectID = 0;	// 공격 ID
 	UINT pid = 0;
 };
 
@@ -295,18 +295,20 @@ struct SC_HACKING_RATE {
 	float rate = 0.f;
 	UINT pid = 100'000;
 };
+
 struct SC_ATTACK {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::attack;
-	UINT attackObjectID = 0;
+	UINT attackObjectID = 0;		// 공격 ID
 	AttackType attackType = AttackType::none;
-	UINT playerObjectID = 0;
+	UINT playerObjectID = 0;		// 시전자 ID
 	UINT pid = 0;
 };
 struct SC_ATTACK_HIT {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::hit;
 	AttackType attackType = AttackType::none;
-	UINT hitPlayerObjectID = 0;
-	UINT attackObjectID = 0;
+	UINT hitPlayerObjectID = 0;		// 맞은 애 ID
+	UINT attackObjectID = 0;		// 공격 ID
 	UINT pid = 0;
 };
+
 #pragma pack(pop)

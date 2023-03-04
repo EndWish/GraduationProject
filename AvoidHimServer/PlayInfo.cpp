@@ -318,6 +318,37 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		}
 		break;
 	}
+	case CS_PACKET_TYPE::attack: 
+	{
+		CS_ATTACK& recvPacket = GetPacket<CS_ATTACK>();
+		cout << format("CS_ATTACK : cid - {}, attackType - {}, pid - {} \n", recvPacket.cid, (int)recvPacket.attackType, recvPacket.pid);
+
+		SC_ATTACK sendPacket;
+		sendPacket.attackType = recvPacket.attackType;
+		sendPacket.playerObjectID = recvPacket.playerObjectID;	// 시전자
+		sendPacket.attackObjectID = objectIDCount++;	// 공격ID 부여
+		for (auto [participant, pClient] : participants) {
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+		break;
+	}
+	case CS_PACKET_TYPE::hit:
+	{
+		CS_ATTACK_HIT& recvPacket = GetPacket<CS_ATTACK_HIT>();
+		cout << format("CS_ATTACK_HIT : cid - {}, attackType - {}, attackObjectID - {}, hitPlayerObjectID - {}, pid - {} \n", recvPacket.cid, (int)recvPacket.attackType, recvPacket.attackObjectID, recvPacket.hitPlayerObjectID, recvPacket.pid);
+
+		SC_ATTACK_HIT sendPacket;
+		sendPacket.attackObjectID = recvPacket.attackObjectID;
+		sendPacket.hitPlayerObjectID = recvPacket.hitPlayerObjectID;
+		sendPacket.attackType = recvPacket.attackType;
+
+		for (auto [participant, pClient] : participants) {
+			if (recvPacket.cid == participant)
+				continue;
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+		break;
+	}
 
 	default:
 		READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();

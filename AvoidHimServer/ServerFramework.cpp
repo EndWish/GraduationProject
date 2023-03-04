@@ -289,6 +289,8 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::useWaterDispenser:
     case CS_PACKET_TYPE::queryUseComputer:
     case CS_PACKET_TYPE::hackingRate: 
+    case CS_PACKET_TYPE::attack: 
+    case CS_PACKET_TYPE::hit: 
     {
         READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
         //cout << format("READ_CID_IN_PACKET : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);
