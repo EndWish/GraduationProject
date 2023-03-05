@@ -744,7 +744,9 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 			pInteractableObject->QueryInteract();
 	}
 	if (_keyDownBuffer['R']) {
-
+		CS_OPEN_PRISON_DOOR sendPacket;
+		sendPacket.cid = cid;
+		SendFixedPacket(sendPacket);
 	}
 	if (_keyDownBuffer['T']) {
 		
@@ -795,6 +797,31 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	for (auto& t : pEffects) {
 		t->Animate(_timeElapsed);
 	}
+	// 플레이어의 체력이 0이 되었을 경우 자신을 감옥으로 이동시키고 패킷을 보낸다.
+	if (!isPlayerProfessor) {
+		auto pStudent = dynamic_pointer_cast<Student>(pPlayer);
+		if (pStudent->GetHP() <= 0) {
+			// 수감중으로 바꾼다.
+			pStudent->SetImprisoned(true);
+			// 체력을 반피로 바꾼다.
+			pStudent->SetHP(50.f);
+			// 순간이동 시킨다.
+			XMINT3 prevIndex = pZone->GetIndex(pStudent->GetWorldPosition());
+			pStudent->SetLocalPosition(prisonPosition);
+			pStudent->UpdateObject();
+			XMINT3 nextIndex = pZone->GetIndex(pStudent->GetWorldPosition());
+			if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
+				pZone->HandOffObject(SectorLayer::otherPlayer, pStudent->GetID(), pStudent, prevIndex, nextIndex);
+			}
+			// 패킷을 보낸다.
+			CS_GO_PRISON sendPacket;
+			sendPacket.cid = cid;
+			sendPacket.playerObjectID = myObjectID;
+			SendFixedPacket(sendPacket);
+
+		}
+	}
+	// 플레이어 애니메이션
 	pPlayer->Animate(_collideCheck, _timeElapsed);
 
 	// 청자의 위치를 업데이트해준다. ( 최초 Play 전 호출시 프레임 드랍 )
@@ -997,6 +1024,63 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		break;
 		// 해당플레이어의 체력을 깎고, 해당 오브젝트를 삭제한다.
 	}
+	case SC_PACKET_TYPE::goPrison: {
+		SC_GO_PRISON* packet = GetPacket<SC_GO_PRISON>();
+		// 다른 플레이어(인터폴레이션 오브젝트)를 순간이동 시킨다.
+		shared_ptr<InterpolateMoveGameObject> pTeleportPlayer = pOtherPlayers.find(packet->playerObjectID)->second;
+		XMINT3 prevIndex = pZone->GetIndex(pTeleportPlayer->GetWorldPosition());
+		pTeleportPlayer->SetNextTransform(prisonPosition, pTeleportPlayer->GetLocalRotate(), pTeleportPlayer->GetLocalScale());
+		pTeleportPlayer->SetNextTransform(prisonPosition, pTeleportPlayer->GetLocalRotate(), pTeleportPlayer->GetLocalScale());
+		XMINT3 nextIndex = pZone->GetIndex(pTeleportPlayer->GetWorldPosition());
+
+		// 갇혀있는 상태로 바꾼다. + hp를 50으로 바꾼다.
+		pTeleportPlayer->SetImprisoned(true);
+		pTeleportPlayer->SetHP(50.f);
+
+		// 위치에 의해 섹터가 바뀌었다면 핸드오프 해준다.
+		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
+			pZone->HandOffObject(SectorLayer::otherPlayer, pTeleportPlayer->GetID(), pTeleportPlayer, prevIndex, nextIndex);
+		}
+		break;
+	}
+	case SC_PACKET_TYPE::openPrisonDoor: {
+		SC_OPEN_PRISON_DOOR* packet = GetPacket<SC_OPEN_PRISON_DOOR>();
+		// 자신이 학생이고 자기 자신이 갇혀있다면 감옥탈출 위치로 순간이동 시킨다.
+		if (!isPlayerProfessor) {
+			auto pStudent = dynamic_pointer_cast<Student>(pPlayer);
+			if (pStudent->GetImprisoned()) {	// 수감되어 있다면
+				// 수감해제로 바꾼다.
+				pStudent->SetImprisoned(false);
+				// 순간이동 시킨다.
+				XMINT3 prevIndex = pZone->GetIndex(pStudent->GetWorldPosition());
+				pStudent->SetLocalPosition(prisonExitPosition);
+				pStudent->UpdateObject();
+				XMINT3 nextIndex = pZone->GetIndex(pStudent->GetWorldPosition());
+				if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
+					pZone->HandOffObject(SectorLayer::otherPlayer, pStudent->GetID(), pStudent, prevIndex, nextIndex);
+				}
+			}
+		}
+		// 다른 학생의 수감 상태를 변경시키고 순간이동 시킨다.
+		for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
+			if (objectID != professorObjectID && pOtherPlayer->GetImprisoned()) {
+				pOtherPlayer->SetImprisoned(false);	// 수감 해제
+				// 순간이동 시킨다.
+				XMINT3 prevIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
+				pOtherPlayer->SetNextTransform(prisonExitPosition, pOtherPlayer->GetLocalRotate(), pOtherPlayer->GetLocalScale());
+				pOtherPlayer->SetNextTransform(prisonExitPosition, pOtherPlayer->GetLocalRotate(), pOtherPlayer->GetLocalScale());
+				XMINT3 nextIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
+
+				// 위치에 의해 섹터가 바뀌었다면 핸드오프 해준다.
+				if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
+					pZone->HandOffObject(SectorLayer::otherPlayer, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
+				}
+			}
+		}
+
+		break;
+	}
+
 	default:
 		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
 	}

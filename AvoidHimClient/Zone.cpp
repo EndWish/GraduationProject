@@ -185,6 +185,7 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 			SendFixedPacket(sendPacket);
 			// 플레이어에게 무적시간을 잠시 적용
 			pAttack->Remove();
+
 		}
 	}
 }
@@ -260,7 +261,7 @@ Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div, shared_ptr<PlayScene> _pSc
 		for (int y = 0; y < _div.y; ++y) {
 			for (int z = 0; z < _div.z; ++z) {
 				// startPoint + (x,y,z = 인덱스) * (sectorSize) + Extents;
-				boundingBox.Center = Vector3::Add(Vector3::Add(startPoint, Vector3::Multiple(XMFLOAT3(x, y, z), sectorSize)), boundingBox.Extents);
+				boundingBox.Center = Vector3::Add(Vector3::Add(startPoint, Vector3::Multiple(XMFLOAT3((float)x, (float)y, (float)z), sectorSize)), boundingBox.Extents);
 				sectors[x][y][z].SetBoundingBox(boundingBox);
 			}
 		}
@@ -560,6 +561,19 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 				world = pGameObject->GetWorldTransform();
 				XMStoreFloat4x4(&temp, XMMatrixTranspose(XMLoadFloat4x4(&world)));
 				instanceDatas[objName].push_back(temp);
+			}
+			break;
+		}
+		case SectorLayer::etc: {
+			switch (objType) {
+			case ObjectType::prisonPosition:
+				prisonPosition = position;
+				break;
+			case ObjectType::prisonExitPosition:
+				prisonExitPosition = position;
+				break;
+			default:
+				break;
 			}
 			break;
 		}

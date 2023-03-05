@@ -84,6 +84,9 @@ XMFLOAT3 GameObject::GetLocalLookVector() const {
 XMFLOAT3 GameObject::GetLocalPosition() const {
 	return localPosition;
 }
+XMFLOAT3 GameObject::GetLocalScale() const {
+	return localScale;
+}
 XMFLOAT4 GameObject::GetLocalRotate() const {
 	return localRotation;
 }
@@ -761,6 +764,9 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	nextScale = XMFLOAT3(1,1,1);
 	t = 0;
 	hp = 100.0f;
+	moveDistance = 0.f;
+
+	imprisoned = false;
 }
 
 void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {

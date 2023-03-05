@@ -107,8 +107,7 @@ extern SOCKET server_sock;
 extern UINT cid;
 extern UINT myObjectID;
 extern UINT packetIDCount;
-
-
+extern XMFLOAT3 prisonPosition, prisonExitPosition;
 
 // 현재 클라이언트 크기
 extern RECT clientRect;

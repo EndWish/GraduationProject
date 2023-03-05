@@ -13,6 +13,8 @@ SOCKET server_sock = 0;
 UINT cid = 0;
 UINT myObjectID = 0;
 UINT packetIDCount = 0;
+XMFLOAT3 prisonPosition = XMFLOAT3(0, 0, 0);
+XMFLOAT3 prisonExitPosition = XMFLOAT3(0, 0, 0);
 
 RECT clientRect;
 random_device rd;

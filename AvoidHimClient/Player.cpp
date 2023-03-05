@@ -2,8 +2,6 @@
 #include "Player.h"
 #include "GameFramework.h"
 
-
-
 Player::Player() {
 	moveDistance = 0.f;
 	landed = false;
@@ -193,6 +191,7 @@ void Player::Dash(float _timeElapsed) {
 
 Student::Student() {
 	hp = 100.0f;
+	imprisoned = false;
 }
 
 Student::~Student() {

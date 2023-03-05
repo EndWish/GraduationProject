@@ -37,10 +37,12 @@ using namespace std;
 // 전역 변수
 extern random_device rd;
 extern UINT objectIDStart;	// Map파일을 읽어오고 나서 (플레이어 포함)추가적으로 생성하는 오브젝트에게 ID를 부여할때 시작할 번호 (objectIDCount는 각 경기마다 있어야 하므로)
+extern XMFLOAT3 prisonPosition, prisonExitPosition;
 
 extern array<char, BUFSIZE> globalRecvBuffer;
 extern array<char, BUFSIZE> buffer;
 extern UINT packetIDCount;
+
 
 /// 전역 함수
 //xmfloat 출력하기

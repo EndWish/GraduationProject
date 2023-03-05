@@ -102,7 +102,7 @@ void PlayInfo::Init(UINT _roomID) {
 		pClient->SetCurrentPlayInfo(this);
 
 		// 플레이어들을 생성하고 위치를 초기화 해준다.
-		GameObject* pPlayer = new GameObject();
+		Player* pPlayer = new Player();
 		pPlayer->SetID(objectIDCount++);
 		if (participant == professorClientID) {	// 교수일 경우
 			pPlayer->SetPosition(serverFramework.GetProfessorStartPosition());
@@ -364,6 +364,45 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		for (auto [participant, pClient] : participants) {
 			if (recvPacket.cid == participant)
 				continue;
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+		break;
+	}
+	case CS_PACKET_TYPE::goPrison: {
+		CS_GO_PRISON& recvPacket = GetPacket<CS_GO_PRISON>();
+		cout << format("CS_GO_PRISON : cid - {}, attackObjectID - {}, pid - {} \n", recvPacket.cid, (int)recvPacket.playerObjectID, recvPacket.pid);
+		
+		// 해당 플레이어가 수감되었다고 표시한다.
+		pPlayers[recvPacket.playerObjectID]->SetImprisoned(true);
+
+		// 이동시킨다.
+		pPlayers[recvPacket.playerObjectID]->SetPosition(prisonPosition);
+
+		// 패킷을 전송한다.
+		SC_GO_PRISON sendPacket;
+		sendPacket.playerObjectID = recvPacket.playerObjectID;
+		for (auto [participant, pClient] : participants) {
+			if (recvPacket.cid == participant)
+				continue;
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+		break;
+	}
+	case CS_PACKET_TYPE::openPrisonDoor: {
+		CS_OPEN_PRISON_DOOR& recvPacket = GetPacket<CS_OPEN_PRISON_DOOR>();
+		cout << format("CS_OPEN_PRISON_DOOR : cid - {}, pid - {} \n", recvPacket.cid, recvPacket.pid);
+
+		// 해당 플레이어가 수감해제 되었다고 표시한다.
+		for (auto [objectID, pPlayer] : pPlayers) {
+			if (pPlayer->GetImprisoned()) {
+				pPlayer->SetImprisoned(false);
+				pPlayer->SetPosition(prisonExitPosition);
+			}
+		}
+
+		// 감옥의 문을 열었다고 패킷을 보낸다.
+		SC_OPEN_PRISON_DOOR sendPacket;
+		for (auto [participant, pClient] : participants) {
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
 		break;

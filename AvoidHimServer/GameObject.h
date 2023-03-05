@@ -60,6 +60,24 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////////////////////
+/// Player
+
+class Player : public GameObject {
+protected:
+	bool imprisoned;	// 수감되었는지 확인하는 변수
+
+public:
+	Player();
+	Player(const Player& _other);	// 복사생성자
+	Player& operator=(const Player& _other);	// 복사 대입 연산자
+	virtual ~Player();
+
+	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
+	bool GetImprisoned() const { return imprisoned; }
+
+};
+
+///////////////////////////////////////////////////////////////////////////////
 /// Door
 
 class Door : public GameObject {

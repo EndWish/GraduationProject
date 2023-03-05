@@ -507,7 +507,6 @@ const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
 	//}
 }
 
-
 void GameFramework::FrameAdvance() {
 
 	gameTimer.Tick(0.0f);

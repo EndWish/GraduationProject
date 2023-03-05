@@ -73,6 +73,7 @@ public:
 class Student : public Player {
 protected:
 	float hp;
+	bool imprisoned;
 
 public:
 	Student();
@@ -83,6 +84,9 @@ public:
 	float GetHP() const { return hp; };
 	void SetHP(float _hp) { hp = _hp; };
 	void AddHP(float _hp) { hp += _hp; };
+
+	bool GetImprisoned() const { return imprisoned; }
+	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
 
 	virtual void LeftClick();
 	virtual void RightClick();

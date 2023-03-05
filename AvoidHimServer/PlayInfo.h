@@ -22,7 +22,7 @@ private:
 	vector<pair<UINT, Client*>> participants;	// (=clientID)
 
 	UINT professorObjectID;	// (=objectID)
-	unordered_map<UINT, GameObject*> pPlayers;	// objectID-object
+	unordered_map<UINT, Player*> pPlayers;	// objectID-object
 
 	unordered_map<UINT, Door*> pDoors;	// objectID-object
 	unordered_map<UINT, Lever*> pLevers;	// objectID-object
@@ -47,7 +47,7 @@ public:
 	void SetProfessorObjectID(UINT _professorObjectID) { professorObjectID = _professorObjectID; }
 
 	const vector<pair<UINT, Client*>>& GetParticipants() const { return participants; }
-	const unordered_map<UINT, GameObject*>& GetPlayers() const { return pPlayers; }
+	const unordered_map<UINT, Player*>& GetPlayers() const { return pPlayers; }
 	GameObject* GetPlayer(UINT _objectID) { return  pPlayers.contains(_objectID) ? pPlayers[_objectID] : NULL; }
 
 	// 일반 함수

@@ -97,6 +97,23 @@ void GameObject::Animate(float _timeElapsed) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+/// Player
+Player::Player() : GameObject() {
+	imprisoned = false;
+}
+Player::Player(const Player& _other) : GameObject(_other) {
+	imprisoned = _other.imprisoned;
+}
+Player& Player::operator=(const Player& _other) {
+	GameObject::operator=(_other);
+	imprisoned = _other.imprisoned;
+	return *this;
+}
+Player::~Player() {
+}
+
+
+///////////////////////////////////////////////////////////////////////////////
 /// Door
 
 Door::Door() : GameObject() {
@@ -180,3 +197,5 @@ Computer& Computer::operator=(const Computer& _other) {
 Computer::~Computer() {
 
 }
+
+

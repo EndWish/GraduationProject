@@ -82,6 +82,7 @@ public:
 	XMFLOAT3 GetLocalLookVector() const;
 	XMFLOAT4 GetLocalRotate() const;
 	XMFLOAT3 GetLocalPosition() const;
+	XMFLOAT3 GetLocalScale() const;
 
 	// 로컬 이동
 	void Move(const XMFLOAT3& _moveVector, float _timeElapsed = 1.0f);
@@ -280,6 +281,9 @@ private:
 	float t;
 	float hp;
 	shared_ptr<Sound> pFootStepSound;
+
+	bool imprisoned;
+
 public:
 	InterpolateMoveGameObject();
 	~InterpolateMoveGameObject();
@@ -291,6 +295,9 @@ public:
 	float GetHP() const { return hp; };
 	void SetHP(float _hp) { hp = _hp; };
 	void AddHP(float _hp) { hp += _hp; };
+
+	bool GetImprisoned() const { return imprisoned; }
+	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

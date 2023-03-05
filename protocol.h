@@ -22,13 +22,13 @@ using namespace DirectX;
 
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
-	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit
+	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor
 };
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail,
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
-	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit
+	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor
 
 };
 enum class SC_FAIL_TYPE : int {
@@ -75,6 +75,8 @@ enum class ObjectType : char {
 	light,
 	exitRDoor,
 	exitLDoor,
+	prisonPosition,
+	prisonExitPosition,
 };
 
 enum class AttackType : char {
@@ -178,6 +180,18 @@ struct CS_ATTACK_HIT {
 	UINT attackObjectID = 0;	// 공격 ID
 	UINT pid = 0;
 };
+struct CS_GO_PRISON {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::goPrison;
+	UINT cid = 0;
+	UINT playerObjectID = 0;	// 갖히는 플레이어의 오브젝트 ID
+	UINT pid = 0;
+};
+struct CS_OPEN_PRISON_DOOR {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::openPrisonDoor;
+	UINT cid = 0;
+	UINT pid = 0;
+};
+
 
 /// 서버->클라
 struct SC_GIVE_CLIENT_ID {
@@ -311,6 +325,15 @@ struct SC_ATTACK_HIT {
 	AttackType attackType = AttackType::none;
 	UINT hitPlayerObjectID = 0;		// 맞은 애 ID
 	UINT attackObjectID = 0;		// 공격 ID
+	UINT pid = 0;
+};
+struct SC_GO_PRISON {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::goPrison;
+	UINT playerObjectID = 0;	// 갖힌 플레이어의 오브젝트 ID
+	UINT pid = 0;
+};
+struct SC_OPEN_PRISON_DOOR {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::openPrisonDoor;
 	UINT pid = 0;
 };
 

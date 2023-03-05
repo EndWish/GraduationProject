@@ -291,6 +291,8 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::hackingRate: 
     case CS_PACKET_TYPE::attack: 
     case CS_PACKET_TYPE::hit: 
+    case CS_PACKET_TYPE::goPrison: 
+    case CS_PACKET_TYPE::openPrisonDoor: 
     {
         READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
         //cout << format("READ_CID_IN_PACKET : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);
@@ -503,6 +505,12 @@ void ServerFramework::LoadMapFile() {
             break;
         case ObjectType::professorStartPosition:
             professorStartPosition = position;
+            break;
+        case ObjectType::prisonPosition:
+            prisonPosition = position;
+            break;
+        case ObjectType::prisonExitPosition:
+            prisonExitPosition = position;
             break;
         default:
             break;
