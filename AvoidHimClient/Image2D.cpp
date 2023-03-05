@@ -19,6 +19,7 @@ Image2D::Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XM
 	sizeuv = _uvsize;
 	pressed = false;
 	array<XMFLOAT2, 6> vertex;
+	dark = false;
 
 	vertex[0] = XMFLOAT2(0, 0);
 	vertex[1] = XMFLOAT2(_size.x, 0);
@@ -53,6 +54,9 @@ void Image2D::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCo
 
 	if (pressed) world._41 = 1.0f;
 	else world._41 = 0.0f;
+
+	if (dark) world._42 = 1.0f;
+	else world._42 = 0.0f;
 	_pCommandList->SetGraphicsRoot32BitConstants(1, 16, &world, 0);
 }
 

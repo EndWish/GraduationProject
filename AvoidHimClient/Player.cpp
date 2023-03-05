@@ -245,12 +245,14 @@ void Professor::Animate(char _collideCheck, float _timeElapsed) {
 
 void Professor::LeftClick() {
 	// 휘두르기 공격
-	CS_ATTACK sendPacket;
-	sendPacket.attackType = AttackType::swingAttack;
-	sendPacket.cid = cid;
-	sendPacket.playerObjectID = myObjectID;
-
-	SendFixedPacket(sendPacket);
+	if (GetCoolTime(AttackType::swingAttack) <= 0.f) {
+		CS_ATTACK sendPacket;
+		sendPacket.attackType = AttackType::swingAttack;
+		sendPacket.cid = cid;
+		sendPacket.playerObjectID = myObjectID;
+		Reload(AttackType::swingAttack);
+		SendFixedPacket(sendPacket);
+	}
 }
 
 void Professor::RightClick() {
@@ -265,3 +267,4 @@ void Professor::RightClick() {
 		SendFixedPacket(sendPacket);
 	}
 }
+

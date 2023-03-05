@@ -528,6 +528,7 @@ void PlayScene::UpdateTimeText() {
 	UINT UINTTime = (UINT)remainTime;
 
 	pTexts["remainTime"]->SetText(to_wstring(UINTTime / 60) + L" : " + to_wstring(UINTTime % 60));
+	
 }
 
 void PlayScene::SetPlayer(shared_ptr<Player>& _pPlayer) {
@@ -611,25 +612,8 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 
 void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
-
-	gameFramework.GetTextureManager().GetTexture("2DUI_hp", _pDevice, _pCommandList);
-	gameFramework.GetTextureManager().GetTexture("2DUI_stamina", _pDevice, _pCommandList);
-	gameFramework.GetTextureManager().GetTexture("2DUI_staminaFrame", _pDevice, _pCommandList);
-
 	gameFramework.GetGameObjectManager().LoadGameObject("SwingAttack", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("ThrowAttack", _pDevice, _pCommandList);
-
-	shared_ptr<Image2D> pImg;
-	pUIs["2DUI_hp"] = make_shared<Image2D>("2DUI_hp", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
-	pUIs["2DUI_stamina"] = make_shared<Image2D>("2DUI_stamina", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
-	pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.5f, 0.15f), XMFLOAT2(1.5f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
-	
-	pUIs["2DUI_interact"] = make_shared<Image2D>("2DUI_interact", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	pUIs["2DUI_hacking"] = make_shared<Image2D>("2DUI_hacking", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	pUIs["2DUI_hackingFrame"] = make_shared<Image2D>("2DUI_hackingFrame", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	
-	pTexts["remainTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.1f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, true);
-
 
 	SC_GAME_START* recvPacket = GetPacket<SC_GAME_START>();
 	array<UINT, MAX_PARTICIPANT> enComID;
@@ -700,6 +684,36 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	camera = pPlayer->GetCamera();
 
 	pSkyBox = make_shared<SkyBox>(_pDevice, _pCommandList);
+
+	shared_ptr<Image2D> pImg;
+
+	pUIs["2DUI_stamina"] = make_shared<Image2D>("2DUI_stamina", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+	pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+	pUIs["2DUI_interact"] = make_shared<Image2D>("2DUI_interact", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+	pUIs["2DUI_hackRate"] = make_shared<Image2D>("2DUI_hackRate", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+
+	pTexts["leftCoolTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.55f, 1.55f), XMFLOAT2(0.1f, 0.1f), C_WIDTH / 30.0f, false);
+	pTexts["rightCoolTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.8f, 1.55f), XMFLOAT2(0.1f, 0.1f), C_WIDTH / 30.0f, false);
+
+	pTexts["remainTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.1f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, true);
+	pTexts["hackRate"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 60.0f, true);
+
+	if (isPlayerProfessor) {	// 교수일 경우의 UI 로드
+		pUIs["2DUI_leftSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+		pUIs["2DUI_rightSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.75f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+	}	
+	else {		// 학생일 경우의 UI 로드
+		pUIs["2DUI_leftSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+		pUIs["2DUI_rightSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.75f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+
+		pUIs["2DUI_hp"] = make_shared<Image2D>("2DUI_hp", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+		pUIs["2DUI_hpFrame"] = make_shared<Image2D>("2DUI_hpFrame", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+
+		pUIs["2DUI_hacking"] = make_shared<Image2D>("2DUI_hacking", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+		pUIs["2DUI_hackingFrame"] = make_shared<Image2D>("2DUI_hackingFrame", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+	}
+	
+
 
 	// 빛을 추가
 	shared_ptr<Light> baseLight = make_shared<Light>();
@@ -898,6 +912,54 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 			pZone->HandOffObject(SectorLayer::otherPlayer, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
 		}
 	}
+
+	// 쿨타임 텍스트를 갱신해준다.
+	if (isPlayerProfessor) {	// 교수
+		auto pProfessor = dynamic_pointer_cast<Professor>(pPlayer);
+		if (pTexts["leftCoolTime"]->GetEnable()) {	// 왼쪽 스킬이 쿨타임일 경우
+			if (pProfessor) {
+				float coolTime = pProfessor->GetCoolTime(AttackType::swingAttack);
+				if (coolTime <= 0.f) {	// 쿨타임이 끝난경우
+					pTexts["leftCoolTime"]->SetEnable(false);
+					pUIs["2DUI_leftSkill"]->SetDark(false);
+				}
+				else {
+					if (coolTime >= 1.0f) { // 1초 이상일경우에는 정수로 출력한다.
+
+						pTexts["leftCoolTime"]->SetText(to_wstring((int)coolTime));
+					}
+					else {
+						pTexts["leftCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3));
+					}
+				}
+				
+			}
+		}
+		if (pTexts["rightCoolTime"]->GetEnable()) {	// 왼쪽 스킬이 쿨타임일 경우
+			if (pProfessor) {
+				float coolTime = pProfessor->GetCoolTime(AttackType::throwAttack);
+				if (coolTime <= 0.f) {	// 쿨타임이 끝난경우
+					pTexts["rightCoolTime"]->SetEnable(false);
+					pUIs["2DUI_rightSkill"]->SetDark(false);
+				}
+				else {
+					if (coolTime >= 1.0f) { // 1초 이상일경우에는 정수로 출력한다.
+
+						pTexts["rightCoolTime"]->SetText(to_wstring((int)coolTime));
+					}
+					else {
+						pTexts["rightCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3));
+					}
+				}
+
+			}
+		}
+
+	}
+	else {
+
+	}
+
 
 	// zone 내 오브젝트들에 대한 animate를 수행
 	pZone->UpdatePlayerSector();
@@ -1136,6 +1198,9 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 	case WM_LBUTTONDOWN:
 		ReleaseCapture();
 		pPlayer->LeftClick();
+		pTexts["leftCoolTime"]->SetEnable(true);
+		pUIs["2DUI_leftSkill"]->SetDark(true);
+
 		break;
 	case WM_LBUTTONUP:
 		SetCapture(hWnd);
@@ -1144,6 +1209,10 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 	case WM_RBUTTONDOWN:
 		// 투사체 공격
 		pPlayer->RightClick();
+		pTexts["rightCoolTime"]->SetEnable(true);
+		pUIs["2DUI_rightSkill"]->SetDark(true);
+		// pUIs 스킬에 대한 SetPress를 해준다.
+
 		break;
 }
 }

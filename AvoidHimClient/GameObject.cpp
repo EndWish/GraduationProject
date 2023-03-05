@@ -929,7 +929,7 @@ void WaterDispenser::Animate(float _timeElapsed) {
 
 bool WaterDispenser::IsInteractable(bool _isPlayerProfessor) {
 	// 학생만 할 수 있다.
-	return !_isPlayerProfessor;
+	return true;
 }
 
 bool WaterDispenser::IsEnable() {

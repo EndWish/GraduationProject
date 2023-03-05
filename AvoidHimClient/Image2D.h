@@ -13,6 +13,7 @@ public:
 	void SetText(wstring _text);
 	void Render();
 	void SetEnable(bool _enable) { enable = _enable; };
+	bool GetEnable() const { return enable; };
 };
 
 
@@ -60,6 +61,7 @@ private:
 	string name;
 
 	bool pressed;	// 버튼에 있는 이미지가 눌렸을 경우
+	bool dark;	// 일부 이미지의 경우 회색으로 그릴 bool값
 	bool enable;	// 해당 이미지가 그려지는지
 	XMFLOAT2 startuv;	// 이미지의 시작 uv좌표
 	XMFLOAT2 size;
@@ -87,7 +89,8 @@ public:
 	void SetPosition(XMFLOAT2 _position) { position = XMFLOAT2(_position.x - 1, -_position.y + 1 - size.y); };
 	void SetSizeUV(XMFLOAT2 _sizeuv) { sizeuv = _sizeuv; };
 	void SetPress(bool _isClick) { pressed = _isClick; };
-	
+	void SetDark(bool _isDark) { dark = _isDark; };
+
 	void SetTexture(const string& _name);
 };
 

@@ -294,10 +294,11 @@ float4 Pixel2DShader(VS_2D_OUT input) : SV_TARGET {
     if (sizeuv.y - startuv.y < input.uv.y) 
         discard;
     float4 color = albedoMap.Sample(gssClamp, uv);
-    if (color.a < 0.01f)
+    if (color.a < 0.5f)
         discard;
-    if (worldTransform._14 > 0.1f)
+    if (worldTransform._14 > 0.1f || worldTransform._24 > 0.1f)
         color.rgb *= 0.3f;
+    
     return color;
 }
 
