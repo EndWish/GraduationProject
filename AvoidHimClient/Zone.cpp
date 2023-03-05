@@ -176,16 +176,33 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 		if (boundingBox.Intersects(playerOOBB)) {
 			_pPlayer->AddHP(-pAttack->GetDamage());
 
-			CS_ATTACK_HIT sendPacket;
-			sendPacket.attackObjectID = gid;
-			sendPacket.attackType = pAttack->GetAttackType();
-			sendPacket.hitPlayerObjectID = myObjectID;
-			sendPacket.cid = cid;
+			// 플레이어의 체력이 0이 되었을 경우 자신을 감옥으로 이동시키고 패킷을 보낸다.
+			auto pStudent = dynamic_pointer_cast<Student>(_pPlayer);
+			if (pStudent->GetHP() <= 0) {
+				// 수감중으로 바꾼다.
+				pStudent->SetImprisoned(true);
+				// 체력을 반피로 바꾼다.
+				pStudent->SetHP(50.f);
+				// 순간이동 시킨다.
+				pStudent->SetLocalPosition(prisonPosition);
+				pStudent->UpdateObject();
 
-			SendFixedPacket(sendPacket);
-			// 플레이어에게 무적시간을 잠시 적용
-			pAttack->Remove();
-
+				// 패킷을 보낸다.
+				CS_GO_PRISON sendPacket;
+				sendPacket.cid = cid;
+				sendPacket.playerObjectID = myObjectID;
+				SendFixedPacket(sendPacket);
+			}
+			else {	// 맞고 생존한 경우
+				CS_ATTACK_HIT sendPacket;
+				sendPacket.attackObjectID = gid;
+				sendPacket.attackType = pAttack->GetAttackType();
+				sendPacket.hitPlayerObjectID = myObjectID;
+				sendPacket.cid = cid;
+				SendFixedPacket(sendPacket);
+				// 플레이어에게 무적시간을 잠시 적용
+				pAttack->Remove();
+			}
 		}
 	}
 }

@@ -811,30 +811,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	for (auto& t : pEffects) {
 		t->Animate(_timeElapsed);
 	}
-	// 플레이어의 체력이 0이 되었을 경우 자신을 감옥으로 이동시키고 패킷을 보낸다.
-	if (!isPlayerProfessor) {
-		auto pStudent = dynamic_pointer_cast<Student>(pPlayer);
-		if (pStudent->GetHP() <= 0) {
-			// 수감중으로 바꾼다.
-			pStudent->SetImprisoned(true);
-			// 체력을 반피로 바꾼다.
-			pStudent->SetHP(50.f);
-			// 순간이동 시킨다.
-			XMINT3 prevIndex = pZone->GetIndex(pStudent->GetWorldPosition());
-			pStudent->SetLocalPosition(prisonPosition);
-			pStudent->UpdateObject();
-			XMINT3 nextIndex = pZone->GetIndex(pStudent->GetWorldPosition());
-			if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
-				pZone->HandOffObject(SectorLayer::otherPlayer, pStudent->GetID(), pStudent, prevIndex, nextIndex);
-			}
-			// 패킷을 보낸다.
-			CS_GO_PRISON sendPacket;
-			sendPacket.cid = cid;
-			sendPacket.playerObjectID = myObjectID;
-			SendFixedPacket(sendPacket);
-
-		}
-	}
+	
 	// 플레이어 애니메이션
 	pPlayer->Animate(_collideCheck, _timeElapsed);
 
