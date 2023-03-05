@@ -2,13 +2,12 @@
 #include "GameObject.h"
 #include "Camera.h"
 //#include "Status.h" 
-
 class Player : public GameObject {
 //class Player : public GameObject {
-private:
+
+protected:
 	// 0~100
 	float moveDistance;
-	float hp;
 	float mp;
 	// 자연 마나 회복량
 	float mpTick;
@@ -16,6 +15,7 @@ private:
 	bool landed;
 	float mass;
 	float speed;
+	float baseSpeed;
 
 	XMFLOAT3 velocity;
 	XMFLOAT4 rotation;
@@ -27,17 +27,16 @@ private:
 
 	shared_ptr<GameObject> pFloor;
 	float sendMovePacketTime;
-	array<float, (size_t)AttackType::num> attackRemainCoolTime;
-	array<float, (size_t)AttackType::num> attackMaxCoolTime;
+
 public:
 	Player();
-	~Player();
+	virtual ~Player();
 
 public:
-	void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
-	void Animate(char _collideCheck, float _timeElapsed);
+	virtual void Animate(char _collideCheck, float _timeElapsed);
 	shared_ptr<Camera> GetCamera();
 
 	void UpdateRigidBody(float _timeElapsed);
@@ -58,20 +57,54 @@ public:
 	void AddRotation(XMFLOAT4& _rotation);
 	
 	virtual void RotateMoveHorizontal(XMFLOAT3 _dir, float _angularSpeed, float _moveSpeed);
-	float GetHP() const { return hp; };
-	float GetMP() const { return mp; };
-	
-	void SetHP(float _hp) { hp = _hp; };
-	void SetMP(float _mp) { mp = _mp; };
 
-	void AddHP(float _hp) { hp += _hp; };
+	float GetMP() const { return mp; };
+	void SetMP(float _mp) { mp = _mp; };
 	void AddMP(float _mp) { mp += _mp; };
 
 	float GetSpeed() const { return speed; };
 	void SetSpeed(float _speed) { speed = _speed; };
 	void Dash(float _timeElapsed);
 
+	virtual void LeftClick() {};
+	virtual void RightClick() {};
+};
+
+class Student : public Player {
+protected:
+	float hp;
+
+public:
+	Student();
+	virtual ~Student();
+
+	//virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
+	float GetHP() const { return hp; };
+	void SetHP(float _hp) { hp = _hp; };
+	void AddHP(float _hp) { hp += _hp; };
+
+	virtual void LeftClick();
+	virtual void RightClick();
+
+};
+
+class Professor : public Player {
+protected:
+
+	array<float, (size_t)AttackType::num> attackRemainCoolTime;
+	array<float, (size_t)AttackType::num> attackMaxCoolTime;
+public:
+	Professor();
+	virtual ~Professor();
+	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	
 	void SetCoolTime(AttackType _type, float _coolTime);
 	void Reload(AttackType _type);
 	float GetCoolTime(AttackType _type) const;
+	virtual void Animate(char _collideCheck, float _timeElapsed);
+	
+	virtual void LeftClick();
+	virtual void RightClick();
+
 };

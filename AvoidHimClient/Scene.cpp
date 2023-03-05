@@ -257,7 +257,6 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		SC_YOUR_PLAYER_OBJECTID* packet = GetPacket<SC_YOUR_PLAYER_OBJECTID>();
 
 		myObjectID = packet->objectID;
-		cout << packet->objectID << "\n";
 		break;
 	}
 	default:
@@ -305,7 +304,6 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		sPacket.cid = cid;
 		sPacket.roomPage = 1;
 		SendFixedPacket(sPacket);
-		cout << "방정보를 요청한다\n";
 		changeUI(LobbyState::title, false);
 		changeUI(LobbyState::roomList, true);
 		break;
@@ -515,7 +513,7 @@ PlayScene::PlayScene() {
 	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
 	remainTime = 1000.f;
 	professorObjectID = 0;
-	isPlayerProfesser = false;
+	isPlayerProfessor = false;
 }
 
 PlayScene::~PlayScene() {
@@ -525,7 +523,7 @@ PlayScene::~PlayScene() {
 void PlayScene::AddComputer(const shared_ptr<Computer>& _pComputer) {
 	pEnableComputers.push_back(_pComputer);
 }
-
+ 
 void PlayScene::UpdateTimeText() {
 	UINT UINTTime = (UINT)remainTime;
 
@@ -540,8 +538,8 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 	char result = 0;
 	XMFLOAT3 velocity = pPlayer->GetVelocity();
 
-	// 공격과 플레이어의 충돌처리
-	pZone->CheckCollisionWithAttack();
+	// 플레이어가 학생일경우 공격과 플레이어의 충돌처리
+	if(!isPlayerProfessor) pZone->CheckCollisionWithAttack();
 	// 투사체와 장애물간의 충돌을 처리
 	pZone->CheckCollisionProjectileWithObstacle();
 
@@ -649,14 +647,14 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 		if (recvPacket->playerInfo[i].objectID == myObjectID) {	// 내가 조종할 캐릭터일 경우
 
-			pPlayer = make_shared<Player>();
+			
 			if (professorObjectID == recvPacket->playerInfo[i].objectID) {	// 교수 플레이어일 경우
-
-				isPlayerProfesser = true;
+				pPlayer = make_shared<Professor>();
+				isPlayerProfessor = true;
 				pPlayer->SetSpeed(1.2f * pPlayer->GetSpeed()); // 교수 플레이어는 조금 더 빠르다.
 			}
 			else { // 학생일 경우
-				pPlayer->Create("Player"s, _pDevice, _pCommandList);
+				pPlayer = make_shared<Student>();
 			}
 			
 			pPlayer->Create("Player"s, _pDevice, _pCommandList);
@@ -680,10 +678,10 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 			}
 			else { // 학생일 경우
-				pOtherPlayer->Create("Player"s, _pDevice, _pCommandList);
 			}
 			
 
+			pOtherPlayer->Create("Player"s, _pDevice, _pCommandList);
 			pOtherPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pOtherPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pOtherPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -744,23 +742,9 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		// 상호작용 키
 		if (pInteractableObject && pInteractableObject->IsEnable())
 			pInteractableObject->QueryInteract();
-		else {
-			shared_ptr<GameObject> pGameObject;
-			pGameObject = make_shared<GameObject>();
-			pGameObject->Create("TestEffectObject", _pDevice, _pCommandList);
-			pGameObject->SetLocalPosition(pPlayer->GetWorldPosition());
-			pGameObject->UpdateObject();
-			pEffects.push_back(pGameObject);
-		}
 	}
 	if (_keyDownBuffer['R']) {
-		// 휘두르기 공격
-		CS_ATTACK sendPacket;
-		sendPacket.attackType = AttackType::swingAttack;
-		sendPacket.cid = cid;
-		sendPacket.playerObjectID = myObjectID;
 
-		SendFixedPacket(sendPacket);
 	}
 	if (_keyDownBuffer['T']) {
 		
@@ -818,7 +802,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 	bool enable = false;
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 찾는다.
-	auto pObject = pZone->UpdateInteractableObject();
+	auto pObject = pZone->UpdateInteractableObject(isPlayerProfessor);
 
 	// 주변에 상호작용 오브젝트가 있다가 없어진 경우
 	if (pInteractableObject && !pObject) {
@@ -851,16 +835,31 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 			}
 		}
 	}
-	if (pComputer == pEnableComputers.end()) {
-		pUIs["2DUI_hacking"]->SetEnable(false);
-		pUIs["2DUI_hackingFrame"]->SetEnable(false);
+
+	// 플레이어가 교수일경우의 UI
+	if (isPlayerProfessor) {
+		auto pProfessor = dynamic_pointer_cast<Professor>(pPlayer);
+		if (pProfessor) {
+
+		}
+	}
+	// 플레이어가 학생일경우의 UI
+	else {
+		auto pStudent = dynamic_pointer_cast<Student>(pPlayer);
+		if (pStudent) {
+			pUIs["2DUI_hp"]->SetSizeUV(XMFLOAT2(pStudent->GetHP() / 100, 1.f));
+			if (pComputer == pEnableComputers.end()) {
+				pUIs["2DUI_hacking"]->SetEnable(false);
+				pUIs["2DUI_hackingFrame"]->SetEnable(false);
+			}
+		}
 	}
 
-	pUIs["2DUI_interact"]->SetEnable(enable);
-	pUIs["2DUI_hp"]->SetSizeUV(XMFLOAT2(pPlayer->GetHP() / 100, 1.f));
 	pUIs["2DUI_stamina"]->SetSizeUV(XMFLOAT2(pPlayer->GetMP() / 100, 1.f));
-	
+	pUIs["2DUI_interact"]->SetEnable(enable);
 
+	
+	// 다른 플레이어들에 대한 이동을 수행
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
 		XMINT3 prevIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
 		pOtherPlayer->Animate(_timeElapsed);
@@ -873,6 +872,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		}
 	}
 
+	// zone 내 오브젝트들에 대한 animate를 수행
 	pZone->UpdatePlayerSector();
 
 	for (auto& pLight : pLights) {
@@ -929,7 +929,7 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			nextIndex = pZone->GetIndex(pMoveClient->GetWorldPosition());
 			// 위치에 의해 섹터가 바뀌었다면 오브젝트를 옮겨준다.
 			if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
-				pZone->HandOffObject(SectorLayer::obstacle, pMoveClient->GetID(), pMoveClient, prevIndex, nextIndex);
+				pZone->HandOffObject(SectorLayer::otherPlayer, pMoveClient->GetID(), pMoveClient, prevIndex, nextIndex);
 			}
 			
 		}
@@ -976,7 +976,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		SC_ATTACK* packet = GetPacket<SC_ATTACK>();
 		pZone->AddAttack(packet->attackType, packet->attackObjectID, FindPlayerObject(packet->playerObjectID), _pDevice, _pCommandList);
 		if (packet->playerObjectID == myObjectID) {
-			pPlayer->Reload(packet->attackType);
+			auto pProfessor = dynamic_pointer_cast<Professor>(pPlayer);
+			if(pProfessor) pProfessor->Reload(packet->attackType);
 		}
 		break;
 	}
@@ -985,7 +986,9 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		// 내가 맞은 패킷은 받지 않는다.
 		auto pHitPlayerObject = dynamic_pointer_cast<InterpolateMoveGameObject>(FindPlayerObject(packet->hitPlayerObjectID));
 		if (pHitPlayerObject) {
-			pHitPlayerObject->AddHP(-pZone->GetAttack(packet->attackObjectID)->GetDamage());
+			auto pAttack = pZone->GetAttack(packet->attackObjectID);
+			if (!pAttack) break;
+			pHitPlayerObject->AddHP(-pAttack->GetDamage());
 		}
 		else {
 			cout << "해당 플레이어가 없습니다!!\n";
@@ -1048,7 +1051,7 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 	switch (_type) {
 	case WM_LBUTTONDOWN:
 		ReleaseCapture();
-
+		pPlayer->LeftClick();
 		break;
 	case WM_LBUTTONUP:
 		SetCapture(hWnd);
@@ -1056,16 +1059,7 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 		break;
 	case WM_RBUTTONDOWN:
 		// 투사체 공격
-		if (pPlayer->GetCoolTime(AttackType::throwAttack) <= 0.f) {
-			CS_ATTACK sendPacket;
-			sendPacket.attackType = AttackType::throwAttack;
-			sendPacket.cid = cid;
-			sendPacket.playerObjectID = myObjectID;
-			// 서버가 늦어질 경우 이곳에서 대기 쿨타임을 주지 않을경우 계속해서 패킷을 전송하게 된다.
-			// 이후 서버에게 패킷을 받아 실제로 공격을 생성할 때 다시 쿨타임을 적용한다.
-			pPlayer->Reload(AttackType::throwAttack);
-			SendFixedPacket(sendPacket);
-		}		
+		pPlayer->RightClick();
 		break;
 }
 }

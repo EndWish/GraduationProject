@@ -13,13 +13,11 @@ Player::Player() {
 	rotation = Vector4::QuaternionIdentity();
 	sendMovePacketTime = 0.f;
 	speed = 5.0f;
+	baseSpeed = 5.0f;
 
-	hp = 100.0f;
 	mp = 100.0f;
 	mpTick = 1.f;
-	attackRemainCoolTime.fill(0.f);
-	attackMaxCoolTime[(size_t)AttackType::swingAttack] = 1.0f;
-	attackMaxCoolTime[(size_t)AttackType::throwAttack] = 2.0f;
+
 }
 
 Player::~Player() {
@@ -60,9 +58,9 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 
 	XMFLOAT3 prevPosition = GetWorldPosition();
 	XMFLOAT3 position;
-	if (speed > 5.f) {
+	if (speed > baseSpeed) {
 		// 속도 초기화
-		speed = 5.f;
+		speed = baseSpeed;
 	}
 	else {
 		// 스태미너 회복
@@ -111,10 +109,6 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 	position = GetWorldPosition();
 	if (!(_collideCheck & 1)) {
 		moveDistance += Vector3::Length(Vector3::Subtract(prevPosition, position));
-	}
-
-	for (auto& coolTime : attackRemainCoolTime) {
-		if (coolTime >= 0.f) coolTime -= _timeElapsed;
 	}
 
 
@@ -189,20 +183,86 @@ void Player::Dash(float _timeElapsed) {
 
 	if (mp > (costPerSec * _timeElapsed))
 	{
-		speed = 7.5f;
+		speed = baseSpeed * 1.5f;
 		mp -= costPerSec * _timeElapsed;
 	}
 }
 
+///////////////////////////////////////////////////////////////////////////////
+/// Student
 
-void Player::SetCoolTime(AttackType _type, float _coolTime) {
+Student::Student() {
+	hp = 100.0f;
+}
+
+Student::~Student() {
+
+}
+
+void Student::LeftClick() {
+	// 아이템 사용
+
+}
+
+void Student::RightClick() {
+	// 은신 스킬 사용
+
+}
+
+///////////////////////////////////////////////////////////////////////////////
+/// Professor
+
+Professor::Professor() {
+	attackRemainCoolTime.fill(0.f);
+	attackMaxCoolTime[(size_t)AttackType::swingAttack] = 1.0f;
+	attackMaxCoolTime[(size_t)AttackType::throwAttack] = 2.0f;
+}
+
+Professor::~Professor() {
+}
+
+void Professor::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	Player::Create(_ObjectName, _pDevice, _pCommandList);
+}
+
+void Professor::SetCoolTime(AttackType _type, float _coolTime) {
 	attackRemainCoolTime[(size_t)_type] = _coolTime;
 }
 
-void Player::Reload(AttackType _type) {
+void Professor::Reload(AttackType _type) {
 	SetCoolTime(_type, attackMaxCoolTime[(size_t)_type]);
 }
 
-float Player::GetCoolTime(AttackType _type) const {
+float Professor::GetCoolTime(AttackType _type) const {
 	return attackRemainCoolTime[(size_t)_type];
+}
+
+void Professor::Animate(char _collideCheck, float _timeElapsed) {
+	Player::Animate(_collideCheck, _timeElapsed);
+	for (auto& coolTime : attackRemainCoolTime) {
+		if (coolTime >= 0.f) coolTime -= _timeElapsed;
+	}
+}
+
+void Professor::LeftClick() {
+	// 휘두르기 공격
+	CS_ATTACK sendPacket;
+	sendPacket.attackType = AttackType::swingAttack;
+	sendPacket.cid = cid;
+	sendPacket.playerObjectID = myObjectID;
+
+	SendFixedPacket(sendPacket);
+}
+
+void Professor::RightClick() {
+	if (GetCoolTime(AttackType::throwAttack) <= 0.f) {
+		CS_ATTACK sendPacket;
+		sendPacket.attackType = AttackType::throwAttack;
+		sendPacket.cid = cid;
+		sendPacket.playerObjectID = myObjectID;
+		// 서버가 늦어질 경우 이곳에서 대기 쿨타임을 주지 않을경우 계속해서 패킷을 전송하게 된다.
+		// 이후 서버에게 패킷을 받아 실제로 공격을 생성할 때 다시 쿨타임을 적용한다.
+		Reload(AttackType::throwAttack);
+		SendFixedPacket(sendPacket);
+	}
 }

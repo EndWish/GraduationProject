@@ -548,8 +548,6 @@ void Effect::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice,
 	_file.read((char*)&col, sizeof(UINT));
 	_file.read((char*)&maxIndexTime, sizeof(float));
 	_file.read((char*)&lifeTime, sizeof(float));
-	
-	cout << nIndex << "," << row << " " << col << " " << maxIndexTime << " " << lifeTime << "\n";
 
 	GameObject::LoadFromFile(_file, _pDevice, _pCommandList, _coverObject);
 }
@@ -666,7 +664,7 @@ bool GameObjectManager::LoadGameObject(const string& _name, const ComPtr<ID3D12D
 	file.read((char*)&objectType, sizeof(UINT));
 
 	shared_ptr<GameObject> newObject;
-	cout << objectType << "\n";
+
 	if (objectType == 1) {	// 스킨드 오브젝트
 		newObject = make_shared<SkinnedGameObject>();
 
@@ -847,6 +845,7 @@ Door::Door(ObjectType _type) {
 	isLeft = (_type == ObjectType::Ldoor || _type == ObjectType::exitLDoor) ? true : false;
 	openAngle = 0.f;
 	isOpen = false;
+	isPrison = (_type == ObjectType::prisonDoor) ? true : false;
 }
 
 Door::~Door() {
@@ -883,6 +882,11 @@ void Door::Animate(float _timeElapsed) {
 	UpdateObject();
 }
 
+bool Door::IsInteractable(bool _isPlayerProfessor) {
+	// 학생은 모든 문을 열 수 있지만, 교수는 감옥 문을 열지 못한다.
+	return !(isPrison && _isPlayerProfessor);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
@@ -917,6 +921,11 @@ void WaterDispenser::Animate(float _timeElapsed) {
 	}
 }
 
+bool WaterDispenser::IsInteractable(bool _isPlayerProfessor) {
+	// 학생만 할 수 있다.
+	return !_isPlayerProfessor;
+}
+
 bool WaterDispenser::IsEnable() {
 	return coolTime <= 0;
 }
@@ -935,6 +944,11 @@ void Lever::QueryInteract() {
 }
 
 void Lever::Interact() {
+}
+
+bool Lever::IsInteractable(bool _isPlayerProfessor) {
+	// 누구나 할 수 있다.
+	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1016,6 +1030,10 @@ float Computer::GetHackingRate() const {
 
 UINT Computer::GetUse() const {
 	return use;
+}
+bool Computer::IsInteractable(bool _isPlayerProfessor) {
+	// 학생만 할 수 있다.
+	return !_isPlayerProfessor;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///
@@ -1134,7 +1152,6 @@ ThrowAttack::ThrowAttack() {
 ThrowAttack::ThrowAttack(UINT _playerObjectID, const XMFLOAT3& _lookVector) : ThrowAttack() {
 	playerObjectID = _playerObjectID;
 	velocity = Vector3::ScalarProduct(_lookVector, 25.0f);
-
 }
 
 ThrowAttack::~ThrowAttack() {

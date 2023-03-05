@@ -49,7 +49,6 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 
 			if (pTex) {
 				nType += 1 << i++;
-				cout << textureName << "\n";
 			}
 			else {
 				cout << textureName << "로드 실패..\n";

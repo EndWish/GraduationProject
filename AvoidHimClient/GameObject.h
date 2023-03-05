@@ -66,7 +66,7 @@ public:
 	GameObject();
 	virtual ~GameObject();
 	// 게임 오브젝트 복사 생성자
-	
+
 	virtual void Create();
 	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
@@ -221,7 +221,7 @@ public:
 };
 
 class ThrowAttack : public Attack {
-protected:	
+protected:
 	bool isStuck;
 	XMFLOAT3 velocity;
 	float rotateXSpeed;
@@ -259,7 +259,7 @@ public:
 	virtual ~SkinnedGameObject();
 
 	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject);
-	
+
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void CopyObject(const GameObject& _other);
 };
@@ -287,7 +287,7 @@ public:
 
 	virtual void Animate(float _timeElapsed);
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
-	
+
 	float GetHP() const { return hp; };
 	void SetHP(float _hp) { hp = _hp; };
 	void AddHP(float _hp) { hp += _hp; };
@@ -295,7 +295,7 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 /// InteractObject
-class InteractObject : public GameObject { 
+class InteractObject : public GameObject {
 private:
 
 public:
@@ -308,13 +308,17 @@ public:
 	virtual void Interact() = 0;
 
 	virtual bool IsEnable();
-	
+
 	// 상호작용을 끝냈을 때 (일부만 사용)
 	virtual void EndInteract();
+
+	// 플레이어가 상호작용 시도를 할 수 있는 오브젝트인지 확인
+	virtual bool IsInteractable(bool _isPlayerProfessor) = 0;
 
 };
 class Door : public InteractObject {
 private:
+	bool isPrison;
 	bool isLeft;
 	float openAngle;
 	bool isOpen;
@@ -326,6 +330,7 @@ public:
 
 
 	virtual void Animate(float _timeElapsed);
+	virtual bool IsInteractable(bool _isPlayerProfessor);
 };
 class WaterDispenser : public InteractObject {
 protected:
@@ -339,7 +344,7 @@ public:
 	virtual bool IsEnable();
 
 	virtual void Animate(float _timeElapsed);
-
+	virtual bool IsInteractable(bool _isPlayerProfessor);
 };
 class Lever : public InteractObject {
 private:
@@ -349,7 +354,7 @@ public:
 	~Lever();
 	virtual void QueryInteract();
 	virtual void Interact();
-
+	virtual bool IsInteractable(bool _isPlayerProfessor);
 };
 class Computer : public InteractObject {
 private:
@@ -357,7 +362,7 @@ private:
 	bool power;			// 전원이 켜져있는지 여부
 	float hackingRate;	// 해킹률
 	UINT use;			// 현재 사용중인 플레이어의 objectID (미사용시 0)
-	
+
 public:
 	Computer();
 	~Computer();
@@ -372,6 +377,7 @@ public:
 	virtual void EndInteract();
 	float GetHackingRate() const;
 	UINT GetUse() const;
+	virtual bool IsInteractable(bool _isPlayerProfessor);
 };
 
 
@@ -385,7 +391,7 @@ class SkyBox {
 public:
 	SkyBox(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	~SkyBox();
-		
+
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 

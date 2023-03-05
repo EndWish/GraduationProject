@@ -3,6 +3,8 @@
 #include "Camera.h"
 
 class Player;
+class Student;
+class Professor;
 class PlayScene;
 class HitBoxMesh;
 
@@ -39,13 +41,13 @@ public:
 	// y방향 충돌을 확인하는 함수
 	shared_ptr<GameObject> CheckCollisionVertical(BoundingOrientedBox& _boundingBox, shared_ptr<Player> _pPlayer, float _timeElapsed = 1.0f);
 	// 공격과의 충돌을 처리
-	void CheckCollisionWithAttack(shared_ptr<Player> _pPlayer);
+	void CheckCollisionWithAttack(shared_ptr<Student> _pPlayer);
 	// 투사체와 장애물간의 충돌 처리
 	bool CheckCollisionProjectileWithObstacle(const BoundingOrientedBox& _boundingBox);
 	// 카메라시야와 벽이 출동하는지 확인
 	bool CheckObstacleBetweenPlayerAndCamera(const XMVECTOR& _origin, const XMVECTOR& _direction, float _curDistance);
 
-	pair<float, shared_ptr<InteractObject>> GetNearestInteractObject(const shared_ptr<Player>& _pPlayer);
+	pair<float, shared_ptr<InteractObject>> GetNearestInteractObject(const shared_ptr<Player>& _pPlayer, bool _isPlayerProfessor);
 
 };
 
@@ -133,7 +135,7 @@ public:
 	bool CheckObstacleBetweenPlayerAndCamera(shared_ptr<Camera> _pCamera);
 	
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 갱신하는 함수
-	shared_ptr<InteractObject> UpdateInteractableObject();
+	shared_ptr<InteractObject> UpdateInteractableObject(bool _isPlayerProfessor);
 
 	// objectID로 해당 공격을 찾는 함수
 	shared_ptr<Attack> GetAttack(UINT _objectID);
