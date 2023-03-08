@@ -303,8 +303,8 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 /// InteractObject
 class InteractObject : public GameObject {
-private:
-
+protected:
+	ObjectType type;
 public:
 	InteractObject();
 	~InteractObject();
@@ -320,7 +320,9 @@ public:
 	virtual void EndInteract();
 
 	// 플레이어가 상호작용 시도를 할 수 있는 오브젝트인지 확인
-	virtual bool IsInteractable(bool _isPlayerProfessor) = 0;
+	virtual bool IsInteractable() = 0;
+
+	ObjectType GetObjectType() const;
 
 };
 class Door : public InteractObject {
@@ -337,7 +339,7 @@ public:
 
 
 	virtual void Animate(float _timeElapsed);
-	virtual bool IsInteractable(bool _isPlayerProfessor);
+	virtual bool IsInteractable();
 };
 class WaterDispenser : public InteractObject {
 protected:
@@ -351,17 +353,19 @@ public:
 	virtual bool IsEnable();
 
 	virtual void Animate(float _timeElapsed);
-	virtual bool IsInteractable(bool _isPlayerProfessor);
+	virtual bool IsInteractable();
 };
 class Lever : public InteractObject {
 private:
-
+	bool power;
+	float openAngle;
 public:
 	Lever();
 	~Lever();
 	virtual void QueryInteract();
 	virtual void Interact();
-	virtual bool IsInteractable(bool _isPlayerProfessor);
+	virtual bool IsInteractable();
+	virtual void Animate(float _timeElapsed);
 };
 class Computer : public InteractObject {
 private:
@@ -384,7 +388,7 @@ public:
 	virtual void EndInteract();
 	float GetHackingRate() const;
 	UINT GetUse() const;
-	virtual bool IsInteractable(bool _isPlayerProfessor);
+	virtual bool IsInteractable();
 };
 
 

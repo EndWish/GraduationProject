@@ -196,6 +196,7 @@ void SoundManager::Init(HWND _hwnd) {
 	/////////////////////////////////
 
 	pSounds["audio"] = LoadFile("audio");
+	pSounds["step"] = LoadFile("step");
 
 }
 

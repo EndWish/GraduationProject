@@ -91,7 +91,6 @@ public:
 class PlayScene : public Scene, public enable_shared_from_this<PlayScene> {
 
 private:
-	bool isPlayerProfessor;
 	float remainTime;
 
 	shared_ptr<FrustumMesh> pFrustumMesh;

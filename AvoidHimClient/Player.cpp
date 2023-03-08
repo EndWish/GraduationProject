@@ -212,6 +212,8 @@ void Student::RightClick() {
 /// Professor
 
 Professor::Professor() {
+	sabotageCoolTime = 0.0f;
+
 	attackRemainCoolTime.fill(0.f);
 	attackMaxCoolTime[(size_t)AttackType::swingAttack] = 1.0f;
 	attackMaxCoolTime[(size_t)AttackType::throwAttack] = 2.0f;
@@ -228,6 +230,14 @@ void Professor::SetCoolTime(AttackType _type, float _coolTime) {
 	attackRemainCoolTime[(size_t)_type] = _coolTime;
 }
 
+float Professor::GetSabotageCoolTime() const {
+	return sabotageCoolTime;
+}
+
+void Professor::SetSabotageCoolTime(float _sabotageCoolTime) {
+	sabotageCoolTime = _sabotageCoolTime;
+}
+
 void Professor::Reload(AttackType _type) {
 	SetCoolTime(_type, attackMaxCoolTime[(size_t)_type]);
 }
@@ -238,6 +248,9 @@ float Professor::GetCoolTime(AttackType _type) const {
 
 void Professor::Animate(char _collideCheck, float _timeElapsed) {
 	Player::Animate(_collideCheck, _timeElapsed);
+
+	sabotageCoolTime -= _timeElapsed;
+
 	for (auto& coolTime : attackRemainCoolTime) {
 		if (coolTime >= 0.f) coolTime -= _timeElapsed;
 	}

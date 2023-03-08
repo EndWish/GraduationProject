@@ -827,6 +827,7 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 /// InteractObject
 
 InteractObject::InteractObject() {
+	type = ObjectType::none;
 }
 
 InteractObject::~InteractObject() {
@@ -840,6 +841,10 @@ void InteractObject::EndInteract() {
 
 }
 
+ObjectType InteractObject::GetObjectType() const {
+	return type;
+}
+
 bool InteractObject::IsEnable() {
 	return true;
 }
@@ -848,6 +853,7 @@ bool InteractObject::IsEnable() {
 ///
 
 Door::Door(ObjectType _type) {
+	type = _type;
 	isLeft = (_type == ObjectType::Ldoor || _type == ObjectType::exitLDoor) ? true : false;
 	openAngle = 0.f;
 	isOpen = false;
@@ -888,9 +894,9 @@ void Door::Animate(float _timeElapsed) {
 	UpdateObject();
 }
 
-bool Door::IsInteractable(bool _isPlayerProfessor) {
+bool Door::IsInteractable() {
 	// 학생은 모든 문을 열 수 있지만, 교수는 감옥 문을 열지 못한다.
-	return !(isPrison && _isPlayerProfessor);
+	return !(isPrison && isPlayerProfessor);
 }
 
 
@@ -898,6 +904,7 @@ bool Door::IsInteractable(bool _isPlayerProfessor) {
 ///
 
 WaterDispenser::WaterDispenser() {
+	type = ObjectType::waterDispenser;
 	coolTime = 0.f;
 }
 
@@ -927,7 +934,7 @@ void WaterDispenser::Animate(float _timeElapsed) {
 	}
 }
 
-bool WaterDispenser::IsInteractable(bool _isPlayerProfessor) {
+bool WaterDispenser::IsInteractable() {
 	// 학생만 할 수 있다.
 	return true;
 }
@@ -940,28 +947,63 @@ bool WaterDispenser::IsEnable() {
 ///
 
 Lever::Lever() {
+	type = ObjectType::lever;
+	power = false;
+	openAngle = 0.f;
 }
 
 Lever::~Lever() {
 }
 
 void Lever::QueryInteract() {
-
+	CS_LEVER_TOGGLE sendPacket;
+	sendPacket.cid = cid;
+	sendPacket.leverObjectID = id;
+	sendPacket.setPower = !isPlayerProfessor;
+	SendFixedPacket(sendPacket);
 }
 
 void Lever::Interact() {
+	power = !power;
 }
 
-bool Lever::IsInteractable(bool _isPlayerProfessor) {
-	// 누구나 할 수 있다.
-	return true;
+bool Lever::IsInteractable() {
+	// 교수의 경우
+	if (isPlayerProfessor && power) {
+		return true;
+	}
+	// 학생의 경우
+	if(!isPlayerProfessor && !power) {
+		
+		return true;
+	}
+	return false;
+}
+
+void Lever::Animate(float _timeElapsed) {
+	float angle = 0.f;
+
+	if (power && openAngle < 90.f) {
+		// 내려감
+		angle = min(180.0f, (90.0f - openAngle) / _timeElapsed);
+		Rotate(XMFLOAT3(1, 0, 0), -angle , _timeElapsed);
+	}
+
+	if (!power && openAngle > 0.f) {
+		// 올라감
+		angle = -min(180.0f, openAngle / _timeElapsed);
+		Rotate(XMFLOAT3(1, 0, 0), -angle , _timeElapsed);
+	}
+	openAngle += (angle * _timeElapsed);
+	UpdateObject();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 ///
 
 Computer::Computer() {
-	power = true;
+	type = ObjectType::computer;
+	power = false;
 	hackingRate = 0.f;
 	use = false;
 }
@@ -1008,7 +1050,7 @@ void Computer::Animate(float _timeElapsed) {
 		cout << hackingRate << " % 해킹완료\n";
 		hackingRate += 5.0f * _timeElapsed;
 	}
-	else if (hackingRate >= 100.0f && use == myObjectID) {
+	else if ((hackingRate >= 100.0f || !power) && use == myObjectID) {
 		use = 0;
 		CS_HACKING_RATE sendPacket;
 		sendPacket.cid = cid;
@@ -1037,9 +1079,9 @@ float Computer::GetHackingRate() const {
 UINT Computer::GetUse() const {
 	return use;
 }
-bool Computer::IsInteractable(bool _isPlayerProfessor) {
+bool Computer::IsInteractable() {
 	// 학생만 할 수 있다.
-	return !_isPlayerProfessor;
+	return !isPlayerProfessor;
 }
 ///////////////////////////////////////////////////////////////////////////////
 ///
@@ -1065,9 +1107,6 @@ SkyBox::SkyBox(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Graphics
 	}
 
 }
-
-
-
 
 SkyBox::~SkyBox() {
 }

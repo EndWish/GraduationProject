@@ -106,6 +106,7 @@ extern SOCKET server_sock;
 // 현재 클라이언트가 서버에게 부여받은 고유 클라이언트 id
 extern UINT cid;
 extern UINT myObjectID;
+extern bool isPlayerProfessor;
 extern UINT packetIDCount;
 extern XMFLOAT3 prisonPosition, prisonExitPosition;
 

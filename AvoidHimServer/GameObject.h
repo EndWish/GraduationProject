@@ -143,7 +143,6 @@ public:
 
 class Computer : public GameObject {
 protected:
-	bool power;
 	float hackingRate;
 	bool use;
 
@@ -153,8 +152,6 @@ public:
 	Computer& operator=(const Computer& _other);	// 복사 대입 연산자
 	virtual ~Computer();
 
-	bool GetPower() { return power; }
-	void SetPower(bool _power) { power = _power; }
 	float GetHackingRate() { return hackingRate; }
 	void SetHackingRate(float _hackingRate) { hackingRate = _hackingRate; }
 	bool GetUse() { return use; }

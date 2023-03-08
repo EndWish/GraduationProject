@@ -22,13 +22,15 @@ using namespace DirectX;
 
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
-	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor
+	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor, 
+	toggleLever
 };
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail,
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
-	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor
+	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
+	toggleLever
 
 };
 enum class SC_FAIL_TYPE : int {
@@ -47,6 +49,7 @@ enum class SectorLayer : char {
 	light,
 	effect,
 	sprite,
+	item,
 	num,
 	etc
 };
@@ -191,6 +194,13 @@ struct CS_OPEN_PRISON_DOOR {
 	UINT cid = 0;
 	UINT pid = 0;
 };
+struct CS_LEVER_TOGGLE {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::toggleLever;
+	UINT cid = 0;
+	UINT leverObjectID = 0;
+	bool setPower = false;
+	UINT pid = 0;
+};
 
 
 /// 서버->클라
@@ -318,23 +328,30 @@ struct SC_ATTACK {
 	UINT attackObjectID = 0;		// 공격 ID
 	AttackType attackType = AttackType::none;
 	UINT playerObjectID = 0;		// 시전자 ID
-	UINT pid = 0;
+	UINT pid = 100'000;
 };
 struct SC_ATTACK_HIT {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::hit;
 	AttackType attackType = AttackType::none;
 	UINT hitPlayerObjectID = 0;		// 맞은 애 ID
 	UINT attackObjectID = 0;		// 공격 ID
-	UINT pid = 0;
+	UINT pid = 100'000;
 };
 struct SC_GO_PRISON {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::goPrison;
 	UINT playerObjectID = 0;	// 갖힌 플레이어의 오브젝트 ID
-	UINT pid = 0;
+	UINT pid = 100'000;
 };
 struct SC_OPEN_PRISON_DOOR {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::openPrisonDoor;
-	UINT pid = 0;
+	UINT pid = 100'000;
+};
+struct SC_LEVER_TOGGLE {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::toggleLever;
+	UINT leverObjectID = 0;
+	bool setPower = false;
+	bool allLeverPowerOn = false;
+	UINT pid = 100'000;
 };
 
 #pragma pack(pop)

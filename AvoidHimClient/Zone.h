@@ -47,7 +47,7 @@ public:
 	// 카메라시야와 벽이 출동하는지 확인
 	bool CheckObstacleBetweenPlayerAndCamera(const XMVECTOR& _origin, const XMVECTOR& _direction, float _curDistance);
 
-	pair<float, shared_ptr<InteractObject>> GetNearestInteractObject(const shared_ptr<Player>& _pPlayer, bool _isPlayerProfessor);
+	pair<float, shared_ptr<InteractObject>> GetNearestInteractObject(const shared_ptr<Player>& _pPlayer);
 
 };
 
@@ -135,7 +135,7 @@ public:
 	bool CheckObstacleBetweenPlayerAndCamera(shared_ptr<Camera> _pCamera);
 	
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 갱신하는 함수
-	shared_ptr<InteractObject> UpdateInteractableObject(bool _isPlayerProfessor);
+	shared_ptr<InteractObject> UpdateInteractableObject();
 
 	// objectID로 해당 공격을 찾는 함수
 	shared_ptr<Attack> GetAttack(UINT _objectID);
@@ -151,4 +151,7 @@ public:
 
 	void AnimateObjects(float _timeElapsed);
 	void SetPlayer(shared_ptr<Player> _pPlayer) { pPlayer = _pPlayer; };
+
+	void SetAllComputerPower(bool _power);
+
 };

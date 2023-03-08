@@ -74,7 +74,8 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	gameFramework.GetTextureManager().GetTexture("2DUI_host", _pDevice, _pCommandList);
 	gameFramework.GetTextureManager().GetTexture("2DUI_roomInfo", _pDevice, _pCommandList);
 
-	gameFramework.GetSoundManager().Play("audio");
+	//gameFramework.GetSoundManager().Play("audio");
+	gameFramework.GetSoundManager().Play("step");
 	pBackGround = make_shared<Image2D>("2DUI_title", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList);
 
 
@@ -510,10 +511,9 @@ void LobbyScene::UpdateReadyState() {
 /////////////////////////
 
 PlayScene::PlayScene() {
-	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 0.0f);
+	globalAmbient = XMFLOAT4(0.1f, 0.1f, 0.1f, 0.0f);
 	remainTime = 1000.f;
 	professorObjectID = 0;
-	isPlayerProfessor = false;
 }
 
 PlayScene::~PlayScene() {
@@ -592,15 +592,15 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 
 	if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
 		if (camera->GetMinDistance() < camera->GetCurrentDistance()) {
-			camera->MoveFront(5.f, _timeElapsed);
+			camera->MoveFront(5.f, min(_timeElapsed, 0.01f));
 		}
 	}
 	else {
 		if (camera->GetCurrentDistance() < camera->GetMaxDistance()) {
-			camera->MoveFront(-5.f, _timeElapsed);
+			camera->MoveFront(-5.f, min(_timeElapsed, 0.01f));
 			camera->UpdateObject();
 			if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
-				camera->MoveFront(5.f, _timeElapsed);
+				camera->MoveFront(5.f, min(_timeElapsed, 0.01f));
 				camera->UpdateObject();
 			}
 		}
@@ -820,7 +820,13 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 	bool enable = false;
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 찾는다.
-	auto pObject = pZone->UpdateInteractableObject(isPlayerProfessor);
+	auto pObject = pZone->UpdateInteractableObject();
+
+	// 교수의 사보타지 쿨타임일때는 상호작용하지 못하도록 한다.
+	if (dynamic_pointer_cast<Lever>(pObject) && isPlayerProfessor 
+		&& 0 < dynamic_pointer_cast<Professor>(pPlayer)->GetSabotageCoolTime()) {
+		pObject = nullptr;
+	}
 
 	// 주변에 상호작용 오브젝트가 있다가 없어진 경우
 	if (pInteractableObject && !pObject) {
@@ -1117,6 +1123,22 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			}
 		}
 
+		break;
+	}
+	case SC_PACKET_TYPE::toggleLever: {
+		SC_LEVER_TOGGLE* packet = GetPacket<SC_LEVER_TOGGLE>();
+		
+		pZone->SetAllComputerPower(packet->allLeverPowerOn);
+		if(packet->allLeverPowerOn)
+			globalAmbient = XMFLOAT4(0.5, 0.5, 0.5, 0.0);
+		else
+			globalAmbient = XMFLOAT4(0.1f, 0.1f, 0.1f, 0.0);
+
+		pZone->Interact(packet->leverObjectID);
+		// 교수일 경우 쿨타임 초기화해준다.
+		if (!packet->setPower && isPlayerProfessor) {
+			dynamic_pointer_cast<Professor>(pPlayer)->SetSabotageCoolTime(10.f);
+		}
 		break;
 	}
 

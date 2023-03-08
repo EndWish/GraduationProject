@@ -293,6 +293,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::hit: 
     case CS_PACKET_TYPE::goPrison: 
     case CS_PACKET_TYPE::openPrisonDoor: 
+    case CS_PACKET_TYPE::toggleLever:
     {
         READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
         //cout << format("READ_CID_IN_PACKET : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);

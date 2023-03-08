@@ -10,6 +10,7 @@ PlayInfo::PlayInfo(UINT _playInfoID) : playInfoID{ _playInfoID } {
 	objectIDCount = objectIDStart;
 
 	hackingComplete = false;
+	allLeverPowerOn = false;
 }
 PlayInfo::~PlayInfo() {
 	ServerFramework& serverFramework = ServerFramework::Instance();
@@ -297,7 +298,7 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		cout << format("CS_QUERY_USE_COMPUTER : cid - {}, computerObjectID - {}, playerObjectID - {}, pid - {} \n", recvPacket.cid, recvPacket.computerObjectID, recvPacket.playerObjectID, recvPacket.pid);
 
 		Computer* pComputer = pComputers[recvPacket.computerObjectID];
-		if (pComputer->GetPower() && !pComputer->GetUse() && pComputer->GetHackingRate() < 100.f) {
+		if (allLeverPowerOn && !pComputer->GetUse() && pComputer->GetHackingRate() < 100.f) {
 			pComputer->SetUse(true);
 			SC_USE_COMPUTER sendPacket;
 			sendPacket.computerObjectID = recvPacket.computerObjectID;
@@ -407,7 +408,34 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		}
 		break;
 	}
+	case CS_PACKET_TYPE::toggleLever: {
+		CS_LEVER_TOGGLE& recvPacket = GetPacket<CS_LEVER_TOGGLE>();
+		cout << format("SC_LEVER_TOGGLE : cid - {}, leverObjectID - {}, setPower - {}, pid - {} \n", recvPacket.cid, recvPacket.leverObjectID, recvPacket.setPower, recvPacket.pid);
 
+		// 레버의 파워를 변경한다.
+		pLevers[recvPacket.leverObjectID]->SetPower(recvPacket.setPower);
+
+		// 모든 레버가 켜져있는지 확인한다.
+		allLeverPowerOn = true;
+		for (auto [objectID, pLever] : pLevers) {
+			if (!pLever->GetPower()) {
+				allLeverPowerOn = false;
+				break;
+			}
+		}
+
+		// 패킷을 전송한다.
+		SC_LEVER_TOGGLE sendPacket;
+		sendPacket.setPower = recvPacket.setPower;
+		sendPacket.leverObjectID = recvPacket.leverObjectID;
+		sendPacket.allLeverPowerOn = allLeverPowerOn;
+
+		// 감옥의 문을 열었다고 패킷을 보낸다.
+		for (auto [participant, pClient] : participants) {
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+		break;
+	}
 	default:
 		READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
 		cout << format("잘못된 패킷 번호 : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);

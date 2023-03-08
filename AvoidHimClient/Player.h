@@ -95,6 +95,7 @@ public:
 
 class Professor : public Player {
 protected:
+	float sabotageCoolTime;
 
 	array<float, (size_t)AttackType::num> attackRemainCoolTime;
 	array<float, (size_t)AttackType::num> attackMaxCoolTime;
@@ -103,6 +104,8 @@ public:
 	virtual ~Professor();
 	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	
+	float GetSabotageCoolTime() const;
+	void SetSabotageCoolTime(float _sabotageCoolTime);
 	void SetCoolTime(AttackType _type, float _coolTime);
 	void Reload(AttackType _type);
 	float GetCoolTime(AttackType _type) const;

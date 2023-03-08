@@ -30,7 +30,7 @@ private:
 	unordered_map<UINT, Computer*> pComputers;	// objectID-object
 
 	bool hackingComplete;
-	
+	bool allLeverPowerOn;
 
 public:
 	// 持失切, 社瑚切

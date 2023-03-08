@@ -228,13 +228,13 @@ bool Sector::CheckObstacleBetweenPlayerAndCamera(const XMVECTOR& _origin, const 
 	return false;
 }
 
-pair<float, shared_ptr<InteractObject>> Sector::GetNearestInteractObject(const shared_ptr<Player>& _pPlayer, bool _isPlayerProfessor) {
+pair<float, shared_ptr<InteractObject>> Sector::GetNearestInteractObject(const shared_ptr<Player>& _pPlayer) {
 	float minDist = 1.0f;
 	float dist = 0.f;
 	shared_ptr<InteractObject> pNearestObject;
 	for (auto [gid, pGameObject] : pInteractionObjects) {
 		// 그 플레이어가 사용할 수 없는 오브젝트일 경우 건너뛴다.
-		if(!pGameObject->IsInteractable(_isPlayerProfessor)) continue;
+		if(!pGameObject->IsInteractable()) continue;
 
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 		BoundingOrientedBox playerBoundingBox = _pPlayer->GetBoundingBox();
@@ -585,6 +585,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			switch (objType) {
 			case ObjectType::prisonPosition:
 				prisonPosition = position;
+				cout << "감옥위치 : " << position << "\n";
 				break;
 			case ObjectType::prisonExitPosition:
 				prisonExitPosition = position;
@@ -733,7 +734,16 @@ void Zone::AnimateObjects(float _timeElapsed) {
 	}
 }
 
-shared_ptr<InteractObject> Zone::UpdateInteractableObject(bool _isPlayerProfessor) {
+void Zone::SetAllComputerPower(bool _power) {
+	for (auto [objectID, pGameObject] : pInteractObjTable) {
+		if (pGameObject->GetObjectType() == ObjectType::computer) {
+			static_pointer_cast<Computer>(pGameObject)->SetPower(_power);
+		}
+	}
+}
+
+
+shared_ptr<InteractObject> Zone::UpdateInteractableObject() {
 	shared_ptr<InteractObject> nearestObject = nullptr;
 	float minDist = FLT_MAX;
 
@@ -741,7 +751,7 @@ shared_ptr<InteractObject> Zone::UpdateInteractableObject(bool _isPlayerProfesso
 	// 섹터마다 플레이어가 바라보고 있으면서 가장 가까운 오브젝트를 반환
 	for (auto& sector : checkSector) {
 
-		auto [dist, pGameObject] = sector->GetNearestInteractObject(pPlayer, _isPlayerProfessor);
+		auto [dist, pGameObject] = sector->GetNearestInteractObject(pPlayer);
 		if (pGameObject) {
 			if (minDist > dist) {
 				minDist = dist;
