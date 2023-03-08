@@ -16,6 +16,7 @@ private:
 	UINT playInfoID;
 	UINT objectIDCount;
 	bool allPlayerLoadingComplete;
+	UINT prisonDoorObjectID;
 	unordered_map<UINT, bool> loadingCompletes;	// 플레이어가 로딩을 완료하였는지 확인
 	
 	//Zone zone;
@@ -29,7 +30,11 @@ private:
 	unordered_map<UINT, WaterDispenser*> pWaterDispensers;	// objectID-object
 	unordered_map<UINT, Computer*> pComputers;	// objectID-object
 
+	UINT itemCount; // 해당 게임에 현재 존재하는 아이템의 수
+	vector<bool> isExistItem;	// 해당 인덱스 스폰 포지션에 아이템이 있는지 판단
 	bool hackingComplete;
+	
+	float itemCreateCoolTime;
 	bool allLeverPowerOn;
 
 public:
@@ -59,6 +64,7 @@ public:
 	void FrameAdvance(float _timeElapsed);
 	void ProcessRecv(CS_PACKET_TYPE _packetType);
 
+	void AddItem();
 };
 
 

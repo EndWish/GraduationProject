@@ -3,6 +3,7 @@
 random_device rd;
 UINT objectIDStart = 1;
 UINT packetIDCount = 100'000;
+UINT itemSpawnLocationCount = 0;
 XMFLOAT3 prisonPosition = XMFLOAT3(0,0,0), prisonExitPosition = XMFLOAT3(0, 0, 0);
 
 array<char, BUFSIZE> globalRecvBuffer;

@@ -74,7 +74,6 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	gameFramework.GetTextureManager().GetTexture("2DUI_host", _pDevice, _pCommandList);
 	gameFramework.GetTextureManager().GetTexture("2DUI_roomInfo", _pDevice, _pCommandList);
 
-	//gameFramework.GetSoundManager().Play("audio");
 	gameFramework.GetSoundManager().Play("step");
 	pBackGround = make_shared<Image2D>("2DUI_title", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList);
 
@@ -539,8 +538,11 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 	char result = 0;
 	XMFLOAT3 velocity = pPlayer->GetVelocity();
 
-	// 플레이어가 학생일경우 공격과 플레이어의 충돌처리
-	if(!isPlayerProfessor) pZone->CheckCollisionWithAttack();
+	// 플레이어가 학생일경우 공격, 아이템과 플레이어의 충돌처리
+	if (!isPlayerProfessor) {
+		pZone->CheckCollisionWithAttack();
+		pZone->CheckCollisionWithItem();
+	}
 	// 투사체와 장애물간의 충돌을 처리
 	pZone->CheckCollisionProjectileWithObstacle();
 
@@ -614,6 +616,10 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	GameFramework& gameFramework = GameFramework::Instance();
 	gameFramework.GetGameObjectManager().LoadGameObject("SwingAttack", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("ThrowAttack", _pDevice, _pCommandList);
+	gameFramework.GetGameObjectManager().LoadGameObject("PrisonKey", _pDevice, _pCommandList);
+	gameFramework.GetGameObjectManager().LoadGameObject("MedicalKit", _pDevice, _pCommandList);
+	gameFramework.GetGameObjectManager().LoadGameObject("EnergyDrink", _pDevice, _pCommandList);
+	gameFramework.GetGameObjectManager().LoadGameObject("Trap", _pDevice, _pCommandList);
 
 	SC_GAME_START* recvPacket = GetPacket<SC_GAME_START>();
 	array<UINT, MAX_PARTICIPANT> enComID;
@@ -762,12 +768,13 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		sendPacket.cid = cid;
 		SendFixedPacket(sendPacket);
 	}
+
 	if (_keyDownBuffer['T']) {
-		
+
 	}
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
 		pPlayer->Dash(_timeElapsed);
-	} 
+	}
 
 	float angleSpeed = 720.f * _timeElapsed;
 	float moveSpeed = pPlayer->GetSpeed() * _timeElapsed;
@@ -811,7 +818,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	for (auto& t : pEffects) {
 		t->Animate(_timeElapsed);
 	}
-	
+
 	// 플레이어 애니메이션
 	pPlayer->Animate(_collideCheck, _timeElapsed);
 
@@ -862,14 +869,14 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 	// 플레이어가 교수일경우의 UI
 	if (isPlayerProfessor) {
-		auto pProfessor = dynamic_pointer_cast<Professor>(pPlayer);
+		auto pProfessor = static_pointer_cast<Professor>(pPlayer);
 		if (pProfessor) {
 
 		}
 	}
 	// 플레이어가 학생일경우의 UI
 	else {
-		auto pStudent = dynamic_pointer_cast<Student>(pPlayer);
+		auto pStudent = static_pointer_cast<Student>(pPlayer);
 		if (pStudent) {
 			pUIs["2DUI_hp"]->SetSizeUV(XMFLOAT2(pStudent->GetHP() / 100, 1.f));
 			if (pComputer == pEnableComputers.end()) {
@@ -898,7 +905,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 	// 쿨타임 텍스트를 갱신해준다.
 	if (isPlayerProfessor) {	// 교수
-		auto pProfessor = dynamic_pointer_cast<Professor>(pPlayer);
+		auto pProfessor = static_pointer_cast<Professor>(pPlayer);
 		if (pTexts["leftCoolTime"]->GetEnable()) {	// 왼쪽 스킬이 쿨타임일 경우
 			if (pProfessor) {
 				float coolTime = pProfessor->GetCoolTime(AttackType::swingAttack);
@@ -1047,8 +1054,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		// 알맞은 섹터에 공격을 추가하고 본인이 공격한 경우 쿨타임을 적용한다.
 		SC_ATTACK* packet = GetPacket<SC_ATTACK>();
 		pZone->AddAttack(packet->attackType, packet->attackObjectID, FindPlayerObject(packet->playerObjectID), _pDevice, _pCommandList);
-		if (packet->playerObjectID == myObjectID) {
-			auto pProfessor = dynamic_pointer_cast<Professor>(pPlayer);
+		if (packet->playerObjectID == myObjectID && isPlayerProfessor) {
+			auto pProfessor = static_pointer_cast<Professor>(pPlayer);
 			if(pProfessor) pProfessor->Reload(packet->attackType);
 		}
 		break;
@@ -1090,20 +1097,21 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 	}
 	case SC_PACKET_TYPE::openPrisonDoor: {
 		SC_OPEN_PRISON_DOOR* packet = GetPacket<SC_OPEN_PRISON_DOOR>();
+		
+
 		// 자신이 학생이고 자기 자신이 갇혀있다면 감옥탈출 위치로 순간이동 시킨다.
 		if (!isPlayerProfessor) {
-			auto pStudent = dynamic_pointer_cast<Student>(pPlayer);
+			auto pStudent = static_pointer_cast<Student>(pPlayer);
+			// 본인이 문을 연것이라면 열쇠를 지운다.
+			if (packet->openPlayerObjectID == myObjectID) {
+				pStudent->SetItem(ObjectType::none);
+			}
 			if (pStudent->GetImprisoned()) {	// 수감되어 있다면
 				// 수감해제로 바꾼다.
 				pStudent->SetImprisoned(false);
 				// 순간이동 시킨다.
-				XMINT3 prevIndex = pZone->GetIndex(pStudent->GetWorldPosition());
 				pStudent->SetLocalPosition(prisonExitPosition);
 				pStudent->UpdateObject();
-				XMINT3 nextIndex = pZone->GetIndex(pStudent->GetWorldPosition());
-				if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
-					pZone->HandOffObject(SectorLayer::otherPlayer, pStudent->GetID(), pStudent, prevIndex, nextIndex);
-				}
 			}
 		}
 		// 다른 학생의 수감 상태를 변경시키고 순간이동 시킨다.
@@ -1141,7 +1149,26 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		}
 		break;
 	}
+	case SC_PACKET_TYPE::addItem: { // 특정위치에 아이템이 추가된 경우
+		SC_ADD_ITEM* packet = GetPacket<SC_ADD_ITEM>();
+		
+		XMFLOAT3 position = itemSpawnLocationPositions[packet->itemLocationIndex];
 
+		pZone->AddItem(packet->objectType, packet->itemLocationIndex, packet->itemObjectID, position, _pDevice, _pCommandList);
+		break;
+	}
+	case SC_PACKET_TYPE::removeItem: {	// 특정위치에 아이템이 사라진 경우
+		SC_REMOVE_ITEM* packet = GetPacket<SC_REMOVE_ITEM>();
+		pZone->RemoveItem(packet->itemObjectID);
+		break;
+	}
+	case SC_PACKET_TYPE::useItem: {	// 누군가 의료키트, 트랩을 설치한 경우
+		SC_USE_ITEM* packet = GetPacket<SC_USE_ITEM>();
+		if (packet->objectType == ObjectType::medicalKitItem) {
+			static_pointer_cast<Student>(FindPlayerObject(packet->playerObjectID))->AddHP(50.0f);
+		}
+		break;
+	}
 	default:
 		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
 	}
@@ -1184,6 +1211,10 @@ UINT PlayScene::GetProfessorObjectID() const {
 	return professorObjectID;
 }
 
+void PlayScene::AddItemSpawnLocation(const XMFLOAT3& _position) {
+	itemSpawnLocationPositions.push_back(_position);
+}
+
 void PlayScene::ReActButton(shared_ptr<Button> _pButton)
 {
 
@@ -1196,6 +1227,7 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 	switch (_type) {
 	case WM_LBUTTONDOWN:
 		ReleaseCapture();
+		
 		pPlayer->LeftClick();
 		pTexts["leftCoolTime"]->SetEnable(true);
 		pUIs["2DUI_leftSkill"]->SetDark(true);

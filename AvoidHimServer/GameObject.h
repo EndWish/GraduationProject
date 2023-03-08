@@ -65,7 +65,7 @@ public:
 class Player : public GameObject {
 protected:
 	bool imprisoned;	// 수감되었는지 확인하는 변수
-
+	ObjectType item;
 public:
 	Player();
 	Player(const Player& _other);	// 복사생성자
@@ -75,6 +75,8 @@ public:
 	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
 	bool GetImprisoned() const { return imprisoned; }
 
+	void SetItem(ObjectType _item) { item = _item; }
+	ObjectType GetItem() const { return item; }
 };
 
 ///////////////////////////////////////////////////////////////////////////////

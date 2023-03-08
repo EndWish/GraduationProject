@@ -68,13 +68,14 @@ public:
 
 	virtual void LeftClick() {};
 	virtual void RightClick() {};
-};
+}; 
 
 class Student : public Player {
 protected:
 	float hp;
 	bool imprisoned;
-
+	// 보유하고 있는 아이템을 type로만 저장
+	ObjectType item;
 public:
 	Student();
 	virtual ~Student();
@@ -83,7 +84,7 @@ public:
 
 	float GetHP() const { return hp; };
 	void SetHP(float _hp) { hp = _hp; };
-	void AddHP(float _hp) { hp += _hp; };
+	void AddHP(float _hp) { hp = min(hp+_hp, 100.f); };
 
 	bool GetImprisoned() const { return imprisoned; }
 	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
@@ -91,6 +92,8 @@ public:
 	virtual void LeftClick();
 	virtual void RightClick();
 
+	ObjectType GetItem() const { return item; };
+	void SetItem(ObjectType _objectType) { item = _objectType; };
 };
 
 class Professor : public Player {

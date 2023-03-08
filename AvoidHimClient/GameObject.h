@@ -391,7 +391,65 @@ public:
 	virtual bool IsInteractable();
 };
 
+////////////////// Item //////////////////
 
+class Item : public GameObject {
+protected:
+	UINT index;	// 아이템이 생성된곳의 인덱스
+	bool isRemove;
+	// 기준이 되는 위치
+	XMFLOAT3 basePosition;
+	ObjectType itemType;
+	// 아이템 애니메이션에 쓰일 변수
+	bool isUp;
+	float reverseAccCoolTime;
+	float rotateSpeed;
+	float verticalSpeed;
+public:
+	Item();
+	~Item();
+	virtual void Animate(float _timeElapsed);
+	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	//virtual void Use() = 0;
+	void Remove() { isRemove = true; };
+	bool GetIsRemove() const { return isRemove; };
+	ObjectType GetType() const { return itemType; };
+	void SetIndex(UINT _index) { index = _index; };
+	UINT GetIndex() const { return index; };
+};
+
+class PrisonKey : public Item {
+protected:
+
+public:
+	PrisonKey();
+	~PrisonKey();
+};
+
+
+class MedicalKit : public Item {
+protected:
+
+public:
+	MedicalKit();
+	~MedicalKit();
+};
+
+class EnergyDrink : public Item {
+protected:
+
+public:
+	EnergyDrink();
+	~EnergyDrink();
+};
+
+class Trap : public Item {
+protected:
+
+public:
+	Trap();
+	~Trap();
+};
 ////////////////// SkyBox //////////////////
 
 

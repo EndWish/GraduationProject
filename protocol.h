@@ -22,15 +22,15 @@ using namespace DirectX;
 
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
-	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor, 
-	toggleLever
+	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
+	useItem, removeItem, toggleLever,
 };
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail,
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
 	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	toggleLever
+	addItem, useItem, removeItem, toggleLever,
 
 };
 enum class SC_FAIL_TYPE : int {
@@ -50,6 +50,7 @@ enum class SectorLayer : char {
 	effect,
 	sprite,
 	item,
+	trap,
 	num,
 	etc
 };
@@ -58,7 +59,7 @@ enum class ShaderType : char {
 	none,
 	basic,
 	instancing,
-	blending,   
+	blending,
 	skinned,
 	effect,
 	num
@@ -80,6 +81,12 @@ enum class ObjectType : char {
 	exitLDoor,
 	prisonPosition,
 	prisonExitPosition,
+	prisonKeyItem,
+	trapItem,
+	medicalKitItem,
+	energyDrinkItem,
+	itemSpawnLocation,
+	trap,
 };
 
 enum class AttackType : char {
@@ -88,6 +95,7 @@ enum class AttackType : char {
 	throwAttack,
 	num,
 };
+
 
 #pragma pack(push, 1)
 
@@ -145,6 +153,7 @@ struct CS_TOGGLE_DOOR {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::toggleDoor;
 	UINT cid = 0;
 	UINT objectID = 0;
+	UINT playerObjectID = 0;
 	UINT pid = 0;
 };
 struct CS_USE_WATER_DISPENSER {	// 해당 정수기를 사용하겠다고 보냄
@@ -189,6 +198,25 @@ struct CS_GO_PRISON {
 	UINT playerObjectID = 0;	// 갖히는 플레이어의 오브젝트 ID
 	UINT pid = 0;
 };
+
+struct CS_USE_ITEM {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::useItem;
+	UINT cid = 0;
+	UINT playerObjectID = 0;
+	ObjectType itemType = ObjectType::none;
+	// 네트워크 차이 및 보간에 의해 트랩의 위치가 달라질 수 있으므로 위치를 정확히 보내준다.
+	XMFLOAT3 usePosition = XMFLOAT3(0, 0, 0);
+	UINT pid = 0;
+};
+struct CS_REMOVE_ITEM {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::removeItem;
+	UINT cid = 0;
+	UINT playerObjectID = 0;
+	UINT itemObjectID = 0;
+	UINT itemLocationIndex = 0;
+	ObjectType itemType = ObjectType::none;
+	UINT pid = 0;
+};
 struct CS_OPEN_PRISON_DOOR {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::openPrisonDoor;
 	UINT cid = 0;
@@ -201,7 +229,6 @@ struct CS_LEVER_TOGGLE {
 	bool setPower = false;
 	UINT pid = 0;
 };
-
 
 /// 서버->클라
 struct SC_GIVE_CLIENT_ID {
@@ -344,6 +371,28 @@ struct SC_GO_PRISON {
 };
 struct SC_OPEN_PRISON_DOOR {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::openPrisonDoor;
+	UINT openPlayerObjectID = 0;
+	UINT pid = 100'000;
+};
+
+struct SC_ADD_ITEM {	// 특정 지역에 아이템이 나온 경우
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::addItem;
+	UINT itemLocationIndex = 0;
+	UINT itemObjectID = 0;
+	ObjectType objectType = ObjectType::none;
+	UINT pid = 100'000;
+};
+
+struct SC_REMOVE_ITEM {	// 특정 플레이어가 아이템을 획득하여 그 자리 아이템을 없앨 경우
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::removeItem;
+	UINT itemObjectID = 0;
+	UINT pid = 100'000;
+};
+
+struct SC_USE_ITEM {	// 특정 플레이어가 아이템을 사용한 경우
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::useItem;
+	UINT playerObjectID = 0;
+	ObjectType objectType = ObjectType::none;
 	UINT pid = 100'000;
 };
 struct SC_LEVER_TOGGLE {
@@ -353,5 +402,4 @@ struct SC_LEVER_TOGGLE {
 	bool allLeverPowerOn = false;
 	UINT pid = 100'000;
 };
-
 #pragma pack(pop)

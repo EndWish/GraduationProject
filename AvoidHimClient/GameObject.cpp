@@ -867,6 +867,7 @@ void Door::QueryInteract() {
 	CS_TOGGLE_DOOR packet;
 	packet.cid = cid;
 	packet.objectID = id;
+	packet.playerObjectID = myObjectID;
 	SendFixedPacket(packet);
 
 }
@@ -1111,6 +1112,9 @@ SkyBox::SkyBox(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Graphics
 SkyBox::~SkyBox() {
 }
 
+///////////////////////////////////////////////////////////////////////////////
+///
+
 void SkyBox::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	for (int i = 0; i < 6; ++i) {
@@ -1122,7 +1126,8 @@ void SkyBox::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	}
 }
 
-
+///////////////////////////////////////////////////////////////////////////////
+///
 
 Attack::Attack() {
 	lifeTime = FLT_MAX;
@@ -1230,4 +1235,78 @@ void ThrowAttack::SetIsStuck(bool _isStuck) {
 
 bool ThrowAttack::GetIsStuck() const {
 	return isStuck;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///
+
+Item::Item() {
+	isRemove = false;
+	basePosition = XMFLOAT3(0, 0, 0);
+	rotateSpeed = 30.0f;
+	itemType = ObjectType::none;
+	isUp = true;
+	reverseAccCoolTime = 0.f;
+	verticalSpeed = 0.f;
+	index = 0;
+}
+
+Item::~Item() {
+}
+
+void Item::Animate(float _timeElapsed) {
+
+	reverseAccCoolTime += _timeElapsed;
+	if (reverseAccCoolTime > 1.0f) {
+		reverseAccCoolTime = -1.f;
+		isUp = !isUp;
+	}
+
+	verticalSpeed += isUp ? _timeElapsed / 2 : -_timeElapsed / 2;
+	Move(XMFLOAT3(0, verticalSpeed, 0), _timeElapsed);
+	Rotate(XMFLOAT3(0, 1, 0), rotateSpeed, _timeElapsed);
+
+	UpdateObject();
+}
+
+void Item::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
+
+	SetLocalRotation(Vector4::QuaternionRotation(GetLocalRightVector(), 30.0f));
+	UpdateObject();
+}
+
+PrisonKey::PrisonKey() {
+
+	itemType = ObjectType::prisonKeyItem;
+}
+PrisonKey::~PrisonKey() {
+
+}
+
+MedicalKit::MedicalKit() {
+
+	itemType = ObjectType::medicalKitItem;
+}
+
+MedicalKit::~MedicalKit() {
+
+}
+
+EnergyDrink::EnergyDrink() {
+
+	itemType = ObjectType::energyDrinkItem;
+}
+
+EnergyDrink::~EnergyDrink() {
+
+}
+
+Trap::Trap() {
+
+	itemType = ObjectType::trapItem;
+}
+
+Trap::~Trap() {
+
 }

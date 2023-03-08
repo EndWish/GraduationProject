@@ -11,6 +11,7 @@ PlayInfo::PlayInfo(UINT _playInfoID) : playInfoID{ _playInfoID } {
 
 	hackingComplete = false;
 	allLeverPowerOn = false;
+	itemCount = 0;
 }
 PlayInfo::~PlayInfo() {
 	ServerFramework& serverFramework = ServerFramework::Instance();
@@ -45,6 +46,7 @@ PlayInfo::~PlayInfo() {
 	pComputers.clear();
 
 }
+
 
 void PlayInfo::Init(UINT _roomID) {
 	ServerFramework& serverFramework = ServerFramework::Instance();
@@ -83,6 +85,10 @@ void PlayInfo::Init(UINT _roomID) {
 		}
 		case ObjectType::computer: {
 			computersObjectID.push_back(objectID);
+			break;
+		}
+		case ObjectType::prisonDoor: {
+			prisonDoorObjectID = objectID;
 			break;
 		}
 		default:
@@ -160,6 +166,8 @@ void PlayInfo::Init(UINT _roomID) {
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
 	}
+	// 스폰 로케이션 갯수만큼 할당한다.
+	isExistItem.assign(itemSpawnLocationCount, false);
 }
 
 void PlayInfo::LoadingComplete(UINT _clientID) {
@@ -233,6 +241,13 @@ void PlayInfo::FrameAdvance(float _timeElapsed) {
 		pObject->SubtractCoolTime(_timeElapsed);
 	}
 
+	if (itemCount < 4) {
+		itemCreateCoolTime -= _timeElapsed;
+		if (itemCreateCoolTime < 0.f) {
+			itemCreateCoolTime = CREATE_ITEM_PERIOD;
+			AddItem();
+		}
+	}
 }
 
 void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
@@ -252,25 +267,48 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 	case CS_PACKET_TYPE::toggleDoor: {
 		CS_TOGGLE_DOOR& recvPacket = GetPacket<CS_TOGGLE_DOOR>();
 		cout << format("CS_TOGGLE_DOOR : cid - {}, objectID - {}, pid - {} \n", recvPacket.cid, recvPacket.objectID, recvPacket.pid);
-
-		auto it = pDoors.find(recvPacket.objectID);
-		if (it != pDoors.end()) {
-			Door* pDoor = it->second;
-
-			// 일반문이거나 탈출문이지만 해킹이 완료되었을 경우 상호작용한다.
-			if (!pDoor->IsExitDoor() || (pDoor->IsExitDoor() && hackingComplete)) {
-				pDoor->SetOpen(!pDoor->IsOpen());
-
-				SC_TOGGLE_DOOR sendPacket;
-				sendPacket.objectID = recvPacket.objectID;
-
-				for (auto [participant, pClient] : participants) {
-					SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		// 감옥 문에 대한 상호작용일 경우
+		cout << prisonDoorObjectID << " , " << recvPacket.objectID << "\n";
+		if (prisonDoorObjectID == recvPacket.objectID) {
+			if (pPlayers[recvPacket.playerObjectID]->GetItem() != ObjectType::prisonKeyItem) break;
+			// 해당 플레이어가 수감해제 되었다고 표시한다.
+			for (auto [objectID, pPlayer] : pPlayers) {
+				if (pPlayer->GetImprisoned()) {
+					pPlayer->SetImprisoned(false);
+					pPlayer->SetPosition(prisonExitPosition);
 				}
 			}
+
+			// 감옥의 문을 열었다고 패킷을 보낸다.
+			SC_OPEN_PRISON_DOOR sendPacket;
+			sendPacket.openPlayerObjectID = recvPacket.playerObjectID;
+
+			for (auto [participant, pClient] : participants) {
+				SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+			}
+			// 해당 플레이어가 가진 열쇠를 삭제한다.
+			pPlayers[recvPacket.playerObjectID]->SetItem(ObjectType::none);
 		}
 		else {
-			cout << "\b해당하는 ID의 문이 없습니다.\n";
+			auto it = pDoors.find(recvPacket.objectID);
+			if (it != pDoors.end()) {
+				Door* pDoor = it->second;
+
+				// 일반문이거나 탈출문이지만 해킹이 완료되었을 경우 상호작용한다.
+				if (!pDoor->IsExitDoor() || (pDoor->IsExitDoor() && hackingComplete)) {
+					pDoor->SetOpen(!pDoor->IsOpen());
+
+					SC_TOGGLE_DOOR sendPacket;
+					sendPacket.objectID = recvPacket.objectID;
+
+					for (auto [participant, pClient] : participants) {
+						SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+					}
+				}
+			}
+			else {
+				cout << "\b해당하는 ID의 문이 없습니다.\n";
+			}
 		}
 
 		break;
@@ -389,21 +427,35 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		}
 		break;
 	}
-	case CS_PACKET_TYPE::openPrisonDoor: {
-		CS_OPEN_PRISON_DOOR& recvPacket = GetPacket<CS_OPEN_PRISON_DOOR>();
-		cout << format("CS_OPEN_PRISON_DOOR : cid - {}, pid - {} \n", recvPacket.cid, recvPacket.pid);
+	case CS_PACKET_TYPE::useItem: {
+		// 다른 플레이어에게 해당 사실을 알리며 플레이어가 가진 아이템을 삭제한다.
+		CS_USE_ITEM& recvPacket = GetPacket<CS_USE_ITEM>();
+		pPlayers[recvPacket.playerObjectID]->SetItem(ObjectType::none);
 
-		// 해당 플레이어가 수감해제 되었다고 표시한다.
-		for (auto [objectID, pPlayer] : pPlayers) {
-			if (pPlayer->GetImprisoned()) {
-				pPlayer->SetImprisoned(false);
-				pPlayer->SetPosition(prisonExitPosition);
-			}
-		}
-
-		// 감옥의 문을 열었다고 패킷을 보낸다.
-		SC_OPEN_PRISON_DOOR sendPacket;
+		// 패킷을 전송한다.
+		SC_USE_ITEM sendPacket;
+		sendPacket.objectType = recvPacket.itemType;
+		sendPacket.playerObjectID = recvPacket.playerObjectID;
 		for (auto [participant, pClient] : participants) {
+			if (recvPacket.cid == participant)
+				continue;
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+		break;
+	}
+	case CS_PACKET_TYPE::removeItem: {
+		// 다른 플레이어에게 해당 사실을 알리며 플레이어가 가진 아이템을 갱신한다.
+		CS_REMOVE_ITEM& recvPacket = GetPacket<CS_REMOVE_ITEM>();
+		pPlayers[recvPacket.playerObjectID]->SetItem(recvPacket.itemType);
+		// 해당 위치 아이템이 없다는것을 갱신
+		cout << recvPacket.itemLocationIndex << " 위치 아이템 삭제\n";
+		isExistItem[recvPacket.itemLocationIndex] = false;
+		--itemCount;
+		SC_REMOVE_ITEM sendPacket;
+		sendPacket.itemObjectID = recvPacket.itemObjectID;
+		for (auto [participant, pClient] : participants) {
+			if (recvPacket.cid == participant)
+				continue;
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
 		break;
@@ -441,4 +493,43 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		cout << format("잘못된 패킷 번호 : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);
 		break;
 	}
+}
+
+void PlayInfo::AddItem() {
+	SC_ADD_ITEM packet;
+	// 랜덤한 위치에 랜덤한 아이템을 추가한다.
+	uniform_int_distribution<int> randomIndex(0, itemSpawnLocationCount-1);
+	uniform_int_distribution<int> itemChance(1, 100);
+
+	int index = randomIndex(rd);	// 아이템 스폰장소의 인덱스
+	while (isExistItem[index]) {
+		cout << "중복입니다. reroll..";
+		index = randomIndex(rd);
+	}
+	int chance = itemChance(rd);	
+
+	int keyChance = 5;
+	int trapChance = 30;
+	int energyDrinkChance = 40;	// 아이템의 확률
+
+	if (chance <= keyChance) {
+		packet.objectType = ObjectType::prisonKeyItem;
+	}
+	else if (chance <= keyChance + trapChance) {
+		packet.objectType = ObjectType::trapItem;
+	}
+	else if (chance <= keyChance + trapChance + energyDrinkChance) {
+		packet.objectType = ObjectType::energyDrinkItem;
+	}
+	else {
+		packet.objectType = ObjectType::medicalKitItem;
+	}
+	packet.itemLocationIndex = index;
+	packet.itemObjectID = objectIDCount++;
+	for (auto [participant, pClient] : participants) {
+		SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), packet);
+	}
+	++itemCount;
+	isExistItem[index] = true;
+	cout << index << " 위치 아이템 추가\n";
 }

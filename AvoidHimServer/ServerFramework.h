@@ -26,7 +26,7 @@ private:
 	vector<pair<UINT, GameObject*>> pInitialObjects;
 	vector<XMFLOAT3> studentStartPositions;
 	XMFLOAT3 professorStartPosition;
-
+	
 public:
 	// 생성자 및 소멸자
 	ServerFramework();

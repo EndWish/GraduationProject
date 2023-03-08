@@ -5,6 +5,7 @@
 
 #include "targetver.h"
 #define WIN32_LEAN_AND_MEAN             // 거의 사용되지 않는 내용을 Windows 헤더에서 제외합니다.
+#define CREATE_ITEM_PERIOD 5.0f
 // Windows 헤더 파일
 #include <windows.h>
 // C 런타임 헤더 파일입니다.
@@ -38,7 +39,7 @@ using namespace std;
 extern random_device rd;
 extern UINT objectIDStart;	// Map파일을 읽어오고 나서 (플레이어 포함)추가적으로 생성하는 오브젝트에게 ID를 부여할때 시작할 번호 (objectIDCount는 각 경기마다 있어야 하므로)
 extern XMFLOAT3 prisonPosition, prisonExitPosition;
-
+extern UINT itemSpawnLocationCount;
 extern array<char, BUFSIZE> globalRecvBuffer;
 extern array<char, BUFSIZE> buffer;
 extern UINT packetIDCount;

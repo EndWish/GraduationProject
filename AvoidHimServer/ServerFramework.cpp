@@ -9,7 +9,6 @@ ServerFramework ServerFramework::instance;	// 고유 프레임워크
 void ServerFramework::Init(HWND _windowHandle) {
     LoadMapFile();
     windowHandle = _windowHandle;
-    lastTime = chrono::system_clock::now();
 }
 void ServerFramework::Destroy() {
     for (auto [key, pClient] : pClients)
@@ -30,11 +29,11 @@ ServerFramework& ServerFramework::Instance() {
 ServerFramework::ServerFramework() {
     windowHandle = HWND();
 
-    lastTime = chrono::system_clock::now();
 
 	clientIDCount = 1;
     roomIDCount = 1;
     professorStartPosition = XMFLOAT3(0, 0, 0);
+    itemSpawnLocationCount = 0;
 }
 ServerFramework::~ServerFramework() {
 }
@@ -293,6 +292,8 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::hit: 
     case CS_PACKET_TYPE::goPrison: 
     case CS_PACKET_TYPE::openPrisonDoor: 
+    case CS_PACKET_TYPE::useItem:
+    case CS_PACKET_TYPE::removeItem:
     case CS_PACKET_TYPE::toggleLever:
     {
         READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
@@ -313,8 +314,9 @@ void ServerFramework::FrameAdvance() {
 	// 게임을 진행시키면서 필요에 따라 메시지를 전송한다.
     
     float timeElapsed = chrono::duration_cast<chrono::milliseconds>((chrono::system_clock::now() - lastTime)).count() / 1'000.f;
-    
+
     float period = SERVER_PERIOD;
+
     if (period <= timeElapsed)
         lastTime = chrono::system_clock::now();
     else
@@ -470,7 +472,7 @@ void ServerFramework::LoadMapFile() {
         mapFile.read((char*)&position, sizeof(XMFLOAT3));
         mapFile.read((char*)&scale, sizeof(XMFLOAT3));
         mapFile.read((char*)&rotation, sizeof(XMFLOAT4));
-
+        
         switch (objType) {
 
             // break;가 없는 것에 주의
@@ -478,24 +480,26 @@ void ServerFramework::LoadMapFile() {
         case ObjectType::Rdoor:
         case ObjectType::exitLDoor:
         case ObjectType::exitRDoor:
-            if (objType == ObjectType::Ldoor || objType == ObjectType::Rdoor)
+        case ObjectType::prisonDoor:
+            if (objType == ObjectType::Ldoor || objType == ObjectType::Rdoor || objType == ObjectType::prisonDoor)
                 pObject = new Door();
             else if (objType == ObjectType::exitLDoor || objType == ObjectType::exitRDoor) {
                 pObject = new Door();
-                dynamic_cast<Door*>(pObject)->SetExitDoor(true);
+                static_cast<Door*>(pObject)->SetExitDoor(true);
             }
             __fallthrough;
         case ObjectType::lever:
             if (objType == ObjectType::lever)
                 pObject = new Lever();
             __fallthrough;
-        case ObjectType::waterDispenser:
+        case ObjectType::waterDispenser: 
             if (objType == ObjectType::waterDispenser)
                 pObject = new WaterDispenser();
             __fallthrough;
         case ObjectType::computer:
             if (objType == ObjectType::computer)
                 pObject = new Computer();
+
             pObject->SetType(objType);
             pObject->SetID(objectIDStart);
             pInitialObjects.emplace_back(pObject->GetID(), pObject);
@@ -512,6 +516,9 @@ void ServerFramework::LoadMapFile() {
             break;
         case ObjectType::prisonExitPosition:
             prisonExitPosition = position;
+            break;
+        case ObjectType::itemSpawnLocation:
+            itemSpawnLocationCount++;
             break;
         default:
             break;

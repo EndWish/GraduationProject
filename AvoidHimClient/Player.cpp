@@ -53,7 +53,6 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 void Player::Animate(char _collideCheck, float _timeElapsed) {
 
-
 	XMFLOAT3 prevPosition = GetWorldPosition();
 	XMFLOAT3 position;
 	if (speed > baseSpeed) {
@@ -200,7 +199,33 @@ Student::~Student() {
 
 void Student::LeftClick() {
 	// 아이템 사용
+	// 열쇠는 다른곳에서 처리한다.
+	if (item == ObjectType::prisonKeyItem || item == ObjectType::none) return;
 
+	else if (item == ObjectType::medicalKitItem) {
+		// 체력 50% 회복
+		AddHP(50.0f);
+		CS_USE_ITEM packet;
+		packet.cid = cid;
+		packet.itemType = item;
+		packet.playerObjectID = myObjectID;
+		SendFixedPacket(packet);
+	}
+	else if (item == ObjectType::energyDrinkItem) {
+		// 스태미너 100% 회복
+		SetMP(100.0f);
+	}
+	else if (item == ObjectType::trapItem) {
+		cout << "트랩 사용!!\n";
+		CS_USE_ITEM packet;
+		packet.cid = cid;
+		packet.itemType = item;
+		packet.playerObjectID = myObjectID;
+		packet.usePosition = GetWorldPosition();
+		SendFixedPacket(packet);
+
+	}
+	item = ObjectType::none;
 }
 
 void Student::RightClick() {
