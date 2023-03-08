@@ -116,6 +116,7 @@ private:
 	shared_ptr<SkyBox> pSkyBox;
 	
 	vector<shared_ptr<GameObject>> pEffects;
+	vector<XMFLOAT3> itemSpawnLocationPositions;
 public:
 	PlayScene();
 	~PlayScene();
@@ -142,4 +143,5 @@ public:
 	// 오브젝트 ID로 해당 플레이어 인스턴스 포인터를 찾아 반환
 	shared_ptr<GameObject> FindPlayerObject(UINT _objectID) const;
 	UINT GetProfessorObjectID() const;
+	void AddItemSpawnLocation(const XMFLOAT3& _position);
 };
