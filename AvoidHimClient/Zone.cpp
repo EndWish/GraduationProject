@@ -25,11 +25,7 @@ void Sector::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<Game
 		cout << format("버그 : 중복되는 id값이 존재합니다 : {} vs {} \n", (*it).second->GetName(), _pGameObject->GetName());
 	}
 }
-void Sector::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pGameObject) {
-	if (_pGameObject == nullptr) {
-		cout << format("버그 : 오브젝트 포인터가 NULL입니다.\n");
-		return;
-	}
+void Sector::RemoveObject(SectorLayer _sectorLayer, UINT _objectID) {
 
 	Layer& pGameObjectLayer = pGameObjectLayers[(int)_sectorLayer];
 	auto it = pGameObjectLayer.find(_objectID);
@@ -386,13 +382,13 @@ void Zone::AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, co
 }
 
 // 오브젝트 제거
-void Zone::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos) {
+void Zone::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, const XMFLOAT3& _pos) {
 	Sector* sector = GetSector(_pos);
-	sector->RemoveObject(_sectorLayer, _objectID, _pObject);
+	sector->RemoveObject(_sectorLayer, _objectID);
 }
-void Zone::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index) {
+void Zone::RemoveObject(SectorLayer _sectorLayer, UINT _objectID, const XMINT3& _index) {
 	Sector* sector = GetSector(_index);
-	sector->RemoveObject(_sectorLayer, _objectID, _pObject);
+	sector->RemoveObject(_sectorLayer, _objectID);
 }
 
 void Zone::RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos) {
@@ -408,11 +404,11 @@ void Zone::RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject,
 // 오브젝트를 다른 섹터로 이동
 void Zone::HandOffObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _prePos, const XMFLOAT3& _nextPos) {
 	AddObject(_sectorLayer, _objectID, _pObject, _nextPos);		// 새로추가하고
-	RemoveObject(_sectorLayer, _objectID, _pObject, _prePos);	// 이전위치에서는 제거
+	RemoveObject(_sectorLayer, _objectID, _prePos);	// 이전위치에서는 제거
 }
 void Zone::HandOffObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _preIndex, const XMINT3& _nextIndex) {
 	AddObject(_sectorLayer, _objectID, _pObject, _nextIndex);		// 새로추가하고
-	RemoveObject(_sectorLayer, _objectID, _pObject, _preIndex);	// 이전위치에서는 제거
+	RemoveObject(_sectorLayer, _objectID, _preIndex);	// 이전위치에서는 제거
 }
 // 같은 섹터인지를 리턴하는 함수
 bool Zone::IsSameSector(const XMFLOAT3& _pos1, const XMFLOAT3& _pos2) {
@@ -655,6 +651,14 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			case ObjectType::itemSpawnLocation:
 				pScene->AddItemSpawnLocation(position);
 				break;
+			case ObjectType::exitBox: {
+				BoundingBox exitBox;
+				file.read((char*)&exitBox.Center, sizeof(XMFLOAT3));
+				file.read((char*)&exitBox.Extents, sizeof(XMFLOAT3));
+				exitBox.Center = Vector3::Add(exitBox.Center, position);
+				pScene->SetExitBox(exitBox);
+				break;
+			}
 			default:
 				break;
 			}
@@ -803,7 +807,7 @@ void Zone::AnimateObjects(float _timeElapsed) {
 		prevIndex = GetIndex(pAttack->GetWorldPosition());
 		// 사라져야할 공격은 삭제, 소속 섹터 업데이트
 		if (pAttack->GetIsRemove()) {
-			GetSector(pAttack->GetWorldPosition())->RemoveObject(SectorLayer::attack, objectID, pAttack);
+			GetSector(pAttack->GetWorldPosition())->RemoveObject(SectorLayer::attack, objectID);
 			pAttackObjTable.erase(objectID);
 			continue;
 		}
@@ -819,7 +823,7 @@ void Zone::AnimateObjects(float _timeElapsed) {
 	for (auto& [objectID, pItem] : pItemObjTable) {	// 아이템 오브젝트
 		// 사라져야할 아이템은 삭제
 		if (pItem->GetIsRemove()) {
-			GetSector(pItem->GetWorldPosition())->RemoveObject(SectorLayer::item, objectID, pItem);
+			GetSector(pItem->GetWorldPosition())->RemoveObject(SectorLayer::item, objectID);
 			pItemObjTable.erase(objectID);
 			continue;
 		}

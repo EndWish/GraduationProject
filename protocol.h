@@ -23,15 +23,14 @@ using namespace DirectX;
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
 	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	useItem, removeItem, toggleLever,
+	useItem, removeItem, toggleLever, exitPlayer
 };
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail,
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
 	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	addItem, useItem, removeItem, toggleLever,
-
+	addItem, useItem, removeItem, toggleLever, exitPlayer
 };
 enum class SC_FAIL_TYPE : int {
 	unknown = 1,	//  �ʱⰪ
@@ -87,6 +86,7 @@ enum class ObjectType : char {
 	energyDrinkItem,
 	itemSpawnLocation,
 	trap,
+	exitBox,
 };
 
 enum class AttackType : char {
@@ -227,6 +227,12 @@ struct CS_LEVER_TOGGLE {
 	UINT cid = 0;
 	UINT leverObjectID = 0;
 	bool setPower = false;
+	UINT pid = 0;
+};
+struct CS_EXIT_PLAYER {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::exitPlayer;
+	UINT cid = 0;
+	UINT playerObjectID = 0;
 	UINT pid = 0;
 };
 
@@ -400,6 +406,11 @@ struct SC_LEVER_TOGGLE {
 	UINT leverObjectID = 0;
 	bool setPower = false;
 	bool allLeverPowerOn = false;
+	UINT pid = 100'000;
+};
+struct SC_EXIT_PLAYER {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::exitPlayer;
+	UINT playerObjectID = 0;
 	UINT pid = 100'000;
 };
 #pragma pack(pop)

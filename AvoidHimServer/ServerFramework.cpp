@@ -295,6 +295,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::useItem:
     case CS_PACKET_TYPE::removeItem:
     case CS_PACKET_TYPE::toggleLever:
+    case CS_PACKET_TYPE::exitPlayer:
     {
         READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
         //cout << format("READ_CID_IN_PACKET : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);
@@ -519,6 +520,12 @@ void ServerFramework::LoadMapFile() {
             break;
         case ObjectType::itemSpawnLocation:
             itemSpawnLocationCount++;
+            break;
+        case ObjectType::exitBox: {
+            XMFLOAT3 buffer; 
+            mapFile.read((char*)&buffer, sizeof(XMFLOAT3));
+            mapFile.read((char*)&buffer, sizeof(XMFLOAT3));
+        }
             break;
         default:
             break;

@@ -4,4 +4,8 @@ nInstance(UINT)
 	objectLayer(char)
 	objectType(char)
 	position(float * 3) / scale(float * 3) / rotation(float * 3)
+
+	// 따로 설정한 Box Collider가 있을 경우 그 정보도 따로 저장한다.
+	center(float * 3)
+	extents(float * 3)
 }

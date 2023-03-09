@@ -48,7 +48,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     //string serverIP = "172.30.1.69";
     //string serverIP = "172.30.1.55";
     //string serverIP = "172.30.1.2";
-    //string serverIP = "172.30.1.26";
+    //string serverIP = "172.30.1.24";
     string serverIP = "127.0.0.1";
     
     // connect()

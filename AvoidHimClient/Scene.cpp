@@ -538,6 +538,18 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 	char result = 0;
 	XMFLOAT3 velocity = pPlayer->GetVelocity();
 
+	// 내가 조종하는 플레이어가 탈출box 와 충돌하는지 확인
+	if (!exit && !isPlayerProfessor && exitBox.Intersects(pPlayer->GetBoundingBox())) {
+		exit = true;
+		cout << "탈출!\n";
+
+		// 서버에게 자신이 탈출했다고 패킷을 보낸다.
+		CS_EXIT_PLAYER sendPacket;
+		sendPacket.cid = cid;
+		sendPacket.playerObjectID = myObjectID;
+		SendFixedPacket(sendPacket);
+	}
+
 	// 플레이어가 학생일경우 공격, 아이템과 플레이어의 충돌처리
 	if (!isPlayerProfessor) {
 		pZone->CheckCollisionWithAttack();
@@ -594,15 +606,15 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 
 	if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
 		if (camera->GetMinDistance() < camera->GetCurrentDistance()) {
-			camera->MoveFront(5.f, min(_timeElapsed, 0.01f));
+			camera->MoveFront(15.f, min(_timeElapsed, 1.f/30.f));
 		}
 	}
 	else {
 		if (camera->GetCurrentDistance() < camera->GetMaxDistance()) {
-			camera->MoveFront(-5.f, min(_timeElapsed, 0.01f));
+			camera->MoveFront(-15.f, min(_timeElapsed, 1.f / 30.f));
 			camera->UpdateObject();
 			if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
-				camera->MoveFront(5.f, min(_timeElapsed, 0.01f));
+				camera->MoveFront(15.f, min(_timeElapsed, 1.f / 30.f));
 				camera->UpdateObject();
 			}
 		}
@@ -1010,7 +1022,6 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
 				pZone->HandOffObject(SectorLayer::otherPlayer, pMoveClient->GetID(), pMoveClient, prevIndex, nextIndex);
 			}
-			
 		}
 		break;
 	}
@@ -1169,6 +1180,13 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		}
 		break;
 	}
+	case SC_PACKET_TYPE::exitPlayer: {
+		SC_EXIT_PLAYER* packet = GetPacket<SC_EXIT_PLAYER>();
+		shared_ptr<InterpolateMoveGameObject> pOtherPlayer = pOtherPlayers[packet->playerObjectID];
+		pZone->RemoveObject(SectorLayer::otherPlayer, packet->playerObjectID, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
+		pOtherPlayers.erase(packet->playerObjectID);
+		break;
+	}
 	default:
 		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
 	}
@@ -1213,6 +1231,10 @@ UINT PlayScene::GetProfessorObjectID() const {
 
 void PlayScene::AddItemSpawnLocation(const XMFLOAT3& _position) {
 	itemSpawnLocationPositions.push_back(_position);
+}
+
+void PlayScene::SetExitBox(const BoundingBox& _exitBox) {
+	exitBox = _exitBox;
 }
 
 void PlayScene::ReActButton(shared_ptr<Button> _pButton)
@@ -1284,6 +1306,16 @@ void PlayScene::ProcessCursorMove(XMFLOAT2 _delta)  {
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
+
+	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
+	if (exit && exitFadeOut < 3) {
+		exitFadeOut += _timeElapsed;
+		globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(exitFadeOut, XMFLOAT4(5, 5, 5, 5)));
+		
+		if (3 <= exitFadeOut) {
+			// 자기 자신을 없앤다. 다른 플레이어에게 카메라를 옮긴다?
+		}
+	}
 
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
 	camera->SetViewPortAndScissorRect(_pCommandList);

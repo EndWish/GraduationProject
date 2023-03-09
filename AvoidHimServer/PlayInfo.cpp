@@ -221,6 +221,13 @@ void PlayInfo::FrameAdvance(float _timeElapsed) {
 	SC_PLAYERS_INFO sendPacket;
 	sendPacket.nPlayer = (UINT)pPlayers.size();
 	for (int index = 0; auto [objectID, pPlayer] : pPlayers) {
+		// 탈출한 플레이어의 경우 정보를 담지 않는다.
+		if (pPlayer->GetExit()) {
+			--sendPacket.nPlayer;
+			continue;
+		}
+
+		// 패킷을 보낸다.
 		SC_PLAYER_INFO& playerInfo = sendPacket.playersInfo[index];
 
 		playerInfo.aniTime = 0.f;
@@ -484,6 +491,22 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 
 		// 감옥의 문을 열었다고 패킷을 보낸다.
 		for (auto [participant, pClient] : participants) {
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+		break;
+	}
+	case CS_PACKET_TYPE::exitPlayer: {
+		CS_EXIT_PLAYER& recvPacket = GetPacket<CS_EXIT_PLAYER>();
+		cout << format("SC_LEVER_TOGGLE : cid - {}, playerObjectID - {}, pid - {} \n", recvPacket.cid, recvPacket.playerObjectID, recvPacket.pid);
+
+		pPlayers[recvPacket.playerObjectID]->SetExit(true);
+
+		// 패킷을 전송한다.
+		SC_EXIT_PLAYER sendPacket;
+		sendPacket.playerObjectID = recvPacket.playerObjectID;
+		for (auto [participant, pClient] : participants) {
+			if (participant == recvPacket.cid)
+				continue;
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
 		break;

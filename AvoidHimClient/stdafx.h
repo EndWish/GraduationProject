@@ -311,7 +311,7 @@ namespace Vector3 {
 }
 
 namespace Vector4 {
-	inline XMFLOAT4 Add(XMFLOAT4& _vector1, XMFLOAT4& _vector2)
+	inline XMFLOAT4 Add(const XMFLOAT4& _vector1, const XMFLOAT4& _vector2)
 	{
 		XMFLOAT4 xmf4Result;
 		XMStoreFloat4(&xmf4Result, XMLoadFloat4(&_vector1) + XMLoadFloat4(&_vector2));
@@ -336,14 +336,14 @@ namespace Vector4 {
 		return result;
 	}
 
-	inline XMFLOAT4 Multiply(XMFLOAT4& _vector1, XMFLOAT4& _vector2)
+	inline XMFLOAT4 Multiply(const XMFLOAT4& _vector1, const XMFLOAT4& _vector2)
 	{
 		XMFLOAT4 result;
 		XMStoreFloat4(&result, XMLoadFloat4(&_vector1) * XMLoadFloat4(&_vector2));
 		return result;
 	}
 
-	inline XMFLOAT4 Multiply(float _scalar, XMFLOAT4& _vector)
+	inline XMFLOAT4 Multiply(float _scalar,const XMFLOAT4& _vector)
 	{
 		XMFLOAT4 result;
 		XMStoreFloat4(&result, _scalar * XMLoadFloat4(&_vector));

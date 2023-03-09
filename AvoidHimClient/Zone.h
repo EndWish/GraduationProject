@@ -21,7 +21,7 @@ public:
 
 	// 삽입 삭제
 	void AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pGameObject);
-	void RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pGameObject);
+	void RemoveObject(SectorLayer _sectorLayer, UINT _objectID);
 
 	// 상호작용 물체 포인터 삽입 삭제
 	void AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pGameObject);
@@ -102,8 +102,8 @@ public:
 	void AddInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index);
 	
 	// 오브젝트 제거
-	void RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos);
-	void RemoveObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index);
+	void RemoveObject(SectorLayer _sectorLayer, UINT _objectID, const XMFLOAT3& _pos);
+	void RemoveObject(SectorLayer _sectorLayer, UINT _objectID, const XMINT3& _index);
 	void RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMFLOAT3& _pos);
 	void RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pObject, const XMINT3& _index);
 	

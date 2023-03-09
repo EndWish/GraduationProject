@@ -414,5 +414,5 @@ float4 SkyBoxPixelShader(VS_S_OUT input) : SV_TARGET
     float2 uv = input.uv;
     uv.y = 1 - uv.y;
     float4 cColor = albedoMap.Sample(gssClamp, uv);
-    return cColor;
+    return cColor * globalAmbient;
 }

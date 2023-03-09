@@ -117,6 +117,11 @@ private:
 	
 	vector<shared_ptr<GameObject>> pEffects;
 	vector<XMFLOAT3> itemSpawnLocationPositions;
+
+	BoundingBox exitBox;
+	bool exit = false;
+	float exitFadeOut = 0.0f;
+
 public:
 	PlayScene();
 	~PlayScene();
@@ -144,4 +149,6 @@ public:
 	shared_ptr<GameObject> FindPlayerObject(UINT _objectID) const;
 	UINT GetProfessorObjectID() const;
 	void AddItemSpawnLocation(const XMFLOAT3& _position);
+
+	void SetExitBox(const BoundingBox& _exitBox);
 };
