@@ -653,13 +653,16 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	gameFramework.GetGameObjectManager().LoadGameObject("Trap", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("Trap_attack", _pDevice, _pCommandList);
 
+	// 전역 변수 초기화
+	AllLeverPowerOn = false;
+
 	SC_GAME_START* recvPacket = GetPacket<SC_GAME_START>();
 	array<UINT, MAX_PARTICIPANT> enComID;
 	for (int i = 0; i < MAX_PARTICIPANT; ++i) {
 		enComID[i] = recvPacket->activeComputerObjectID[i];
 	}
-	// Zone을 생성 후 맵파일을 읽어 오브젝트들을 로드한다.
 
+	// Zone을 생성 후 맵파일을 읽어 오브젝트들을 로드한다.
 	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList, enComID);
 	
@@ -1169,10 +1172,17 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		SC_LEVER_TOGGLE* packet = GetPacket<SC_LEVER_TOGGLE>();
 		
 		pZone->SetAllComputerPower(packet->allLeverPowerOn);
-		if(packet->allLeverPowerOn)
+		if (packet->allLeverPowerOn) {
 			globalAmbient = XMFLOAT4(0.5, 0.5, 0.5, 0.0);
-		else
+			AllLeverPowerOn = true;
+			if (isPlayerProfessor)
+				static_pointer_cast<Professor>(pPlayer)->SetSabotageCoolTime(60.f);
+		}
+		else {
 			globalAmbient = XMFLOAT4(0.1f, 0.1f, 0.1f, 0.0);
+			AllLeverPowerOn = false;
+		}
+			
 
 		pZone->Interact(packet->leverObjectID);
 		// 교수일 경우 쿨타임 초기화해준다.

@@ -970,7 +970,7 @@ void Lever::Interact() {
 
 bool Lever::IsInteractable() {
 	// 교수의 경우
-	if (isPlayerProfessor && power) {
+	if (isPlayerProfessor && AllLeverPowerOn) {
 		return true;
 	}
 	// 학생의 경우

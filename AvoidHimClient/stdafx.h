@@ -107,6 +107,7 @@ extern SOCKET server_sock;
 extern UINT cid;
 extern UINT myObjectID;
 extern bool isPlayerProfessor;
+extern bool AllLeverPowerOn;
 extern UINT packetIDCount;
 extern XMFLOAT3 prisonPosition, prisonExitPosition;
 
