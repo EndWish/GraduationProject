@@ -28,6 +28,9 @@ protected:
 	shared_ptr<GameObject> pFloor;
 	float sendMovePacketTime;
 
+	// µÐÈ­¿¡ »ç¿ë
+	float slowTime;
+	float slowRate;
 public:
 	Player();
 	virtual ~Player();
@@ -68,6 +71,13 @@ public:
 
 	virtual void LeftClick() {};
 	virtual void RightClick() {};
+
+
+	void SetSlowRate(float _slowRate);
+	void SetSlowTime(float _slowTime);
+
+	float GetSlowRate() const { return slowRate; };
+	float GetSlowTime() const { return slowTime; };
 }; 
 
 class Student : public Player {
@@ -99,6 +109,7 @@ public:
 class Professor : public Player {
 protected:
 	float sabotageCoolTime;
+
 
 	array<float, (size_t)AttackType::num> attackRemainCoolTime;
 	array<float, (size_t)AttackType::num> attackMaxCoolTime;

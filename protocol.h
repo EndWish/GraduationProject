@@ -23,14 +23,15 @@ using namespace DirectX;
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
 	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	useItem, removeItem, toggleLever, exitPlayer
+	useItem, removeItem, toggleLever, removeTrap, exitPlayer
 };
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail,
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
 	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	addItem, useItem, removeItem, toggleLever, exitPlayer
+	addItem, useItem, removeItem, toggleLever, removeTrap, exitPlayer
+
 };
 enum class SC_FAIL_TYPE : int {
 	unknown = 1,	//  초기값
@@ -229,12 +230,20 @@ struct CS_LEVER_TOGGLE {
 	bool setPower = false;
 	UINT pid = 0;
 };
+
+struct CS_REMOVE_TRAP {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::removeTrap;
+	UINT cid = 0;
+	UINT trapObjectID = 0;
+	UINT pid = 0;
+};
 struct CS_EXIT_PLAYER {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::exitPlayer;
 	UINT cid = 0;
 	UINT playerObjectID = 0;
 	UINT pid = 0;
 };
+
 
 /// 서버->클라
 struct SC_GIVE_CLIENT_ID {
@@ -399,13 +408,20 @@ struct SC_USE_ITEM {	// 특정 플레이어가 아이템을 사용한 경우
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::useItem;
 	UINT playerObjectID = 0;
 	ObjectType objectType = ObjectType::none;
+	UINT itemObjectID = 0;	// 오브젝트가 추가되야 할 경우만 사용.
 	UINT pid = 100'000;
+
 };
 struct SC_LEVER_TOGGLE {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::toggleLever;
 	UINT leverObjectID = 0;
 	bool setPower = false;
 	bool allLeverPowerOn = false;
+	UINT pid = 100'000;
+};
+struct SC_REMOVE_TRAP {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::removeTrap;
+	UINT trapObjectID = 0;
 	UINT pid = 100'000;
 };
 struct SC_EXIT_PLAYER {

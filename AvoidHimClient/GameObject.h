@@ -395,10 +395,13 @@ public:
 
 class Item : public GameObject {
 protected:
+
 	UINT index;	// 아이템이 생성된곳의 인덱스
 	bool isRemove;
 	// 기준이 되는 위치
 	XMFLOAT3 basePosition;
+	float cycle;
+	float maxMoveDistance;	// 최대 변위 (오차를 없애기 위함)
 	ObjectType itemType;
 	// 아이템 애니메이션에 쓰일 변수
 	bool isUp;
@@ -406,7 +409,7 @@ protected:
 	float rotateSpeed;
 	float verticalSpeed;
 public:
-	Item();
+	Item(ObjectType _objectType);
 	~Item();
 	virtual void Animate(float _timeElapsed);
 	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -416,40 +419,23 @@ public:
 	ObjectType GetType() const { return itemType; };
 	void SetIndex(UINT _index) { index = _index; };
 	UINT GetIndex() const { return index; };
+	void SetBasePosition(const XMFLOAT3 _basePosition) { basePosition = _basePosition; };
 };
 
-class PrisonKey : public Item {
+class Trap : public GameObject {
 protected:
-
-public:
-	PrisonKey();
-	~PrisonKey();
-};
-
-
-class MedicalKit : public Item {
-protected:
-
-public:
-	MedicalKit();
-	~MedicalKit();
-};
-
-class EnergyDrink : public Item {
-protected:
-
-public:
-	EnergyDrink();
-	~EnergyDrink();
-};
-
-class Trap : public Item {
-protected:
-
+	bool isRemove;
+	float slowRate;
+	float slowTime;
 public:
 	Trap();
 	~Trap();
+	float GetSlowRate() const { return slowRate; };
+	float GetSlowTime() const { return slowTime; };
+	void Remove() { isRemove = true; };
+	bool GetIsRemove() const { return isRemove; };
 };
+
 ////////////////// SkyBox //////////////////
 
 

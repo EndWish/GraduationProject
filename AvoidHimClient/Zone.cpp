@@ -82,7 +82,7 @@ shared_ptr<GameObject> Sector::FindObject(SectorLayer _sectorLayer, UINT _object
 void Sector::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	for (auto pGameObjectLayer : pGameObjectLayers) {
-		for (auto [gid, pGameObject] : pGameObjectLayer) {
+		for (auto [objectID, pGameObject] : pGameObjectLayer) {
 			pGameObject->Render(_pCommandList);
 		}
 	}
@@ -92,7 +92,7 @@ void Sector::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 void Sector::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _mesh) {
 
 	for (auto pGameObjectLayer : pGameObjectLayers) {
-		for (auto [gid, pGameObject] : pGameObjectLayer) {
+		for (auto [objectID, pGameObject] : pGameObjectLayer) {
 			pGameObject->RenderHitBox(_pCommandList, _mesh);
 		}
 	}
@@ -109,13 +109,13 @@ const BoundingBox& Sector::GetBoundingBox() const {
 vector<shared_ptr<GameObject>>  Sector::CheckCollisionRotate(BoundingOrientedBox& _boundingBox, shared_ptr<GameObject> _pFloor) {
 
 	vector<shared_ptr<GameObject>> result;
-	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
+	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		if (_pFloor && _pFloor == pGameObject) continue;
 		if (pGameObject->GetBoundingBox().Intersects(_boundingBox)) {
 			result.push_back(pGameObject);
 		}
 	}
-	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::otherPlayer]) {
+	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::otherPlayer]) {
 		if (_pFloor && _pFloor == pGameObject) continue;
 		if (pGameObject->GetBoundingBox().Intersects(_boundingBox)) {
 			result.push_back(pGameObject);
@@ -129,7 +129,7 @@ shared_ptr<GameObject> Sector::CheckCollisionHorizontal(BoundingOrientedBox& _bo
 	// 점프없이 올라갈 수 있는 최대 높이값
 	float bias = 0.2f;
 
-	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
+	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		if (_pFloor && _pFloor == pGameObject) continue;
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 
@@ -143,7 +143,7 @@ shared_ptr<GameObject> Sector::CheckCollisionHorizontal(BoundingOrientedBox& _bo
 			else return pGameObject;
 		}
 	}
-	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::otherPlayer]) {
+	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::otherPlayer]) {
 		if (_pFloor && _pFloor == pGameObject) continue;
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 
@@ -164,7 +164,7 @@ shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boun
 
 	XMFLOAT3 vel = _pPlayer->GetVelocity();
 	float displacement = vel.y * _timeElapsed;
-	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
+	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 		if (boundingBox.Intersects(_boundingBox)) {
 			// 이동 하기전 바운딩박스가 물체의 위쪽에 있던것인지 확인
@@ -177,7 +177,7 @@ shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boun
 			}
 		}
 	}
-	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::otherPlayer]) {
+	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::otherPlayer]) {
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 		if (boundingBox.Intersects(_boundingBox)) {
 			// 이동 하기전 바운딩박스가 물체의 위쪽에 있던것인지 확인
@@ -195,7 +195,7 @@ shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boun
 
 void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 	BoundingOrientedBox playerOOBB = _pPlayer->GetBoundingBox();
-	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::attack]) {
+	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::attack]) {
 
 		shared_ptr<Attack> pAttack = dynamic_pointer_cast<Attack>(pGameObject);
 		// 본인이 시전한 공격일경우 무시
@@ -224,7 +224,7 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 			}
 			// 맞고 생존한 경우
 			CS_ATTACK_HIT sendAttackPacket;
-			sendAttackPacket.attackObjectID = gid;
+			sendAttackPacket.attackObjectID = objectID;
 			sendAttackPacket.attackType = pAttack->GetAttackType();
 			sendAttackPacket.hitPlayerObjectID = myObjectID;
 			sendAttackPacket.cid = cid;
@@ -249,10 +249,31 @@ void Sector::CheckCollisionWithItem(shared_ptr<Student> _pPlayer) {
 		if (boundingBox.Intersects(playerOOBB)) {
 			_pPlayer->SetItem(pItem->GetType());
 
+			// UI 갱신
+			shared_ptr<Image2D> pFrameUI = Scene::GetUI("2DUI_leftSkill");
+			shared_ptr<Image2D> pUI;
+			pFrameUI->SetEnable(false);
+			switch (pItem->GetType()) {
+			case ObjectType::prisonKeyItem:
+				pUI = Scene::GetUI("2DUI_prisonKey");
+				break;
+			case ObjectType::trapItem:
+				pUI = Scene::GetUI("2DUI_trap");
+				break;
+			case ObjectType::medicalKitItem:
+				pUI = Scene::GetUI("2DUI_medicalKit");
+				break;
+			case ObjectType::energyDrinkItem:
+				pUI = Scene::GetUI("2DUI_energyDrink");
+				break;
+			}
+			pUI->SetEnable(true);
+
+
 			CS_REMOVE_ITEM sendPacket;
 			sendPacket.cid = cid;
 			sendPacket.itemLocationIndex = pItem->GetIndex();
-			cout << pItem << " : " << sendPacket.itemLocationIndex << "위치 오브젝트삭제. objectID = " << objectID << "\n";
+			
 			sendPacket.itemObjectID = objectID;
 			sendPacket.itemType = pItem->GetType();
 			sendPacket.playerObjectID = myObjectID;
@@ -264,8 +285,28 @@ void Sector::CheckCollisionWithItem(shared_ptr<Student> _pPlayer) {
 	}
 }
 
+void Sector::CheckCollisionWithTrap(shared_ptr<Professor> _pPlayer) {
+	BoundingOrientedBox playerOOBB = _pPlayer->GetBoundingBox();
+	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::trap]) {
+
+		shared_ptr<Trap> pTrap = dynamic_pointer_cast<Trap>(pGameObject);
+		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
+		if (boundingBox.Intersects(playerOOBB)) {
+			pTrap->Remove();
+			// 둔화를 적용하고 해당 트랩이 사라졌다는 패킷을 보낸다.
+			CS_REMOVE_TRAP packet;
+			packet.cid = cid;
+			packet.trapObjectID = pTrap->GetID();
+			cout << packet.trapObjectID << " 를 밟음\n";
+			_pPlayer->SetSlowRate(pTrap->GetSlowRate());
+			_pPlayer->SetSlowTime(pTrap->GetSlowTime());
+			SendFixedPacket(packet);
+		}
+	}
+}
+
 bool Sector::CheckCollisionProjectileWithObstacle(const BoundingOrientedBox& _boundingBox) {
-	for (auto [gid, pObstacle] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
+	for (auto [objectID, pObstacle] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		if (pObstacle->GetBoundingBox().Intersects(_boundingBox)) {
 			return true;
 		}
@@ -275,7 +316,7 @@ bool Sector::CheckCollisionProjectileWithObstacle(const BoundingOrientedBox& _bo
 
 
 bool Sector::CheckObstacleBetweenPlayerAndCamera(const XMVECTOR& _origin, const XMVECTOR& _direction, float _curDistance) {
-	for (auto [gid, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
+	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::obstacle]) {
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
 		float dist;
 		if (boundingBox.Intersects(_origin, _direction, dist) && dist <= _curDistance) {
@@ -289,7 +330,7 @@ pair<float, shared_ptr<InteractObject>> Sector::GetNearestInteractObject(const s
 	float minDist = 1.0f;
 	float dist = 0.f;
 	shared_ptr<InteractObject> pNearestObject;
-	for (auto [gid, pGameObject] : pInteractionObjects) {
+	for (auto [objectID, pGameObject] : pInteractionObjects) {
 		// 그 플레이어가 사용할 수 없는 오브젝트일 경우 건너뛴다.
 		if(!pGameObject->IsInteractable()) continue;
 
@@ -754,6 +795,18 @@ void Zone::CheckCollisionWithItem() {
 	}
 }
 
+void Zone::CheckCollisionWithTrap() { 
+	// 이 함수가 호출되는 곳에서 Professor 체크를 함.
+	auto pProfessor = static_pointer_cast<Professor>(pPlayer);
+
+	vector<Sector*> checkSector = GetAroundSectors(pindex);
+	if (pProfessor) {
+		for (auto& sector : checkSector) {
+			sector->CheckCollisionWithTrap(pProfessor);
+		}
+	}
+}
+
 void Zone::CheckCollisionProjectileWithObstacle() {
 
 	BoundingOrientedBox boundingBox;
@@ -825,7 +878,14 @@ void Zone::AnimateObjects(float _timeElapsed) {
 		if (pItem->GetIsRemove()) {
 			GetSector(pItem->GetWorldPosition())->RemoveObject(SectorLayer::item, objectID);
 			pItemObjTable.erase(objectID);
-			continue;
+		}
+	}
+	for (auto& [objectID, pTrap] : pTrapObjTable) {	// 아이템 오브젝트
+		// 사라져야할 아이템은 삭제
+		if (pTrap->GetIsRemove()) {
+			GetSector(pTrap->GetWorldPosition())->RemoveObject(SectorLayer::trap, objectID);
+			pTrapObjTable.erase(objectID);
+
 		}
 	}
 }
@@ -864,6 +924,11 @@ shared_ptr<Attack> Zone::GetAttack(UINT _objectID) {
 	return nullptr;
 }
 
+shared_ptr<Trap> Zone::GetTrap(UINT _objectID) {
+	if (pTrapObjTable[_objectID]) return pTrapObjTable[_objectID];
+	return nullptr;
+}
+
 void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	shared_ptr<Attack> pAttack;
 	XMFLOAT3 offset = XMFLOAT3(0.f, 0.8f, 0.f);	// 공격의 생성 위치 오프셋
@@ -889,21 +954,17 @@ void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObje
 }
 
 void Zone::AddItem(ObjectType _objectType, UINT _itemSpawnIndex, UINT _objectID, const XMFLOAT3& _position,  const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	shared_ptr<Item> pItem;
+	shared_ptr<Item> pItem = make_shared<Item>(_objectType);
 	if (_objectType == ObjectType::prisonKeyItem) {
-		pItem = make_shared<PrisonKey>();
 		pItem->Create("PrisonKey", _pDevice, _pCommandList);
 	}
 	if (_objectType == ObjectType::medicalKitItem) {
-		pItem = make_shared<MedicalKit>();
 		pItem->Create("MedicalKit", _pDevice, _pCommandList);
 	}
 	if (_objectType == ObjectType::energyDrinkItem) {
-		pItem = make_shared<EnergyDrink>();
 		pItem->Create("EnergyDrink", _pDevice, _pCommandList);
 	}
 	if (_objectType == ObjectType::trapItem) {
-		pItem = make_shared<Trap>();
 		pItem->Create("Trap", _pDevice, _pCommandList);
 	}
 	// 오브젝트의 초기 위치를 설정해준다.
@@ -911,11 +972,16 @@ void Zone::AddItem(ObjectType _objectType, UINT _itemSpawnIndex, UINT _objectID,
 	pItem->UpdateObject();
 	pItem->SetID(_objectID);
 	pItem->SetIndex(_itemSpawnIndex);
-
+	pItem->SetBasePosition(_position);
 	// 해당 섹터에 아이템을 추가하고, 테이블에도 추가한다.
 	Sector* pSector = GetSector(GetIndex(_position));
 	pSector->AddObject(SectorLayer::item, _objectID, pItem);
 	pItemObjTable[_objectID] = pItem;
+}
+
+void Zone::AddTrap(UINT _objectID, shared_ptr<Trap> _pTrap) {
+	AddObject(SectorLayer::trap, _objectID, _pTrap, _pTrap->GetWorldPosition());
+	pTrapObjTable[_objectID] = _pTrap;
 }
 
 void Zone::RemoveAttack(UINT _objectID) {
@@ -924,6 +990,10 @@ void Zone::RemoveAttack(UINT _objectID) {
 
 void Zone::RemoveItem(UINT _objectID) {
 	pItemObjTable[_objectID]->Remove();
+}
+
+void Zone::RemoveTrap(UINT _objectID) {
+	pTrapObjTable[_objectID]->Remove();
 }
 
 void Zone::Interact(UINT _objectID) {

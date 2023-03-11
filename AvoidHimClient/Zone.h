@@ -44,6 +44,8 @@ public:
 	void CheckCollisionWithAttack(shared_ptr<Student> _pPlayer);
 	// 플레이어와 아이템과의 충돌을 처리
 	void CheckCollisionWithItem(shared_ptr<Student> _pPlayer);
+	// 플레이어와 트랩과의 충돌을 처리
+	void CheckCollisionWithTrap(shared_ptr<Professor> _pPlayer);
 	// 투사체와 장애물간의 충돌 처리
 	bool CheckCollisionProjectileWithObstacle(const BoundingOrientedBox& _boundingBox);
 	// 카메라시야와 벽이 출동하는지 확인
@@ -76,6 +78,7 @@ private:
 	unordered_map<UINT, shared_ptr<InteractObject>> pInteractObjTable; // 패킷 도착시 오브젝트를 빠르게 찾기 위한 테이블
 	unordered_map<UINT, shared_ptr<Attack>> pAttackObjTable; // 패킷 도착시 오브젝트를 빠르게 찾기 위한 테이블
 	unordered_map<UINT, shared_ptr<Item>> pItemObjTable;
+	unordered_map<UINT, shared_ptr<Trap>> pTrapObjTable;
 public:
 	// 생성자, 소멸자
 	Zone();
@@ -131,6 +134,8 @@ public:
 	void CheckCollisionWithAttack();
 	// 플레이어와 아이템과의 충돌을 처리
 	void CheckCollisionWithItem();
+	// 플레이어와 트랩과의 충돌을 처리
+	void CheckCollisionWithTrap();
 	// 투사체와 장애물간의 충돌을 처리
 	void CheckCollisionProjectileWithObstacle();
 
@@ -141,14 +146,17 @@ public:
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 갱신하는 함수
 	shared_ptr<InteractObject> UpdateInteractableObject();
 
-	// objectID로 해당 공격을 찾는 함수
+	// objectID로 해당 오브젝트를 찾는 함수
 	shared_ptr<Attack> GetAttack(UINT _objectID);
+	shared_ptr<Trap> GetTrap(UINT _objectID);
 
 	void AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void AddItem(ObjectType _objectType, UINT _itemSpawnIndex, UINT _objectID, const XMFLOAT3& _position, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	// 공격, 아이템의 경우 RemoveObject가 아닌 이 함수로 삭제해야한다.
+	void AddTrap(UINT _objectID, shared_ptr<Trap> _pTrap);
+	// 공격, 아이템, 트랩의 경우 RemoveObject가 아닌 이 함수로 삭제해야한다.
 	void RemoveAttack(UINT _objectID);
 	void RemoveItem(UINT _objectID);
+	void RemoveTrap(UINT _objectID);
 	// 특정 오브젝트에 대한 상호작용을 수행하는 함수
 	void Interact(UINT _objectID);
 	// 현재 플레이어가 위치한 섹터의 인덱스를 업데이트

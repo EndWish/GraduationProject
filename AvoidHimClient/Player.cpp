@@ -15,7 +15,8 @@ Player::Player() {
 
 	mp = 100.0f;
 	mpTick = 1.f;
-
+	slowRate = 0;
+	slowTime = 0;
 }
 
 Player::~Player() {
@@ -65,6 +66,7 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		mp = min(100.0f, mp);
 	}
 
+
 	sendMovePacketTime += (float)_timeElapsed;
 	// y방향으로 충돌하지 않을 경우
 	if (_collideCheck & 1) {
@@ -112,6 +114,13 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 	if (moveDistance > 1.0f) {
 		pFootStepSound->Play();
 		moveDistance = 0.f;
+	}
+
+	if (slowTime > 0) {
+		slowTime -= _timeElapsed;
+	}
+	else {
+		slowRate = 0.f;
 	}
 
 	// 서버에게 움직인만큼 전송해준다.
@@ -181,9 +190,21 @@ void Player::Dash(float _timeElapsed) {
 	if (mp > (costPerSec * _timeElapsed))
 	{
 		speed = baseSpeed * 1.5f;
+
+
 		mp -= costPerSec * _timeElapsed;
 	}
 }
+
+
+void Player::SetSlowRate(float _slowRate) {
+	slowRate = _slowRate;
+}
+
+void Player::SetSlowTime(float _slowTime) {
+	slowTime = _slowTime;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Student
@@ -191,6 +212,7 @@ void Player::Dash(float _timeElapsed) {
 Student::Student() {
 	hp = 100.0f;
 	imprisoned = false;
+	item = ObjectType::none;
 }
 
 Student::~Student() {
@@ -200,11 +222,14 @@ Student::~Student() {
 void Student::LeftClick() {
 	// 아이템 사용
 	// 열쇠는 다른곳에서 처리한다.
+
+
+	shared_ptr<Image2D> pUI;
 	if (item == ObjectType::prisonKeyItem || item == ObjectType::none) return;
 
 	else if (item == ObjectType::medicalKitItem) {
+		pUI = Scene::GetUI("2DUI_medicalKit");
 		// 체력 50% 회복
-		AddHP(50.0f);
 		CS_USE_ITEM packet;
 		packet.cid = cid;
 		packet.itemType = item;
@@ -212,11 +237,14 @@ void Student::LeftClick() {
 		SendFixedPacket(packet);
 	}
 	else if (item == ObjectType::energyDrinkItem) {
+		pUI = Scene::GetUI("2DUI_energyDrink");
 		// 스태미너 100% 회복
 		SetMP(100.0f);
 	}
 	else if (item == ObjectType::trapItem) {
-		cout << "트랩 사용!!\n";
+		// 공중에서는 사용할 수 없다.
+		if (!landed) return;
+		pUI = Scene::GetUI("2DUI_trap");
 		CS_USE_ITEM packet;
 		packet.cid = cid;
 		packet.itemType = item;
@@ -225,6 +253,7 @@ void Student::LeftClick() {
 		SendFixedPacket(packet);
 
 	}
+	if (pUI) pUI->SetEnable(false);
 	item = ObjectType::none;
 }
 
@@ -242,6 +271,9 @@ Professor::Professor() {
 	attackRemainCoolTime.fill(0.f);
 	attackMaxCoolTime[(size_t)AttackType::swingAttack] = 1.0f;
 	attackMaxCoolTime[(size_t)AttackType::throwAttack] = 2.0f;
+
+	speed *= 1.2f;
+	baseSpeed *= 1.2f;
 }
 
 Professor::~Professor() {
@@ -276,9 +308,13 @@ void Professor::Animate(char _collideCheck, float _timeElapsed) {
 
 	sabotageCoolTime -= _timeElapsed;
 
+
 	for (auto& coolTime : attackRemainCoolTime) {
 		if (coolTime >= 0.f) coolTime -= _timeElapsed;
 	}
+
+
+
 }
 
 void Professor::LeftClick() {

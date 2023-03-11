@@ -1240,15 +1240,18 @@ bool ThrowAttack::GetIsStuck() const {
 ///////////////////////////////////////////////////////////////////////////////
 ///
 
-Item::Item() {
+Item::Item(ObjectType _objectType) {
 	isRemove = false;
 	basePosition = XMFLOAT3(0, 0, 0);
 	rotateSpeed = 30.0f;
-	itemType = ObjectType::none;
+	itemType = _objectType;
 	isUp = true;
 	reverseAccCoolTime = 0.f;
 	verticalSpeed = 0.f;
 	index = 0;
+
+	cycle = 1.0f;
+	maxMoveDistance = cycle / 2.0f;
 }
 
 Item::~Item() {
@@ -1256,10 +1259,25 @@ Item::~Item() {
 
 void Item::Animate(float _timeElapsed) {
 
+
 	reverseAccCoolTime += _timeElapsed;
-	if (reverseAccCoolTime > 1.0f) {
-		reverseAccCoolTime = -1.f;
+	if (reverseAccCoolTime > cycle) {
+		reverseAccCoolTime = -cycle;
 		isUp = !isUp;
+	}
+	
+	if (localPosition.y > basePosition.y + maxMoveDistance) {
+		localPosition.y = basePosition.y + maxMoveDistance;
+		verticalSpeed = 0;
+		reverseAccCoolTime = 0;
+		isUp = false;
+	}
+
+	if (localPosition.y < basePosition.y - maxMoveDistance) {
+		localPosition.y = basePosition.y - maxMoveDistance;
+		verticalSpeed = 0;
+		reverseAccCoolTime = 0;
+		isUp = true;
 	}
 
 	verticalSpeed += isUp ? _timeElapsed / 2 : -_timeElapsed / 2;
@@ -1276,35 +1294,10 @@ void Item::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, cons
 	UpdateObject();
 }
 
-PrisonKey::PrisonKey() {
-
-	itemType = ObjectType::prisonKeyItem;
-}
-PrisonKey::~PrisonKey() {
-
-}
-
-MedicalKit::MedicalKit() {
-
-	itemType = ObjectType::medicalKitItem;
-}
-
-MedicalKit::~MedicalKit() {
-
-}
-
-EnergyDrink::EnergyDrink() {
-
-	itemType = ObjectType::energyDrinkItem;
-}
-
-EnergyDrink::~EnergyDrink() {
-
-}
-
 Trap::Trap() {
-
-	itemType = ObjectType::trapItem;
+	slowRate = 50.0f;
+	slowTime = 2.0f;
+	isRemove = false;
 }
 
 Trap::~Trap() {

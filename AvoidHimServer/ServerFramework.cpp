@@ -295,6 +295,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::useItem:
     case CS_PACKET_TYPE::removeItem:
     case CS_PACKET_TYPE::toggleLever:
+    case CS_PACKET_TYPE::removeTrap:
     case CS_PACKET_TYPE::exitPlayer:
     {
         READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();

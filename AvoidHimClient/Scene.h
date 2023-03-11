@@ -8,11 +8,17 @@ typedef SC_SUB_ROOM_PLAYERS_INFO Player_Info;
 
 class Scene {
 protected:
+	static unordered_map<string, shared_ptr<Button>> pButtons;
+	static unordered_map<string, shared_ptr<TextBox>> pTexts;
 
-	unordered_map<string, shared_ptr<Button>> pButtons;
-	unordered_map<string, shared_ptr<TextBox>> pTexts;
+	static unordered_map<string, shared_ptr<Image2D>> pUIs;
+public:
+	static shared_ptr<Image2D> GetUI(string _name);
+	static shared_ptr<TextBox> GetText(string _name);
+	static shared_ptr<Button> GetButton(string _name);
+protected:
 
-	unordered_map<string, shared_ptr<Image2D>> pUIs;
+
 
 public:
 	Scene();

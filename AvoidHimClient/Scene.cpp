@@ -3,6 +3,21 @@
 #include "Timer.h"
 #include "GameFramework.h"
 
+unordered_map<string, shared_ptr<Button>> Scene::pButtons;
+unordered_map<string, shared_ptr<TextBox>> Scene::pTexts;
+unordered_map<string, shared_ptr<Image2D>> Scene::pUIs;
+
+shared_ptr<Image2D> Scene::GetUI(string _name) {
+	return pUIs[_name];
+}
+
+shared_ptr<TextBox> Scene::GetText(string _name) {
+	return pTexts[_name];
+}
+
+shared_ptr<Button> Scene::GetButton(string _name) {
+	return pButtons[_name];
+}
 
 Scene::Scene()	{
 }
@@ -234,6 +249,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		break;
 	}
 	case SC_PACKET_TYPE::gameStart: {
+		changeUI(LobbyState::inRoom, false);
 		loadingScene = make_shared<PlayScene>();
 
 		// 게임이 시작된 경우 먼저 게임에서 사용될 인스턴스 정보, 메쉬, 애니메이션, 텍스처 등의 정보를 로드한다.
@@ -555,6 +571,9 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 		pZone->CheckCollisionWithAttack();
 		pZone->CheckCollisionWithItem();
 	}
+	else {
+		pZone->CheckCollisionWithTrap();
+	}
 	// 투사체와 장애물간의 충돌을 처리
 	pZone->CheckCollisionProjectileWithObstacle();
 
@@ -632,6 +651,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	gameFramework.GetGameObjectManager().LoadGameObject("MedicalKit", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("EnergyDrink", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("Trap", _pDevice, _pCommandList);
+	gameFramework.GetGameObjectManager().LoadGameObject("Trap_attack", _pDevice, _pCommandList);
 
 	SC_GAME_START* recvPacket = GetPacket<SC_GAME_START>();
 	array<UINT, MAX_PARTICIPANT> enComID;
@@ -653,7 +673,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			if (professorObjectID == recvPacket->playerInfo[i].objectID) {	// 교수 플레이어일 경우
 				pPlayer = make_shared<Professor>();
 				isPlayerProfessor = true;
-				pPlayer->SetSpeed(1.2f * pPlayer->GetSpeed()); // 교수 플레이어는 조금 더 빠르다.
+				
 			}
 			else { // 학생일 경우
 				pPlayer = make_shared<Student>();
@@ -716,13 +736,17 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pTexts["remainTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.1f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, true);
 	pTexts["hackRate"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 60.0f, true);
 
+	pUIs["2DUI_leftSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+	pUIs["2DUI_rightSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.75f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+
 	if (isPlayerProfessor) {	// 교수일 경우의 UI 로드
-		pUIs["2DUI_leftSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
-		pUIs["2DUI_rightSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.75f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+
 	}	
 	else {		// 학생일 경우의 UI 로드
-		pUIs["2DUI_leftSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
-		pUIs["2DUI_rightSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.75f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+		pUIs["2DUI_energyDrink"] = make_shared<Image2D>("2DUI_energyDrink", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+		pUIs["2DUI_medicalKit"] = make_shared<Image2D>("2DUI_medicalKit", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+		pUIs["2DUI_prisonKey"] = make_shared<Image2D>("2DUI_prisonKey", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+		pUIs["2DUI_trap"] = make_shared<Image2D>("2DUI_trap", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 
 		pUIs["2DUI_hp"] = make_shared<Image2D>("2DUI_hp", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 		pUIs["2DUI_hpFrame"] = make_shared<Image2D>("2DUI_hpFrame", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
@@ -789,7 +813,7 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 	}
 
 	float angleSpeed = 720.f * _timeElapsed;
-	float moveSpeed = pPlayer->GetSpeed() * _timeElapsed;
+	float moveSpeed = pPlayer->GetSpeed() * _timeElapsed * (1 - pPlayer->GetSlowRate() / 100.0f);
 	XMFLOAT3 moveVector = XMFLOAT3();
 
 	if (_keysBuffers['A'] & 0xF0) {
@@ -882,19 +906,15 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	// 플레이어가 교수일경우의 UI
 	if (isPlayerProfessor) {
 		auto pProfessor = static_pointer_cast<Professor>(pPlayer);
-		if (pProfessor) {
 
-		}
 	}
 	// 플레이어가 학생일경우의 UI
 	else {
 		auto pStudent = static_pointer_cast<Student>(pPlayer);
-		if (pStudent) {
 			pUIs["2DUI_hp"]->SetSizeUV(XMFLOAT2(pStudent->GetHP() / 100, 1.f));
 			if (pComputer == pEnableComputers.end()) {
 				pUIs["2DUI_hacking"]->SetEnable(false);
 				pUIs["2DUI_hackingFrame"]->SetEnable(false);
-			}
 		}
 	}
 
@@ -958,10 +978,10 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		}
 
 	}
-	else {
+	else {	// 학생
+
 
 	}
-
 
 	// zone 내 오브젝트들에 대한 animate를 수행
 	pZone->UpdatePlayerSector();
@@ -1116,6 +1136,7 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			// 본인이 문을 연것이라면 열쇠를 지운다.
 			if (packet->openPlayerObjectID == myObjectID) {
 				pStudent->SetItem(ObjectType::none);
+				Scene::GetUI("2DUI_prisonKey")->SetEnable(false);
 			}
 			if (pStudent->GetImprisoned()) {	// 수감되어 있다면
 				// 수감해제로 바꾼다.
@@ -1175,9 +1196,28 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 	}
 	case SC_PACKET_TYPE::useItem: {	// 누군가 의료키트, 트랩을 설치한 경우
 		SC_USE_ITEM* packet = GetPacket<SC_USE_ITEM>();
+		auto pStudent = static_pointer_cast<Student>(FindPlayerObject(packet->playerObjectID));
 		if (packet->objectType == ObjectType::medicalKitItem) {
-			static_pointer_cast<Student>(FindPlayerObject(packet->playerObjectID))->AddHP(50.0f);
+			pStudent->AddHP(50.0f);
 		}
+		if (packet->objectType == ObjectType::trapItem) {
+			XMFLOAT3 position = pStudent->GetWorldPosition();
+			shared_ptr<Trap> pTrap = make_shared<Trap>();
+
+			pTrap->Create("Trap_attack", _pDevice, _pCommandList);
+			pTrap->SetLocalPosition(position);
+			pTrap->SetID(packet->itemObjectID);
+			pTrap->UpdateObject();
+			pZone->AddTrap(packet->itemObjectID, pTrap);
+
+		}
+		break;
+	}
+	case SC_PACKET_TYPE::removeTrap: {
+		SC_REMOVE_TRAP* packet = GetPacket<SC_REMOVE_TRAP>();
+		shared_ptr<Trap> pTrap = pZone->GetTrap(packet->trapObjectID);
+
+		pZone->RemoveTrap(packet->trapObjectID);
 		break;
 	}
 	case SC_PACKET_TYPE::exitPlayer: {
@@ -1252,8 +1292,8 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 		
 		pPlayer->LeftClick();
 		pTexts["leftCoolTime"]->SetEnable(true);
+		pUIs["2DUI_leftSkill"]->SetEnable(true);
 		pUIs["2DUI_leftSkill"]->SetDark(true);
-
 		break;
 	case WM_LBUTTONUP:
 		SetCapture(hWnd);
@@ -1263,8 +1303,8 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 		// 투사체 공격
 		pPlayer->RightClick();
 		pTexts["rightCoolTime"]->SetEnable(true);
+		pUIs["2DUI_rightSkill"]->SetEnable(true);
 		pUIs["2DUI_rightSkill"]->SetDark(true);
-		// pUIs 스킬에 대한 SetPress를 해준다.
 
 		break;
 }

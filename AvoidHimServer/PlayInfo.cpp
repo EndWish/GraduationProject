@@ -441,11 +441,10 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 
 		// 패킷을 전송한다.
 		SC_USE_ITEM sendPacket;
+		if (recvPacket.itemType == ObjectType::trapItem) sendPacket.itemObjectID = objectIDCount++;
 		sendPacket.objectType = recvPacket.itemType;
 		sendPacket.playerObjectID = recvPacket.playerObjectID;
 		for (auto [participant, pClient] : participants) {
-			if (recvPacket.cid == participant)
-				continue;
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
 		break;
@@ -491,6 +490,18 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 
 		// 감옥의 문을 열었다고 패킷을 보낸다.
 		for (auto [participant, pClient] : participants) {
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+		break;
+	}
+	case CS_PACKET_TYPE::removeTrap: {
+		CS_REMOVE_TRAP& recvPacket = GetPacket<CS_REMOVE_TRAP>();
+		
+		SC_REMOVE_TRAP sendPacket;
+		sendPacket.trapObjectID = recvPacket.trapObjectID;
+		for (auto [participant, pClient] : participants) {
+			if (recvPacket.cid == participant)
+				continue;
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
 		break;
