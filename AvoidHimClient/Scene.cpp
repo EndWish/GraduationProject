@@ -611,12 +611,11 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 			// 물체의 룩벡터와 두 OOBB의 방향의 각을 비교해 룩벡터가 반대쪽에 있을경우 -1을 곱해준다.
 				
 			lookVector = collideObj->GetWorldLookVector();
-			rightVector = collideObj->GetWorldRightVector();
 			direcVector = Vector3::Subtract(pPlayer->GetBoundingBox().Center, collideObj->GetBoundingBox().Center);
 			direcVector.y = 0;
 			if (Vector3::Angle(direcVector, lookVector, false) > 90.0f) {
 				lookVector = Vector3::ScalarProduct(lookVector, -1.f);
-			}	
+			}
 			knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(Vector3::Normalize(lookVector), 0.01f));
 		}
 		// 부딪힌 오브젝트들의 룩벡터 방향들을 모아 그 방향으로 밀어준다.
@@ -1299,11 +1298,7 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 	switch (_type) {
 	case WM_LBUTTONDOWN:
 		ReleaseCapture();
-		
 		pPlayer->LeftClick();
-		pTexts["leftCoolTime"]->SetEnable(true);
-		pUIs["2DUI_leftSkill"]->SetEnable(true);
-		pUIs["2DUI_leftSkill"]->SetDark(true);
 		break;
 	case WM_LBUTTONUP:
 		SetCapture(hWnd);

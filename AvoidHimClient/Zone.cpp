@@ -198,11 +198,16 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::attack]) {
 
 		shared_ptr<Attack> pAttack = dynamic_pointer_cast<Attack>(pGameObject);
-		// 본인이 시전한 공격일경우 무시
-		if (pAttack->GetPlayerObjectID() == myObjectID) continue;
 
+		
 		BoundingOrientedBox boundingBox = pGameObject->GetBoundingBox();
+
 		if (boundingBox.Intersects(playerOOBB)) {
+			// 박혀있는 투사체일경우 건너뛴다.
+			auto pThrowAttack = dynamic_pointer_cast<ThrowAttack>(pAttack);
+			if (pThrowAttack && pThrowAttack->GetIsStuck()) {
+				continue;
+			}
 			_pPlayer->AddHP(-pAttack->GetDamage());
 
 			// 플레이어의 체력이 0이 되었을 경우 자신을 감옥으로 이동시키고 패킷을 보낸다.
@@ -819,7 +824,7 @@ void Zone::CheckCollisionProjectileWithObstacle() {
 
 				for (const auto& pSector : pSectors) {
 					if (!pThrowAttack->GetIsStuck() && pSector->CheckCollisionProjectileWithObstacle(boundingBox)) {
-						dynamic_pointer_cast<ThrowAttack>(pAttack)->SetIsStuck(true);
+						pThrowAttack->SetIsStuck(true);
 					}
 				}
 		}

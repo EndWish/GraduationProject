@@ -253,6 +253,8 @@ void Student::LeftClick() {
 		SendFixedPacket(packet);
 
 	}
+	Scene::GetUI("2DUI_leftSkill")->SetEnable(true);
+	Scene::GetUI("2DUI_leftSkill")->SetDark(true);
 	if (pUI) pUI->SetEnable(false);
 	item = ObjectType::none;
 }
@@ -327,6 +329,10 @@ void Professor::LeftClick() {
 		Reload(AttackType::swingAttack);
 		SendFixedPacket(sendPacket);
 	}
+
+	Scene::GetText	("leftCoolTime")->SetEnable(true);
+
+	// 근접공격에 대해 dark를 set
 }
 
 void Professor::RightClick() {
@@ -340,5 +346,9 @@ void Professor::RightClick() {
 		Reload(AttackType::throwAttack);
 		SendFixedPacket(sendPacket);
 	}
+
+	Scene::GetText("rightCoolTime")->SetEnable(true);
+
+	// 원거리 공격에 대해 dark를 set
 }
 

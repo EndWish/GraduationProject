@@ -1273,8 +1273,8 @@ void Item::Animate(float _timeElapsed) {
 		isUp = false;
 	}
 
-	if (localPosition.y < basePosition.y - maxMoveDistance) {
-		localPosition.y = basePosition.y - maxMoveDistance;
+	if (localPosition.y < basePosition.y) {
+		localPosition.y = basePosition.y;
 		verticalSpeed = 0;
 		reverseAccCoolTime = 0;
 		isUp = true;
