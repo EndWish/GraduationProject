@@ -100,11 +100,11 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	pUIs["2DUI_ready_5"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.632f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);;
 
 
-	pButtons["startButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.2f), ButtonType::start, _pDevice, _pCommandList);;
+	pButtons["startButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.5f, 1.2f), ButtonType::start, _pDevice, _pCommandList);;
 
-	pButtons["optionButton"] = make_shared<Button>("2DUI_optionButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.4f), ButtonType::option, _pDevice, _pCommandList);;
+	pButtons["optionButton"] = make_shared<Button>("2DUI_optionButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.5f, 1.4f), ButtonType::option, _pDevice, _pCommandList);;
 
-	pButtons["exitButton"] = make_shared<Button>("2DUI_exitButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.1f, 1.6f), ButtonType::exit, _pDevice, _pCommandList);;
+	pButtons["exitButton"] = make_shared<Button>("2DUI_exitButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.5f, 1.6f), ButtonType::exit, _pDevice, _pCommandList);;
 
 	/////////////////////////////////
 

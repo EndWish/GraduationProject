@@ -285,9 +285,12 @@ float4 Pixel2DShader(VS_2D_OUT input) : SV_TARGET {
     float2 uv = input.uv;
     float2 startuv = float2(worldTransform._41, worldTransform._43);
     float2 sizeuv = float2(worldTransform._42, worldTransform._44);
+    // 버튼이 눌린 상태를 표현하기 위함
     if (worldTransform._14 > 0.1f) {
         uv.x -= 0.05f;
-        uv.y -= 0.05f;     
+        uv.y -= 0.05f;
+        if (uv.x < 0.f || uv.y < 0.f)
+            discard;
     }
     if (sizeuv.x + startuv.x < input.uv.x) 
         discard;
