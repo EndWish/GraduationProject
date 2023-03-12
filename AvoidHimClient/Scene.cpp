@@ -133,8 +133,6 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	pButtons["readyButton"] = make_shared<Button>("2DUI_readyButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::ready, _pDevice, _pCommandList, false);;
 	pButtons["readyCancelButton"] = make_shared<Button>("2DUI_readyCancelButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::readyCancel, _pDevice, _pCommandList, false);;
 	pButtons["quitRoomButton"] = make_shared<Button>("2DUI_quitRoomButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::quitRoom, _pDevice, _pCommandList, false);;
-
-
 }
 
 void LobbyScene::ReleaseUploadBuffers() {
@@ -177,12 +175,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 	SC_PACKET_TYPE packetType = (SC_PACKET_TYPE)recvBuffer[0];
 
 	switch (packetType) {
-	case SC_PACKET_TYPE::giveClientID: { // 처음 접속시 플레이어 cid를 부여받는 패킷
-		SC_GIVE_CLIENT_ID* packet = GetPacket<SC_GIVE_CLIENT_ID>();
 
-		cid = packet->clientID;
-		break;
-	}
 	case SC_PACKET_TYPE::roomListInfo: {
 		SC_ROOMLIST_INFO* packet = GetPacket<SC_ROOMLIST_INFO>();
 		// Roomlist 내 nRoom의 수 만큼 SC_SUB_ROOMLIST_INFO 패킷을 추가로 한꺼번에 받는다.
@@ -330,7 +323,6 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		// 본인이 만든 방으로 입장한다.
 		CS_MAKE_ROOM sPacket;
 		sPacket.hostID = cid;
-
 		SendFixedPacket(sPacket);
 
 		// 방 정보를 비운 후 본인을 방장으로 방 하나를 만든다.

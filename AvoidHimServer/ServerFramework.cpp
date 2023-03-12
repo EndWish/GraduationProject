@@ -143,6 +143,26 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     memcpy((char*)&packetType, globalRecvBuffer.data(), sizeof(packetType));
 
     switch (packetType) {
+    case CS_PACKET_TYPE::checkNickname: {
+        // 닉네임 중복 체크를 하고 중복이 없을경우 그 아이디를 저장한다.
+        SC_CHECK_NICKNAME sendPacket;
+        sendPacket.isExist = false;
+        CS_CHECK_EXIST_NICKNAME& recvPacket = GetPacket<CS_CHECK_EXIST_NICKNAME>();
+        for (auto [cid, pCheckClient] : pClients) {
+            if (pClients[recvPacket.cid] == pCheckClient) continue;
+            if (wcscmp(pCheckClient->GetNickname().c_str(), recvPacket.nickname) == 0) {
+                // 닉네임이 같은 경우
+                sendPacket.isExist = true;
+                break;
+            }
+        }
+        if (!sendPacket.isExist) {
+            pClients[recvPacket.cid]->SetNickname(wstring(recvPacket.nickname));
+        }
+        SendContents(_socket, pClient->GetRemainBuffer(), sendPacket);
+        break;
+    }
+
     case CS_PACKET_TYPE::makeRoom: {
         CS_MAKE_ROOM& recvPacket = GetPacket<CS_MAKE_ROOM>();
 

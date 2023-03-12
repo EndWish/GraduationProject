@@ -151,7 +151,6 @@ GameFramework::GameFramework() {
 	fenceValues.fill(0);
 	rtvDescriptorIncrementSize = 0;
 
-	cid = 0;
 	oldCursorPos = POINT();
 	isClick = false;
 	rtvCPUDescriptorHandles.fill(D3D12_CPU_DESCRIPTOR_HANDLE());

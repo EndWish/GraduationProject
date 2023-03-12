@@ -114,6 +114,11 @@ extern XMFLOAT3 prisonPosition, prisonExitPosition;
 // 현재 클라이언트 크기
 extern RECT clientRect;
 
+// 플레이어의 닉네임
+extern wstring nickName;
+
+// 서버의 IP
+extern string serverIP;
 
 extern UINT packetIDCount;
 // 고정 길이 패킷을 담을 버퍼

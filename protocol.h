@@ -5,6 +5,7 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS // 구형 소켓 API 사용 시 경고 끄기
 #include <WinSock2.h>
 #include <WS2tcpip.h>
+
 #pragma comment(lib, "ws2_32")
 
 #define SERVERPORT 9000
@@ -23,14 +24,14 @@ using namespace DirectX;
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
 	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	useItem, removeItem, toggleLever, removeTrap, exitPlayer
+	useItem, removeItem, toggleLever, removeTrap, exitPlayer, checkNickname,
 };
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail,
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
 	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	addItem, useItem, removeItem, toggleLever, removeTrap, exitPlayer
+	addItem, useItem, removeItem, toggleLever, removeTrap, exitPlayer, checkNickname,
 
 };
 enum class SC_FAIL_TYPE : int {
@@ -106,6 +107,7 @@ struct CS_MAKE_ROOM {	// 방을 만들어 달라는 패킷
 	UINT hostID = 0;
 	UINT pid = 0;
 };
+
 struct CS_QUERY_ROOMLIST_INFO {	// 로비에서 방에대한 정보를 요구할때 보내는 패킷
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::queryRoomlistInfo;
 	UINT cid = 0;
@@ -244,6 +246,12 @@ struct CS_EXIT_PLAYER {
 	UINT pid = 0;
 };
 
+struct CS_CHECK_EXIST_NICKNAME {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::checkNickname;
+	UINT cid = 0;
+	WCHAR nickname[20];
+	UINT pid = 0;
+};
 
 /// 서버->클라
 struct SC_GIVE_CLIENT_ID {
@@ -427,6 +435,11 @@ struct SC_REMOVE_TRAP {
 struct SC_EXIT_PLAYER {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::exitPlayer;
 	UINT playerObjectID = 0;
+	UINT pid = 100'000;
+};
+struct SC_CHECK_NICKNAME {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::checkNickname;
+	bool isExist = false;
 	UINT pid = 100'000;
 };
 #pragma pack(pop)
