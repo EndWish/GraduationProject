@@ -68,7 +68,13 @@ void Room::LeaveUser(UINT _clientID) {
 }
 
 void Room::GameStart() {
+	ServerFramework& serverFramework = ServerFramework::Instance();
+
 	gameRunning = true;
-	ServerFramework::Instance().AddPlayInfo(id);
+	for (UINT clientID : participants)
+		serverFramework.GetClient(clientID)->SetClientState(ClientState::roomWait);
+
+	serverFramework.AddPlayInfo(id);
+
 	cout << "playinfo " << id << " »ý¼º \n";
 }

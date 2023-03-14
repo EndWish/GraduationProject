@@ -666,6 +666,8 @@ void BlendingShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLi
 
 	// 카메라와의 거리를 비교하여 멀리 있는 오브젝트를 먼저 그린다.
 	auto func = [cameraPos](const shared_ptr<GameObject>& _a, const shared_ptr<GameObject>& _b) {
+		if (!_a) return false;
+		if (!_b) return true;
 		return Vector3::LengthSq(Vector3::Subtract(cameraPos, _a->GetWorldPosition())) > Vector3::LengthSq(Vector3::Subtract(cameraPos, _b->GetWorldPosition()));
 	};
 	
@@ -937,4 +939,3 @@ shared_ptr<Shader> ShaderManager::GetShader(const string& _name)
 	}
 	
 }
-

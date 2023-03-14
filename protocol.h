@@ -24,14 +24,14 @@ using namespace DirectX;
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
 	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	useItem, removeItem, toggleLever, removeTrap, exitPlayer, checkNickname,
+	useItem, removeItem, toggleLever, removeTrap, exitPlayer, exitGame, checkNickname,
 };
 
 enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail,
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
 	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	addItem, useItem, removeItem, toggleLever, removeTrap, exitPlayer, checkNickname,
+	addItem, useItem, removeItem, toggleLever, removeTrap, exitPlayer, professorWin, checkNickname,
 
 };
 enum class SC_FAIL_TYPE : int {
@@ -245,6 +245,11 @@ struct CS_EXIT_PLAYER {
 	UINT playerObjectID = 0;
 	UINT pid = 0;
 };
+struct CS_EXIT_GAME {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::exitGame;
+	UINT cid = 0;
+	UINT pid = 0;
+};
 
 struct CS_CHECK_EXIST_NICKNAME {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::checkNickname;
@@ -440,6 +445,10 @@ struct SC_EXIT_PLAYER {
 struct SC_CHECK_NICKNAME {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::checkNickname;
 	bool isExist = false;
+	UINT pid = 100'000;
+};
+struct SC_PROFESSOR_WIN {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::professorWin;
 	UINT pid = 100'000;
 };
 #pragma pack(pop)

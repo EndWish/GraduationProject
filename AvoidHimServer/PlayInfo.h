@@ -37,6 +37,8 @@ private:
 	float itemCreateCoolTime;
 	bool allLeverPowerOn;
 
+	bool endGame;
+
 public:
 	// 持失切, 社瑚切
 	PlayInfo(UINT _playInfoID);

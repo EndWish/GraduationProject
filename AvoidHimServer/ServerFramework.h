@@ -54,6 +54,7 @@ public:
 	void SendRoomlistInfo(Client* _pClient,int _page);	// 방리스트에 대한 정보를 buffer에 저장한다.
 
 	void AddPlayInfo(UINT _roomID);	// PlayInfo를 생성과 초기화를 하고 컨테이너에 추가한다.
+	void RemovePlayInfo(UINT _playInfoID);
 
 	void SendRoomOutPlayerAndRoomList(Room* pRoom, Client* pOutClient);
 

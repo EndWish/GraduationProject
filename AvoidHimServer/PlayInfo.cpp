@@ -12,6 +12,8 @@ PlayInfo::PlayInfo(UINT _playInfoID) : playInfoID{ _playInfoID } {
 	hackingComplete = false;
 	allLeverPowerOn = false;
 	itemCount = 0;
+
+	endGame = false;
 }
 PlayInfo::~PlayInfo() {
 	ServerFramework& serverFramework = ServerFramework::Instance();
@@ -105,7 +107,7 @@ void PlayInfo::Init(UINT _roomID) {
 		loadingCompletes[participant] = false;
 
 		// 클라이언트의 상태를 게임시작으로 바꿔준다.
-		pClient->SetClientState(ClientState::roomPlay);
+		pClient->SetClientState(ClientState::roomWait);
 		pClient->SetCurrentPlayInfo(this);
 
 		// 플레이어들을 생성하고 위치를 초기화 해준다.
@@ -432,6 +434,26 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 				continue;
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
+
+		// 모든 학생이 갇혔을 경우 교수의 승리로 게임을 끝낸다.
+		bool allStudentsInPrison = true;
+		for (auto [objectID, pPlayer] : pPlayers) {
+			if (objectID == professorObjectID)
+				continue;
+			if (!pPlayer->GetImprisoned()) {
+				allStudentsInPrison = false;
+				break;
+			}
+		}
+
+		if (!endGame && allStudentsInPrison) {
+			endGame = true;
+			SC_PROFESSOR_WIN sendPacket;
+			for (auto [participant, pClient] : participants) {
+				SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+			}
+		}
+
 		break;
 	}
 	case CS_PACKET_TYPE::useItem: {
@@ -508,17 +530,36 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 	}
 	case CS_PACKET_TYPE::exitPlayer: {
 		CS_EXIT_PLAYER& recvPacket = GetPacket<CS_EXIT_PLAYER>();
-		cout << format("SC_LEVER_TOGGLE : cid - {}, playerObjectID - {}, pid - {} \n", recvPacket.cid, recvPacket.playerObjectID, recvPacket.pid);
+		cout << format("CS_EXIT_PLAYER : cid - {}, playerObjectID - {}, pid - {} \n", recvPacket.cid, recvPacket.playerObjectID, recvPacket.pid);
 
 		pPlayers[recvPacket.playerObjectID]->SetExit(true);
+		if (!endGame) {
+			endGame = true;
 
-		// 패킷을 전송한다.
-		SC_EXIT_PLAYER sendPacket;
-		sendPacket.playerObjectID = recvPacket.playerObjectID;
-		for (auto [participant, pClient] : participants) {
-			if (participant == recvPacket.cid)
-				continue;
-			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+			// 패킷을 전송한다.
+			SC_EXIT_PLAYER sendPacket;
+			sendPacket.playerObjectID = recvPacket.playerObjectID;
+			for (auto [participant, pClient] : participants) {
+				if (participant == recvPacket.cid)
+					continue;
+				SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+			}
+		}
+		break;
+	}
+	case CS_PACKET_TYPE::exitGame: {
+		CS_EXIT_GAME& recvPacket = GetPacket<CS_EXIT_GAME>();
+		cout << format("CS_EXIT_GAME : cid - {}, pid - {} \n", recvPacket.cid, recvPacket.pid);
+		// 해당 클라이언트를 게임에서 뺀다.
+		auto it = ranges::find(participants, recvPacket.cid, &pair<UINT, Client*>::first);
+		if (it != participants.end()) {
+			it->second->SetCurrentPlayInfo(nullptr);
+			participants.erase(it);
+		}
+		// 모든 클라이언트가 빠져나갔을 경우 playInfo를 삭제 시킨다.
+		if (participants.empty()) {
+			ServerFramework::Instance().GetRoom(playInfoID)->SetGameRunning(false);
+			ServerFramework::Instance().RemovePlayInfo(playInfoID);
 		}
 		break;
 	}

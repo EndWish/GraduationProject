@@ -88,7 +88,7 @@ public:
 	void Move(const XMFLOAT3& _moveVector, float _timeElapsed = 1.0f);
 	void MoveRight(float distance, float _timeElapsed = 1.0f);
 	void MoveUp(float distance, float _timeElapsed = 1.0f);
-	void MoveFront(float distance, float _timeElapsed = 1.0f);
+	virtual void MoveFront(float distance, float _timeElapsed = 1.0f);
 
 	void Rotate(const XMFLOAT3& _axis, float _angle, float _timeElapsed = 1.0f);
 	void Rotate(const XMFLOAT4& _quat);
@@ -129,7 +129,7 @@ public:
 	void SetObjectClass(UINT _objectClass);
 	UINT GetObjectClass();
 
-	void UpdateLocalTransform();
+	virtual void UpdateLocalTransform();
 	// eachTransform를 가지고 worldTransform를 업데이트 한다.
 	virtual void UpdateWorldTransform();
 	// 변환행렬을 적용하고 worldTransform을 업데이트 한다.
@@ -284,6 +284,8 @@ private:
 
 	bool imprisoned;
 
+	shared_ptr<Camera> pCamera;
+
 public:
 	InterpolateMoveGameObject();
 	~InterpolateMoveGameObject();
@@ -298,6 +300,9 @@ public:
 
 	bool GetImprisoned() const { return imprisoned; }
 	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
+
+	void SetCamera(const shared_ptr<Camera>& _pCamera) { pCamera = _pCamera; }
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////

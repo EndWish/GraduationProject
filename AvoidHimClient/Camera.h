@@ -18,6 +18,8 @@ protected:
 	ComPtr<ID3D12Resource> pCameraBuffer;
 	shared_ptr<VS_CameraMappedFormat> pMappedCamera;
 	shared_ptr<BoundingFrustum> pBoundingFrustum;
+	
+	XMFLOAT3 localOffset;
 
 	float minDistance, maxDistance;
 
@@ -37,10 +39,18 @@ public:
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void UpdateViewTransform();
 	void UpdateProjectionTransform(float _nearDistance, float _farDistance, float _aspectRatio, float _fovAngle);
+	
+	virtual void MoveFront(float distance, float _timeElapsed = 1.0f);
+
+	virtual void UpdateLocalTransform();
 	virtual void UpdateWorldTransform();
 	virtual void UpdateObject();
 	
 	const XMFLOAT4X4& GetProjectionTransform() { return projectionTransform; };
 	const XMFLOAT4X4& GetViewTransform() { return viewTransform; };
 	shared_ptr<BoundingFrustum> GetBoundingFrustum() { return pBoundingFrustum; };
+
+	void SetLocalOffset(const XMFLOAT3& _localOffset) { localOffset = _localOffset; }
+	XMFLOAT3 GetLocalOffset() const { return localOffset; }
+
 };

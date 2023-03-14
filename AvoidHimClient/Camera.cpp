@@ -8,6 +8,7 @@ Camera::Camera() {
 	viewPort = { 0,0, C_WIDTH, C_HEIGHT, 0, 1 };
 	scissorRect = { 0,0, C_WIDTH, C_HEIGHT };
 
+	localOffset = XMFLOAT3(0, 0, 0);
 	minDistance = 0.3f;
 	maxDistance = 3.f;
 
@@ -73,6 +74,24 @@ void Camera::UpdateProjectionTransform(float _nearDistance, float _farDistance, 
 	projectionTransform = Matrix4x4::PerspectiveFovLH(XMConvertToRadians(_fovAngle), _aspectRatio, _nearDistance, _farDistance);
 }
 
+void Camera::MoveFront(float distance, float _timeElapsed) {
+	XMFLOAT3 moveVector = GetLocalLookVector();	// LookVector를 가져와서
+	moveVector = Vector3::Normalize(moveVector);	// 단위벡터로 바꾼후
+	float moveDistance = distance * _timeElapsed;
+	if (0 < distance) // 앞으로 가는 경우
+		moveDistance = min(Vector3::Length(localPosition) - minDistance, moveDistance);
+	else	// 뒤로 가는 경우
+		moveDistance = min(maxDistance - Vector3::Length(localPosition), moveDistance);
+	moveVector = Vector3::ScalarProduct(moveVector, moveDistance);	// 이동거리만큼 곱해준다.
+	localPosition = Vector3::Add(localPosition, moveVector);
+}
+
+void Camera::UpdateLocalTransform() {
+	GameObject::UpdateLocalTransform();
+	localTransform._41 = localPosition.x + localOffset.x;
+	localTransform._42 = localPosition.y + localOffset.y;
+	localTransform._43 = localPosition.z + localOffset.z;
+}
 void Camera::UpdateWorldTransform() {
 	// 1인칭인 경우
 	//GameObject::UpdateWorldTransform();

@@ -126,7 +126,8 @@ private:
 
 	BoundingBox exitBox;
 	bool exit = false;
-	float exitFadeOut = 0.0f;
+	float fadeOut = 0.0f;
+	bool professorWin = false;
 
 public:
 	PlayScene();

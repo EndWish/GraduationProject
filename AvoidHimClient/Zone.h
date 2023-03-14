@@ -72,7 +72,7 @@ private:
 	XMINT3 div;				// 공간을 나눌 개수
 	XMFLOAT3 sectorSize;
 	vector<vector<vector<Sector>>> sectors; // x,y,z로 분할된 섹터 공간
-	shared_ptr<PlayScene> pScene; // 씬에 대한 포인터
+	weak_ptr<PlayScene> wpScene; // 씬에 대한 포인터
 	unordered_map<string, vector<XMFLOAT4X4>> initVector; // 인스턴싱에 필요한 초기 벡터
 
 	unordered_map<UINT, shared_ptr<InteractObject>> pInteractObjTable; // 패킷 도착시 오브젝트를 빠르게 찾기 위한 테이블

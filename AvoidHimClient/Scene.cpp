@@ -242,6 +242,11 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		break;
 	}
 	case SC_PACKET_TYPE::gameStart: {
+		// 게임이 돌아왔을 때 모든 플레이어가 대기상태여야 하기 때문에 미리 풀어준다.
+		for (auto& player : roomInfo.players) {
+			player.ready = false;
+		}
+
 		changeUI(LobbyState::inRoom, false);
 		loadingScene = make_shared<PlayScene>();
 
@@ -260,6 +265,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		SetCapture(hWnd);
 		gameFramework.InitOldCursor();
 		gameFramework.PushScene(loadingScene);
+		loadingScene = nullptr;
 		break;
 	}
 	case SC_PACKET_TYPE::yourPlayerObjectID: {
@@ -646,16 +652,19 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 	// 전역 변수 초기화
 	AllLeverPowerOn = false;
+	isPlayerProfessor = false;
 
 	SC_GAME_START* recvPacket = GetPacket<SC_GAME_START>();
 	array<UINT, MAX_PARTICIPANT> enComID;
 	for (int i = 0; i < MAX_PARTICIPANT; ++i) {
 		enComID[i] = recvPacket->activeComputerObjectID[i];
 	}
+	cout << "플레이어 수 : " << recvPacket->nPlayer << "\n";
 
 	// Zone을 생성 후 맵파일을 읽어 오브젝트들을 로드한다.
 	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList, enComID);
+	cout << "GetInstanceDatas().size() : " << GameObject::GetInstanceDatas().size() << "\n";
 	
 	professorObjectID = recvPacket->professorObjectID;
 
@@ -843,6 +852,25 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 }
 
 void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+
+	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
+	if (3 <= fadeOut) {
+		GameFramework& gameFramework = GameFramework::Instance();
+
+		// 게임을 끝낸다.
+		CS_EXIT_GAME sendPacket;
+		sendPacket.cid = cid;
+		SendFixedPacket(sendPacket);
+		gameFramework.PopScene();
+		ReleaseCapture();
+
+		auto pLobbyScene = dynamic_pointer_cast<LobbyScene>(gameFramework.GetCurrentScene());
+		if (pLobbyScene) {
+			pLobbyScene->changeUI(LobbyState::inRoom, true);
+			pLobbyScene->UpdateReadyState();
+		}
+		return;
+	}
 
 	GameFramework& gameFramework = GameFramework::Instance();
 	for (auto& t : pEffects) {
@@ -1226,6 +1254,12 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		shared_ptr<InterpolateMoveGameObject> pOtherPlayer = pOtherPlayers[packet->playerObjectID];
 		pZone->RemoveObject(SectorLayer::otherPlayer, packet->playerObjectID, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
 		pOtherPlayers.erase(packet->playerObjectID);
+		exit = true;
+		break;
+	}
+	case SC_PACKET_TYPE::professorWin: {
+		SC_PROFESSOR_WIN* packet = GetPacket<SC_PROFESSOR_WIN>();
+		professorWin = true;
 		break;
 	}
 	default:
@@ -1345,13 +1379,54 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
-	if (exit && exitFadeOut < 3) {
-		exitFadeOut += _timeElapsed;
-		globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(exitFadeOut, XMFLOAT4(5, 5, 5, 5)));
+	if (exit && fadeOut < 3) {
+		fadeOut += _timeElapsed;
+		if(isPlayerProfessor)
+			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(-1, -1, -1, 1)));
+		else
+			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(5, 5, 5, 5)));
 		
-		if (3 <= exitFadeOut) {
-			// 자기 자신을 없앤다. 다른 플레이어에게 카메라를 옮긴다?
-		}
+		//if (3 <= fadeOut) {
+		//	// 게임을 끝낸다.
+		//	CS_EXIT_GAME sendPacket;
+		//	sendPacket.cid = cid;
+		//	SendFixedPacket(sendPacket);
+		//	gameFramework.PopScene();
+		//	ReleaseCapture();
+
+		//	auto pLobbyScene = dynamic_pointer_cast<LobbyScene>(gameFramework.GetCurrentScene());
+		//	if (pLobbyScene) {
+		//		pLobbyScene->changeUI(LobbyState::inRoom, true);
+		//		pLobbyScene->UpdateReadyState();
+		//	}
+		//	return;
+		//}
+
+	}
+
+	// 교수가 모든 학생을 감옥에 가둘경우 교수만 화면이 흰색으로 되면서 게임이 끝난다.
+	if (professorWin && fadeOut < 3) {
+		fadeOut += _timeElapsed;
+		if (isPlayerProfessor)
+			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(5, 5, 5, 5)));
+		else
+			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(-1, -1, -1, 1)));
+
+		//if (3 <= fadeOut) {
+		//	// 게임을 끝낸다.
+		//	CS_EXIT_GAME sendPacket;
+		//	sendPacket.cid = cid;
+		//	SendFixedPacket(sendPacket);
+		//	gameFramework.PopScene();
+		//	ReleaseCapture();
+
+		//	auto pLobbyScene = dynamic_pointer_cast<LobbyScene>(gameFramework.GetCurrentScene());
+		//	if (pLobbyScene) {
+		//		pLobbyScene->changeUI(LobbyState::inRoom, true);
+		//		pLobbyScene->UpdateReadyState();
+		//	}
+		//	return;
+		//}
 	}
 
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set

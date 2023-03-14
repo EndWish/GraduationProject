@@ -255,11 +255,13 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
             
             if (pRoom->GetNumOfParticipants() >= 1) {
                 bool success = true;
+                cout << pRoom->GetParticipants().size() << " : ";
                 for (UINT participant : pRoom->GetParticipants()) {
                     if (participant == pRoom->GetHostID())  // 방장은 제외하고
                         continue;
                     if (pClients[participant]->GetClientState() != ClientState::roomReady) {
                         success = false;
+                        cout << "레디를 하지 않은 클라 ID : " << participant << "\n";
                         break;
                     }
                 }
@@ -280,6 +282,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         }
         // 2. ready패킷을 보낸 플레이어가 방장이 아닐 경우
         else {
+            cout << (int)pClient->GetClientState() << "\n";
             if (pClient->GetClientState() == ClientState::roomWait)
                 pClient->SetClientState(ClientState::roomReady);
             else if (pClient->GetClientState() == ClientState::roomReady)
@@ -317,6 +320,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::toggleLever:
     case CS_PACKET_TYPE::removeTrap:
     case CS_PACKET_TYPE::exitPlayer:
+    case CS_PACKET_TYPE::exitGame:
     {
         READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
         //cout << format("READ_CID_IN_PACKET : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);
@@ -444,6 +448,15 @@ void ServerFramework::AddPlayInfo(UINT _roomID) {
     pPlayInfos[_roomID] = pPlayInfo;
     pPlayInfo->Init(_roomID);
 
+}
+
+void ServerFramework::RemovePlayInfo(UINT _playInfoID) {
+    if (pPlayInfos.contains(_playInfoID)) {    // 참가자가 한명도 없을 경우
+        cout << _playInfoID << "번 게임을 삭제합니다.\n";
+
+        delete pPlayInfos[_playInfoID];
+        pPlayInfos.erase(_playInfoID);
+    }
 }
 
 void ServerFramework::SendRoomOutPlayerAndRoomList(Room* pRoom, Client* pOutClient) {

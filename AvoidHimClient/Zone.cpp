@@ -368,7 +368,7 @@ Zone::Zone() {
 	pindex = XMINT3(0, 0, 0);
 	pid = 0;
 }
-Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div, shared_ptr<PlayScene> _pScene) : size(_size), div(_div), pScene(_pScene) {
+Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div, shared_ptr<PlayScene> _pScene) : size(_size), div(_div), wpScene(_pScene) {
 	sectors.assign(div.x, vector<vector<Sector>>(div.y, vector<Sector>(div.z, Sector())));
 	sectorSize = Vector3::Division(size, div);
 	startPoint = XMFLOAT3(-50, -50, -50);
@@ -631,7 +631,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 					activeComputer = true;
 					AddInteractObject(objectID, pGameObject, GetIndex(position));
 					pInteractObjTable[objectID] = static_pointer_cast<InteractObject>(pGameObject);
-					pScene->AddComputer(static_pointer_cast<Computer>(pGameObject));
+					wpScene.lock()->AddComputer(static_pointer_cast<Computer>(pGameObject));
 				}
 				else {
 					continue;
@@ -695,14 +695,14 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 				prisonExitPosition = position;
 				break;
 			case ObjectType::itemSpawnLocation:
-				pScene->AddItemSpawnLocation(position);
+				wpScene.lock()->AddItemSpawnLocation(position);
 				break;
 			case ObjectType::exitBox: {
 				BoundingBox exitBox;
 				file.read((char*)&exitBox.Center, sizeof(XMFLOAT3));
 				file.read((char*)&exitBox.Extents, sizeof(XMFLOAT3));
 				exitBox.Center = Vector3::Add(exitBox.Center, position);
-				pScene->SetExitBox(exitBox);
+				wpScene.lock()->SetExitBox(exitBox);
 				break;
 			}
 			default:
