@@ -19,6 +19,7 @@ protected:
 
 	XMFLOAT3 velocity;
 	XMFLOAT4 rotation;
+	XMFLOAT3 moveFrontVector;
 
 	XMFLOAT3 knockBack;
 	shared_ptr<Camera> pCamera;
@@ -54,7 +55,10 @@ public:
 	shared_ptr<GameObject> GetFloor() { return pFloor; };
 	void SetKnockBack(XMFLOAT3 _knockBack) { knockBack = _knockBack; knockBack.y = 0; };
 	XMFLOAT3 GetKnockBack() const { return knockBack; };
-	
+	void SetMoveFrontVector(XMFLOAT3 _moveFrontVector) { moveFrontVector = _moveFrontVector; };
+	XMFLOAT3 GetMoveFrontVector() const { return moveFrontVector; };
+
+
 	void AddFrontVelocity(float _velocity);
 	void AddRightVelocity(float _velocity);
 	void AddRotation(XMFLOAT4& _rotation);

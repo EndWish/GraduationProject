@@ -181,11 +181,9 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             if (nicklen > 20)
                 MessageBox(hDlg, L"닉네임이 20자 이상입니다.", L"알림", MB_OK);
-            else if (nicklen == 0)
-                MessageBox(hDlg, L"닉네임을 입력하세요.", L"알림", MB_OK);
             else
             {
-                nickName.assign(nickNameBuffer, nickNameBuffer + nicklen);
+                if (nicklen != 0) nickName.assign(nickNameBuffer, nickNameBuffer + nicklen);
 #ifdef UNICODE
                 // 유니코드
                 serverIP.assign((WCHAR*)IPbuffer, (WCHAR*)IPbuffer + wcslen((WCHAR*)IPbuffer));
@@ -224,9 +222,8 @@ void ConnectToServer() {
     }
 
     int result = 0;
-    cout << "nickName : ";
-    wcout << nickName;
-    cout << " , " << serverIP << " 에 접속합니다\n";
+
+    cout << serverIP << " 에 접속합니다\n";
     // connect()
     struct sockaddr_in serveraddr;
     memset(&serveraddr, 0, sizeof(serveraddr));
@@ -278,6 +275,9 @@ void ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam
             SC_GIVE_CLIENT_ID* recvPacket = GetPacket<SC_GIVE_CLIENT_ID>();
             cid = recvPacket->clientID;
             cout << "내 클라이언트 id = " << cid << "\n";
+            if (nickName.size() == 0) {
+                nickName = L"Player" + to_wstring(cid);
+            }
             CS_CHECK_EXIST_NICKNAME packet;
             packet.cid = cid;
             for (int i = 0; i < nickName.size(); ++i) {
@@ -289,6 +289,8 @@ void ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam
         case SC_PACKET_TYPE::checkNickname: {
             SC_CHECK_NICKNAME* packet = GetPacket<SC_CHECK_NICKNAME>();
             // 닉네임이 중복일경우 다시 입력받는다.
+            cout << "nickName : ";
+            wcout << nickName;
             if (packet->isExist)
                 MessageBox(hLoginDlg, L"닉네임이 중복됩니다.", L"알림", MB_OK);
             else {

@@ -9,8 +9,6 @@ enum class ButtonType : unsigned char { //
 	makeRoom,
 
 	gameStart,
-	ready,
-	readyCancel,
 	quitRoom,
 	title,
 

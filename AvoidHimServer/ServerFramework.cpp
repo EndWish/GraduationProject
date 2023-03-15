@@ -67,8 +67,8 @@ void ServerFramework::ProcessSocketMessage(HWND _hWnd, UINT _message, WPARAM _wP
         }
         cout << format("클라이언트 접속 : IP 주소={0}, 포트 번호={1}\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
 
-        int optVal = 300 * 50;
-        setsockopt(clientSocket, SOL_SOCKET, SO_RCVBUF, (char*)&optVal, sizeof(optVal));
+        //int optVal = 300 * 50;
+        //setsockopt(clientSocket, SOL_SOCKET, SO_RCVBUF, (char*)&optVal, sizeof(optVal));
 
         // 새로운 클라이언트를 추가한다. (컨테이너에 추가)
         Client* pNewClient = new Client(clientSocket);
@@ -153,13 +153,22 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
             if (wcscmp(pCheckClient->GetNickname().c_str(), recvPacket.nickname) == 0) {
                 // 닉네임이 같은 경우
                 sendPacket.isExist = true;
+
+                cout << pClients.size();
                 break;
             }
         }
+        SendContents(_socket, pClient->GetRemainBuffer(), sendPacket);
         if (!sendPacket.isExist) {
             pClients[recvPacket.cid]->SetNickname(wstring(recvPacket.nickname));
         }
-        SendContents(_socket, pClient->GetRemainBuffer(), sendPacket);
+        else {
+            // 중복되는 이름일 경우 해당 클라이언트를 바로 삭제해준다.
+            pClients.erase(recvPacket.cid);
+            delete pClient;
+        }
+
+        
         break;
     }
 

@@ -96,8 +96,8 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	pUIs["2DUI_ready_1"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(0.08f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	pUIs["2DUI_ready_2"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(0.47f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	pUIs["2DUI_ready_3"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(0.856f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	pUIs["2DUI_ready_4"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.244f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);;
-	pUIs["2DUI_ready_5"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.632f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);;
+	pUIs["2DUI_ready_4"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.244f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+	pUIs["2DUI_ready_5"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.632f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 
 
 	pButtons["startButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.5f, 1.2f), ButtonType::start, _pDevice, _pCommandList);;
@@ -115,11 +115,11 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	pButtons["RoomButton_5"] = make_shared<RoomButton>("2DUI_title", XMFLOAT2(0.4f, 0.2f), XMFLOAT2(1.1f, 0.7f), ButtonType::room, _pDevice, _pCommandList, false);
 	pButtons["RoomButton_6"] = make_shared<RoomButton>("2DUI_title", XMFLOAT2(0.4f, 0.2f), XMFLOAT2(1.1f, 1.0f), ButtonType::room, _pDevice, _pCommandList, false);
 
-	pButtons["refreshRoomButton"] = make_shared<Button>("2DUI_refreshRoomButton", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.7f, 0.1f), ButtonType::refreshRoomList, _pDevice, _pCommandList, false);;
-	pButtons["prevRoomButton"] = make_shared<Button>("2DUI_leftArrowButton", XMFLOAT2(0.2f, 0.1f), XMFLOAT2(0.7f, 1.3f), ButtonType::prevRoomPage, _pDevice, _pCommandList, false);;
-	pButtons["nextRoomButton"] = make_shared<Button>("2DUI_rightArrowButton", XMFLOAT2(0.2f, 0.1f), XMFLOAT2(1.1f, 1.3f), ButtonType::nextRoomPage, _pDevice, _pCommandList, false);;
-	pButtons["titleButton"] = make_shared<Button>("2DUI_titleButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::title, _pDevice, _pCommandList, false);;
-	pButtons["makeRoom"] = make_shared<Button>("2DUI_makeRoom", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::makeRoom, _pDevice, _pCommandList, false);;
+	pButtons["refreshRoomButton"] = make_shared<Button>("2DUI_refreshRoomButton", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.7f, 0.1f), ButtonType::refreshRoomList, _pDevice, _pCommandList, false);
+	pButtons["prevRoomButton"] = make_shared<Button>("2DUI_leftArrowButton", XMFLOAT2(0.2f, 0.1f), XMFLOAT2(0.7f, 1.3f), ButtonType::prevRoomPage, _pDevice, _pCommandList, false);
+	pButtons["nextRoomButton"] = make_shared<Button>("2DUI_rightArrowButton", XMFLOAT2(0.2f, 0.1f), XMFLOAT2(1.1f, 1.3f), ButtonType::nextRoomPage, _pDevice, _pCommandList, false);
+	pButtons["titleButton"] = make_shared<Button>("2DUI_titleButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::title, _pDevice, _pCommandList, false);
+	pButtons["makeRoom"] = make_shared<Button>("2DUI_makeRoom", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::makeRoom, _pDevice, _pCommandList, false);
 
 	shared_ptr<TextBox> pText = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 1.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, false);
 	pTexts["pageNum"] = pText;
@@ -129,10 +129,8 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 
 
 
-	pButtons["gameStartButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::gameStart, _pDevice, _pCommandList, false);;
-	pButtons["readyButton"] = make_shared<Button>("2DUI_readyButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::ready, _pDevice, _pCommandList, false);;
-	pButtons["readyCancelButton"] = make_shared<Button>("2DUI_readyCancelButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::readyCancel, _pDevice, _pCommandList, false);;
-	pButtons["quitRoomButton"] = make_shared<Button>("2DUI_quitRoomButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::quitRoom, _pDevice, _pCommandList, false);;
+	pButtons["gameStartButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::gameStart, _pDevice, _pCommandList, false);
+	pButtons["quitRoomButton"] = make_shared<Button>("2DUI_quitRoomButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::quitRoom, _pDevice, _pCommandList, false);
 }
 
 void LobbyScene::ReleaseUploadBuffers() {
@@ -551,11 +549,12 @@ void PlayScene::SetPlayer(shared_ptr<Player>& _pPlayer) {
 char PlayScene::CheckCollision(float _timeElapsed) {
 	char result = 0;
 	XMFLOAT3 velocity = pPlayer->GetVelocity();
+	// 플레이어가 다음 프레임에 이동할 실제 변위값
+	XMFLOAT3 moveVector = Vector3::ScalarProduct(pPlayer->GetWorldLookVector(), pPlayer->GetVelocity().z);
 
 	// 내가 조종하는 플레이어가 탈출box 와 충돌하는지 확인
 	if (!exit && !isPlayerProfessor && exitBox.Intersects(pPlayer->GetBoundingBox())) {
 		exit = true;
-		cout << "탈출!\n";
 
 		// 서버에게 자신이 탈출했다고 패킷을 보낸다.
 		CS_EXIT_PLAYER sendPacket;
@@ -579,46 +578,53 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 
 	// 플레이어의 OOBB를 y방향으로 이동시켜 본 후 충돌체크를 진행한다.
 	if (!collideObj) {
-		result += 1;
+		result |= 1<<0;
 	}
 	else {
 		// 바닥이 없다면 새로 지정한다.
 		if(!pPlayer->GetFloor()) pPlayer->SetFloor(collideObj);
 	}
 
-
-	// 플레이어의 OOBB를 x,z방향으로 이동시켜 본 후 충돌체크를 진행한다.
-	collideObj = pZone->CheckCollisionHorizontal(pPlayer->GetFloor());
-	if (collideObj == 0) {
-		result += 2;
-	}
+	//XMFLOAT3 normalVector = GetCollideNormalVector(collideObj);
+	// 슬라이딩 벡터
+	//pPlayer->SetMoveFrontVector(Vector3::Subtract(moveVector, Vector3::ScalarProduct(normalVector, Vector3::DotProduct(moveVector, normalVector))));
+	
 
 
-	// 플레이어의 OOBB를 회전시켜본 후 충돌체크를 진행한다.
+	XMFLOAT3 knockBack = XMFLOAT3();
+	// 플레이어의 x,z이동 및 OOBB를 회전시켜본 후 충돌체크를 진행한다.
 	vector<shared_ptr<GameObject>> collideObjs = pZone->CheckCollisionRotate(pPlayer->GetFloor());
-	if (collideObjs.size() == 0) {
-		result += 4;
-	}
-	else {
+	collideObj = pZone->CheckCollisionHorizontal(pPlayer->GetFloor());
+
+	if (collideObj) collideObjs.push_back(collideObj);
+
+	 if (collideObjs.size() != 0) {
 		// 부딪힐 경우 
-			
-		XMFLOAT3 knockBack = XMFLOAT3();
-		XMFLOAT3 lookVector, direcVector, rightVector;
+
+		XMFLOAT3 collideNormalVector;
 
 		for (auto& collideObj : collideObjs) {
-			// 물체의 룩벡터와 두 OOBB의 방향의 각을 비교해 룩벡터가 반대쪽에 있을경우 -1을 곱해준다.
-				
-			lookVector = collideObj->GetWorldLookVector();
-			direcVector = Vector3::Subtract(pPlayer->GetBoundingBox().Center, collideObj->GetBoundingBox().Center);
-			direcVector.y = 0;
-			if (Vector3::Angle(direcVector, lookVector, false) > 90.0f) {
-				lookVector = Vector3::ScalarProduct(lookVector, -1.f);
-			}
-			knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(Vector3::Normalize(lookVector), 0.01f));
+			collideNormalVector = GetCollideNormalVector(collideObj);
+			// 플레이어가 이동한 변위에 대해, 부딪힌 면의 법선벡터 방향의 성분을 뺀다.
+			knockBack = Vector3::Subtract(knockBack, Vector3::ScalarProduct(collideNormalVector, Vector3::DotProduct(moveVector, collideNormalVector)));
 		}
-		// 부딪힌 오브젝트들의 룩벡터 방향들을 모아 그 방향으로 밀어준다.
 		pPlayer->SetKnockBack(knockBack);
+		// 후에 플레이어를 이동시킨후, 합성된 knockBack 벡터로 다시 밀어준다.
+
+
+		// 물체의 크기 때문에 법선벡터가 잘못 구해진 경우를 처리하기 위한 부분
+		for (auto& collideObj : collideObjs) {
+			BoundingOrientedBox checkOOBB = pPlayer->GetBoundingBox();
+			checkOOBB.Center = Vector3::Add(Vector3::Add(checkOOBB.Center, moveVector), knockBack);
+			checkOOBB.Orientation = Vector4::QuaternionMultiply(checkOOBB.Orientation, pPlayer->GetRotation());
+			if (pPlayer->GetFloor() == collideObj) continue;
+			if (checkOOBB.Intersects(collideObj->GetBoundingBox())) {
+				result |= 1 << 1;
+				break;
+			}
+		}
 	}
+	
 
 	if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
 		if (camera->GetMinDistance() < camera->GetCurrentDistance()) {
@@ -639,6 +645,53 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 	return result;
 }
 
+XMFLOAT3 PlayScene::GetCollideNormalVector(const shared_ptr<GameObject>& _collideObj) {
+	
+	bool isOppositeLook = false;
+	XMFLOAT3 result, lookVector, rightVector, direcVector, boundaryVector;
+	float boundingAngle, playerAngle;
+
+	// 충돌한 바운딩박스의 꼭짓점 위치에 대한 벡터를 구한다.
+	
+	BoundingOrientedBox objOOBB = _collideObj->GetBoundingBox();
+	BoundingOrientedBox playerOOBB = pPlayer->GetBoundingBox();
+	lookVector = _collideObj->GetWorldLookVector();
+	rightVector = _collideObj->GetWorldRightVector();
+
+	boundaryVector = Vector3::Rotate(XMFLOAT3(objOOBB.Extents.x, 0, objOOBB.Extents.z), objOOBB.Orientation);
+	// 충돌한 물체의 룩벡터와의 각도를 구한다.
+	boundingAngle = Vector3::Angle(boundaryVector, lookVector, false);
+	if (boundingAngle > 90.0f) boundingAngle = 180.0f - boundingAngle;
+
+	// 물체와 플레이어간의 벡터의 각을 구한다.
+	direcVector = Vector3::Subtract(playerOOBB.Center, objOOBB.Center);
+	direcVector.y = 0;
+
+	// 플레이어와 룩벡터의 각을 구한다.
+	playerAngle = Vector3::Angle(direcVector, lookVector, false);
+
+	// 룩벡터 방향과 반대일 경우
+	if (playerAngle > 90.0f) {
+		playerAngle = 180.0f - playerAngle;
+		isOppositeLook = true;
+	}
+	// 꼭짓점 위치와 룩벡터간의 각도보다 플레이어와 룩벡터가 이루는 각이 클경우
+	// = RightVector로 본다.
+	if (playerAngle > boundingAngle) {
+		// RightVector방향의 반대일경우
+		result = rightVector;
+		if (Vector3::Angle(direcVector, rightVector, false) > 90.0f) {
+			result = Vector3::ScalarProduct(result, -1.f);
+		}
+	}
+	else {
+		result = lookVector;
+		if (isOppositeLook) {
+			result = Vector3::ScalarProduct(result, -1.f);
+		}
+	}
+	return Vector3::Normalize(result);
+}
 
 void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
@@ -659,20 +712,16 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	for (int i = 0; i < MAX_PARTICIPANT; ++i) {
 		enComID[i] = recvPacket->activeComputerObjectID[i];
 	}
-	cout << "플레이어 수 : " << recvPacket->nPlayer << "\n";
 
 	// Zone을 생성 후 맵파일을 읽어 오브젝트들을 로드한다.
 	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList, enComID);
-	cout << "GetInstanceDatas().size() : " << GameObject::GetInstanceDatas().size() << "\n";
 	
 	professorObjectID = recvPacket->professorObjectID;
 
 	for (UINT i = 0; i < recvPacket->nPlayer; ++i) {
 
 		if (recvPacket->playerInfo[i].objectID == myObjectID) {	// 내가 조종할 캐릭터일 경우
-
-			
 			if (professorObjectID == recvPacket->playerInfo[i].objectID) {	// 교수 플레이어일 경우
 				pPlayer = make_shared<Professor>();
 				isPlayerProfessor = true;
@@ -1385,22 +1434,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(-1, -1, -1, 1)));
 		else
 			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(5, 5, 5, 5)));
-		
-		//if (3 <= fadeOut) {
-		//	// 게임을 끝낸다.
-		//	CS_EXIT_GAME sendPacket;
-		//	sendPacket.cid = cid;
-		//	SendFixedPacket(sendPacket);
-		//	gameFramework.PopScene();
-		//	ReleaseCapture();
 
-		//	auto pLobbyScene = dynamic_pointer_cast<LobbyScene>(gameFramework.GetCurrentScene());
-		//	if (pLobbyScene) {
-		//		pLobbyScene->changeUI(LobbyState::inRoom, true);
-		//		pLobbyScene->UpdateReadyState();
-		//	}
-		//	return;
-		//}
 
 	}
 
@@ -1412,21 +1446,6 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 		else
 			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(-1, -1, -1, 1)));
 
-		//if (3 <= fadeOut) {
-		//	// 게임을 끝낸다.
-		//	CS_EXIT_GAME sendPacket;
-		//	sendPacket.cid = cid;
-		//	SendFixedPacket(sendPacket);
-		//	gameFramework.PopScene();
-		//	ReleaseCapture();
-
-		//	auto pLobbyScene = dynamic_pointer_cast<LobbyScene>(gameFramework.GetCurrentScene());
-		//	if (pLobbyScene) {
-		//		pLobbyScene->changeUI(LobbyState::inRoom, true);
-		//		pLobbyScene->UpdateReadyState();
-		//	}
-		//	return;
-		//}
 	}
 
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set

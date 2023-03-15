@@ -19,7 +19,6 @@ void GameObject::RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& 
 		shared_ptr<GameObject> pGameObject = gameObjManager.GetExistGameObject(name);
 		
 		if(pGameObject) pGameObject->RenderInstance(_pCommandList, instanceData);
-		
 	}
 }
 
@@ -1245,43 +1244,27 @@ Item::Item(ObjectType _objectType) {
 	basePosition = XMFLOAT3(0, 0, 0);
 	rotateSpeed = 30.0f;
 	itemType = _objectType;
-	isUp = true;
-	reverseAccCoolTime = 0.f;
-	verticalSpeed = 0.f;
+
 	index = 0;
 
-	cycle = 1.0f;
-	maxMoveDistance = cycle / 2.0f;
+	cycle = 4.0f;
+	timeElapsed = 0.f;
+	moveDistance = 0.25f;
 }
 
 Item::~Item() {
 }
 
 void Item::Animate(float _timeElapsed) {
-
-
-	reverseAccCoolTime += _timeElapsed;
-	if (reverseAccCoolTime > cycle) {
-		reverseAccCoolTime = -cycle;
-		isUp = !isUp;
-	}
-	
-	if (localPosition.y > basePosition.y + maxMoveDistance) {
-		localPosition.y = basePosition.y + maxMoveDistance;
-		verticalSpeed = 0;
-		reverseAccCoolTime = 0;
-		isUp = false;
+	timeElapsed += _timeElapsed;
+	if (timeElapsed > cycle) {
+		timeElapsed -= cycle;
 	}
 
-	if (localPosition.y < basePosition.y) {
-		localPosition.y = basePosition.y;
-		verticalSpeed = 0;
-		reverseAccCoolTime = 0;
-		isUp = true;
-	}
+	// cycle 초당 1번의 사이클을 돈다.
+	float sinValue = sin(2.f * 3.14f * timeElapsed / cycle);
 
-	verticalSpeed += isUp ? _timeElapsed / 2 : -_timeElapsed / 2;
-	Move(XMFLOAT3(0, verticalSpeed, 0), _timeElapsed);
+	SetLocalPosition(XMFLOAT3(basePosition.x, basePosition.y + sinValue * moveDistance, basePosition.z));
 	Rotate(XMFLOAT3(0, 1, 0), rotateSpeed, _timeElapsed);
 
 	UpdateObject();

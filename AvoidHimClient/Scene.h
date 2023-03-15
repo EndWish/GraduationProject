@@ -149,6 +149,8 @@ public:
 	void UpdateTimeText();
 	void SetPlayer(shared_ptr<Player>& _pPlayer);
 	virtual char CheckCollision(float _timeElapsed);
+	// 플레이어가 충돌시 충돌한 바운딩박스 면의 법선벡터를 구하는 함수
+	XMFLOAT3 GetCollideNormalVector(const shared_ptr<GameObject>& _collideObj);
 	void AddLight(const shared_ptr<Light>& _pLight);
 	void UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	

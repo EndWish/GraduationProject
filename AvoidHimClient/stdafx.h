@@ -25,6 +25,7 @@
 #include <malloc.h>
 #include <memory.h>
 #include <tchar.h>
+#include <math.h>
 #include <exception>
 #include <string>
 #include <wrl.h>
@@ -127,6 +128,7 @@ extern array<char, BUFSIZE> sendBuffer;
 extern array<char, BUFSIZE> recvBuffer;
 
 using Microsoft::WRL::ComPtr;
+
 
 
 // float 난수 생성
@@ -312,6 +314,11 @@ namespace Vector3 {
 		XMFLOAT3 xmf3Result;
 		XMStoreFloat3(&xmf3Result, XMVector3LengthSq(XMLoadFloat3(&_vector)));
 		return xmf3Result.x;
+	}
+	inline XMFLOAT3 Rotate(const XMFLOAT3& _vector, const XMFLOAT4& _rotation) {
+		XMFLOAT3 xmf3Result;
+		XMStoreFloat3(&xmf3Result, XMVector3Rotate(XMLoadFloat3(&_vector), XMLoadFloat4(&_rotation)));
+		return xmf3Result;
 	}
 
 }

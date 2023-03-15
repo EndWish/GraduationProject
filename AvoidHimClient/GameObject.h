@@ -21,7 +21,6 @@ struct Instancing_Data {
 	UINT activeInstanceCount;
 	ComPtr<ID3D12Resource> resource;
 	D3D12_VERTEX_BUFFER_VIEW bufferView;
-	XMFLOAT4X4* mappedResource;
 };
 
 class GameObject : public enable_shared_from_this<GameObject> {
@@ -406,13 +405,13 @@ protected:
 	// 기준이 되는 위치
 	XMFLOAT3 basePosition;
 	float cycle;
-	float maxMoveDistance;	// 최대 변위 (오차를 없애기 위함)
 	ObjectType itemType;
 	// 아이템 애니메이션에 쓰일 변수
-	bool isUp;
-	float reverseAccCoolTime;
+
+	float timeElapsed;
 	float rotateSpeed;
-	float verticalSpeed;
+	float moveDistance;
+
 public:
 	Item(ObjectType _objectType);
 	~Item();

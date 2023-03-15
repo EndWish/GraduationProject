@@ -67,10 +67,9 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		mp = min(100.0f, mp);
 	}
 
-
 	sendMovePacketTime += (float)_timeElapsed;
 	// y방향으로 충돌하지 않을 경우
-	if (_collideCheck & 1) {
+	if (_collideCheck & (1<<0)) {
 		MoveUp(velocity.y, (float)_timeElapsed);
 		landed = false;
 		pFloor = nullptr;
@@ -80,21 +79,19 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		velocity.y = 0.f;
 		landed = true;
 	}
-
-	if (_collideCheck & 2) {
+	if (!(_collideCheck & (1<<1))) {
 		MoveFront(velocity.z);
-	}
-
-	// 부딪힐 경우 물체를 바라보는 방향의 반대 방향으로 밀어준다.
-	Rotate(rotation);
-	if (!(_collideCheck & 4)) {
 		Move(knockBack);
+		// 부딪힐 경우 물체를 바라보는 방향의 반대 방향으로 밀어준다.
 	}
+	Rotate(rotation);
+	
 
 
 	// 프레임에 모인 이동 및 회전값을 초기화해준다.
 	velocity.x = 0;
 	velocity.z = 0;
+	knockBack = XMFLOAT3();
 	rotation = Vector4::QuaternionIdentity();
 
 	if (pChildren[0]) pChildren[0]->Animate(_timeElapsed);
@@ -331,7 +328,7 @@ void Professor::LeftClick() {
 		SendFixedPacket(sendPacket);
 	}
 
-	Scene::GetText	("leftCoolTime")->SetEnable(true);
+	Scene::GetText("leftCoolTime")->SetEnable(true);
 
 	// 근접공격에 대해 dark를 set
 }

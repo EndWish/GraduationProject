@@ -169,6 +169,7 @@ shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boun
 		if (boundingBox.Intersects(_boundingBox)) {
 			// 이동 하기전 바운딩박스가 물체의 위쪽에 있던것인지 확인
 			if (_boundingBox.Center.y - _boundingBox.Extents.y - displacement >= boundingBox.Center.y + boundingBox.Extents.y) {
+
 				return pGameObject;
 			}
 			// 천장에서 부딪힌 경우
@@ -766,7 +767,7 @@ shared_ptr<GameObject> Zone::CheckCollisionVertical(float _timeElapsed) {
 
 	shared_ptr<GameObject> obj;
 	for (auto& sector : checkSector) {
-		obj = sector->CheckCollisionVertical(boundingBox, pPlayer);
+		obj = sector->CheckCollisionVertical(boundingBox, pPlayer, _timeElapsed);
 		if (obj) {
 			return obj;
 		}
