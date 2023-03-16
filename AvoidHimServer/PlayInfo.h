@@ -22,6 +22,7 @@ private:
 	//Zone zone;
 	vector<pair<UINT, Client*>> participants;	// (=clientID)
 
+	UINT professorClientID;	// (=clientID)
 	UINT professorObjectID;	// (=objectID)
 	unordered_map<UINT, Player*> pPlayers;	// objectID-object
 
@@ -61,12 +62,13 @@ public:
 	void Init(UINT _roomID);
 	void LoadingComplete(UINT _clientID);
 	void ProcessLoadingComplete();
-	bool AllClientDisconnect();
 
 	void FrameAdvance(float _timeElapsed);
 	void ProcessRecv(CS_PACKET_TYPE _packetType);
 
 	void AddItem();
+
+	void EscapeClient(UINT _clientID);
 };
 
 

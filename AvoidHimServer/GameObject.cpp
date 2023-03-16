@@ -102,17 +102,20 @@ Player::Player() : GameObject() {
 	imprisoned = false;
 	item = ObjectType::none;
 	exit = false;
+	clientID = 0;
 }
 Player::Player(const Player& _other) : GameObject(_other) {
 	imprisoned = _other.imprisoned;
 	item = _other.item;
 	exit = _other.exit;
+	clientID = _other.clientID;
 }
 Player& Player::operator=(const Player& _other) {
 	GameObject::operator=(_other);
 	imprisoned = _other.imprisoned;
 	item = _other.item;
 	exit = _other.exit;
+	clientID = _other.clientID;
 	return *this;
 }
 Player::~Player() {

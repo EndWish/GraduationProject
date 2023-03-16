@@ -14,17 +14,22 @@ PlayInfo::PlayInfo(UINT _playInfoID) : playInfoID{ _playInfoID } {
 	itemCount = 0;
 
 	endGame = false;
+
+	itemCreateCoolTime = 0.f;
+	prisonDoorObjectID = 0;
+
+	professorClientID = 0;
 }
 PlayInfo::~PlayInfo() {
 	ServerFramework& serverFramework = ServerFramework::Instance();
-	for (auto [participant, pClient] : participants) {
-		pClient->SetCurrentPlayInfo(NULL);
+	//for (auto [participant, pClient] : participants) {
+	//	pClient->SetCurrentPlayInfo(NULL);
 
-		// 게임이 끝났으니 도중에 접속을 끊어서 보류(임시로 가지고 있던)하고 있던 클라이언트를 완전히 삭제한다.
-		if (pClient->IsDisconnected()) {
-			serverFramework.RemoveClient(participant);
-		}
-	}
+	//	// 게임이 끝났으니 도중에 접속을 끊어서 보류(임시로 가지고 있던)하고 있던 클라이언트를 완전히 삭제한다.
+	//	if (pClient->IsDisconnected()) {
+	//		serverFramework.RemoveClient(participant);
+	//	}
+	//}
 
 	
 	for (auto [objectID, pPlayer] : pPlayers)
@@ -100,7 +105,7 @@ void PlayInfo::Init(UINT _roomID) {
 
 	// clientID로 교수 플레이어를 정한다.
 	uniform_int_distribution<int> uid(0, (int)participants.size() - 1);
-	int professorClientID = participants[uid(rd)].first;
+	professorClientID = participants[uid(rd)].first;
 
 	for (int studentStartPosIndex = 0; auto[participant, pClient] : participants) {
 		// 모든 플레이어의 로딩상태를 false로 초기화 한다.
@@ -113,6 +118,7 @@ void PlayInfo::Init(UINT _roomID) {
 		// 플레이어들을 생성하고 위치를 초기화 해준다.
 		Player* pPlayer = new Player();
 		pPlayer->SetID(objectIDCount++);
+		pPlayer->SetClientID(participant);
 		if (participant == professorClientID) {	// 교수일 경우
 			pPlayer->SetPosition(serverFramework.GetProfessorStartPosition());
 			professorObjectID = pPlayer->GetID();
@@ -200,17 +206,9 @@ void PlayInfo::ProcessLoadingComplete() {
 	// 모든 플레이어가 로딩이 완료되었다고 패킷을 보낸다.
 	SC_All_PLAYER_LOADING_COMPLETE sendPacket;
 	for (auto [participant, pClient] : participants) {
-		if (pClient && !pClient->IsDisconnected())
+		if (pClient)
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 	}
-}
-
-bool PlayInfo::AllClientDisconnect() {
-	for (auto [clientID, participant] : participants) {
-		if (!participant->IsDisconnected())
-			return false;
-	}
-	return true;
 }
 
 void PlayInfo::FrameAdvance(float _timeElapsed) {
@@ -241,7 +239,7 @@ void PlayInfo::FrameAdvance(float _timeElapsed) {
 	}
 	
 	for (auto [participant, pClient] : participants) {
-		if (pClient && !pClient->IsDisconnected())
+		if (pClient)
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 	}
 
@@ -607,4 +605,67 @@ void PlayInfo::AddItem() {
 	++itemCount;
 	isExistItem[index] = true;
 	cout << index << " 위치 아이템 추가\n";
+}
+
+void PlayInfo::EscapeClient(UINT _clientID) {
+	// 탈주한 클라이언트를 participants에서 찾는다.
+	auto iterEscapeClient = ranges::find(participants, _clientID, &pair<UINT, Client*>::first);
+	auto [escapeClientID, pEscapeClient] = *iterEscapeClient;
+
+	// 게임이 아직 끝나지 않았을 때
+	if (!endGame) {
+		// 교수가 탈주했을 경우 = 학생 승
+		if (escapeClientID == professorClientID) {
+			endGame = true;
+			SC_ESCAPE_PROFESSOR sendPacket;
+			for (auto [participant, pClient] : participants) {
+				if (participant == escapeClientID)
+					continue;
+				SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+			}
+		}
+
+		// 학생이 탈주했을 경우 (1. 게임이 끝난다. 2. 그 플레이어만 삭제하고 게임을 계속 진행한다.)
+		else {
+			// 1. 게임이 끝나는 경우
+			if (participants.size() == 2) {
+				endGame = true;
+				SC_PROFESSOR_WIN sendPacket;
+				for (auto [participant, pClient] : participants) {
+					if (participant == escapeClientID)
+						continue;
+					SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+				}
+			}
+			// 2. 게임을 계속 진행할 수 있는 경우
+			else if (2 < participants.size()) {
+				SC_ESCAPE_STUDENT sendPacket;
+				// 탈주하는 클라이언트가 조종하는 플레이어의 objectID를 찾아낸다.
+				for (auto [objectID, pPlayer] : pPlayers) {	
+					if (pPlayer->GetClientID() == escapeClientID) {
+						sendPacket.escapeObjectID = objectID;
+						break;
+					}
+				}
+				// 패킷을 보낸다.
+				for (auto [participant, pClient] : participants) {
+					if (participant == escapeClientID)
+						continue;
+					SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+				}
+				// pPlayers에서 삭제한다.
+				pPlayers.erase(sendPacket.escapeObjectID);
+			}
+		}
+	}
+
+	// 탈주한 클라이언트를 participants에서 제거한다.
+	participants.erase(iterEscapeClient);
+
+	// 모든 클라이언트가 빠져나갔을 경우 playInfo를 삭제 시킨다.
+	if (participants.empty()) {
+		ServerFramework::Instance().GetRoom(playInfoID)->SetGameRunning(false);
+		ServerFramework::Instance().RemovePlayInfo(playInfoID);
+	}
+
 }

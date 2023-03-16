@@ -7,7 +7,6 @@ Client::Client(SOCKET _socket) : socket{_socket} {
 	state = ClientState::lobby;
 	pCurrentRoom = NULL;
 	pCurrentPlayInfo = NULL;
-	disconnected = false;
 	lastPacketType = CS_PACKET_TYPE::none;
 }
 Client::~Client() {

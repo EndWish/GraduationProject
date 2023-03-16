@@ -379,18 +379,10 @@ void ServerFramework::RemoveClient(UINT _clientID) {
         
         Client* pClient = pClients[_clientID];
 
-        // 클라이언트가 게임중이었을 경우 표시를 해두고 게임이 끝나면 종료시킨다.
+        // 클라이언트가 게임중이었을 경우 그 게임에서 탈주시킨다.
         PlayInfo* pPlayInfo = pClient->GetCurrentPlayInfo();
-        if (pPlayInfo != NULL) {
-            pClient->SetDisconnected(true);
-            // 만약 방안의 모든 클라이언트가 disconnected라면 게임을 강제 종료 시킨다.
-            if (pPlayInfo->AllClientDisconnect()) {
-                UINT playInfoID = pPlayInfo->GetID();
-                delete pPlayInfo;
-                pPlayInfos.erase(playInfoID);
-            }
-            return;
-        }
+        if (pPlayInfo)
+            pPlayInfo->EscapeClient(_clientID);
 
         // 클라이언트가 방에 있었을 경우 방을 나간다.
         Room* room = pClient->GetCurrentRoom();

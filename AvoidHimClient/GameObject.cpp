@@ -986,13 +986,12 @@ void Lever::Animate(float _timeElapsed) {
 	if (power && openAngle < 90.f) {
 		// 내려감
 		angle = min(180.0f, (90.0f - openAngle) / _timeElapsed);
-		Rotate(XMFLOAT3(1, 0, 0), -angle , _timeElapsed);
+		Rotate(GetWorldRightVector(), angle, _timeElapsed);
 	}
-
-	if (!power && openAngle > 0.f) {
+	else if (!power && openAngle > 0.f) {
 		// 올라감
 		angle = -min(180.0f, openAngle / _timeElapsed);
-		Rotate(XMFLOAT3(1, 0, 0), -angle , _timeElapsed);
+		Rotate(GetWorldRightVector(), angle , _timeElapsed);
 	}
 	openAngle += (angle * _timeElapsed);
 	UpdateObject();
@@ -1002,7 +1001,7 @@ void Lever::Animate(float _timeElapsed) {
 ///
 
 Computer::Computer() {
-	type = ObjectType::computer;
+	type = ObjectType::computer;https://www.youtube.com/watch?v=KNZpGXBq1RI
 	power = false;
 	hackingRate = 0.f;
 	use = false;

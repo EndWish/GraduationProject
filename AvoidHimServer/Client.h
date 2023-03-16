@@ -15,7 +15,6 @@ class Client {
 private:
 	UINT clientID;
 	SOCKET socket;
-	bool disconnected;
 
 	string name;
 	ClientState state;
@@ -47,9 +46,6 @@ public:
 	CS_PACKET_TYPE GetLastPacketType() const { return lastPacketType; }
 
 	SOCKET GetSocket() const { return socket; }
-
-	bool IsDisconnected() const { return disconnected; }
-	void SetDisconnected(bool _disconnected) { disconnected = _disconnected; }
 	
 	const string& GetName() const { return name; }
 	void SetName(const string& _name) { name = _name; }

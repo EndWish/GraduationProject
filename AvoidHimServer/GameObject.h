@@ -67,6 +67,7 @@ protected:
 	bool imprisoned;	// 수감되었는지 확인하는 변수
 	ObjectType item;
 	bool exit;
+	UINT clientID;
 public:
 	Player();
 	Player(const Player& _other);	// 복사생성자
@@ -81,6 +82,9 @@ public:
 
 	void SetExit(bool _exit) { exit = _exit; }
 	bool GetExit() const { return exit; }
+
+	void SetClientID(UINT _clientID) { clientID = _clientID; }
+	UINT GetClientID() const { return clientID; }
 
 };
 

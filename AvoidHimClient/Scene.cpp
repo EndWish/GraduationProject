@@ -1310,6 +1310,19 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		SC_PROFESSOR_WIN* packet = GetPacket<SC_PROFESSOR_WIN>();
 		professorWin = true;
 		break;
+	}   
+	case SC_PACKET_TYPE::escapeProfessor: {
+		SC_ESCAPE_PROFESSOR* packet = GetPacket<SC_ESCAPE_PROFESSOR>();
+		exit = true;
+		break;
+	}
+	case SC_PACKET_TYPE::escapeStudent: {
+		SC_ESCAPE_STUDENT* packet = GetPacket<SC_ESCAPE_STUDENT>();
+		shared_ptr<InterpolateMoveGameObject> pOtherPlayer = pOtherPlayers[packet->escapeObjectID];
+		cout << format("escapeObjectID : {}\n", packet->escapeObjectID);
+		pZone->RemoveObject(SectorLayer::otherPlayer, packet->escapeObjectID, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
+		pOtherPlayers.erase(packet->escapeObjectID);
+		break;
 	}
 	default:
 		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";

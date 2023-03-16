@@ -31,7 +31,7 @@ enum class SC_PACKET_TYPE : char {
 	none, giveClientID, roomListInfo, roomPlayersInfo, roomVisitPlayerInfo, roomOutPlayerInfo, fail,
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
 	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	addItem, useItem, removeItem, toggleLever, removeTrap, exitPlayer, professorWin, checkNickname,
+	addItem, useItem, removeItem, toggleLever, removeTrap, exitPlayer, professorWin, checkNickname, escapeProfessor, escapeStudent,
 
 };
 enum class SC_FAIL_TYPE : int {
@@ -451,4 +451,14 @@ struct SC_PROFESSOR_WIN {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::professorWin;
 	UINT pid = 100'000;
 };
+struct SC_ESCAPE_PROFESSOR {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::escapeProfessor;
+	UINT pid = 100'000;
+};
+struct SC_ESCAPE_STUDENT {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::escapeStudent;
+	UINT escapeObjectID = 0;
+	UINT pid = 100'000;
+};
+
 #pragma pack(pop)
