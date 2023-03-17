@@ -488,8 +488,7 @@ SoundManager& GameFramework::GetSoundManager() {
 	return pSoundManager;
 }
 
-shared_ptr<Shader> GameFramework::GetShader(const string& _name)
-{
+shared_ptr<Shader> GameFramework::GetShader(const string& _name) {
 	return shaderManager.GetShader(_name);
 }
 

@@ -160,12 +160,19 @@ void PlayInfo::Init(UINT _roomID) {
 		playerInfo.position = pPlayer->GetPosition();
 		playerInfo.rotation = pPlayer->GetRotation();
 		playerInfo.scale = pPlayer->GetScale();
-
 		++index;
 	}
 	// activeComputerObjectID 의 내용을 채운다.
 	for (int index = 0; auto [objectID, pObject] : pComputers) {
 		sendPacket.activeComputerObjectID[index++] = objectID;
+	}
+
+	cout << "씨발 : " << participants.size() << "\n";
+	for (int i = 0; i < participants.size(); ++i) {
+		memcpy(sendPacket.nickname[i], participants[i].second->GetNickname().data(), 20);
+		cout << "플레이어 " << i + 1 << " : ";
+		wcout << sendPacket.nickname[i];
+		cout << "이다.\n";
 	}
 
 	// 내용을 전부다 채운 buf를 각 플레이어들에게 전송한다.

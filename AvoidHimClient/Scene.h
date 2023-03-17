@@ -145,6 +145,7 @@ public:
 	virtual void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);
 	virtual void ProcessCursorMove(XMFLOAT2 _delta);
 
+	void changeUI(bool _enable);
 	void AddComputer(const shared_ptr<Computer>& _pComputer);
 	void UpdateTimeText();
 	void SetPlayer(shared_ptr<Player>& _pPlayer);

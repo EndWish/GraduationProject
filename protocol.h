@@ -15,7 +15,7 @@
 #include <DirectXMath.h>
 using namespace DirectX;
 
-#define BUFSIZE 600
+#define BUFSIZE 512
 #define MAX_PARTICIPANT 5
 #define SERVER_PERIOD (1.f / 30)
 #define WATER_DISPENSER_COOLTIME 10.f
@@ -280,7 +280,7 @@ struct SC_ROOMLIST_INFO {	// 로비에서 볼때 필요한 방들에 대한 정보를 보내는 패킷
 struct SC_SUB_ROOM_PLAYERS_INFO {
 	UINT clientID = 0;
 	bool ready = false;
-	// std::array<char, 20> name;
+	WCHAR name[20];
 };
 struct SC_ROOM_PLAYERS_INFO {	// 방에 입장했을때 존재하는 플레이어들의 정보를 보내는 패킷
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::roomPlayersInfo;
@@ -311,11 +311,10 @@ struct SC_GAME_START {	// 방장이 시작을 눌렀을 떄 시작 가능한 상태인지 확인하여 
 	UINT nPlayer = 0;
 	SC_PLAYER_INFO playerInfo[MAX_PARTICIPANT];
 	UINT activeComputerObjectID[MAX_PARTICIPANT]{ 0,0,0,0,0 };
+	WCHAR nickname[MAX_PARTICIPANT][20];
 	// SC_PLAYER_INFO 를 nPlayer만큼 추가로 전송한다.
 	UINT pid = 100'000;
 };
-
-
 
 struct SC_YOUR_PLAYER_OBJECTID {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::yourPlayerObjectID;
@@ -325,7 +324,7 @@ struct SC_YOUR_PLAYER_OBJECTID {
 struct SC_ROOM_VISIT_PLAYER_INFO {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::roomVisitPlayerInfo;
 	UINT visitClientID = 0;
-	// std::array<char, 20> name;
+	WCHAR name[20];
 	UINT pid = 100'000;
 };
 struct SC_ROOM_OUT_PLAYER_INFO {

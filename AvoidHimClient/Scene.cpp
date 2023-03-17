@@ -19,6 +19,7 @@ shared_ptr<Button> Scene::GetButton(string _name) {
 	return pButtons[_name];
 }
 
+
 Scene::Scene()	{
 }
 
@@ -194,6 +195,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 
 		for (UINT i = 0; i < roomInfo.nParticipant; ++i) {
 			Player_Info pi{ packet->participantInfos[i].clientID, packet->participantInfos[i].ready };
+			memcpy(pi.name, packet->participantInfos[i].name, 20);
 			roomInfo.players.push_back(pi);
 		}
 
@@ -223,6 +225,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 
 		// 방 정보에 해당 플레이어의 정보를 추가한다.
 		Player_Info pi{ packet->visitClientID, false };
+		memcpy(pi.name, packet->name, 20);
 		roomInfo.players.push_back(pi);
 		roomInfo.nParticipant++;
 		UpdateReadyState();
@@ -522,13 +525,42 @@ void LobbyScene::UpdateReadyState() {
 /////////////////////////
 
 PlayScene::PlayScene() {
-	globalAmbient = XMFLOAT4(0.1f, 0.1f, 0.1f, 0.0f);
+	globalAmbient = XMFLOAT4(0.5, 0.5, 0.5, 0.0);
 	remainTime = 1000.f;
 	professorObjectID = 0;
 }
 
 PlayScene::~PlayScene() {
 	pLightsBuffer->Unmap(0, NULL);
+}
+
+void PlayScene::changeUI(bool _enable) {
+	pUIs["2DUI_stamina"]->SetEnable(_enable);
+	pUIs["2DUI_staminaFrame"]->SetEnable(_enable);
+	pUIs["2DUI_interact"]->SetEnable(_enable);
+	pUIs["2DUI_hackRate"]->SetEnable(_enable);
+	pTexts["leftCoolTime"]->SetEnable(_enable);
+	pTexts["rightCoolTime"]->SetEnable(_enable);
+	pTexts["remainTime"]->SetEnable(_enable);
+	pTexts["hackRate"]->SetEnable(_enable);
+	pUIs["2DUI_leftSkill"]->SetEnable(_enable);
+	pUIs["2DUI_rightSkill"]->SetEnable(_enable);
+
+	if (isPlayerProfessor) {	// 교수일 경우의 UI 
+
+	}
+	else {		// 학생일 경우의 UI 
+		pUIs["2DUI_energyDrink"]->SetEnable(_enable);
+		pUIs["2DUI_medicalKit"]->SetEnable(_enable);
+		pUIs["2DUI_prisonKey"]->SetEnable(_enable);
+		pUIs["2DUI_trap"]->SetEnable(_enable);
+
+		pUIs["2DUI_hp"]->SetEnable(_enable);
+		pUIs["2DUI_hpFrame"]->SetEnable(_enable);
+
+		pUIs["2DUI_hacking"]->SetEnable(_enable);
+		pUIs["2DUI_hackingFrame"]->SetEnable(_enable);
+	}
 }
 
 void PlayScene::AddComputer(const shared_ptr<Computer>& _pComputer) {
@@ -749,18 +781,19 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			shared_ptr<InterpolateMoveGameObject> pOtherPlayer = make_shared<InterpolateMoveGameObject>();
 
 			if (professorObjectID == recvPacket->playerInfo[i].objectID) {	// 교수 플레이어일 경우
-
+				pOtherPlayer->SetNickname(wstring(recvPacket->nickname[i]), true);
 			}
 			else { // 학생일 경우
+				pOtherPlayer->SetNickname(wstring(recvPacket->nickname[i]), false);
 			}
-			
-
+			wcout << wstring(recvPacket->nickname[i]);
 			pOtherPlayer->Create("Player"s, _pDevice, _pCommandList);
 			pOtherPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pOtherPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pOtherPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
 			pOtherPlayer->UpdateObject();
 			pOtherPlayer->SetID(recvPacket->playerInfo[i].objectID);
+
 			pOtherPlayers.emplace(pOtherPlayer->GetID(), pOtherPlayer);
 			
 			// 충돌처리를 위해 Sector에 추가한다.
@@ -860,6 +893,7 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 	if (_keyDownBuffer['T']) {
 
 	}
+
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
 		pPlayer->Dash(_timeElapsed);
 	}
@@ -910,6 +944,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		CS_EXIT_GAME sendPacket;
 		sendPacket.cid = cid;
 		SendFixedPacket(sendPacket);
+		changeUI(false);
 		gameFramework.PopScene();
 		ReleaseCapture();
 
@@ -922,8 +957,8 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	}
 
 	GameFramework& gameFramework = GameFramework::Instance();
-	for (auto& t : pEffects) {
-		t->Animate(_timeElapsed);
+	for (auto& pEffect : pEffects) {
+		pEffect->Animate(_timeElapsed);
 	}
 
 	// 플레이어 애니메이션
@@ -992,7 +1027,8 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	pUIs["2DUI_stamina"]->SetSizeUV(XMFLOAT2(pPlayer->GetMP() / 100, 1.f));
 	pUIs["2DUI_interact"]->SetEnable(enable);
 
-	
+
+
 	// 다른 플레이어들에 대한 이동을 수행
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
 		XMINT3 prevIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
@@ -1005,6 +1041,26 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 			pZone->HandOffObject(SectorLayer::otherPlayer, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
 		}
 	}
+
+	// 이동 수행후 해당 플레이어가 화면에 보이는지 판단
+	pZone->SetVisiblePlayer(camera);
+
+	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
+
+		shared_ptr<TextBox> nickname = pOtherPlayer->GetNickname();
+		if (pOtherPlayer->GetVisible()) {
+			XMFLOAT3 position = pOtherPlayer->GetBoundingBox().Center;
+			position.y += pOtherPlayer->GetBoundingBox().Extents.y;
+			// 뷰포트 좌표계 -1~1 -> UI좌표계 0~2    
+			XMFLOAT2 pos = GetWorldToScreenCoord(position, camera->GetViewTransform(), camera->GetProjectionTransform());
+			nickname->SetPosition(XMFLOAT2(pos.x + 1, pos.y + 1), true);
+			nickname->SetEnable(true);
+		}
+		else {
+			nickname->SetEnable(false);
+		}
+	}
+
 
 	// 쿨타임 텍스트를 갱신해준다.
 	if (isPlayerProfessor) {	// 교수
@@ -1374,8 +1430,7 @@ void PlayScene::SetExitBox(const BoundingBox& _exitBox) {
 	exitBox = _exitBox;
 }
 
-void PlayScene::ReActButton(shared_ptr<Button> _pButton)
-{
+void PlayScene::ReActButton(shared_ptr<Button> _pButton) {
 
 }
 
@@ -1500,6 +1555,9 @@ void PlayScene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLis
 
 	for (auto [name, pText] : pTexts) {
 		pText->Render();
+	}
+	for (auto [objectID, pOtherPlayer] : pOtherPlayers) {
+		pOtherPlayer->GetNickname()->Render();
 	}
 }
 

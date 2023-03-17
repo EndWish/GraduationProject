@@ -3,6 +3,7 @@
 #include "Animation.h"
 #include "Sound.h"
 
+
 #define RESOURCE_TEXTURE1D			0x01
 #define RESOURCE_TEXTURE2D			0x02
 #define RESOURCE_TEXTURE2D_ARRAY	0x03	//[]
@@ -16,6 +17,7 @@ class Light;
 class Player;
 class TerrainMap;
 class Camera;
+class TextBox;
 
 struct Instancing_Data {
 	UINT activeInstanceCount;
@@ -282,8 +284,9 @@ private:
 	shared_ptr<Sound> pFootStepSound;
 
 	bool imprisoned;
-
+	bool visible;
 	shared_ptr<Camera> pCamera;
+	shared_ptr<TextBox> nickname;
 
 public:
 	InterpolateMoveGameObject();
@@ -293,6 +296,9 @@ public:
 	virtual void Animate(float _timeElapsed);
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
 
+	void SetNickname(wstring _name, bool _isProfessor);
+	shared_ptr<TextBox> GetNickname() const { return nickname; };
+
 	float GetHP() const { return hp; };
 	void SetHP(float _hp) { hp = _hp; };
 	void AddHP(float _hp) { hp += _hp; };
@@ -301,6 +307,9 @@ public:
 	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
 
 	void SetCamera(const shared_ptr<Camera>& _pCamera) { pCamera = _pCamera; }
+
+	void SetVisible(bool _visible) { visible = _visible; };
+	bool GetVisible() const { return visible; };
 
 };
 

@@ -88,8 +88,10 @@ TextBox::TextBox(WCHAR* _fontName, D2D1::ColorF _color, XMFLOAT2 _position, XMFL
 
 	D2D1_RECT_F rc{ _position.x * C_WIDTH / 2, _position.y * C_HEIGHT / 2, _position.x * C_WIDTH / 2 + _size.x * C_WIDTH / 2, _position.y * C_HEIGHT / 2 + _size.y * C_WIDTH / 2 };
 	rect = rc;
+	size = _size;
 	brush = textLayer.CreateBrush(_color);
 	format = textLayer.CreateTextFormat(_fontName, _fontSize);
+
 	enable = _enable;
 }
 
@@ -104,7 +106,6 @@ void TextBox::SetText(wstring _text) {
 void TextBox::Render()
 {
 	if (!enable) return;
-
 	TextLayer& textLayer = TextLayer::Instance();
 	GameFramework& gameFramework = GameFramework::Instance();
 
@@ -126,6 +127,15 @@ void TextBox::Render()
 	pD3D11On12Device->ReleaseWrappedResources(ppResources, _countof(ppResources));
 	pD3D11DeviceContext->Flush();
 
+}
+
+void TextBox::SetAlignment(DWRITE_TEXT_ALIGNMENT _alignment) {
+	format->SetTextAlignment(_alignment);
+}
+
+void TextBox::SetPosition(XMFLOAT2 _position, bool _isCenterBasis) {
+	if(!_isCenterBasis) rect = { _position.x * C_WIDTH / 2, _position.y * C_HEIGHT / 2, _position.x * C_WIDTH / 2 + size.x * C_WIDTH / 2, _position.y * C_HEIGHT / 2 + size.y * C_WIDTH / 2 };
+	else  rect = { _position.x * C_WIDTH / 2 - size.x * C_WIDTH / 4, _position.y * C_HEIGHT / 2 - size.y * C_WIDTH / 4, _position.x * C_WIDTH / 2 + size.x * C_WIDTH / 4, _position.y * C_HEIGHT / 2 + size.x * C_WIDTH / 4 };
 }
 
 

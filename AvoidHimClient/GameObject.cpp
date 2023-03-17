@@ -764,7 +764,7 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	t = 0;
 	hp = 100.0f;
 	moveDistance = 0.f;
-
+	visible = false;
 	imprisoned = false;
 }
 
@@ -820,6 +820,13 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 	UpdateObject();
 	
 	t = 0;
+}
+
+void InterpolateMoveGameObject::SetNickname(wstring _name, bool _isProfessor) {
+	D2D1::ColorF color = _isProfessor ? D2D1::ColorF(1, 0, 0, 1) : D2D1::ColorF(1, 1, 1, 1);
+	nickname = make_shared<TextBox>((WCHAR*)L"ÈÞ¸Õµ¸¿òÃ¼", color, XMFLOAT2(1.55f, 1.55f), XMFLOAT2(0.3f, 0.1f), C_WIDTH / 60.0f, false);
+	nickname->SetText(_name);
+	nickname->SetAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1001,7 +1008,7 @@ void Lever::Animate(float _timeElapsed) {
 ///
 
 Computer::Computer() {
-	type = ObjectType::computer;https://www.youtube.com/watch?v=KNZpGXBq1RI
+	type = ObjectType::computer;
 	power = false;
 	hackingRate = 0.f;
 	use = false;

@@ -228,6 +228,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
 
         // 2. 기존에 접속해 있는 플레이어 에게 정보를 전송한다.
         SC_ROOM_VISIT_PLAYER_INFO sendPacket;
+        memcpy(sendPacket.name, pClients[recvPacket.cid]->GetNickname().c_str(), 20);
         sendPacket.visitClientID = recvPacket.cid;
         for (UINT clientID : pRoom->GetParticipants()) {
             if (clientID == recvPacket.cid)  // 입장한 플레이어의 경우 제외한다.

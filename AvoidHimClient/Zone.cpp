@@ -79,6 +79,14 @@ shared_ptr<GameObject> Sector::FindObject(SectorLayer _sectorLayer, UINT _object
 	}
 }
 
+vector<shared_ptr<GameObject>> Sector::GetObjectsByLayer(SectorLayer _sectorLayer) {
+	vector<shared_ptr<GameObject>> result;
+	for (auto [objectID, pGameObject] : pGameObjectLayers[(int)_sectorLayer]) {
+		result.push_back(pGameObject);
+	}
+	return result;
+}
+
 void Sector::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
 	for (auto pGameObjectLayer : pGameObjectLayers) {
@@ -96,6 +104,27 @@ void Sector::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 			pGameObject->RenderHitBox(_pCommandList, _mesh);
 		}
 	}
+}
+
+bool Sector::SetVisiblePlayer(shared_ptr<Camera> _pCamera, const XMFLOAT3& _playerCenter) {
+	XMFLOAT3 cameraWorldPosition = _pCamera->GetWorldPosition();
+	XMFLOAT3 rayWorldDirection = Vector3::Normalize(Vector3::Subtract(_playerCenter, cameraWorldPosition));
+
+	float playerDistance = Vector3::Length(_playerCenter, cameraWorldPosition);
+	XMVECTOR xmCameraWorldPosition = XMLoadFloat3(&cameraWorldPosition);
+	XMVECTOR xmRayWorldDirection = XMLoadFloat3(&rayWorldDirection);
+	float distance;
+	// 카메라에서 다른플레이어로의 광선이 다른 물체와 부딪혀 보이지 않는경우를 판단
+
+	for (auto [objectID, pObject] : pGameObjectLayers[(int)SectorLayer::obstacle]) {
+		if (pObject->GetBoundingBox().Intersects(xmCameraWorldPosition, xmRayWorldDirection, distance)) {
+			// 플레이어와의 거리보다 먼 오브젝트는 무시한다.
+			if (distance > playerDistance) continue;
+
+			return false;
+		}
+	}
+	return true;
 }
 
 void Sector::SetBoundingBox(const BoundingBox& _boundingBox) {
@@ -536,17 +565,17 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 
 #endif
 #ifdef DRAW_BOUNDING
-	//HitBoxMesh& hitBoxMesh = gameFramework.GetHitBoxMesh();
-	//gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
+	HitBoxMesh& hitBoxMesh = gameFramework.GetHitBoxMesh();
+	gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
 
 
-	//for (auto& divx : sectors) {
-	//	for (auto& divy : divx) {
-	//		for (auto& sector : divy) {
-	//			sector.RenderHitBox(_pCommandList, hitBoxMesh);
-	//		}
-	//	}
-	//}
+	for (auto& divx : sectors) {
+		for (auto& divy : divx) {
+			for (auto& sector : divy) {
+				sector.RenderHitBox(_pCommandList, hitBoxMesh);
+			}
+		}
+	}
 
 #endif
 
@@ -847,6 +876,35 @@ bool Zone::CheckObstacleBetweenPlayerAndCamera(shared_ptr<Camera> _pCamera) {
 	return false;
 }
 
+void Zone::SetVisiblePlayer(shared_ptr<Camera> _pCamera) {
+	// 
+	vector<shared_ptr<InterpolateMoveGameObject>> pOtherPlayers;
+	vector<Sector*> sectors = GetAroundSectors(GetIndex(_pCamera->GetWorldPosition()));
+
+	bool isVisible;
+
+	for (auto& sector : sectors) {
+		auto pTempPlayers = sector->GetObjectsByLayer(SectorLayer::otherPlayer);
+		for (auto pTempPlayer : pTempPlayers) {
+			pOtherPlayers.push_back(static_pointer_cast<InterpolateMoveGameObject>(pTempPlayer));
+		}
+	}
+
+	for (auto pOtherPlayer : pOtherPlayers) {
+		XMFLOAT3 center = pOtherPlayer->GetBoundingBox().Center;
+		isVisible = true;
+		for (auto& sector : sectors) {
+			// 안보일 경우
+			if (!sector->SetVisiblePlayer(_pCamera, center)) {
+				isVisible = false;
+				break;
+			}
+		}
+		pOtherPlayer->SetVisible(isVisible);
+
+	}
+}
+
 void Zone::UpdatePlayerSector() {
 	XMINT3 prevIndex = pindex;
 	pindex = GetIndex(pPlayer->GetWorldPosition());
@@ -937,8 +995,9 @@ shared_ptr<Trap> Zone::GetTrap(UINT _objectID) {
 
 void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	shared_ptr<Attack> pAttack;
-	XMFLOAT3 offset = XMFLOAT3(0.f, 0.8f, 0.f);	// 공격의 생성 위치 오프셋
+	XMFLOAT3 offset = XMFLOAT3(0.f, 0.f, 0.5f);	// 공격의 생성 위치 오프셋
 	// 해당 플레이어의 위치, 회전값을 적용하고 위치에 맞는 섹터에 추가한다.
+	offset = Vector3::Add(Vector3::ScalarProduct(_pPlayerObject->GetWorldUpVector(), offset.y), Vector3::Add(Vector3::ScalarProduct(_pPlayerObject->GetWorldRightVector(), offset.y), Vector3::ScalarProduct(_pPlayerObject->GetWorldLookVector(), offset.z)));
 	if (_attackType == AttackType::swingAttack) {
 		pAttack = make_shared<SwingAttack>(_pPlayerObject->GetID());
 		pAttack->Create("SwingAttack", _pDevice, _pCommandList);

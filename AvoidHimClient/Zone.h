@@ -28,9 +28,14 @@ public:
 	void RemoveInteractObject(UINT _objectID, shared_ptr<GameObject> _pGameObject);
 	// 객체 찾기
 	shared_ptr<GameObject> FindObject(SectorLayer _sectorLayer, UINT _objectID);
+	// 해당 섹터내에 존재하는 해당 레이어의 오브젝트들을 반환
+	vector<shared_ptr<GameObject>> GetObjectsByLayer(SectorLayer _sectorLayer);
+	
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _mesh);
 	
+
+	bool SetVisiblePlayer(shared_ptr<Camera> _pCamera, const XMFLOAT3& _playerCenter);
 	// 바운딩박스 설정
 	void SetBoundingBox(const BoundingBox& _boundingBox);
 	const BoundingBox& GetBoundingBox() const;
@@ -143,6 +148,7 @@ public:
 	// 카메라가 보는 방향에 물체가 있는지 확인하는 함수
 	bool CheckObstacleBetweenPlayerAndCamera(shared_ptr<Camera> _pCamera);
 	
+	void SetVisiblePlayer(shared_ptr<Camera> _pCamera);
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 갱신하는 함수
 	shared_ptr<InteractObject> UpdateInteractableObject();
 
