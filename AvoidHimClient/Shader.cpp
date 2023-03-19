@@ -33,8 +33,13 @@ void Shader::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootS
 
 	pipelineStateDesc.SampleMask = UINT_MAX;
 	pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	pipelineStateDesc.NumRenderTargets = 1;
+	pipelineStateDesc.NumRenderTargets = 1 + 4;
 	pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	pipelineStateDesc.RTVFormats[1] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	pipelineStateDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	pipelineStateDesc.RTVFormats[3] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	pipelineStateDesc.RTVFormats[4] = DXGI_FORMAT_R8G8B8A8_UNORM;
+
 	pipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	pipelineStateDesc.SampleDesc.Count = 1;
 	pipelineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
@@ -140,8 +145,9 @@ void Shader::CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, shared_ptr
 	for (int i = 0; i < nRootParameters; i++) _pTexture->SetRootParameterIndex(i, _nRootParameterStartIndex + i);
 }
 
-void Shader::CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, int nResources, ID3D12Resource** ppd3dResources, DXGI_FORMAT* pdxgiSrvFormats)
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, int nResources, ID3D12Resource** ppd3dResources, DXGI_FORMAT* pdxgiSrvFormats)
 {
+	D3D12_GPU_DESCRIPTOR_HANDLE resourceStartHandle = srvGPUDescriptorNextHandle;
 	for (int i = 0; i < nResources; i++)
 	{
 		if (ppd3dResources[i])
@@ -161,6 +167,8 @@ void Shader::CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, int nResou
 			srvGPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
 		}
 	}
+	// 첫 리소스의 핸들을 반환
+	return resourceStartHandle;
 }
 
 void Shader::SetCamera(const weak_ptr<Camera>& _wpCamera) {
@@ -888,6 +896,59 @@ D3D12_BLEND_DESC SkyBoxShader::CreateBlendState() {
 	return blendDesc;
 }
 
+
+LightingShader::LightingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	Init(_pDevice, _pRootSignature);
+
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "LightingVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "LightingPixelShader", "ps_5_1", pPSBlob);
+
+	HRESULT hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (hr == S_OK) cout << "LightingShader 생성 성공\n";
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+
+	inputElementDescs.clear();
+}
+
+LightingShader::~LightingShader() {
+
+}
+
+D3D12_RASTERIZER_DESC LightingShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+
+D3D12_INPUT_LAYOUT_DESC LightingShader::CreateInputLayout() {
+	inputElementDescs.assign(2, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
+}
+
+
+
 /////////////////////////    Shader Manager   ////////////////////////////////
 
 bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature)
@@ -922,6 +983,10 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 
 	shared_ptr<Shader> skyBoxShader = make_shared<SkyBoxShader>(_pDevice, _pRootSignature);
 	if (skyBoxShader) storage["SkyBoxShader"] = skyBoxShader;
+	else return false;
+
+	shared_ptr<Shader> lightingShader = make_shared<LightingShader>(_pDevice, _pRootSignature);
+	if (lightingShader) storage["LightingShader"] = lightingShader;
 	else return false;
 
 	// 이후에 계속 추가

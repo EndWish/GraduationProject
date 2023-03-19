@@ -52,6 +52,21 @@ Texture2D normalMap : register(t6);
 SamplerState gssWrap : register(s0);
 SamplerState gssClamp : register(s1);
 
+Texture2D<float4> colorTexture : register(t7);
+Texture2D<float4> normalTexture : register(t8);
+Texture2D<float4> positionTexture : register(t9);
+Texture2D<float4> emissiveTexture : register(t10);
+Texture2D<float> depthTexture : register(t11);
+
+
+struct G_BUFFER_OUTPUT {
+    float4 color : SV_TARGET0;   // 조명을 처리하기 전의 픽셀의 색상
+    float3 normal : SV_TARGET1;
+    float3 position : SV_TARGET2;
+    float4 emissive : SV_TARGET3;
+};
+
+
 struct VS_INPUT {
 	float3 position : POSITION;
 	float3 normal : NORMAL;
@@ -85,7 +100,9 @@ VS_OUTPUT DefaultVertexShader(VS_INPUT input) {
 }
 
 [earlydepthstencil]
-float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET {
+G_BUFFER_OUTPUT DefaultPixelShader(VS_OUTPUT input)
+{
+    G_BUFFER_OUTPUT output;
     float4 cColor = float4(0, 0, 0, 1);
     if (drawMask & MATERIAL_ALBEDO_MAP) {
         cColor = albedoMap.Sample(gssWrap, input.uv);
@@ -106,10 +123,13 @@ float4 DefaultPixelShader(VS_OUTPUT input) : SV_TARGET {
     {
         input.normal = normalize(input.normal);
     }
-    
-   float4 color = CalculateLight(cColor, input.positionW, input.normal);
 
-    return color;
+   output.color = cColor;
+   output.normal = input.normal;
+   output.position = input.positionW;
+   output.emissive = float4(0, 0, 0, 1);
+    
+    return output;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -143,8 +163,7 @@ VS_EFFECT_OUTPUT EffectVertexShader(VS_EFFECT_INPUT input)
     output.normal = mul(input.normal, (float3x3) worldTransform);
     output.tangent = mul(input.tangent, (float3x3) worldTransform);
     output.biTangent = mul(input.biTangent, (float3x3) worldTransform);
-
-	// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
+    
     output.positionW = (float3) mul(float4(input.position, 1.0f), worldTransform);
 
     output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
@@ -211,8 +230,9 @@ VS_SKINNED_OUTPUT SkinnedVertexShader(VS_SKINNED_INPUT input)
 }
 
 [earlydepthstencil]
-float4 SkinnedPixelShader(VS_SKINNED_OUTPUT input) : SV_TARGET
+G_BUFFER_OUTPUT SkinnedPixelShader(VS_SKINNED_OUTPUT input) : SV_TARGET
 {
+    G_BUFFER_OUTPUT output;
     float4 cColor = float4(0, 0, 0, 1);
     if (drawMask & MATERIAL_ALBEDO_MAP)
     {
@@ -235,9 +255,11 @@ float4 SkinnedPixelShader(VS_SKINNED_OUTPUT input) : SV_TARGET
         input.normal = normalize(input.normal);
     }
 
-    float4 color = CalculateLight(cColor, input.positionW, input.normal);
-
-    return color;
+    output.color = cColor;
+    output.normal = input.normal;
+    output.position = input.positionW;
+    output.emissive = float4(0, 0, 0, 1);
+    return output;
 }
 
 
@@ -360,8 +382,9 @@ VS_OUTPUT InstanceVertexShader(VS_INSTANCING_INPUT input) {
 
 
 [earlydepthstencil]
-float4 InstancePixelShader(VS_OUTPUT input) : SV_TARGET
+G_BUFFER_OUTPUT InstancePixelShader(VS_OUTPUT input)
 {
+    G_BUFFER_OUTPUT output;
     float4 cColor = diffuse;
     if (drawMask & MATERIAL_ALBEDO_MAP)
     {
@@ -384,10 +407,12 @@ float4 InstancePixelShader(VS_OUTPUT input) : SV_TARGET
         input.normal = normalize(input.normal);
     }
     
-    float4 color = CalculateLight(cColor, input.positionW, input.normal);
-    //color = cColor;
+    output.color = cColor;
+    output.normal = input.normal;
+    output.position = input.positionW;
+    output.emissive = float4(0, 0, 0, 1);
 
-    return color;
+    return output;
 }
 
 struct VS_S_IN
@@ -421,3 +446,31 @@ float4 SkyBoxPixelShader(VS_S_OUT input) : SV_TARGET
     float4 cColor = albedoMap.Sample(gssClamp, uv);
     return cColor * globalAmbient;
 }
+
+struct VS_LIGHTING_IN
+{
+    float3 position : POSITION;
+    float2 uv : TEXCOORD;
+};
+
+struct VS_LIGHTING_OUT
+{
+    float4 position : SV_POSITION;
+    float2 uv : TEXCOORD;
+};
+VS_LIGHTING_OUT LightingVertexShader(VS_LIGHTING_IN input)
+{
+    VS_LIGHTING_OUT output;
+    output.position = float4(input.position, 1.0f);
+    output.uv = input.uv;
+    return output;
+}
+
+float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
+{
+    float4 color = colorTexture.Sample(gssWrap, input.uv);
+    // 이곳에서 조명처리를 해준다.
+
+    return CalculateLight(color, positionTexture.Sample(gssWrap, input.uv).xyz, normalTexture.Sample(gssWrap, input.uv).xyz);
+}
+

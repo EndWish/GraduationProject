@@ -84,6 +84,12 @@ private:
 	// 纠
 	stack<shared_ptr<Scene>> pScenes;
 
+	// G Buffer
+	shared_ptr<Texture> pGBuffer;
+	// G Buffer狼 坊歹鸥百轰 林家
+	vector<D3D12_CPU_DESCRIPTOR_HANDLE> GBufferCPUDescriptorHandles;
+	// Depth Buffer狼 GPU林家
+	D3D12_GPU_DESCRIPTOR_HANDLE depthBufferGPUDescriptorHandle;
 	// 积己, 家戈磊
 private:
 	GameFramework();
@@ -117,6 +123,7 @@ public:
 	const shared_ptr<Scene>& GetCurrentScene() const;
 
 	void InitOldCursor();
+	void InitGBuffer();
 
 	TextureManager& GetTextureManager();
 	GameObjectManager& GetGameObjectManager();
@@ -136,4 +143,7 @@ public:
 	void PopScene();
 	void ChangeScene(const shared_ptr<Scene>& _pScene);
 	void ClearScene();
+
+	shared_ptr<Texture> GetGBuffer() const;
+	void SetDepthBuffer();
 };

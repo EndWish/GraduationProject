@@ -463,6 +463,32 @@ public:
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 
+//////////////// FullScreenObject //////////////
+class FullScreenObject {
+public:
+
+	ComPtr<ID3D12Resource> pPositionBuffer;	// 화면을 꽉채우는 삼각형 두개로만 되어있다.
+	ComPtr<ID3D12Resource> pPositionUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW positionBufferView;
+
+	ComPtr<ID3D12Resource> pTexCoordBuffer;	// 화면을 꽉채우는 삼각형 두개로만 되어있다.
+	ComPtr<ID3D12Resource> pTexCoordUploadBuffer;
+	D3D12_VERTEX_BUFFER_VIEW texCoordBufferView;
+
+	FullScreenObject(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	~FullScreenObject();
+	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
+private:
+
+};
+
+
+
+
+
+
+
 ////////////////// GameObjectManager //////////////////
 
 class GameObjectManager {

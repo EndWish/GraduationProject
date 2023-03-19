@@ -1292,3 +1292,48 @@ Trap::Trap() {
 Trap::~Trap() {
 
 }
+
+
+/////////////// FullScreenObject
+
+FullScreenObject::FullScreenObject(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+
+	vector<XMFLOAT3> pos(6);
+	vector<XMFLOAT2> uv(6);
+	pos[0] = XMFLOAT3(-1.0f, 1.0f, 0.0f);
+	pos[1] = XMFLOAT3(+1.0f, +1.0f, 0.0f);
+	pos[2] = XMFLOAT3(1.0f, -1.0f, 0.0f);
+	pos[3] = XMFLOAT3(-1.0f, 1.0f, 0.0f);
+	pos[4] = XMFLOAT3(1.0f, -1.0f, 0.0f);
+	pos[5] = XMFLOAT3(-1.0f, -1.0f, 0.0f);
+
+	uv[0] = XMFLOAT2(0.0f, 0.0f);
+	uv[1] = XMFLOAT2(1.0f, 0.0f);
+	uv[2] = XMFLOAT2(1.0f, 1.0f);
+	uv[3] = XMFLOAT2(0.0f, 0.0f);
+	uv[4] = XMFLOAT2(1.0f, 1.0f);
+	uv[5] = XMFLOAT2(0.0f, 1.0f);
+
+	pPositionBuffer = CreateBufferResource(_pDevice, _pCommandList, pos.data(), sizeof(XMFLOAT3) * pos.size(), D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pPositionUploadBuffer);
+	positionBufferView.BufferLocation = pPositionBuffer->GetGPUVirtualAddress();
+	positionBufferView.StrideInBytes = sizeof(XMFLOAT3);
+	positionBufferView.SizeInBytes = sizeof(XMFLOAT3) * pos.size();
+
+	pTexCoordBuffer = CreateBufferResource(_pDevice, _pCommandList, uv.data(), sizeof(XMFLOAT2) * uv.size(), D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pTexCoordUploadBuffer);
+	texCoordBufferView.BufferLocation = pTexCoordBuffer->GetGPUVirtualAddress();
+	texCoordBufferView.StrideInBytes = sizeof(XMFLOAT2);
+	texCoordBufferView.SizeInBytes = sizeof(XMFLOAT2) * uv.size();
+
+
+}
+
+FullScreenObject::~FullScreenObject() {
+
+}
+
+void FullScreenObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	D3D12_VERTEX_BUFFER_VIEW vertexBufferViews[2] = { positionBufferView, texCoordBufferView };
+	_pCommandList->IASetVertexBuffers(0, 2, vertexBufferViews);
+	_pCommandList->DrawInstanced(6, 1, 0, 0);
+}

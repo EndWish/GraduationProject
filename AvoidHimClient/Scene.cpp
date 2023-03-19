@@ -60,6 +60,8 @@ char Scene::CheckCollision(float _timeElapsed) {
 	return 0;
 }
 
+
+
 void Scene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)
 {
 }
@@ -279,6 +281,9 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
 	}
 
+}
+
+void LobbyScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 }
 
 void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
@@ -583,7 +588,7 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 	XMFLOAT3 velocity = pPlayer->GetVelocity();
 	// 플레이어가 다음 프레임에 이동할 실제 변위값
 	XMFLOAT3 moveVector = Vector3::ScalarProduct(pPlayer->GetWorldLookVector(), pPlayer->GetVelocity().z);
-
+	float moveDistance = Vector3::Length(moveVector);
 	// 내가 조종하는 플레이어가 탈출box 와 충돌하는지 확인
 	if (!exit && !isPlayerProfessor && exitBox.Intersects(pPlayer->GetBoundingBox())) {
 		exit = true;
@@ -633,26 +638,33 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 	 if (collideObjs.size() != 0) {
 		// 부딪힐 경우 
 
-		XMFLOAT3 collideNormalVector;
+		XMFLOAT3 collideNormalVector; 
 
 		for (auto& collideObj : collideObjs) {
 			collideNormalVector = GetCollideNormalVector(collideObj);
+			// 정지상태일 경우
+			if (moveDistance == 0.f) {
+				knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(collideNormalVector, 0.01f));
+			}
+			
 			// 플레이어가 이동한 변위에 대해, 부딪힌 면의 법선벡터 방향의 성분을 뺀다.
-			knockBack = Vector3::Subtract(knockBack, Vector3::ScalarProduct(collideNormalVector, Vector3::DotProduct(moveVector, collideNormalVector)));
+			else knockBack = Vector3::Subtract(knockBack, Vector3::ScalarProduct(collideNormalVector, Vector3::DotProduct(moveVector, collideNormalVector)));
 		}
 		pPlayer->SetKnockBack(knockBack);
 		// 후에 플레이어를 이동시킨후, 합성된 knockBack 벡터로 다시 밀어준다.
 
 
 		// 물체의 크기 때문에 법선벡터가 잘못 구해진 경우를 처리하기 위한 부분
-		for (auto& collideObj : collideObjs) {
-			BoundingOrientedBox checkOOBB = pPlayer->GetBoundingBox();
-			checkOOBB.Center = Vector3::Add(Vector3::Add(checkOOBB.Center, moveVector), knockBack);
-			checkOOBB.Orientation = Vector4::QuaternionMultiply(checkOOBB.Orientation, pPlayer->GetRotation());
-			if (pPlayer->GetFloor() == collideObj) continue;
-			if (checkOOBB.Intersects(collideObj->GetBoundingBox())) {
-				result |= 1 << 1;
-				break;
+		if (moveDistance != 0.f) {
+			for (auto& collideObj : collideObjs) {
+				BoundingOrientedBox checkOOBB = pPlayer->GetBoundingBox();
+				checkOOBB.Center = Vector3::Add(Vector3::Add(checkOOBB.Center, moveVector), knockBack);
+				checkOOBB.Orientation = Vector4::QuaternionMultiply(checkOOBB.Orientation, pPlayer->GetRotation());
+				if (pPlayer->GetFloor() == collideObj) continue;
+				if (checkOOBB.Intersects(collideObj->GetBoundingBox())) {
+					result |= 1 << 1;
+					break;
+				}
 			}
 		}
 	}
@@ -727,6 +739,7 @@ XMFLOAT3 PlayScene::GetCollideNormalVector(const shared_ptr<GameObject>& _collid
 
 void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
+	
 	gameFramework.GetGameObjectManager().LoadGameObject("SwingAttack", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("ThrowAttack", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("PrisonKey", _pDevice, _pCommandList);
@@ -734,6 +747,8 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	gameFramework.GetGameObjectManager().LoadGameObject("EnergyDrink", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("Trap", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("Trap_attack", _pDevice, _pCommandList);
+
+	pFullScreenObject = make_shared<FullScreenObject>(_pDevice, _pCommandList);
 
 	// 전역 변수 초기화
 	AllLeverPowerOn = false;
@@ -840,14 +855,14 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 
 	// 빛을 추가
-	//shared_ptr<Light> baseLight = make_shared<Light>();
+	shared_ptr<Light> baseLight = make_shared<Light>();
 
-	//baseLight->lightType = 3;
-	//baseLight->position = XMFLOAT3(0, 500, 0);
-	//baseLight->direction = XMFLOAT3(0, -1, 0);
-	//baseLight->diffuse = XMFLOAT4(0.5, 0.5, 0.5, 1);
-	//baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
-	//AddLight(baseLight);
+	baseLight->lightType = 3;
+	baseLight->position = XMFLOAT3(0, 500, 0);
+	baseLight->direction = XMFLOAT3(0, -1, 0);
+	baseLight->diffuse = XMFLOAT4(0.5, 0.5, 0.5, 1);
+	baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
+	AddLight(baseLight);
 
 	pFrustumMesh = make_shared<FrustumMesh>();
 	pFrustumMesh->Create(camera->GetBoundingFrustum(), _pDevice, _pCommandList);
@@ -1404,6 +1419,7 @@ void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandLis
 	//cout << "빛 : " << pLights[0]->position << "\n";
 	
 	int nLight = (UINT)pLights.size();
+
 	for (int i = 0; i < min(nLight, MAX_LIGHTS); ++i) {
 		memcpy(&pMappedLights->lights[i], pLights[i].get(), sizeof(Light));
 	}
@@ -1506,9 +1522,35 @@ void PlayScene::ProcessCursorMove(XMFLOAT2 _delta)  {
 }
 
 
+void PlayScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
+
+	GameFramework& gameFramework = GameFramework::Instance();
+	// 프레임워크에서 렌더링 전에 루트시그니처를 set
+	camera->SetViewPortAndScissorRect(_pCommandList);
+	camera->UpdateShaderVariable(_pCommandList);
+
+	// 쉐이더 클래스에 정적으로 정의된 디스크립터 힙을 연결한다.
+
+	Shader::SetDescriptorHeap(_pCommandList);
+
+	gameFramework.GetShader("SkyBoxShader")->PrepareRender(_pCommandList);
+	pSkyBox->Render(_pCommandList);
+
+
+	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
+
+	gameFramework.GetShader("EffectShader")->Render(_pCommandList);
+
+	// 다 그린 후 G버퍼를 쉐이더에 연결한다.
+	gameFramework.GetGBuffer()->UpdateShaderVariable(_pCommandList);
+}
+
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
+	gameFramework.SetDepthBuffer();
+
+	UpdateLightShaderVariables(_pCommandList);
 
 	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
 	if (exit && fadeOut < 3) {
@@ -1517,8 +1559,6 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(-1, -1, -1, 1)));
 		else
 			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(5, 5, 5, 5)));
-
-
 	}
 
 	// 교수가 모든 학생을 감옥에 가둘경우 교수만 화면이 흰색으로 되면서 게임이 끝난다.
@@ -1528,26 +1568,12 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(5, 5, 5, 5)));
 		else
 			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(-1, -1, -1, 1)));
-
 	}
 
-	// 프레임워크에서 렌더링 전에 루트시그니처를 set
-	camera->SetViewPortAndScissorRect(_pCommandList);
-	camera->UpdateShaderVariable(_pCommandList);
+	gameFramework.GetShader("LightingShader")->PrepareRender(_pCommandList);
+	pFullScreenObject->Render(_pCommandList);
 
-	UpdateLightShaderVariables(_pCommandList);
-	// 쉐이더 클래스에 정적으로 정의된 디스크립터 힙을 연결한다.
-
-	Shader::SetDescriptorHeap(_pCommandList);
-
-
-	gameFramework.GetShader("SkyBoxShader")->PrepareRender(_pCommandList);
-	pSkyBox->Render(_pCommandList);
-
-	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
-	gameFramework.GetShader("EffectShader")->Render(_pCommandList);
-
-
+	// 빛 처리를 끝낸 후 UI를 그린다.
 	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);
 	for (auto [name, pUI] : pUIs) {
 		pUI->Render(_pCommandList);
@@ -1555,7 +1581,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	for (auto [name, pButton] : pButtons) {
 		pButton->Render(_pCommandList);
 	}
-
+	
 	//gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
 	//pFrustumMesh->UpdateMesh(camera->GetBoundingFrustum());
 	//pFrustumMesh->Render(_pCommandList);

@@ -34,6 +34,7 @@ public:
 	virtual void ReActButton(shared_ptr<Button> _pButton) = 0;
 	virtual char CheckCollision(float _timeElapsed);
 
+	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
 	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void NoticeCloseToServer();
@@ -86,6 +87,7 @@ public:
 	virtual void AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
+	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ReActButton(shared_ptr<Button> _pButton);
@@ -124,13 +126,16 @@ private:
 	vector<shared_ptr<GameObject>> pEffects;
 	vector<XMFLOAT3> itemSpawnLocationPositions;
 
+	// Pre Render의 결과를 이 오브젝트에 그린다.
+	shared_ptr<FullScreenObject> pFullScreenObject;
+
 	BoundingBox exitBox;
 	bool exit = false;
 	float fadeOut = 0.0f;
 	bool professorWin = false;
 
 public:
-	PlayScene();
+	PlayScene();	
 	~PlayScene();
 
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -138,6 +143,8 @@ public:
 	virtual void ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	
+	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 

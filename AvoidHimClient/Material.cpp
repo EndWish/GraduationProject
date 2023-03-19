@@ -20,7 +20,7 @@ void Material::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pC
 	}
 	vector<shared_ptr<Texture>> pTextures{ pTexture, pBumpTexture };
 	for (auto& pTex : pTextures) {
-
+			
 		if (pTex) {
 			// 여기서 텍스처 정보를 쉐이더에 올림
 			pTex->UpdateShaderVariable(_pCommandList);
