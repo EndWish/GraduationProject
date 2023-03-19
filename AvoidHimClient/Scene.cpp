@@ -525,7 +525,7 @@ void LobbyScene::UpdateReadyState() {
 /////////////////////////
 
 PlayScene::PlayScene() {
-	globalAmbient = XMFLOAT4(0.5, 0.5, 0.5, 0.0);
+	globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
 	remainTime = 1000.f;
 	professorObjectID = 0;
 }
@@ -771,9 +771,6 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			pPlayer->SetID(recvPacket->playerInfo[i].objectID);
 			SetPlayer(pPlayer);
 			pZone->SetPlayer(pPlayer);
-			//pindex = GetIndex(position);
-			//pid = objectID;
-			//AddObject(objLayer, pid, pPlayer, pindex);
 			//[수정] 애니메이션 정보 갱신
 
 		}
@@ -843,14 +840,14 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 
 	// 빛을 추가
-	shared_ptr<Light> baseLight = make_shared<Light>();
+	//shared_ptr<Light> baseLight = make_shared<Light>();
 
-	baseLight->lightType = 3;
-	baseLight->position = XMFLOAT3(0, 500, 0);
-	baseLight->direction = XMFLOAT3(0, -1, 0);
-	baseLight->diffuse = XMFLOAT4(0.5, 0.5, 0.5, 1);
-	baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
-	AddLight(baseLight);
+	//baseLight->lightType = 3;
+	//baseLight->position = XMFLOAT3(0, 500, 0);
+	//baseLight->direction = XMFLOAT3(0, -1, 0);
+	//baseLight->diffuse = XMFLOAT4(0.5, 0.5, 0.5, 1);
+	//baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
+	//AddLight(baseLight);
 
 	pFrustumMesh = make_shared<FrustumMesh>();
 	pFrustumMesh->Create(camera->GetBoundingFrustum(), _pDevice, _pCommandList);
@@ -1297,13 +1294,13 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		
 		pZone->SetAllComputerPower(packet->allLeverPowerOn);
 		if (packet->allLeverPowerOn) {
-			globalAmbient = XMFLOAT4(0.5, 0.5, 0.5, 0.0);
+			globalAmbient = XMFLOAT4(0.5, 0.5, 0.5, 1.0);
 			AllLeverPowerOn = true;
 			if (isPlayerProfessor)
 				static_pointer_cast<Professor>(pPlayer)->SetSabotageCoolTime(60.f);
 		}
 		else {
-			globalAmbient = XMFLOAT4(0.1f, 0.1f, 0.1f, 0.0);
+			globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
 			AllLeverPowerOn = false;
 		}
 			
@@ -1387,9 +1384,27 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 }
 
 void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	int nLight = (UINT)pLights.size();
-	for (int i = 0; i < nLight; ++i) {
+	// light를 플레이어기준으로 같은층 (비슷한 높이)에 있는 것들중 가장 가까운것부터 20개 그린다.
+	XMFLOAT3 playerPos = pPlayer->GetWorldPosition();
 
+	auto IsInside = [](float lightPosY, float playerPosY) {
+		return playerPosY <= lightPosY && lightPosY <= playerPosY + 3.f;
+	};
+	auto Pred = [playerPos, IsInside](const shared_ptr<Light>& a, const shared_ptr<Light>& b) {
+		bool isInsideA = IsInside(a->position.y, playerPos.y);
+		bool isInsideB = IsInside(b->position.y, playerPos.y);
+		// 조명의 위치가 둘다 범위안에 있거나, 둘다 범위밖에 있을 경우
+		if (isInsideA == isInsideB) {
+			// 거리가 가까운것부터 오름차순으로 정렬
+			return Vector3::LengthEst(playerPos, a->position) < Vector3::LengthEst(playerPos, b->position);
+		}
+		return isInsideA;
+	};
+	ranges::sort(pLights, Pred);
+	//cout << "빛 : " << pLights[0]->position << "\n";
+	
+	int nLight = (UINT)pLights.size();
+	for (int i = 0; i < min(nLight, MAX_LIGHTS); ++i) {
 		memcpy(&pMappedLights->lights[i], pLights[i].get(), sizeof(Light));
 	}
 

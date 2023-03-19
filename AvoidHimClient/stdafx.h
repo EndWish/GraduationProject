@@ -6,7 +6,7 @@
 
 #define WIN32_LEAN_AND_MEAN             // 거의 사용되지 않는 내용을 Windows 헤더에서 제외
 
-#define MAX_LIGHTS 100 // 조명의 최대 갯수
+#define MAX_LIGHTS 20 // 조명의 최대 갯수
 #define GRAVITY 9.8f
 #define C_WIDTH 800
 #define C_HEIGHT 600
@@ -85,6 +85,7 @@
 #include <unordered_map>
 
 #include <numeric>
+#include <numbers>
 #include <algorithm>
 
 using namespace std;
@@ -307,6 +308,12 @@ namespace Vector3 {
 	inline float LengthEst(const XMFLOAT3& _vector) {
 		XMFLOAT3 xmf3Result;
 		XMStoreFloat3(&xmf3Result, XMVector3LengthEst(XMLoadFloat3(&_vector)));
+		return xmf3Result.x;
+	}
+
+	inline float LengthEst(const XMFLOAT3& _vector1, const XMFLOAT3& _vector2) {
+		XMFLOAT3 xmf3Result;
+		XMStoreFloat3(&xmf3Result, XMVector3LengthEst(XMLoadFloat3(&_vector1) - XMLoadFloat3(&_vector2)));
 		return xmf3Result.x;
 	}
 

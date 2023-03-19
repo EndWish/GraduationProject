@@ -572,7 +572,7 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	for (auto& divx : sectors) {
 		for (auto& divy : divx) {
 			for (auto& sector : divy) {
-				sector.RenderHitBox(_pCommandList, hitBoxMesh);
+				//sector.RenderHitBox(_pCommandList, hitBoxMesh);
 			}
 		}
 	}
@@ -696,6 +696,40 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 				XMStoreFloat4x4(&temp, XMMatrixTranspose(XMLoadFloat4x4(&world)));
 				instanceDatas[objName].push_back(temp);
 			}
+			break;
+		}
+		case SectorLayer::light: {
+			pGameObject = make_shared<GameObject>();
+			pGameObject->Create(objName, _pDevice, _pCommandList);
+			pGameObject->SetLocalPosition(position);
+			pGameObject->SetLocalScale(scale);
+			pGameObject->SetLocalRotation(rotation);
+			pGameObject->UpdateObject();
+			pGameObject->SetID(objectID);
+
+			// 섹터에 오브젝트를 추가한다. (충돌체크, 프러스텀 컬링용)
+			AddObject(SectorLayer::obstacle, objectID, pGameObject, GetIndex(position));
+			gameFramework.GetShader("BasicShader")->AddObject(pGameObject->GetObj());
+
+			// 빛을 추가한다.
+			shared_ptr<Light> pNewLight = make_shared<Light>();
+
+			pNewLight->lightType = 2;
+			pNewLight->position = Vector3::Subtract(position, XMFLOAT3(0, 0.1f, 0));
+			pNewLight->direction = XMFLOAT3(0.f, -1.f, 0.f);
+			pNewLight->diffuse = XMFLOAT4(0.5f, 1.5f, 0.5f, 1.f);
+			pNewLight->ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.f);
+			pNewLight->specular = XMFLOAT4(1.0f, 0.1f, 0.1f, 1.0f);
+			pNewLight->falloff = 0.7f;
+			pNewLight->attenuation = XMFLOAT3(1.0f, 0.5f, 0.25f);
+			pNewLight->phi = (float)numbers::pi * 0.6f ;
+			pNewLight->theta = (float)numbers::pi * 0.9f;
+			pNewLight->range = 6.f;
+
+			cout << pNewLight->position << "\n";
+			if(auto pScene = wpScene.lock())
+				pScene->AddLight(pNewLight);
+
 			break;
 		}
 		case SectorLayer::sprite: {

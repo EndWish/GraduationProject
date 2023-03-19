@@ -1,6 +1,6 @@
 
 
-#define MAX_LIGHTS			100
+#define MAX_LIGHTS			20
 
 
 #define POINT_LIGHT			1
@@ -103,30 +103,29 @@ float4 PointLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamer
 float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera, float4 _color) {
     float4 color = float4(0.0f, 0.0f, 0.0f, 0.0f);
     float3 toLight = lights[_nIndex].position - _position;
-    float fDistance = length(toLight);
+    float distance = length(toLight);
+    toLight /= distance;
 	
-    if (fDistance <= lights[_nIndex].range) {
-        float fSpecularFactor = 0.0f;
-        toLight /= fDistance;
-        float fDiffuseFactor = dot(toLight, _normal);
-		
-        if (fDiffuseFactor > EPSILON) {
-            if (specular.a != 0.0f) {
-                float3 vReflect = reflect(-toLight, _normal);
-                fSpecularFactor = pow(max(dot(vReflect, _toCamera), 0.0f), specular.a);
+    // 거리안에 있는지 확인
+    if (distance <= lights[_nIndex].range)
+    {
+        float theta = acos(dot(lights[_nIndex].direction, -toLight)); // 조명의 방향과 조명에서 오브젝트로 가는 방향의 각도 (라디안)
+        if (theta <= lights[_nIndex].theta / 2)  // 조명을 받지 않을 경우
+        {
+            /// 외부원안쪽에 있을 경우
+            float fDiffuseFactor = max(0, dot(toLight, _normal));
+            float specularFactor = 0.0f;
+            if (specular.a != 0.0f)
+            {
+                float3 reflectVec = reflect(-toLight, _normal);
+                specularFactor = pow(max(dot(reflectVec, _toCamera), 0.0f), specular.a);
             }
+            
+            float spotFactor = theta <= lights[_nIndex].phi / 2 ? 1.f : lights[_nIndex].falloff;
+            
+            float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, distance, distance * distance));
+            color = (_color * (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular)) * attenuationFactor * spotFactor;
         }
-		// phi = 내부 원을 그리는 각의 cos값, theta - 외부 원을 그리는 각의 cos값
-		// falloff = 감쇠비율.		
-		// 빛과 점사이 각도와 빛의 방향을 내적
-        float alpha = max(dot(-toLight, lights[_nIndex].direction), 0.0f);
-				// 각에 따른 spot계수를 계산.
-        float spotFactor = pow(max(((alpha - lights[_nIndex].phi) / (lights[_nIndex].theta - lights[_nIndex].phi)), 0.0f), lights[_nIndex].falloff);
-                // 거리에 따른 감쇠계수를 계산.
-        float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, fDistance, fDistance * fDistance));
-				
-				// 각 계수를 구한 빛에 대해 곱
-        color = (_color * (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * fSpecularFactor * specular)) * attenuationFactor * spotFactor;
     }
     return color;
 }
@@ -140,19 +139,23 @@ float4 CalculateLight(float4 color, float3 _Position, float3 _Normal) {
 	//color = float4(1.0f, 1.0f, 1.0f, 0.0f);
 	
 	// 루프를 unroll하여 성능 향상. max light만큼 unroll시 셰이더 컴파일시에 시간이 너무 오래걸려 10%로 타협
-	[unroll(MAX_LIGHTS / 10)]
-    for (int i = 0; i < nLight; i++) {
-            if (lights[i].enable) {
-                if (lights[i].lightType == DIRECTIONAL_LIGHT) {
-                newColor += DirectionalLight(i, _Normal, toCamera, color);
+
+    [unroll(MAX_LIGHTS)]
+    for (int i = 0; i < MAX_LIGHTS; ++i)
+    {
+        if (nLight <= i || (1 <= newColor.r && 1 <= newColor.g && 1 <= newColor.b))
+            break;
+        if (lights[i].enable) {
+            if (lights[i].lightType == DIRECTIONAL_LIGHT) {
+            newColor += DirectionalLight(i, _Normal, toCamera, color);
             }
-                else if (lights[i].lightType == POINT_LIGHT) {
-                newColor += PointLight(i, _Position, _Normal, toCamera, color);
+            else if (lights[i].lightType == POINT_LIGHT) {
+            newColor += PointLight(i, _Position, _Normal, toCamera, color);
             }
-                else if (lights[i].lightType == SPOT_LIGHT) {
-                newColor += SpotLight(i, _Position, _Normal, toCamera, color);
+            else if (lights[i].lightType == SPOT_LIGHT) {
+            newColor += SpotLight(i, _Position, _Normal, toCamera, color);
             }
-            }
+        }
     }
 
     newColor += color * globalAmbient;
