@@ -1268,7 +1268,7 @@ void Item::Animate(float _timeElapsed) {
 	}
 
 	// cycle 초당 1번의 사이클을 돈다.
-	float sinValue = sin(2.f * 3.14f * timeElapsed / cycle);
+	float sinValue = sin(2.f * (float)numbers::pi * timeElapsed / cycle);
 
 	SetLocalPosition(XMFLOAT3(basePosition.x, basePosition.y + sinValue * moveDistance, basePosition.z));
 	Rotate(XMFLOAT3(0, 1, 0), rotateSpeed, _timeElapsed);

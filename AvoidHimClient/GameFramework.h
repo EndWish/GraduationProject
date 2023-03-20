@@ -88,8 +88,7 @@ private:
 	shared_ptr<Texture> pGBuffer;
 	// G Buffer狼 坊歹鸥百轰 林家
 	vector<D3D12_CPU_DESCRIPTOR_HANDLE> GBufferCPUDescriptorHandles;
-	// Depth Buffer狼 GPU林家
-	D3D12_GPU_DESCRIPTOR_HANDLE depthBufferGPUDescriptorHandle;
+
 	// 积己, 家戈磊
 private:
 	GameFramework();
@@ -145,5 +144,4 @@ public:
 	void ClearScene();
 
 	shared_ptr<Texture> GetGBuffer() const;
-	void SetDepthBuffer();
 };

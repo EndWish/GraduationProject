@@ -33,12 +33,14 @@ void Shader::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootS
 
 	pipelineStateDesc.SampleMask = UINT_MAX;
 	pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	pipelineStateDesc.NumRenderTargets = 1 + 4;
+	pipelineStateDesc.NumRenderTargets = 1 + NUM_G_BUFFER;
 	pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	pipelineStateDesc.RTVFormats[1] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	pipelineStateDesc.RTVFormats[2] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	pipelineStateDesc.RTVFormats[3] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	pipelineStateDesc.RTVFormats[4] = DXGI_FORMAT_R8G8B8A8_UNORM;
+	pipelineStateDesc.RTVFormats[1] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	pipelineStateDesc.RTVFormats[2] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	pipelineStateDesc.RTVFormats[3] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	pipelineStateDesc.RTVFormats[4] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	pipelineStateDesc.RTVFormats[5] = DXGI_FORMAT_R32_FLOAT;
+	
 
 	pipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	pipelineStateDesc.SampleDesc.Count = 1;

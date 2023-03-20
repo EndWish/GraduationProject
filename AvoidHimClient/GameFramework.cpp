@@ -238,7 +238,7 @@ void GameFramework::CreateRtvAndDsvDescriptorHeaps() {
 	// 렌더타겟 서술자 힙 생성
 	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc;
 	ZeroMemory(&descriptorHeapDesc, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
-	descriptorHeapDesc.NumDescriptors = nSwapChainBuffer + 4;
+	descriptorHeapDesc.NumDescriptors = nSwapChainBuffer + NUM_G_BUFFER;
 	descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	descriptorHeapDesc.NodeMask = 0;
@@ -342,7 +342,7 @@ void GameFramework::CreateDepthStencilView() {
 void GameFramework::CreateGraphicsRootSignature() {
 	HRESULT hResult;
 
-	D3D12_DESCRIPTOR_RANGE pDescriptorRanges[4];
+	D3D12_DESCRIPTOR_RANGE pDescriptorRanges[3];
 
 	pDescriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[0].NumDescriptors = 1;
@@ -356,21 +356,15 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pDescriptorRanges[1].RegisterSpace = 0;
 	pDescriptorRanges[1].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-
 	pDescriptorRanges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[2].NumDescriptors = NUM_G_BUFFER;
-	pDescriptorRanges[2].BaseShaderRegister = 7;	// t7 ~ t10
+	pDescriptorRanges[2].BaseShaderRegister = 7;	// t7 ~ t11
 	pDescriptorRanges[2].RegisterSpace = 0;
 	pDescriptorRanges[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
-	pDescriptorRanges[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
-	pDescriptorRanges[3].NumDescriptors = 1;
-	pDescriptorRanges[3].BaseShaderRegister = 11;	// t11 = depth buffer
-	pDescriptorRanges[3].RegisterSpace = 0;
-	pDescriptorRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 	// 루트 시그니처는 이후 계속 수정 
 
-	D3D12_ROOT_PARAMETER pRootParameters[11];
+	D3D12_ROOT_PARAMETER pRootParameters[10];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
@@ -424,11 +418,6 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[9].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[2];
 	pRootParameters[9].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// G Buffer
 
-	pRootParameters[10].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	pRootParameters[10].DescriptorTable.NumDescriptorRanges = 1;
-	pRootParameters[10].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[3];
-	pRootParameters[10].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// depth buffer
-
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[2];
 	::ZeroMemory(samplerDesc, sizeof(D3D12_STATIC_SAMPLER_DESC) * 2);
 	samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;	// 선형 필터링
@@ -444,7 +433,6 @@ void GameFramework::CreateGraphicsRootSignature() {
 	samplerDesc[0].ShaderRegister = 0;	// s0
 	samplerDesc[0].RegisterSpace = 0;
 	samplerDesc[0].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
-
 
 	samplerDesc[1].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;
 	samplerDesc[1].AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;	 // Clamp
@@ -519,14 +507,24 @@ void GameFramework::InitGBuffer() {
 	
 	//  텍스처를 만든다.
 	pGBuffer = make_shared<Texture>(NUM_G_BUFFER, RESOURCE_TEXTURE2D, 0, 1);
-	DXGI_FORMAT format = DXGI_FORMAT_R8G8B8A8_UNORM;
-	D3D12_CLEAR_VALUE clearValue = {
-		DXGI_FORMAT_R8G8B8A8_UNORM, {1.0f, 1.0f, 1.0f, 1.0f},
+	DXGI_FORMAT format[NUM_G_BUFFER] = {
+		DXGI_FORMAT_R32G32B32A32_FLOAT,
+		DXGI_FORMAT_R32G32B32A32_FLOAT,
+		DXGI_FORMAT_R32G32B32A32_FLOAT,
+		DXGI_FORMAT_R32G32B32A32_FLOAT,
+		DXGI_FORMAT_R32_FLOAT }
+		;
+	D3D12_CLEAR_VALUE clearValue[NUM_G_BUFFER] = {
+		{DXGI_FORMAT_R32G32B32A32_FLOAT, {1.0f, 1.0f, 1.0f, 1.0f}},
+		{DXGI_FORMAT_R32G32B32A32_FLOAT, {1.0f, 1.0f, 1.0f, 1.0f}},
+		{DXGI_FORMAT_R32G32B32A32_FLOAT, {1.0f, 1.0f, 1.0f, 1.0f}},
+		{DXGI_FORMAT_R32G32B32A32_FLOAT, {1.0f, 1.0f, 1.0f, 1.0f}},
+		{DXGI_FORMAT_R32_FLOAT, {1.0f}},
 	};
 
 	// 텍스처 생성. 렌더타겟과 같은 형태로 4개를 만들어둔다.
 	for (int i = 0; i < NUM_G_BUFFER; ++i) {
-		pGBuffer->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, format, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON, &clearValue, RESOURCE_TEXTURE2D, i);
+		pGBuffer->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, format[i], D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON, &clearValue[i], RESOURCE_TEXTURE2D, i);
 	}
 	// 루트시그니처 9번을 사용.
 	Shader::CreateShaderResourceViews(pDevice, pGBuffer, 0, 9);
@@ -535,7 +533,7 @@ void GameFramework::InitGBuffer() {
 	d3dRenderTargetViewDesc.ViewDimension = D3D12_RTV_DIMENSION_TEXTURE2D;
 	d3dRenderTargetViewDesc.Texture2D.MipSlice = 0;
 	d3dRenderTargetViewDesc.Texture2D.PlaneSlice = 0;
-	d3dRenderTargetViewDesc.Format = format;
+
 
 	// 렌더타겟뷰 주소를 담을 공간 할당
 	GBufferCPUDescriptorHandles.resize(NUM_G_BUFFER);
@@ -544,6 +542,7 @@ void GameFramework::InitGBuffer() {
 
 	for (UINT i = 0; i < NUM_G_BUFFER; i++)
 	{
+		d3dRenderTargetViewDesc.Format = format[i];
 		// i번째 리소스에 대한 렌더타겟뷰를 생성후 주소를 저장
 		ID3D12Resource* pd3dTextureResource = pGBuffer->GetResource(i).Get();
 
@@ -554,9 +553,6 @@ void GameFramework::InitGBuffer() {
 		rtvPtr.ptr += ::rtvDescriptorIncrementSize;
 	}
 
-	// Depth Buffer에 대한 생성
-	DXGI_FORMAT pdxgiSrvFormats[1] = { DXGI_FORMAT_R32_FLOAT };
-	depthBufferGPUDescriptorHandle = Shader::CreateShaderResourceViews(pDevice, 1, pDepthStencilBuffer.GetAddressOf(), pdxgiSrvFormats);
 }
 
 const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
@@ -595,7 +591,7 @@ void GameFramework::FrameAdvance() {
 	pCommandList->ResourceBarrier(1, &resourceBarrier);
 
 	
-	float pClearColor[4] = { 0.0f, 0.4f, 0.1f, 1.0f };
+	float pClearColor[4] = { FLT_MAX, 0.4f, 0.1f, 1.0f };
 	// 후면 버퍼의 핸들
 	D3D12_CPU_DESCRIPTOR_HANDLE swapChainDescriptorHandle = pRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	swapChainDescriptorHandle.ptr += (rtvDescriptorIncrementSize * swapChainBufferCurrentIndex);
@@ -631,8 +627,9 @@ void GameFramework::FrameAdvance() {
 		SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
 	
 	// 후면버퍼를 렌더타겟으로 설정한다.
-	pCommandList->ClearRenderTargetView(swapChainDescriptorHandle, pClearColor, 0, NULL);
+	
 	pCommandList->OMSetRenderTargets(1, &swapChainDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
+	pCommandList->ClearRenderTargetView(swapChainDescriptorHandle, pClearColor, 0, NULL);
 
 	// 씬 렌더링
 	if (!pScenes.empty()) {
@@ -821,8 +818,6 @@ shared_ptr<Texture> GameFramework::GetGBuffer() const {
 	return pGBuffer;
 }
 
-void GameFramework::SetDepthBuffer() {
-	pCommandList->SetGraphicsRootDescriptorTable(10, depthBufferGPUDescriptorHandle);
-}
+
 
 

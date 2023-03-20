@@ -1058,7 +1058,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	pZone->SetVisiblePlayer(camera);
 
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
-
+		
 		shared_ptr<TextBox> nickname = pOtherPlayer->GetNickname();
 		if (pOtherPlayer->GetVisible()) {
 			XMFLOAT3 position = pOtherPlayer->GetBoundingBox().Center;
@@ -1529,6 +1529,7 @@ void PlayScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 	camera->SetViewPortAndScissorRect(_pCommandList);
 	camera->UpdateShaderVariable(_pCommandList);
 
+	UpdateLightShaderVariables(_pCommandList);
 	// 쉐이더 클래스에 정적으로 정의된 디스크립터 힙을 연결한다.
 
 	Shader::SetDescriptorHeap(_pCommandList);
@@ -1548,8 +1549,8 @@ void PlayScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
-	gameFramework.SetDepthBuffer();
 
+	camera->UpdateShaderVariable(_pCommandList);
 	UpdateLightShaderVariables(_pCommandList);
 
 	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
@@ -1581,7 +1582,10 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	for (auto [name, pButton] : pButtons) {
 		pButton->Render(_pCommandList);
 	}
-	
+
+	// 반투명한 오브젝트를 마지막에 그린다.
+	gameFramework.GetShader("BlendingShader")->Render(_pCommandList);
+
 	//gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
 	//pFrustumMesh->UpdateMesh(camera->GetBoundingFrustum());
 	//pFrustumMesh->Render(_pCommandList);

@@ -542,8 +542,6 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	gameFramework.GetShader("BasicShader")->Render(_pCommandList);
 	GameObject::RenderInstanceObjects(_pCommandList);
 
-	// 반투명한 오브젝트를 마지막에 그린다.
-	gameFramework.GetShader("BlendingShader")->Render(_pCommandList);
 
 #else
 	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
@@ -726,7 +724,6 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pNewLight->theta = (float)numbers::pi * 0.9f;
 			pNewLight->range = 6.f;
 
-			cout << pNewLight->position << "\n";
 			if(auto pScene = wpScene.lock())
 				pScene->AddLight(pNewLight);
 
@@ -925,6 +922,14 @@ void Zone::SetVisiblePlayer(shared_ptr<Camera> _pCamera) {
 	}
 
 	for (auto pOtherPlayer : pOtherPlayers) {
+
+		XMFLOAT3 rayWorldDirection = Vector3::Normalize(Vector3::Subtract(pOtherPlayer->GetWorldPosition(), _pCamera->GetWorldPosition()));
+
+		if (Vector3::Angle(_pCamera->GetWorldLookVector(), rayWorldDirection, false) > 90.0f) {
+			pOtherPlayer->SetVisible(false);
+			break;
+		}
+
 		XMFLOAT3 center = pOtherPlayer->GetBoundingBox().Center;
 		isVisible = true;
 		for (auto& sector : sectors) {
