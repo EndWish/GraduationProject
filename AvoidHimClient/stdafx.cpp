@@ -28,15 +28,10 @@ string serverIP;
 array<char, BUFSIZE> sendBuffer;
 array<char, BUFSIZE> recvBuffer;
 
-
-
-
-
 float random(float min, float max) {
 	uniform_real_distribution<float> dis(min, max);
 	return dis(rd);
 }
-
 
 void ReadStringBinary(string& _dest, ifstream& _file){
 	// 글자수 만큼 string을 읽는 함수

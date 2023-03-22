@@ -26,6 +26,7 @@ Light::Light(const shared_ptr<GameObject>& _object) {
 
 	// 이 빛이 켜져있는 상태인지 확인
 	enable = true;
+	UpdateProjectionTransform(0.1f, 100.0f, float(C_WIDTH) / C_HEIGHT, 65.0f);
 }
 
 Light::~Light() {
@@ -39,4 +40,18 @@ void Light::UpdateLight() {
 		direction = object.lock()->GetWorldLookVector();
 	}
 
+}
+
+
+void Light::UpdateViewTransform() {
+	// 조명의 위치와 방향에 따라 갱신
+	XMFLOAT3 worldPosition = position;
+
+	XMFLOAT3 lookAtWorld = Vector3::Add(worldPosition, direction);
+	// up벡터를 임의로 y방향으로 설정
+	viewTransform = Matrix4x4::LookAtLH(worldPosition, lookAtWorld, XMFLOAT3(0,1,0));
+}
+
+void Light::UpdateProjectionTransform(float _nearDistance, float _farDistance, float _aspectRatio, float _fovAngle) {
+	projectionTransform = Matrix4x4::PerspectiveFovLH(XMConvertToRadians(_fovAngle), _aspectRatio, _nearDistance, _farDistance);
 }

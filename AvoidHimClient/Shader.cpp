@@ -22,25 +22,41 @@ Shader::~Shader() {
 
 }
 
-void Shader::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+const vector<weak_ptr<GameObject>>& Shader::GetGameObjects() const {
+	return wpGameObjects;
+}
 
+void Shader::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	ZeroMemory(&pipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 	pipelineStateDesc.pRootSignature = _pRootSignature.Get();
 	pipelineStateDesc.RasterizerState = CreateRasterizerState();
 	pipelineStateDesc.BlendState = CreateBlendState();
 	pipelineStateDesc.InputLayout = CreateInputLayout();
 	pipelineStateDesc.DepthStencilState = CreateDepthStencilState();
-
 	pipelineStateDesc.SampleMask = UINT_MAX;
 	pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-	pipelineStateDesc.NumRenderTargets = 1 + NUM_G_BUFFER;
-	pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
-	pipelineStateDesc.RTVFormats[1] = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	pipelineStateDesc.RTVFormats[2] = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	pipelineStateDesc.RTVFormats[3] = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	pipelineStateDesc.RTVFormats[4] = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	pipelineStateDesc.RTVFormats[5] = DXGI_FORMAT_R32_FLOAT;
-	
+
+	switch (renderType) {
+	case ShaderRenderType::PRE_RENDER: {
+		pipelineStateDesc.NumRenderTargets = NUM_G_BUFFER;
+		pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		pipelineStateDesc.RTVFormats[1] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		pipelineStateDesc.RTVFormats[2] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		pipelineStateDesc.RTVFormats[3] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		pipelineStateDesc.RTVFormats[4] = DXGI_FORMAT_R32_FLOAT;
+		break;
+	}
+	case ShaderRenderType::SWAP_CHAIN_RENDER: {
+		pipelineStateDesc.NumRenderTargets = 1;
+		pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R8G8B8A8_UNORM;
+		break;
+	}
+	case ShaderRenderType::SHADOW_RENDER: {
+		pipelineStateDesc.NumRenderTargets = 1;
+		pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R32_FLOAT;
+		break;
+	}
+	}
 
 	pipelineStateDesc.DSVFormat = DXGI_FORMAT_D32_FLOAT;
 	pipelineStateDesc.SampleDesc.Count = 1;
@@ -244,7 +260,7 @@ void Shader::CreateCbvSrvDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nCon
 
 //////////////////// Basic Shader
 BasicShader::BasicShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
-
+	renderType = ShaderRenderType::PRE_RENDER;
 	Init(_pDevice, _pRootSignature);
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC envPipelineStateDesc;
 	ZeroMemory(&envPipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -304,7 +320,7 @@ D3D12_INPUT_LAYOUT_DESC BasicShader::CreateInputLayout() {
 
 //////////////////// SkinnedShader
 SkinnedShader::SkinnedShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
-
+	renderType = ShaderRenderType::PRE_RENDER;
 	Init(_pDevice, _pRootSignature);
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC envPipelineStateDesc;
 	ZeroMemory(&envPipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -363,9 +379,8 @@ D3D12_INPUT_LAYOUT_DESC SkinnedShader::CreateInputLayout() {
 
 
 UIShader::UIShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
-
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
 	Init(_pDevice, _pRootSignature);
-
 	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "Vertex2DShader", "vs_5_1", pVSBlob);
 	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "Pixel2DShader", "ps_5_1", pPSBlob);
 
@@ -460,8 +475,8 @@ D3D12_BLEND_DESC UIShader::CreateBlendState() {
 //////////////// Bounding Mesh Shader ///////////////////
 
 BoundingMeshShader::BoundingMeshShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
 	Init(_pDevice, _pRootSignature);
-
 	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "BoundingVertexShader", "vs_5_1", pVSBlob);
 	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "BoundingPixelShader", "ps_5_1", pPSBlob);
 
@@ -511,7 +526,7 @@ D3D12_INPUT_LAYOUT_DESC BoundingMeshShader::CreateInputLayout() {
 //////////////////// Instancing Shader ///////////////////////
 
 InstancingShader::InstancingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
-
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
 	Init(_pDevice, _pRootSignature);
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC envPipelineStateDesc;
 	ZeroMemory(&envPipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
@@ -575,8 +590,8 @@ D3D12_INPUT_LAYOUT_DESC InstancingShader::CreateInputLayout() {
 
 BlendingShader::BlendingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
 	Init(_pDevice, _pRootSignature);
-
 	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultVertexShader", "vs_5_1", pVSBlob);
 	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultPixelShader", "ps_5_1", pPSBlob);
 
@@ -691,10 +706,10 @@ void BlendingShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLi
 
 EffectShader::EffectShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 
+	renderType = ShaderRenderType::PRE_RENDER;
 	Init(_pDevice, _pRootSignature);
-
 	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "EffectVertexShader", "vs_5_1", pVSBlob);
-	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultPixelShader", "ps_5_1", pPSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "EffectPixelShader", "ps_5_1", pPSBlob);
 
 	HRESULT hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
 	if (hr == S_OK) cout << "EffectShader 생성 성공\n";
@@ -714,7 +729,7 @@ D3D12_RASTERIZER_DESC EffectShader::CreateRasterizerState() {
 	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
 	//	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-	rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
 	rasterizerDesc.FrontCounterClockwise = FALSE;
 	rasterizerDesc.DepthBias = 0;
 	rasterizerDesc.DepthBiasClamp = 0.0f;
@@ -805,8 +820,8 @@ void EffectShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 
 SkyBoxShader::SkyBoxShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 
+	renderType = ShaderRenderType::PRE_RENDER;
 	Init(_pDevice, _pRootSignature);
-
 	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "SkyBoxVertexShader", "vs_5_1", pVSBlob);
 	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "SkyBoxPixelShader", "ps_5_1", pPSBlob);
 
@@ -900,8 +915,8 @@ D3D12_BLEND_DESC SkyBoxShader::CreateBlendState() {
 
 
 LightingShader::LightingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
 	Init(_pDevice, _pRootSignature);
-
 	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "LightingVertexShader", "vs_5_1", pVSBlob);
 	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "LightingPixelShader", "ps_5_1", pPSBlob);
 

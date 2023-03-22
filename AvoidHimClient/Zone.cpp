@@ -724,9 +724,10 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pNewLight->theta = (float)numbers::pi * 0.9f;
 			pNewLight->range = 6.f;
 
-			if(auto pScene = wpScene.lock())
+			if (auto pScene = wpScene.lock()) {
 				pScene->AddLight(pNewLight);
-
+				pNewLight->UpdateViewTransform();
+			}
 			break;
 		}
 		case SectorLayer::sprite: {

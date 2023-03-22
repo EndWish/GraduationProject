@@ -88,7 +88,11 @@ private:
 	shared_ptr<Texture> pGBuffer;
 	// G Buffer狼 坊歹鸥百轰 林家
 	vector<D3D12_CPU_DESCRIPTOR_HANDLE> GBufferCPUDescriptorHandles;
-
+	// 溅档快 甘
+	shared_ptr<Texture> pShadowMap;
+	// 溅档快 甘狼 坊歹鸥百轰 林家
+	vector<D3D12_CPU_DESCRIPTOR_HANDLE> shadowMapCPUDescriptorHandles;
+	
 	// 积己, 家戈磊
 private:
 	GameFramework();
@@ -122,7 +126,7 @@ public:
 	const shared_ptr<Scene>& GetCurrentScene() const;
 
 	void InitOldCursor();
-	void InitGBuffer();
+	void InitBuffer();
 
 	TextureManager& GetTextureManager();
 	GameObjectManager& GetGameObjectManager();

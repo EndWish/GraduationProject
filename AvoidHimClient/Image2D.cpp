@@ -34,7 +34,6 @@ Image2D::Image2D(const string& _fileName, XMFLOAT2 _size, XMFLOAT2 _position, XM
 	positionBufferView.StrideInBytes = sizeof(XMFLOAT2);
 	positionBufferView.SizeInBytes = sizeof(XMFLOAT2) * 6;
 
-	
 }
 
 Image2D::~Image2D() {

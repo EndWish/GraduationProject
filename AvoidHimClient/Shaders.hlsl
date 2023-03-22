@@ -169,7 +169,7 @@ VS_EFFECT_OUTPUT EffectVertexShader(VS_EFFECT_INPUT input)
     output.positionW = (float3) mul(float4(input.position, 1.0f), worldTransform);
 
     output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
-    
+   
     int x = indexInfo.index % indexInfo.col;
     int y = indexInfo.index / indexInfo.col;
     float xWid = 1.f / indexInfo.col;
@@ -179,6 +179,43 @@ VS_EFFECT_OUTPUT EffectVertexShader(VS_EFFECT_INPUT input)
     output.uv = startUV + input.uv * float2(xWid, yWid);
     return output;
 }
+
+[earlydepthstencil]
+G_BUFFER_OUTPUT EffectPixelShader(VS_EFFECT_OUTPUT input)
+{
+    G_BUFFER_OUTPUT output;
+    float4 cColor = float4(0, 0, 0, 1);
+    if (drawMask & MATERIAL_ALBEDO_MAP)
+    {
+        cColor = albedoMap.Sample(gssWrap, input.uv);
+    }
+    else
+    {
+        cColor = diffuse;
+    }
+    
+    // 노멀값 조정
+    if (drawMask & MATERIAL_NORMAL_MAP)
+    {
+        float3x3 TBN = float3x3(normalize(input.tangent), normalize(input.biTangent), normalize(input.normal));
+        float3 vNormal = normalize(normalMap.Sample(gssWrap, input.uv).rgb * 2.0f - 1.0f); //[0, 1] → [-1, 1]
+        input.normal = normalize(mul(vNormal, TBN));
+    }
+    else
+    {
+        input.normal = normalize(input.normal);
+    }
+    if (cColor.a < 0.3f)
+        discard;
+    output.color = cColor;
+    output.normal = float4(input.normal, 1.0f);
+    output.position = float4(input.positionW, 1.0f);
+    output.emissive = float4(0, 0, 0, 1);
+    // Effect는 깊이값을 쓰지 않는다. (그림자 x)
+    output.depth = depthTexture.Sample(gssWrap, input.uv);
+    return output;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// 

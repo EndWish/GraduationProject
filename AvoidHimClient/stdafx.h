@@ -6,10 +6,11 @@
 
 #define WIN32_LEAN_AND_MEAN             // 거의 사용되지 않는 내용을 Windows 헤더에서 제외
 #define NUM_G_BUFFER 5
+#define NUM_SHADOW_MAP 4
 #define MAX_LIGHTS 20 // 조명의 최대 갯수
 #define GRAVITY 9.8f
-#define C_WIDTH 800
-#define C_HEIGHT 600
+#define C_WIDTH 1920
+#define C_HEIGHT 1080
 #define USING_INSTANCING
 //#define DEBUG
 #define DRAW_BOUNDING

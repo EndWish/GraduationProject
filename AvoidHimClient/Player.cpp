@@ -259,7 +259,10 @@ void Student::LeftClick() {
 
 void Student::RightClick() {
 	// 은신 스킬 사용
-
+	return;
+	//pTexts["rightCoolTime"]->SetEnable(true);
+	Scene::GetUI("2DUI_rightSkill")->SetEnable(true);
+	Scene::GetUI("2DUI_rightSkill")->SetDark(true);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -329,6 +332,7 @@ void Professor::LeftClick() {
 	}
 
 	Scene::GetText("leftCoolTime")->SetEnable(true);
+	Scene::GetUI("2DUI_swingAttack")->SetDark(true);
 
 	// 근접공격에 대해 dark를 set
 }
@@ -346,7 +350,7 @@ void Professor::RightClick() {
 	}
 
 	Scene::GetText("rightCoolTime")->SetEnable(true);
-
+	Scene::GetUI("2DUI_throwAttack")->SetDark(true);
 	// 원거리 공격에 대해 dark를 set
 }
 

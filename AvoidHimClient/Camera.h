@@ -36,7 +36,7 @@ public:
 	float GetMaxDistance() const { return maxDistance; }
 
 	void SetViewPortAndScissorRect(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, VS_CameraMappedFormat* _format = nullptr);
 	void UpdateViewTransform();
 	void UpdateProjectionTransform(float _nearDistance, float _farDistance, float _aspectRatio, float _fovAngle);
 	

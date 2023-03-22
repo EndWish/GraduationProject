@@ -3,6 +3,13 @@
 class Texture;
 class GameObject;
 class Camera;
+
+enum ShaderRenderType {
+	PRE_RENDER,			// 정해놓은 멀티 렌더타겟에 그리는 쉐이더
+	SWAP_CHAIN_RENDER,	// 후면버퍼에 실제로 그리는 쉐이더
+	SHADOW_RENDER,		// 그림자 맵에 그리는 쉐이더
+};
+
 class Shader {
 protected:
 	static weak_ptr<Camera> wpCamera;
@@ -38,6 +45,7 @@ protected:
 
 	// 해당 쉐이더로 그릴 게임 오브젝트들의 포인터 벡터
 	vector<weak_ptr<GameObject>> wpGameObjects;
+	ShaderRenderType renderType;
 public:
 	// 생성 관련 함수들
 	Shader();
@@ -52,8 +60,9 @@ public:
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUCbvDescriptorStartHandle() { return cbvGPUDescriptorStartHandle; }
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUSrvDescriptorStartHandle() { return srvGPUDescriptorStartHandle; };
 
+	const vector<weak_ptr<GameObject>>& GetGameObjects() const;
 protected:
-	void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
 
 	D3D12_SHADER_BYTECODE CompileShaderFromFile(const wstring& _fileName, const string& _shaderName, const string& _shaderProfile, ComPtr<ID3DBlob>& _pBlob);
 

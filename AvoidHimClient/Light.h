@@ -5,6 +5,9 @@ class GameObject;
 class Light
 {
 public:
+	// 빛 위치와 방향에서의 변환 행렬
+	XMFLOAT4X4 viewTransform;
+	XMFLOAT4X4 projectionTransform;
 	// 각 항들
 	XMFLOAT4 ambient;
 	XMFLOAT4 diffuse;
@@ -37,6 +40,9 @@ public:
 	~Light();
 	void UpdateLight();
 
+	void UpdateTransform();
+	void UpdateViewTransform();
+	void UpdateProjectionTransform(float _nearDistance, float _farDistance, float _aspectRatio, float _fovAngle);
 };
 
 

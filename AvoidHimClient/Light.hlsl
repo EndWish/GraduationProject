@@ -11,6 +11,9 @@
 
 struct LIGHT
 {
+    float4x4 view;
+    float4x4 projection;
+    
 	float4 ambient;
 	float4 diffuse;
 	float4 specular;
