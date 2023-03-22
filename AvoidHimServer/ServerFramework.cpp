@@ -161,6 +161,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         SendContents(_socket, pClient->GetRemainBuffer(), sendPacket);
         if (!sendPacket.isExist) {
             pClients[recvPacket.cid]->SetNickname(wstring(recvPacket.nickname));
+
         }
         else {
             // 중복되는 이름일 경우 해당 클라이언트를 바로 삭제해준다.

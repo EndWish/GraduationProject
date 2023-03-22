@@ -562,13 +562,15 @@ void PlayScene::changeUI(bool _enable) {
 	pTexts["rightCoolTime"]->SetEnable(_enable);
 	pTexts["remainTime"]->SetEnable(_enable);
 	pTexts["hackRate"]->SetEnable(_enable);
-	pUIs["2DUI_leftSkill"]->SetEnable(_enable);
-	pUIs["2DUI_rightSkill"]->SetEnable(_enable);
+	
 
 	if (isPlayerProfessor) {	// 교수일 경우의 UI 
-
+		pUIs["2DUI_throwAttack"]->SetEnable(_enable);
+		pUIs["2DUI_swingAttack"]->SetEnable(_enable);
 	}
 	else {		// 학생일 경우의 UI 
+		pUIs["2DUI_leftSkill"]->SetEnable(_enable);
+		pUIs["2DUI_rightSkill"]->SetEnable(_enable);
 		pUIs["2DUI_energyDrink"]->SetEnable(_enable);
 		pUIs["2DUI_medicalKit"]->SetEnable(_enable);
 		pUIs["2DUI_prisonKey"]->SetEnable(_enable);
@@ -812,7 +814,6 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			else { // 학생일 경우
 				pOtherPlayer->SetNickname(wstring(recvPacket->nickname[i]), false);
 			}
-			wcout << wstring(recvPacket->nickname[i]);
 			pOtherPlayer->Create("Player"s, _pDevice, _pCommandList);
 			pOtherPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pOtherPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);

@@ -19,12 +19,10 @@ void ConnectToServer();
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR lpCmdLine, _In_ int nCmdShow)
 {
-
-
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
 
-
+    setlocale(LC_ALL, "");
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_CLIENT, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
@@ -183,7 +181,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 MessageBox(hDlg, L"닉네임이 20자 이상입니다.", L"알림", MB_OK);
             else
             {
-                if (nicklen != 0) nickName.assign(nickNameBuffer, nickNameBuffer + nicklen);
+                if (nicklen != 0) nickName.assign(nickNameBuffer, nickNameBuffer + nicklen + 1);
 #ifdef UNICODE
                 // 유니코드
                 serverIP.assign((WCHAR*)IPbuffer, (WCHAR*)IPbuffer + wcslen((WCHAR*)IPbuffer));
