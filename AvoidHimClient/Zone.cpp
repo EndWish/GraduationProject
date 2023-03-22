@@ -1034,9 +1034,9 @@ shared_ptr<Trap> Zone::GetTrap(UINT _objectID) {
 
 void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	shared_ptr<Attack> pAttack;
-	XMFLOAT3 offset = XMFLOAT3(0.f, 0.f, 0.5f);	// 공격의 생성 위치 오프셋
+	XMFLOAT3 offset = XMFLOAT3(0.f, 0.5f, 0.5f);	// 공격의 생성 위치 오프셋
 	// 해당 플레이어의 위치, 회전값을 적용하고 위치에 맞는 섹터에 추가한다.
-	offset = Vector3::Add(Vector3::ScalarProduct(_pPlayerObject->GetWorldUpVector(), offset.y), Vector3::Add(Vector3::ScalarProduct(_pPlayerObject->GetWorldRightVector(), offset.y), Vector3::ScalarProduct(_pPlayerObject->GetWorldLookVector(), offset.z)));
+	offset = Vector3::Add(Vector3::ScalarProduct(_pPlayerObject->GetWorldUpVector(), offset.y), Vector3::Add(Vector3::ScalarProduct(_pPlayerObject->GetWorldRightVector(), offset.x), Vector3::ScalarProduct(_pPlayerObject->GetWorldLookVector(), offset.z)));
 	if (_attackType == AttackType::swingAttack) {
 		pAttack = make_shared<SwingAttack>(_pPlayerObject->GetID());
 		pAttack->Create("SwingAttack", _pDevice, _pCommandList);
@@ -1044,7 +1044,7 @@ void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObje
 	else if (_attackType == AttackType::throwAttack) {
 
 		pAttack = make_shared<ThrowAttack>(_pPlayerObject->GetID(), _pPlayerObject->GetWorldLookVector());
-		pAttack->Create("ThrowAttack", _pDevice, _pCommandList);
+		pAttack->Create("BookAttack", _pDevice, _pCommandList);
 	}
 
 	pAttack->SetLocalPosition(Vector3::Add(_pPlayerObject->GetWorldPosition(), offset));

@@ -741,7 +741,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	GameFramework& gameFramework = GameFramework::Instance();
 	
 	gameFramework.GetGameObjectManager().LoadGameObject("SwingAttack", _pDevice, _pCommandList);
-	gameFramework.GetGameObjectManager().LoadGameObject("ThrowAttack", _pDevice, _pCommandList);
+	gameFramework.GetGameObjectManager().LoadGameObject("BookAttack", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("PrisonKey", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("MedicalKit", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("EnergyDrink", _pDevice, _pCommandList);

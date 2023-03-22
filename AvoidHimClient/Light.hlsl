@@ -127,6 +127,9 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
             color = (_color * (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular)) * attenuationFactor * spotFactor;
         }
     }
+    
+    color = color * clamp((15 - length(_position - cameraPosition)) / 5.f, 0.f, 1.f);
+    
     return color;
 }
 
