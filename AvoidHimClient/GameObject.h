@@ -297,7 +297,7 @@ public:
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
 
 	void SetNickname(wstring _name, bool _isProfessor);
-	shared_ptr<TextBox> GetNickname() const { return nickname; };
+	shared_ptr<TextBox> GetNickname()  { return nickname; };
 
 	float GetHP() const { return hp; };
 	void SetHP(float _hp) { hp = _hp; };

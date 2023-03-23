@@ -177,7 +177,7 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             GetDlgItemText(hDlg, IDC_IPADDRESS1, IPbuffer, 16);
             size_t nicklen = wcslen(nickNameBuffer);
 
-            if (nicklen > 20)
+            if (nicklen >= 20)
                 MessageBox(hDlg, L"닉네임이 20자 이상입니다.", L"알림", MB_OK);
             else
             {

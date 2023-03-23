@@ -32,6 +32,7 @@ protected:
 	// µÐÈ­¿¡ »ç¿ë
 	float slowTime;
 	float slowRate;
+
 public:
 	Player();
 	virtual ~Player();
