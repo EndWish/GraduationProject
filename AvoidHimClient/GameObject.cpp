@@ -780,19 +780,18 @@ InterpolateMoveGameObject::~InterpolateMoveGameObject() {
 
 void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 	// 서버의 다음 주기가 돌때를 t = 1로 잡고 보간한다
-	XMFLOAT3 prevPosition = GetWorldPosition();
+	XMFLOAT3 prevPositionFootStep = GetWorldPosition();
 	t += _timeElapsed / SERVER_PERIOD; 
-	t = min(t, 1.f);
+	t = min(t, 1.1f);
 	localPosition = Vector3::Lerp(prevPosition, nextPosition, t);
 	localRotation = Vector4::QuaternionSlerp(prevRotation, nextRotation, t);
 	localScale = Vector3::Lerp(prevScale, nextScale, t);
 
 	UpdateObject();
-
 	XMFLOAT3 position = GetWorldPosition();
 	pFootStepSound->SetPosition(position);
-	if (position.y == prevPosition.y) {
-		moveDistance += Vector3::Length(Vector3::Subtract(prevPosition, position));
+	if (position.y == prevPositionFootStep.y) {
+		moveDistance += Vector3::Length(Vector3::Subtract(prevPositionFootStep, position));
 	}
 	if (moveDistance > (1.0f * 2)) {
 		pFootStepSound->Play();

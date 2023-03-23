@@ -138,9 +138,10 @@ GameFramework::GameFramework() {
 	// MSAA 다중 샘플링
 	msaa4xEnable = false;
 	msaa4xLevel = 0;
-	
-	clientHeight = C_WIDTH;
-	clientWidth = C_HEIGHT;
+
+	clientWidth = C_WIDTH;
+	clientHeight = C_HEIGHT;
+
 	dsvDescriptorIncrementSize = 0;
 	fenceValues.fill(0);
 	rtvDescriptorIncrementSize = 0;
@@ -256,8 +257,6 @@ void GameFramework::CreateSwapChain()
 {
 	RECT rcClient;
 	GetClientRect(windowHandle, &rcClient);    // 클라이언트 크기를 rcClient에 저장
-	clientWidth = rcClient.right - rcClient.left;
-	clientHeight = rcClient.bottom - rcClient.top;
 
 	DXGI_SWAP_CHAIN_DESC dxgiSwapChainDesc;
 	::ZeroMemory(&dxgiSwapChainDesc, sizeof(dxgiSwapChainDesc));
@@ -284,6 +283,7 @@ void GameFramework::CreateSwapChain()
 }
 
 void GameFramework::CreateRenderTargetViews() {
+
 	HRESULT hResult;
 	D3D12_CPU_DESCRIPTOR_HANDLE rtvCPUDescriptorHandle = pRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();    // 서술자 힙을 통해 시작주소를 가져온다.
 	for (int i = 0; i < nSwapChainBuffer; ++i) {
@@ -806,7 +806,7 @@ void GameFramework::ProcessInput() {
 		}
 		
 		if (keysDownBuffers['F']) {
-
+			ChangeSwapChainState();
 		}
 		// 일시정지
 		if (keysDownBuffers['P']) {

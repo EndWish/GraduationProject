@@ -17,7 +17,7 @@ using namespace DirectX;
 
 #define BUFSIZE 512
 #define MAX_PARTICIPANT 5
-#define SERVER_PERIOD (1.f / 30)
+#define SERVER_PERIOD (1.f / 20)
 #define WATER_DISPENSER_COOLTIME 10.f
 ///////////////////////////////
 

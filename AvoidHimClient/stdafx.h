@@ -9,8 +9,8 @@
 #define NUM_SHADOW_MAP 4
 #define MAX_LIGHTS 20 // 조명의 최대 갯수
 #define GRAVITY 9.8f
-#define C_WIDTH 1920
-#define C_HEIGHT 1080
+#define C_WIDTH 1280	
+#define C_HEIGHT 720
 #define USING_INSTANCING
 //#define DEBUG
 #define DRAW_BOUNDING

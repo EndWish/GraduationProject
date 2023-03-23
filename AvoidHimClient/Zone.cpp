@@ -960,37 +960,49 @@ void Zone::AnimateObjects(float _timeElapsed) {
 		pItem->Animate(_timeElapsed);
 	}
 
-	for (auto& [objectID, pAttack] : pAttackObjTable) {	// 공격 오브젝트
+	auto pAttackTableIter = pAttackObjTable.begin();
+	while (pAttackTableIter != pAttackObjTable.end()) {
+		auto& [objectID, pAttack] = *pAttackTableIter;
+
 		prevIndex = GetIndex(pAttack->GetWorldPosition());
 		// 사라져야할 공격은 삭제, 소속 섹터 업데이트
 		if (pAttack->GetIsRemove()) {
 			GetSector(pAttack->GetWorldPosition())->RemoveObject(SectorLayer::attack, objectID);
-			pAttackObjTable.erase(objectID);
-			continue;
+			pAttackTableIter = pAttackObjTable.erase(pAttackTableIter);
 		}
+		else {
+			pAttack->Animate(_timeElapsed);
+			nextIndex = GetIndex(pAttack->GetWorldPosition());
 
-		pAttack->Animate(_timeElapsed);
-		nextIndex = GetIndex(pAttack->GetWorldPosition());
-
-		if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
-			HandOffObject(SectorLayer::attack, pAttack->GetID(), pAttack, prevIndex, nextIndex);
-
+			if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
+				HandOffObject(SectorLayer::attack, pAttack->GetID(), pAttack, prevIndex, nextIndex);
+			}
+			pAttackTableIter++;
 		}
+		
 	}
-	for (auto& [objectID, pItem] : pItemObjTable) {	// 아이템 오브젝트
+
+	auto pItemTableIter = pItemObjTable.begin();
+	while (pItemTableIter != pItemObjTable.end()) {
+		auto& [objectID, pItem] = *pItemTableIter;
 		// 사라져야할 아이템은 삭제
 		if (pItem->GetIsRemove()) {
 			GetSector(pItem->GetWorldPosition())->RemoveObject(SectorLayer::item, objectID);
-			pItemObjTable.erase(objectID);
+			pItemTableIter = pItemObjTable.erase(pItemTableIter);
 		}
+		else pItemTableIter++;
 	}
-	for (auto& [objectID, pTrap] : pTrapObjTable) {	// 아이템 오브젝트
+
+
+	auto pTrapTableIter = pTrapObjTable.begin();
+	while (pTrapTableIter != pTrapObjTable.end()) {
+		auto& [objectID, pTrap] = *pTrapTableIter;
 		// 사라져야할 아이템은 삭제
 		if (pTrap->GetIsRemove()) {
 			GetSector(pTrap->GetWorldPosition())->RemoveObject(SectorLayer::trap, objectID);
-			pTrapObjTable.erase(objectID);
-
+			pTrapTableIter = pTrapObjTable.erase(pTrapTableIter);
 		}
+		else pTrapTableIter++;
 	}
 }
 
