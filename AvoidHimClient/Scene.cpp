@@ -1360,21 +1360,39 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 	}
 	case SC_PACKET_TYPE::useItem: {	// 누군가 의료키트, 트랩을 설치한 경우
 		SC_USE_ITEM* packet = GetPacket<SC_USE_ITEM>();
-		auto pStudent = static_pointer_cast<InterpolateMoveGameObject>(FindPlayerObject(packet->playerObjectID));
-		
-		if (packet->objectType == ObjectType::medicalKitItem) {
-			pStudent->AddHP(50.0f);
+		// 내가 아이템을 사용한 경우
+		if (packet->playerObjectID == myObjectID) {
+			auto pStudent = static_pointer_cast<Student>(pPlayer);
+			if(packet->objectType == ObjectType::medicalKitItem) {
+				pStudent->AddHP(50.0f);
+			}
+
+			if (packet->objectType == ObjectType::trapItem) {
+				XMFLOAT3 position = pStudent->GetWorldPosition();
+				shared_ptr<Trap> pTrap = make_shared<Trap>();
+
+				pTrap->Create("Trap_attack", _pDevice, _pCommandList);
+				pTrap->SetLocalPosition(position);
+				pTrap->SetID(packet->itemObjectID);
+				pTrap->UpdateObject();
+				pZone->AddTrap(packet->itemObjectID, pTrap);
+			}
 		}
+		else {
+			auto pStudent = static_pointer_cast<InterpolateMoveGameObject>(FindPlayerObject(packet->playerObjectID));
+			if (packet->objectType == ObjectType::medicalKitItem) {
+				pStudent->AddHP(50.0f);
+			}
+			if (packet->objectType == ObjectType::trapItem) {
+				XMFLOAT3 position = pStudent->GetWorldPosition();
+				shared_ptr<Trap> pTrap = make_shared<Trap>();
 
-		if (packet->objectType == ObjectType::trapItem) {
-			XMFLOAT3 position = pStudent->GetWorldPosition();
-			shared_ptr<Trap> pTrap = make_shared<Trap>();
-
-			pTrap->Create("Trap_attack", _pDevice, _pCommandList);
-			pTrap->SetLocalPosition(position);
-			pTrap->SetID(packet->itemObjectID);
-			pTrap->UpdateObject();
-			pZone->AddTrap(packet->itemObjectID, pTrap);
+				pTrap->Create("Trap_attack", _pDevice, _pCommandList);
+				pTrap->SetLocalPosition(position);
+				pTrap->SetID(packet->itemObjectID);
+				pTrap->UpdateObject();
+				pZone->AddTrap(packet->itemObjectID, pTrap);
+			}
 		}
 		break;
 	}
