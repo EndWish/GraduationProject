@@ -33,6 +33,8 @@ protected:
 	float slowTime;
 	float slowRate;
 
+	weak_ptr<AnimationController> wpAniController;
+
 public:
 	Player();
 	virtual ~Player();
@@ -83,6 +85,8 @@ public:
 
 	float GetSlowRate() const { return slowRate; };
 	float GetSlowTime() const { return slowTime; };
+
+	shared_ptr<AnimationController> GetAniController();
 }; 
 
 class Student : public Player {
@@ -91,6 +95,7 @@ protected:
 	bool imprisoned;
 	// 보유하고 있는 아이템을 type로만 저장
 	ObjectType item;
+
 public:
 	Student();
 	virtual ~Student();
@@ -115,9 +120,11 @@ class Professor : public Player {
 protected:
 	float sabotageCoolTime;
 
-
 	array<float, (size_t)AttackType::num> attackRemainCoolTime;
 	array<float, (size_t)AttackType::num> attackMaxCoolTime;
+
+	weak_ptr<GameObject> wpHandObject;
+
 public:
 	Professor();
 	virtual ~Professor();
@@ -132,5 +139,7 @@ public:
 	
 	virtual void LeftClick();
 	virtual void RightClick();
+
+	shared_ptr<GameObject> GetHandObject();
 
 };

@@ -44,6 +44,14 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 
 	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
 
+	SetBoundingBox(BoundingOrientedBox(	XMFLOAT3(0, 0.88, 0),
+										XMFLOAT3(0.317352414, 0.88, 0.274967313),
+										XMFLOAT4(0, 0, 0, 1)));
+
+	auto pSkinnedChild = dynamic_pointer_cast<SkinnedGameObject>(pChildren[0]);
+	if (pSkinnedChild) {
+		wpAniController = pSkinnedChild->GetAniController();
+	}
 
 	UpdateObject();
 
@@ -54,6 +62,9 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 }
 
 void Player::Animate(char _collideCheck, float _timeElapsed) {
+	if (auto pAniController = wpAniController.lock()) {
+		pAniController->AddTime(_timeElapsed);
+	}
 
 	XMFLOAT3 prevPosition = GetWorldPosition();
 	XMFLOAT3 position;
@@ -203,6 +214,10 @@ void Player::SetSlowTime(float _slowTime) {
 	slowTime = _slowTime;
 }
 
+shared_ptr<AnimationController> Player::GetAniController() {
+	return wpAniController.lock();
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Student
@@ -284,6 +299,7 @@ Professor::~Professor() {
 
 void Professor::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	Player::Create(_ObjectName, _pDevice, _pCommandList);
+	wpHandObject = FindFrame("Bip001 R Hand");
 }
 
 void Professor::SetCoolTime(AttackType _type, float _coolTime) {
@@ -352,5 +368,9 @@ void Professor::RightClick() {
 	Scene::GetText("rightCoolTime")->SetEnable(true);
 	Scene::GetUI("2DUI_throwAttack")->SetDark(true);
 	// 원거리 공격에 대해 dark를 set
+}
+
+shared_ptr<GameObject> Professor::GetHandObject() {
+	return wpHandObject.lock();
 }
 

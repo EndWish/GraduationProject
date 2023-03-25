@@ -540,11 +540,13 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 #ifdef USING_INSTANCING
 	//gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
 	gameFramework.GetShader("BasicShader")->Render(_pCommandList);
+	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
 	GameObject::RenderInstanceObjects(_pCommandList);
 
 
 #else
 	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
+	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
 	for (auto& divx : sectors) {
 		for (auto& divy : divx) {
 			for (auto& sector : divy) {
@@ -570,10 +572,11 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	for (auto& divx : sectors) {
 		for (auto& divy : divx) {
 			for (auto& sector : divy) {
-				//sector.RenderHitBox(_pCommandList, hitBoxMesh);
+				sector.RenderHitBox(_pCommandList, hitBoxMesh);
 			}
 		}
 	}
+	pPlayer->RenderHitBox(_pCommandList, hitBoxMesh);
 
 #endif
 
@@ -1046,10 +1049,9 @@ shared_ptr<Trap> Zone::GetTrap(UINT _objectID) {
 }
 
 void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	
+
 	shared_ptr<Attack> pAttack;
-	XMFLOAT3 offset = XMFLOAT3(0.f, 0.5f, 0.5f);	// 공격의 생성 위치 오프셋
-	// 해당 플레이어의 위치, 회전값을 적용하고 위치에 맞는 섹터에 추가한다.
-	offset = Vector3::Add(Vector3::ScalarProduct(_pPlayerObject->GetWorldUpVector(), offset.y), Vector3::Add(Vector3::ScalarProduct(_pPlayerObject->GetWorldRightVector(), offset.x), Vector3::ScalarProduct(_pPlayerObject->GetWorldLookVector(), offset.z)));
 	if (_attackType == AttackType::swingAttack) {
 		pAttack = make_shared<SwingAttack>(_pPlayerObject->GetID());
 		pAttack->Create("SwingAttack", _pDevice, _pCommandList);
@@ -1060,7 +1062,10 @@ void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObje
 		pAttack->Create("BookAttack", _pDevice, _pCommandList);
 	}
 
-	pAttack->SetLocalPosition(Vector3::Add(_pPlayerObject->GetWorldPosition(), offset));
+	if(auto pProfessor = dynamic_pointer_cast<Professor>(_pPlayerObject))
+		pAttack->SetLocalPosition(pProfessor->GetHandObject()->GetWorldPosition());
+	else
+		pAttack->SetLocalPosition(static_pointer_cast<InterpolateMoveGameObject>(_pPlayerObject)->GetHandObject()->GetWorldPosition());
 	pAttack->SetLocalRotation(_pPlayerObject->GetLocalRotate());
 	pAttack->UpdateObject();
 	AddObject(SectorLayer::attack, _objectID, pAttack, pAttack->GetWorldPosition());

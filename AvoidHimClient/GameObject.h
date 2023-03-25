@@ -247,23 +247,23 @@ struct SkinnedWorldTransformFormat {
 };
 class SkinnedGameObject : public GameObject {
 protected:
-	static ComPtr<ID3D12Resource> pSkinnedWorldTransformBuffer;
-	static shared_ptr<SkinnedWorldTransformFormat> pMappedSkinnedWorldTransform;
-public:
-	static void InitSkinnedWorldTransformBuffer(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-
-protected:
+	ComPtr<ID3D12Resource> pSkinnedWorldTransformBuffer;
+	shared_ptr<SkinnedWorldTransformFormat> pMappedSkinnedWorldTransform;
 	vector<shared_ptr<GameObject>> pBones;
-	AnimationController aniController;
+	shared_ptr<AnimationController> pAniController;
 
 public:
 	SkinnedGameObject();
 	virtual ~SkinnedGameObject();
 
+	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject);
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	virtual void CopyObject(const GameObject& _other);
+	void CopyObject(const GameObject& _other, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
+	shared_ptr<AnimationController> GetAniController() { return pAniController; }
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -288,6 +288,8 @@ private:
 	shared_ptr<Camera> pCamera;
 	shared_ptr<TextBox> nickname;
 
+	weak_ptr<GameObject> wpHandObject;
+
 public:
 	InterpolateMoveGameObject();
 	~InterpolateMoveGameObject();
@@ -311,6 +313,7 @@ public:
 	void SetVisible(bool _visible) { visible = _visible; };
 	bool GetVisible() const { return visible; };
 
+	shared_ptr<GameObject> GetHandObject();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

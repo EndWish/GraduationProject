@@ -40,8 +40,5 @@ public:
 	void AddTime(float _time);
 	void LoadFromFile(ifstream& _file, UINT _nBone);
 	void UpdateBoneLocalTransform(vector<shared_ptr<GameObject>>& _pBones);
-
+	void ChangeClip(const string& _name);
 };
-
-
-

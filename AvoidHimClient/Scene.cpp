@@ -794,7 +794,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 				pPlayer = make_shared<Student>();
 			}
 			
-			pPlayer->Create("Player"s, _pDevice, _pCommandList);
+			pPlayer->Create("Student"s, _pDevice, _pCommandList);
 			pPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -814,7 +814,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			else { // 학생일 경우
 				pOtherPlayer->SetNickname(wstring(recvPacket->nickname[i]), false);
 			}
-			pOtherPlayer->Create("Player"s, _pDevice, _pCommandList);
+			pOtherPlayer->Create("Student"s, _pDevice, _pCommandList);
 			pOtherPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pOtherPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pOtherPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -890,8 +890,6 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pLightsBuffer = ::CreateBufferResource(_pDevice, _pCommandList, NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
 	pLightsBuffer->Map(0, NULL, (void**)&pMappedLights);
 
-	SkinnedGameObject::InitSkinnedWorldTransformBuffer(_pDevice, _pCommandList);	// skinnedObject를 렌더하기 위한 (월드변환행렬을 담는)리소스를 생성한다.
-	
 	Shader::SetCamera(camera);
 }
 
@@ -959,6 +957,19 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		pPlayer->RotateMoveHorizontal(moveVector, angleSpeed, moveSpeed);
 
 	}
+	if (_keysBuffers['1'] & 0xF0) {
+		pPlayer->GetAniController()->ChangeClip("run");
+	}
+	if (_keysBuffers['2'] & 0xF0) {
+		pPlayer->GetAniController()->ChangeClip("FastRun");
+	}
+	if (_keysBuffers['3'] & 0xF0) {
+		pPlayer->GetAniController()->ChangeClip("Hacking");
+	}
+	if (_keysBuffers['4'] & 0xF0) {
+		pPlayer->GetAniController()->ChangeClip("Jumping");
+	}
+
 	if (_keysBuffers[VK_SPACE] & 0xF0) {
 		pPlayer->Jump(500.0f);
 	}

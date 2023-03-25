@@ -45,7 +45,6 @@ void GameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice
 	GameFramework& gameFramework = GameFramework::Instance();
 	GameObject::Create();
 	shared_ptr<GameObject> temp = gameFramework.GetGameObjectManager().GetGameObject(_ObjectName, _pDevice, _pCommandList);
-
 	// 인스턴스의 자식으로 그 오브젝트의 정보를 설정
 
 	if (temp) {
@@ -567,22 +566,21 @@ void Effect::CopyObject(const GameObject& _other) {
 }
 
 /////////////////////////// SkinnedGameObject /////////////////////
-ComPtr<ID3D12Resource> SkinnedGameObject::pSkinnedWorldTransformBuffer;
-shared_ptr<SkinnedWorldTransformFormat> SkinnedGameObject::pMappedSkinnedWorldTransform;
 
-void SkinnedGameObject::InitSkinnedWorldTransformBuffer(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+SkinnedGameObject::SkinnedGameObject() {
+	objectClass = 1;
+	pAniController = make_shared<AnimationController>();
+}
+SkinnedGameObject::~SkinnedGameObject() {
+
+}
+
+void SkinnedGameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
 	ComPtr<ID3D12Resource> temp;
 	UINT ncbElementBytes = ((sizeof(SkinnedWorldTransformFormat) + 255) & ~255); //256의 배수
 	pSkinnedWorldTransformBuffer = ::CreateBufferResource(_pDevice, _pCommandList, NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
 	pSkinnedWorldTransformBuffer->Map(0, NULL, (void**)&pMappedSkinnedWorldTransform);
-}
-
-SkinnedGameObject::SkinnedGameObject() {
-	objectClass = true;
-	aniController = AnimationController();
-}
-SkinnedGameObject::~SkinnedGameObject() {
-
 }
 
 void SkinnedGameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject) {
@@ -595,7 +593,7 @@ void SkinnedGameObject::LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>
 		ReadStringBinary(boneNames[i], _file);
 	}
 
-	aniController.LoadFromFile(_file, nBone);
+	pAniController->LoadFromFile(_file, nBone);
 
 	GameObject::LoadFromFile(_file, _pDevice, _pCommandList, _coverObject);
 	// ShaderType은 강제로 SkinnedShader로 바꾸어준다.
@@ -613,8 +611,7 @@ void SkinnedGameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 		GameFramework& gameFramework = GameFramework::Instance();
 		// 메쉬가 있을 경우에만 렌더링을 한다.
 		// 애니메이션에 따라 본들의 행렬을 변경하고 Update한다.	[이 부분은 추후 Animation에서 하도록 수정한다.]
-		aniController.AddTime(1.f / 300.f);
-		aniController.UpdateBoneLocalTransform(pBones);
+		pAniController->UpdateBoneLocalTransform(pBones);
 		UpdateWorldTransform();
 		UpdateShaderVariable(_pCommandList);
 
@@ -640,15 +637,21 @@ void SkinnedGameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 	}
 }
 
-void SkinnedGameObject::CopyObject(const GameObject& _other) {
+void SkinnedGameObject::CopyObject(const GameObject& _other, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	const SkinnedGameObject& other = dynamic_cast<const SkinnedGameObject&>(_other);
 
-	aniController = other.aniController;
+	pAniController = make_shared<AnimationController>();
+	*pAniController = *other.pAniController;
 	GameObject::CopyObject(_other);
+	
+	ComPtr<ID3D12Resource> temp;
+	UINT ncbElementBytes = ((sizeof(SkinnedWorldTransformFormat) + 255) & ~255); //256의 배수
+	pSkinnedWorldTransformBuffer = ::CreateBufferResource(_pDevice, _pCommandList, NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
+	pSkinnedWorldTransformBuffer->Map(0, NULL, (void**)&pMappedSkinnedWorldTransform);
 
 	pBones.assign(other.pBones.size(), {});
 	for (int i = 0; i < pBones.size(); ++i) {
-		if(other.pBones[i])
+		if (other.pBones[i])
 			pBones[i] = FindFrame(other.pBones[i]->GetName());
 	}
 }
@@ -710,15 +713,18 @@ shared_ptr<GameObject> GameObjectManager::GetGameObject(const string& _name, con
 	shared_ptr<GameObject> Object;
 	if (storage[_name]->GetObjectClass() == 1) {
 		Object = make_shared<SkinnedGameObject>();
+		// skinnedGameObject는 뼈의 행렬을 넘겨주기 위한 메모리를 할당해야 하기 때문에 _pDevice와 _pCommandList를 따로 넘겨주는 CopyObject를 만들어 주었다.
+		static_pointer_cast<SkinnedGameObject>(Object)->CopyObject(*storage[_name], _pDevice, _pCommandList);
 	}
 	else if (storage[_name]->GetObjectClass() == 2) {
 		Object = make_shared<Effect>();
+		Object->CopyObject(*storage[_name]);
 	}
 	else {
 		Object = make_shared<GameObject>();
+		Object->CopyObject(*storage[_name]);
 	}
-
-	Object->CopyObject(*storage[_name]);
+	
 	return Object;
 }
 
@@ -773,6 +779,11 @@ void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12De
 	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
 	name = "OtherPlayer";
 	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
+	wpHandObject = FindFrame("Bip001 R Hand");
+
+	SetBoundingBox(BoundingOrientedBox(XMFLOAT3(0, 0.88, 0),
+		XMFLOAT3(0.317352414, 0.88, 0.274967313),
+		XMFLOAT4(0, 0, 0, 1)));
 }
 
 InterpolateMoveGameObject::~InterpolateMoveGameObject() {
@@ -826,6 +837,10 @@ void InterpolateMoveGameObject::SetNickname(wstring _name, bool _isProfessor) {
 	nickname = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", color, XMFLOAT2(1.55f, 1.55f), XMFLOAT2(0.3f, 0.1f), C_WIDTH / 60.0f, false);
 	nickname->SetText(_name);
 	nickname->SetAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+}
+
+shared_ptr<GameObject> InterpolateMoveGameObject::GetHandObject() {
+	return wpHandObject.lock();
 }
 
 ///////////////////////////////////////////////////////////////////////////////
