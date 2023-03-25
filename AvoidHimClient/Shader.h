@@ -60,7 +60,7 @@ public:
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUCbvDescriptorStartHandle() { return cbvGPUDescriptorStartHandle; }
 	D3D12_GPU_DESCRIPTOR_HANDLE GetGPUSrvDescriptorStartHandle() { return srvGPUDescriptorStartHandle; };
 
-	const vector<weak_ptr<GameObject>>& GetGameObjects() const;
+	vector<weak_ptr<GameObject>>& GetGameObjects();
 protected:
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
 
@@ -83,7 +83,18 @@ public:
 private:
 	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+};
 
+class BasicShadowShader : public Shader {
+private:
+
+public:
+	BasicShadowShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~BasicShadowShader();
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+private:
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
 };
 
 class SkinnedShader : public Shader {
@@ -124,10 +135,26 @@ private:
 public:
 	InstancingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
 	virtual ~InstancingShader();
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
 private:
 	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
 };
+
+class InstancingShadowShader : public Shader {
+private:
+
+public:
+	InstancingShadowShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~InstancingShadowShader();
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
+private:
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+};
+
 
 
 class BlendingShader : public Shader {
@@ -136,14 +163,15 @@ private:
 public:
 	BlendingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
 	virtual ~BlendingShader();
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
 private:
 	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
 	virtual D3D12_BLEND_DESC CreateBlendState() final;
 	virtual D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState();
 
-	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	
+
 };
 
 class EffectShader : public Shader {
@@ -152,13 +180,14 @@ private:
 public:
 	EffectShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
 	virtual ~EffectShader();
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
 private:
 	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
 	virtual D3D12_BLEND_DESC CreateBlendState() final;
 	virtual D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState();
 
-	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 };
 

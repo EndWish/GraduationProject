@@ -31,6 +31,7 @@ protected:
 public:
 	static unordered_map<string, Instancing_Data>& GetInstanceDatas() { return instanceDatas; };
 	static void RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	static void RenderShadowInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 protected:
 	ShaderType shaderType;
 	UINT objectClass;	// 0Àº GameObject, 1Àº SkinnedObject, 2´Â Effect

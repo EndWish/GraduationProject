@@ -364,13 +364,13 @@ void GameFramework::CreateGraphicsRootSignature() {
 
 	pDescriptorRanges[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[3].NumDescriptors = NUM_SHADOW_MAP;
-	pDescriptorRanges[3].BaseShaderRegister = 12;	// t12
+	pDescriptorRanges[3].BaseShaderRegister = 12;	// t12 ~ t15
 	pDescriptorRanges[3].RegisterSpace = 0;
 	pDescriptorRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
 	// 루트 시그니처는 이후 계속 수정 
 
-	D3D12_ROOT_PARAMETER pRootParameters[11];
+	D3D12_ROOT_PARAMETER pRootParameters[12];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
@@ -429,9 +429,14 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[10].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[3];
 	pRootParameters[10].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// Shadow Map
 
+	pRootParameters[11].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	pRootParameters[11].Constants.Num32BitValues = 1;
+	pRootParameters[11].Constants.ShaderRegister = 5; // 쉐도우맵을 만들 빛의 인덱스
+	pRootParameters[11].Constants.RegisterSpace = 0;
+	pRootParameters[11].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
-	D3D12_STATIC_SAMPLER_DESC samplerDesc[2];
-	::ZeroMemory(samplerDesc, sizeof(D3D12_STATIC_SAMPLER_DESC) * 2);
+	D3D12_STATIC_SAMPLER_DESC samplerDesc[3];
+	::ZeroMemory(samplerDesc, sizeof(D3D12_STATIC_SAMPLER_DESC) * 3);
 	samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;	// 선형 필터링
 	samplerDesc[0].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;	// 텍스처 타일링을 반복
 	samplerDesc[0].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
@@ -459,6 +464,20 @@ void GameFramework::CreateGraphicsRootSignature() {
 	samplerDesc[1].ShaderRegister = 1;	// s1
 	samplerDesc[1].RegisterSpace = 0;
 	samplerDesc[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
+
+	samplerDesc[2].Filter = D3D12_FILTER_COMPARISON_MIN_MAG_LINEAR_MIP_POINT;
+	samplerDesc[2].AddressU = D3D12_TEXTURE_ADDRESS_MODE_WRAP;	 // 깊이값 비교를 위한 샘플러
+	samplerDesc[2].AddressV = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	samplerDesc[2].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
+	samplerDesc[2].MipLODBias = 0;
+	samplerDesc[2].MaxAnisotropy = 1;
+	samplerDesc[2].ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	samplerDesc[2].BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
+	samplerDesc[2].MinLOD = 0.0f;
+	samplerDesc[2].MaxLOD = D3D12_FLOAT32_MAX;
+	samplerDesc[2].ShaderRegister = 2;	// s2
+	samplerDesc[2].RegisterSpace = 0;
+	samplerDesc[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;
 
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_ALLOW_STREAM_OUTPUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS;
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
@@ -601,7 +620,7 @@ void GameFramework::FrameAdvance() {
 	// 명령 할당자와 명령 리스트를 리셋한다.
 	HRESULT hResult = pCommandAllocator->Reset();
 	hResult = pCommandList->Reset(pCommandAllocator.Get(), NULL);
-
+	vector<ComPtr<ID3D12CommandList>>  pCommandLists;
 	float timeElapsed = gameTimer.GetTimeElapsed();
 	// 입력을 받을 때 플레이어의 움직임을 저장한다.
 	ProcessInput();
@@ -635,58 +654,62 @@ void GameFramework::FrameAdvance() {
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvCPUDescriptorHandle = pDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
 	// 그림자 맵 렌더링
-	if(0)
-	{
-		// 미리 그릴 버퍼의 핸들
-		D3D12_CPU_DESCRIPTOR_HANDLE* rtvCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[1];
 
-		if (!pScenes.empty()) {
-			for (int i = 0; i < NUM_SHADOW_MAP; ++i)
-			{
-				rtvCPUDescriptorHandles[0].ptr = shadowMapCPUDescriptorHandles[i].ptr;
-				pCommandList->ClearRenderTargetView(shadowMapCPUDescriptorHandles[i], pClearColor, 0, NULL);
+	Shader::SetDescriptorHeap(pCommandList);
+	
+	if (!pScenes.empty()) {
+		D3D12_CPU_DESCRIPTOR_HANDLE* rtvShadowCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[1];
 
-				SynchronizeResourceTransition(pCommandList.Get(), pShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		for (int i = 0; i < NUM_SHADOW_MAP; ++i)
+		{
+			rtvShadowCPUDescriptorHandles[0].ptr = shadowMapCPUDescriptorHandles[i].ptr;
 
+			// 이전 그림자 맵을 그릴 때 남은 깊이값을 지운다.
+			pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
 
-				// i번째 쉐도우맵을 렌더타겟으로 지정한다.
-				pCommandList->OMSetRenderTargets(1, rtvCPUDescriptorHandles, TRUE, &dsvCPUDescriptorHandle);
-				
-				// i번째 조명에 대한 쉐도우맵 렌더링을 한다.
-				pScenes.top()->RenderShadowMap(pCommandList, i);
+			SynchronizeResourceTransition(pCommandList.Get(), pShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-				SynchronizeResourceTransition(pCommandList.Get(), pShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
-			}
+			// i번째 쉐도우맵을 렌더타겟으로 지정한다.
+			pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, &dsvCPUDescriptorHandle);
+			pCommandList->ClearRenderTargetView(rtvShadowCPUDescriptorHandles[0], pClearColor, 0, NULL);
+
+			// i번째 조명에 대한 쉐도우맵 렌더링을 한다.
+			pScenes.top()->RenderShadowMap(pCommandList, i);
+
+			SynchronizeResourceTransition(pCommandList.Get(), pShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
 		}
+		delete[] rtvShadowCPUDescriptorHandles;
 	}
 
+	pShadowMap->UpdateShaderVariable(pCommandList);
+	
+	
+
 	// G Buffer 렌더링
-	
-		// 미리 그릴 버퍼의 핸들
-		D3D12_CPU_DESCRIPTOR_HANDLE* rtvCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[NUM_G_BUFFER];
+	// 미리 그릴 버퍼의 핸들
+	D3D12_CPU_DESCRIPTOR_HANDLE* rtvCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[NUM_G_BUFFER];
 
-		for (int i = 0; i < NUM_G_BUFFER; ++i)
-			SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	for (int i = 0; i < NUM_G_BUFFER; ++i)
+		SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
 
-		for (int i = 0; i < NUM_G_BUFFER; ++i) {
-			rtvCPUDescriptorHandles[i].ptr = GBufferCPUDescriptorHandles[i].ptr;
-			pCommandList->ClearRenderTargetView(GBufferCPUDescriptorHandles[i], pClearColor, 0, NULL);
-		}
+	for (int i = 0; i < NUM_G_BUFFER; ++i) {
+		rtvCPUDescriptorHandles[i].ptr = GBufferCPUDescriptorHandles[i].ptr;
+		pCommandList->ClearRenderTargetView(GBufferCPUDescriptorHandles[i], pClearColor, 0, NULL);
+	}
 
-		// G Buffer 및 조명 처리전의 씬을 그리기 위한 버퍼들을 렌더타겟에 Set한다. 
-		pCommandList->OMSetRenderTargets(NUM_G_BUFFER, rtvCPUDescriptorHandles, FALSE, &dsvCPUDescriptorHandle);
-		pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
+	// G Buffer 및 조명 처리전의 씬을 그리기 위한 버퍼들을 렌더타겟에 Set한다. 
+	pCommandList->OMSetRenderTargets(NUM_G_BUFFER, rtvCPUDescriptorHandles, FALSE, &dsvCPUDescriptorHandle);
+	pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
 
-		// 해당 씬에 대한 G Buffer 및 조명을 제외한 씬을 그린다.
-		if (!pScenes.empty()) {
-			pScenes.top()->PreRender(pCommandList, timeElapsed);
-		}
+	// 해당 씬에 대한 G Buffer 및 조명을 제외한 씬을 그린다.
+	if (!pScenes.empty()) {
+		pScenes.top()->PreRender(pCommandList, timeElapsed);
+	}
 
-		for (int i = 0; i < NUM_G_BUFFER; ++i)
-			SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
+	for (int i = 0; i < NUM_G_BUFFER; ++i)
+		SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
 
-	
-
+	delete[] rtvCPUDescriptorHandles;
 
 	// 후면버퍼를 렌더타겟으로 설정한다.
 	
@@ -707,7 +730,7 @@ void GameFramework::FrameAdvance() {
 	//명령 리스트를 닫힌 상태로 만든다. 
 	hResult = pCommandList->Close();
 	//명령 리스트를 명령 큐에 추가하여 실행한다. 
-	vector<ComPtr<ID3D12CommandList>> pCommandLists = { pCommandList.Get() };
+	pCommandLists = { pCommandList.Get() };
 
 	pCommandQueue->ExecuteCommandLists(1, pCommandLists.data()->GetAddressOf());
 
@@ -878,6 +901,10 @@ void GameFramework::ClearScene() {
 
 shared_ptr<Texture> GameFramework::GetGBuffer() const {
 	return pGBuffer;
+}
+
+shared_ptr<Texture> GameFramework::GetShadowMap() const {
+	return pShadowMap;
 }
 
 

@@ -1,5 +1,6 @@
 
-
+#define CWIDTH 1280
+#define CHEIGHT 720
 #define MAX_LIGHTS			20
 
 
@@ -40,6 +41,11 @@ struct LIGHT
     float2 padding;
 };
 
+// 샘플러
+SamplerState gssWrap : register(s0);
+SamplerState gssClamp : register(s1);
+SamplerComparisonState gssPCFShadow : register(s2);
+
 cbuffer cbLightInfo : register(b3) {
     LIGHT lights[MAX_LIGHTS];
     float4 globalAmbient;
@@ -55,6 +61,16 @@ cbuffer cbMaterialInfo : register(b4) {
 }
 
 
+Texture2D<float4> colorTexture : register(t7);
+Texture2D<float4> normalTexture : register(t8);
+Texture2D<float4> positionTexture : register(t9);
+Texture2D<float4> emissiveTexture : register(t10);
+Texture2D<float> depthTexture : register(t11);
+
+Texture2D<float> shadowMapTexture_1 : register(t12);
+Texture2D<float> shadowMapTexture_2 : register(t13);
+Texture2D<float> shadowMapTexture_3 : register(t14);
+Texture2D<float> shadowMapTexture_4 : register(t15);
 
 
 float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera, float4 _color)
@@ -136,33 +152,114 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
     return color;
 }
 
+static const float2 d[4] = { float2(0, -2 / CHEIGHT), float2(-2 / CWIDTH, 0), float2(2 / CWIDTH, 0), float2(0, 2 / CHEIGHT) };
+    
+float CheckShadow(Texture2D<float> _shadowMap, float2 uv, float compareValue) {
+    // 쉐도우 맵내 깊이를 구한다.
+    float bias = 0.01f;
+    float depth = _shadowMap.Sample(gssWrap, uv);
+
+    // 빛에서 정점까지의 거리가 쉐도우 맵에서의 거리보다 큰경우 그림자이다.
+    if (depth + bias < compareValue)
+    //if (depth  < 2.0f)
+    {
+        return 0.f;
+    }
+    // 그림자가 아닐경우
+    else
+    {
+        return 1.f;
+    }
+    
+}
+
+float GetShadowRate(float3 _Position, int _Index) {
+    // 현재 빛 관점에서의 뷰, 투영 행렬
+    float shadowCount = 0;
+    float3 lightPos = lights[_Index].position;
+    float4x4 lightView = lights[_Index].view;
+    float4x4 lightProjection = lights[_Index].projection;
+
+    // 현재 점의 쉐도우맵에서의 뷰포트좌표를 구한다.(-1, 1)
+    float4 posLightAxis = mul(mul(float4(_Position, 1.0f), lightView), lightProjection);
+    
+    posLightAxis.xyz /= posLightAxis.www;
+    float2 shadowMapUV = float2(posLightAxis.xy);
+
+    // 텍스처 좌표계로 변환한다. (0~1)
+    shadowMapUV.x = (shadowMapUV.x + 1.0f) / 2.0f;
+    // 뷰포트는 아래가 -y방향, 텍스처는 아래가 +y (v) 방향 
+    
+    shadowMapUV.y = 1 - ((shadowMapUV.y + 1.0f) / 2.0f);
+    
+    // 텍스처의 바깥 좌표일경우 쉐도우맵 반경 바깥이므로 처리하지 않는다.
+    if (shadowMapUV.x < 0 || shadowMapUV.x > 1 || shadowMapUV.y < 0 || shadowMapUV.y > 1)
+        return 5000;
+    else
+    {      
+        Texture2D<float> shadowMap;
+        
+        // 빛과 정점의 거리를 구한다.
+        float distance = length(lightPos - _Position);
+
+        if (_Index == 0) 
+            shadowMap = shadowMapTexture_1;
+        else if (_Index == 1) 
+            shadowMap = shadowMapTexture_2;
+        else if (_Index == 2) 
+            shadowMap = shadowMapTexture_3;
+        else
+            shadowMap = shadowMapTexture_4;
+        
+        shadowCount += CheckShadow(shadowMap, shadowMapUV, distance);
+        
+      
+        return (shadowCount);
+    }
+}
 
 float4 CalculateLight(float4 color, float3 _Position, float3 _Normal) {
     float alpha = color.a;
     float4 newColor = float4(0, 0, 0, alpha);
     float3 toCamera = normalize(cameraPosition - _Position);
+    float lightPercent = 1;
 	 //float4 color = float4(0.0f, 0.0f, 0.0f, 1.0f);
 	//color = float4(1.0f, 1.0f, 1.0f, 0.0f);
-	
-	// 루프를 unroll하여 성능 향상. max light만큼 unroll시 셰이더 컴파일시에 시간이 너무 오래걸려 10%로 타협
-
+    //return float4(shadowMapTexture_1.Sample(gssWrap, _uv) / 20, 0, 0, 1);
+    
+	// 루프를 unroll하여 성능 향상. 
     [unroll(MAX_LIGHTS)]
-    for (int i = 0; i < MAX_LIGHTS; ++i)
-    {
-        if (nLight <= i || (1 <= newColor.r && 1 <= newColor.g && 1 <= newColor.b))
-            break;
-        if (lights[i].enable) {
-            if (lights[i].lightType == DIRECTIONAL_LIGHT) {
-            newColor += DirectionalLight(i, _Normal, toCamera, color);
-            }
-            else if (lights[i].lightType == POINT_LIGHT) {
-            newColor += PointLight(i, _Position, _Normal, toCamera, color);
-            }
-            else if (lights[i].lightType == SPOT_LIGHT) {
-            newColor += SpotLight(i, _Position, _Normal, toCamera, color);
-            }
+        for (int i = 0; i < MAX_LIGHTS; ++i)
+        {
+            if (nLight <= i || (1 <= newColor.r && 1 <= newColor.g && 1 <= newColor.b))
+                break;
+            if (lights[i].enable)
+            {
+                // 그림자일 경우 가려지는 점이므로 건너뛴다.
+
+                if (lights[i].lightType == DIRECTIONAL_LIGHT)
+                {
+                    newColor += DirectionalLight(i, _Normal, toCamera, color);
+                }
+                else if (lights[i].lightType == POINT_LIGHT)
+                {
+                    newColor += PointLight(i, _Position, _Normal, toCamera, color);
+                }
+                else if (lights[i].lightType == SPOT_LIGHT)
+                {
+                    if (i <= 0)
+                    {
+                        lightPercent = GetShadowRate(_Position, i);
+                        if (lightPercent <= 0)
+                            continue;
+                    }
+                    else
+                        lightPercent = 1;
+                
+                    newColor += SpotLight(i, _Position, _Normal, toCamera, color) * lightPercent;
+                }
         }
-    }
+        }
 
     newColor += color * globalAmbient;
     return newColor;

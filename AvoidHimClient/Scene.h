@@ -10,7 +10,6 @@ class Scene {
 protected:
 	static unordered_map<string, shared_ptr<Button>> pButtons;
 	static unordered_map<string, shared_ptr<TextBox>> pTexts;
-
 	static unordered_map<string, shared_ptr<Image2D>> pUIs;
 public:
 	static shared_ptr<Image2D> GetUI(string _name);
@@ -101,6 +100,7 @@ public:
 class PlayScene : public Scene, public enable_shared_from_this<PlayScene> {
 
 private:
+	int lightIndex[4];	
 	float remainTime;
 
 	shared_ptr<FrustumMesh> pFrustumMesh;

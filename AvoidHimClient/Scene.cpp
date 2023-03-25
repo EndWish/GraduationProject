@@ -755,7 +755,10 @@ XMFLOAT3 PlayScene::GetCollideNormalVector(const shared_ptr<GameObject>& _collid
 
 void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
-	
+	// 쉐도우맵 렌더링시 필요한 인덱스 생성
+	for (int i = 0; i < NUM_SHADOW_MAP; ++i) {
+		lightIndex[i] = i;
+	}
 	gameFramework.GetGameObjectManager().LoadGameObject("SwingAttack", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("BookAttack", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("PrisonKey", _pDevice, _pCommandList);
@@ -1572,52 +1575,42 @@ void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 
 	GameFramework& gameFramework = GameFramework::Instance();
 
-	shared_ptr<Light> pLight = pLights[_lightIndex];
-	// 해당 빛 관점에서의 카메라로 set해준다.
-	VS_CameraMappedFormat format;
+	UpdateLightShaderVariables(_pCommandList);
+	camera->SetViewPortAndScissorRect(_pCommandList);
+	camera->UpdateShaderVariable(_pCommandList);
 
-	format.view = pLight->viewTransform;
-	format.projection = pLight->projectionTransform;
-	format.position = pLight->position;
-	// 카메라를 해당 빛의 정보로 바꾼 후 렌더링을 한다.
-	camera->UpdateShaderVariable(_pCommandList, &format);
-
-	// 쉐이더를 연결
-
+	// 빛의 인덱스를 보내준다.
+	_pCommandList->SetGraphicsRoot32BitConstants(11, 1, &lightIndex[_lightIndex], 0);
 	// 그림자에 영향을 주는 오브젝트들을 그린다. basic, instancing, effect..
 
+	gameFramework.GetShader("BasicShadowShader")->Render(_pCommandList);
+	gameFramework.GetShader("InstancingShadowShader")->Render(_pCommandList);
+
+	// 다그린 후 쉐도우맵을 연결한다.
 }
 
 void PlayScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
-	camera->SetViewPortAndScissorRect(_pCommandList);
-	camera->UpdateShaderVariable(_pCommandList);
 
-	UpdateLightShaderVariables(_pCommandList);
 	// 쉐이더 클래스에 정적으로 정의된 디스크립터 힙을 연결한다.
 
-	Shader::SetDescriptorHeap(_pCommandList);
 
 	gameFramework.GetShader("SkyBoxShader")->PrepareRender(_pCommandList);
 	pSkyBox->Render(_pCommandList);
-
 
 	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
 
 	gameFramework.GetShader("EffectShader")->Render(_pCommandList);
 
-	// 다 그린 후 G버퍼를 쉐이더에 연결한다.
+	// 다 그린 후 G버퍼를 연결한다.
 	gameFramework.GetGBuffer()->UpdateShaderVariable(_pCommandList);
 }
 
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
-
-	camera->UpdateShaderVariable(_pCommandList);
-	UpdateLightShaderVariables(_pCommandList);
 
 	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
 	if (exit && fadeOut < 3) {

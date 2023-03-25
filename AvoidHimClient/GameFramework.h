@@ -148,4 +148,5 @@ public:
 	void ClearScene();
 
 	shared_ptr<Texture> GetGBuffer() const;
+	shared_ptr<Texture> GetShadowMap() const;
 };

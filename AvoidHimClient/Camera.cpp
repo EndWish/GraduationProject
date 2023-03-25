@@ -46,12 +46,12 @@ void Camera::SetViewPortAndScissorRect(const ComPtr<ID3D12GraphicsCommandList>& 
 	_pCommandList->RSSetScissorRects(1, &scissorRect);
 }
 
-void Camera::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, VS_CameraMappedFormat* _format) {
+void Camera::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	
 	// 들어온 인자가 있다면 인자의 내용대로 업데이트한다.
-	XMFLOAT4X4 targetView = _format ? _format->view : viewTransform;
-	XMFLOAT4X4 targetProjection = _format ? _format->projection : projectionTransform;
-	XMFLOAT3 targetPosition = _format ? _format->position : GetWorldPosition();
+	XMFLOAT4X4 targetView = viewTransform;
+	XMFLOAT4X4 targetProjection = projectionTransform;
+	XMFLOAT3 targetPosition = GetWorldPosition();
 
 	XMFLOAT4X4 view;
 	XMStoreFloat4x4(&view, XMMatrixTranspose(XMLoadFloat4x4(&targetView)));	// 쉐이더는 열?우선 행렬이기 때문에 전치행렬로 바꾸어서 보내준다.

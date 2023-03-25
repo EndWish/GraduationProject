@@ -11,12 +11,17 @@ cbuffer cbGameObjectInfo : register(b2) {
 	matrix worldTransform : packoffset(c0);
 };
 
+cbuffer cbShadowMapLightInfo : register(b5) {
+    int lightIndex : packoffset(c0);
+};
+
 struct EFFECT_INDEX
 {
     uint index;
     uint row;
     uint col;
 };
+
 cbuffer cbEffectIndexInfo : register(b9)
 {
     EFFECT_INDEX indexInfo : packoffset(c0);
@@ -41,23 +46,11 @@ cbuffer cbSkinnedWorldTransforms : register(b8)
 
 #define MATERIAL_ALBEDO_MAP		0x01
 #define MATERIAL_NORMAL_MAP      0x02
-#define CWIDTH 1920
-#define CHEIGHT 1080
+
 
 // 텍스처
 Texture2D albedoMap : register(t5);
 Texture2D normalMap : register(t6);
-
-// 샘플러
-SamplerState gssWrap : register(s0);
-SamplerState gssClamp : register(s1);
-
-Texture2D<float4> colorTexture : register(t7);
-Texture2D<float4> normalTexture : register(t8);
-Texture2D<float4> positionTexture : register(t9);
-Texture2D<float4> emissiveTexture : register(t10);
-Texture2D<float> depthTexture : register(t11);
-
 
 struct G_BUFFER_OUTPUT {
     float4 color : SV_TARGET0;   // 조명을 처리하기 전의 픽셀의 색상
@@ -65,6 +58,12 @@ struct G_BUFFER_OUTPUT {
     float4 position : SV_TARGET2;
     float4 emissive : SV_TARGET3;
     float depth : SV_TARGET4;
+};
+
+
+struct SHADOW_MAP_VS_OUTPUT {
+    float4 position : SV_POSITION;
+    float3 positionW : POSITION;
 };
 
 
@@ -132,6 +131,28 @@ G_BUFFER_OUTPUT DefaultPixelShader(VS_OUTPUT input)
     // 깊이값으로 카메라에서 해당 점의 위치까지의 거리를 담는다.
     output.depth = length(input.positionW - cameraPosition);
     return output;
+}
+
+
+SHADOW_MAP_VS_OUTPUT DefaultShadowVertexShader(VS_INPUT input)
+{
+    SHADOW_MAP_VS_OUTPUT output;
+ 	// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
+    output.positionW = (float3) mul(float4(input.position, 1.0f), worldTransform);
+    // 이 때 변환 행렬은 조명의 위치 기준 카메라의 변환 행렬이다.
+    output.position = mul(mul(float4(output.positionW, 1.0f), lights[lightIndex].view), lights[lightIndex].projection);
+    
+    return output;
+}
+
+
+[earlydepthstencil]
+float DefaultShadowPixelShader(SHADOW_MAP_VS_OUTPUT input) : SV_TARGET
+{
+    float output;
+    // 빛의 위치에서 정점의 위치까지의 거리를 저장한다.
+    return length(input.positionW - lights[lightIndex].position);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -215,6 +236,7 @@ G_BUFFER_OUTPUT EffectPixelShader(VS_EFFECT_OUTPUT input)
     output.depth = depthTexture.Sample(gssWrap, input.uv);
     return output;
 }
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -391,6 +413,8 @@ float4 BoundingPixelShader(VS_BOUNDING_OUTPUT input) : SV_TARGET {
     return color;
 }
 
+
+
 /////////////////////////////////////////
 
 struct VS_INSTANCING_INPUT {
@@ -455,6 +479,27 @@ G_BUFFER_OUTPUT InstancePixelShader(VS_OUTPUT input)
     return output;
 }
 
+
+
+SHADOW_MAP_VS_OUTPUT InstanceShadowVertexShader(VS_INSTANCING_INPUT input)
+{
+    SHADOW_MAP_VS_OUTPUT output;
+    output.positionW = (float3) mul(float4(input.position, 1.0f), input.worldMatrix);
+    // 이 때 변환 행렬은 조명의 위치 기준 카메라의 변환 행렬이다.
+    output.position = mul(mul(float4(output.positionW, 1.0f), lights[lightIndex].view), lights[lightIndex].projection);
+    return output;
+}
+
+
+[earlydepthstencil]
+float InstanceShadowPixelShader(SHADOW_MAP_VS_OUTPUT input) : SV_TARGET
+{
+    float output;
+    // 빛의 위치에서 정점의 위치까지의 거리를 저장한다.
+    return length(input.positionW - lights[lightIndex].position);
+}
+
+
 struct VS_S_IN
 {
     float3 position : POSITION;
@@ -508,10 +553,11 @@ VS_LIGHTING_OUT LightingVertexShader(VS_LIGHTING_IN input)
 
 float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
 {
-    int3 location = int3((int) input.uv.x, (int) input.uv.y, 0);
     float4 color = colorTexture.Sample(gssWrap, input.uv);
     float3 normal = normalTexture.Sample(gssWrap, input.uv).xyz;
     float3 positionW = positionTexture.Sample(gssWrap, input.uv).xyz;
+
+    //return float4(shadowMapTexture_1.Sample(gssWrap, input.uv) / 20, 0, 0, 1);
     // 이곳에서 조명처리를 해준다.
     float4 cColor = CalculateLight(color, positionW, normal);
     return cColor;

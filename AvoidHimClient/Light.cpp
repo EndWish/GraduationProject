@@ -26,7 +26,11 @@ Light::Light(const shared_ptr<GameObject>& _object) {
 
 	// 이 빛이 켜져있는 상태인지 확인
 	enable = true;
-	UpdateProjectionTransform(0.1f, 100.0f, float(C_WIDTH) / C_HEIGHT, 65.0f);
+	float aspectRatio = float(C_WIDTH) / C_HEIGHT;
+	constexpr float degree = XMConvertToDegrees(0.5 * numbers::pi);
+
+	//UpdateProjectionTransform(0.1f, 10000.0f, aspectRatio, 65.0f);
+	UpdateProjectionTransform(0.01f, 10.0f, aspectRatio, degree);
 }
 
 Light::~Light() {
@@ -47,11 +51,14 @@ void Light::UpdateViewTransform() {
 	// 조명의 위치와 방향에 따라 갱신
 	XMFLOAT3 worldPosition = position;
 
-	XMFLOAT3 lookAtWorld = Vector3::Add(worldPosition, direction);
-	// up벡터를 임의로 y방향으로 설정
-	viewTransform = Matrix4x4::LookAtLH(worldPosition, lookAtWorld, XMFLOAT3(0,1,0));
+	XMFLOAT3 lookAtWorld = Vector3::Add(worldPosition, Vector3::Normalize(direction));
+
+	// look이 +z, up이 +y였을때 기준으로 look이 -y가 될경우 up이 +z가 된다.
+	XMFLOAT4X4 view = Matrix4x4::LookAtLH(worldPosition, lookAtWorld, XMFLOAT3(0,0,1));
+	XMStoreFloat4x4(&viewTransform, XMMatrixTranspose(XMLoadFloat4x4(&view)));	
 }
 
 void Light::UpdateProjectionTransform(float _nearDistance, float _farDistance, float _aspectRatio, float _fovAngle) {
-	projectionTransform = Matrix4x4::PerspectiveFovLH(XMConvertToRadians(_fovAngle), _aspectRatio, _nearDistance, _farDistance);
+	XMFLOAT4X4 projection = Matrix4x4::PerspectiveFovLH(XMConvertToRadians(_fovAngle), _aspectRatio, _nearDistance, _farDistance);
+	XMStoreFloat4x4(&projectionTransform, XMMatrixTranspose(XMLoadFloat4x4(&projection)));	// 쉐이더는 열?우선 행렬이기 때문에 전치행렬로 바꾸어서 보내준다.
 }

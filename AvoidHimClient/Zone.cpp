@@ -538,12 +538,9 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 
 
 #ifdef USING_INSTANCING
-	//gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
 	gameFramework.GetShader("BasicShader")->Render(_pCommandList);
 	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
-	GameObject::RenderInstanceObjects(_pCommandList);
-
-
+	gameFramework.GetShader("InstancingShader")->Render(_pCommandList);
 #else
 	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
 	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
@@ -718,13 +715,13 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pNewLight->lightType = 2;
 			pNewLight->position = Vector3::Subtract(position, XMFLOAT3(0, 0.1f, 0));
 			pNewLight->direction = XMFLOAT3(0.f, -1.f, 0.f);
-			pNewLight->diffuse = XMFLOAT4(0.5f, 1.5f, 0.5f, 1.f);
+			pNewLight->diffuse = XMFLOAT4(2.5f, 3.5f, 2.5f, 1.f);
 			pNewLight->ambient = XMFLOAT4(0.1f, 0.1f, 0.1f, 1.f);
 			pNewLight->specular = XMFLOAT4(1.0f, 0.1f, 0.1f, 1.0f);
 			pNewLight->falloff = 0.7f;
 			pNewLight->attenuation = XMFLOAT3(1.0f, 0.5f, 0.25f);
-			pNewLight->phi = (float)numbers::pi * 0.6f ;
-			pNewLight->theta = (float)numbers::pi * 0.9f;
+			pNewLight->phi = (float)numbers::pi * 0.33f ;
+			pNewLight->theta = (float)numbers::pi * 0.5f;
 			pNewLight->range = 6.f;
 
 			if (auto pScene = wpScene.lock()) {
