@@ -52,10 +52,8 @@ void Shader::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootS
 		break;
 	}
 	case ShaderRenderType::SHADOW_RENDER: {
-		pipelineStateDesc.NumRenderTargets = NUM_SHADOW_MAP;
-		for (int i = 0; i < NUM_SHADOW_MAP; ++i) {
-			pipelineStateDesc.RTVFormats[i] = DXGI_FORMAT_R32_FLOAT;
-		} 
+		pipelineStateDesc.NumRenderTargets = 1;
+		pipelineStateDesc.RTVFormats[0] = DXGI_FORMAT_R32_FLOAT;
 		break;
 	}
 	}
@@ -448,6 +446,83 @@ D3D12_INPUT_LAYOUT_DESC SkinnedShader::CreateInputLayout() {
 
 	return inputLayoutDesc;
 }
+
+SkinnedShadowShader::SkinnedShadowShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	renderType = ShaderRenderType::SHADOW_RENDER;
+	Init(_pDevice, _pRootSignature);
+
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "SkinnedShadowVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "SkinnedShadowPixelShader", "ps_5_1", pPSBlob);
+
+	HRESULT _hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (_hr == S_OK) cout << "SkinnedShadowShader 생성 성공\n";
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+	inputElementDescs.clear();
+}
+SkinnedShadowShader::~SkinnedShadowShader() {
+
+}
+
+void SkinnedShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework gameFramework = GameFramework::Instance();
+
+	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
+	if (pGameObjects.size() > 0) {
+		PrepareRender(_pCommandList);
+		auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
+			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
+			if (!pGameObject)
+				return true;
+			// 해당 오브젝트가 존재한다면 렌더링한다.
+			pGameObject->Render(_pCommandList);
+			return false;
+		};
+		pGameObjects.erase(
+			ranges::remove_if(pGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
+			pGameObjects.end());
+	}
+}
+
+D3D12_RASTERIZER_DESC SkinnedShadowShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+
+D3D12_INPUT_LAYOUT_DESC SkinnedShadowShader::CreateInputLayout() {
+	inputElementDescs.assign(7, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[1] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[2] = { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[3] = { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[4] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 4, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[5] = { "BONEINDEX", 0, DXGI_FORMAT_R32G32B32A32_UINT, 5, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[6] = { "BONEWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 6, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
+}
+
+
+
 
 //////////////////// UI Shader ( 2D Shader ) 
 
@@ -1090,7 +1165,7 @@ D3D12_RASTERIZER_DESC LightingShader::CreateRasterizerState() {
 	rasterizerDesc.FrontCounterClockwise = FALSE;
 	rasterizerDesc.DepthBias = 0;
 	rasterizerDesc.DepthBiasClamp = 0.0f;
-	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 2.0f;
 	rasterizerDesc.DepthClipEnable = TRUE;
 	rasterizerDesc.MultisampleEnable = FALSE;
 	rasterizerDesc.AntialiasedLineEnable = FALSE;
@@ -1145,6 +1220,10 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 
 	shared_ptr<Shader> skinnedShader = make_shared<SkinnedShader>(_pDevice, _pRootSignature);
 	if (skinnedShader) storage["SkinnedShader"] = skinnedShader;
+	else return false;
+
+	shared_ptr<Shader> skinnedShadowShader = make_shared<SkinnedShadowShader>(_pDevice, _pRootSignature);
+	if (skinnedShadowShader) storage["SkinnedShadowShader"] = skinnedShadowShader;
 	else return false;
 
 	shared_ptr<Shader> blendingShader = make_shared<BlendingShader>(_pDevice, _pRootSignature);

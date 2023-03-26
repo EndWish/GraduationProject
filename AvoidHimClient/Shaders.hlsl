@@ -325,6 +325,33 @@ G_BUFFER_OUTPUT SkinnedPixelShader(VS_SKINNED_OUTPUT input)
 }
 
 
+SHADOW_MAP_VS_OUTPUT SkinnedShadowVertexShader(VS_SKINNED_INPUT input)
+{ 
+    SHADOW_MAP_VS_OUTPUT output;
+    output.positionW = float3(0, 0, 0);
+    
+    matrix mtxVertexToBoneWorld;
+    for (int i = 0; i < 4; ++i)
+    {
+        if (input.boneWeight[i] > 0.0001f)
+        {
+            mtxVertexToBoneWorld = mul(offsetTransform[input.boneIndex[i]], skinnedWorldTransforms[input.boneIndex[i]]);
+            output.positionW += input.boneWeight[i] * mul(float4(input.position, 1.0f), mtxVertexToBoneWorld).xyz;
+        }
+    }
+    output.position = mul(mul(float4(output.positionW, 1.0f), lights[lightIndex].view), lights[lightIndex].projection);
+
+    return output;
+}
+
+[earlydepthstencil]
+float SkinnedShadowPixelShader(SHADOW_MAP_VS_OUTPUT input) : SV_TARGET
+{
+    float output;
+    // 빛의 위치에서 정점의 위치까지의 거리를 저장한다.
+    return length(input.positionW - lights[lightIndex].position);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 ///
 

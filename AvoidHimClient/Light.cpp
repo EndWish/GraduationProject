@@ -22,15 +22,14 @@ Light::Light(const shared_ptr<GameObject>& _object) {
 	if (_object) object = _object;
 
 	// 1 = 점, 2 = 스포트, 3 = 직접
-	lightType = 1;
+	lightType = 2;
 
 	// 이 빛이 켜져있는 상태인지 확인
 	enable = true;
-	float aspectRatio = float(C_WIDTH) / C_HEIGHT;
-	constexpr float degree = XMConvertToDegrees(0.5 * numbers::pi);
+
 
 	//UpdateProjectionTransform(0.1f, 10000.0f, aspectRatio, 65.0f);
-	UpdateProjectionTransform(0.01f, 10.0f, aspectRatio, degree);
+	
 }
 
 Light::~Light() {
@@ -43,7 +42,12 @@ void Light::UpdateLight() {
 		position = Vector3::Add(object.lock()->GetWorldPosition(), offset);
 		direction = object.lock()->GetWorldLookVector();
 	}
-
+	if (lightType == 2) {
+		float aspectRatio = float(C_WIDTH) / C_HEIGHT;
+		float degree = XMConvertToDegrees(theta);
+		UpdateViewTransform();
+		UpdateProjectionTransform(0.01f, 10.0f, aspectRatio, degree);
+	}
 }
 
 

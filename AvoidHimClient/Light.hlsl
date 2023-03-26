@@ -1,6 +1,6 @@
 
-#define CWIDTH 600
-#define CHEIGHT 400
+#define CWIDTH 1280
+#define CHEIGHT 720
 #define MAX_LIGHTS			20
 
 
@@ -9,6 +9,7 @@
 #define DIRECTIONAL_LIGHT	3
 
 #define EPSILON				1.0e-5
+#define NUM_SHADOW_MAP 10
 
 struct LIGHT
 {
@@ -71,6 +72,12 @@ Texture2D<float> shadowMapTexture_1 : register(t12);
 Texture2D<float> shadowMapTexture_2 : register(t13);
 Texture2D<float> shadowMapTexture_3 : register(t14);
 Texture2D<float> shadowMapTexture_4 : register(t15);
+Texture2D<float> shadowMapTexture_5 : register(t16);
+Texture2D<float> shadowMapTexture_6 : register(t17);
+Texture2D<float> shadowMapTexture_7 : register(t18);
+Texture2D<float> shadowMapTexture_8 : register(t19);
+Texture2D<float> shadowMapTexture_9 : register(t20);
+Texture2D<float> shadowMapTexture_10 : register(t21);
 
 
 float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera, float4 _color)
@@ -152,16 +159,17 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
     return color;
 }
 
-static const float2 d[4] = { float2(0, -2 / CHEIGHT), float2(-2 / CWIDTH, 0), float2(2 / CWIDTH, 0), float2(0, 2 / CHEIGHT) };
+static const int3 d[4] = { int3(0, -1, 0), int3(-1, 0, 0), int3(1, 0, 0), int3(0, 1, 0) };
     
-float CheckShadow(Texture2D<float> _shadowMap, float2 uv, float compareValue) {
+float CheckShadow(Texture2D<float> _shadowMap, int3 texLocation, float compareValue) {
     // 쉐도우 맵내 깊이를 구한다.
-    float bias = 0.01f;
-    float depth = _shadowMap.Sample(gssWrap, uv);
+    float bias = 0.1f;
+
+    float depth = _shadowMap.Load(texLocation);
 
     // 빛에서 정점까지의 거리가 쉐도우 맵에서의 거리보다 큰경우 그림자이다.
+    //if (depth + bias < compareValue)
     if (depth + bias < compareValue)
-    //if (depth  < 2.0f)
     {
         return 0.f;
     }
@@ -194,10 +202,12 @@ float GetShadowRate(float3 _Position, int _Index) {
     
     // 텍스처의 바깥 좌표일경우 쉐도우맵 반경 바깥이므로 처리하지 않는다.
     if (shadowMapUV.x < 0 || shadowMapUV.x > 1 || shadowMapUV.y < 0 || shadowMapUV.y > 1)
-        return 5000;
+        return 5555;
     else
     {      
         Texture2D<float> shadowMap;
+        // uv좌표를 텍셀좌표로 바꾼다. (Load함수를 쓰기 위함)
+        int3 location = int3(shadowMapUV.x * CWIDTH, shadowMapUV.y * CHEIGHT, 0);
         
         // 빛과 정점의 거리를 구한다.
         float distance = length(lightPos - _Position);
@@ -208,13 +218,31 @@ float GetShadowRate(float3 _Position, int _Index) {
             shadowMap = shadowMapTexture_2;
         else if (_Index == 2) 
             shadowMap = shadowMapTexture_3;
-        else
+        else if (_Index == 3) 
             shadowMap = shadowMapTexture_4;
+        else if (_Index == 4) 
+            shadowMap = shadowMapTexture_5;
+        else if (_Index == 5) 
+            shadowMap = shadowMapTexture_6;
+        else if (_Index == 6) 
+            shadowMap = shadowMapTexture_7;
+        else if (_Index == 7) 
+            shadowMap = shadowMapTexture_8;
+        else if (_Index == 8) 
+            shadowMap = shadowMapTexture_9;
+        else if (_Index == 9) 
+            shadowMap = shadowMapTexture_10;
+
         
-        shadowCount += CheckShadow(shadowMap, shadowMapUV, distance);
-        
-      
-        return (shadowCount);
+
+        shadowCount += CheckShadow(shadowMap, location, distance);
+        // 각 방향으로 다시 검사를 하여 그림자의 세기를 정한다.
+        [unroll(4)]
+        for (int i = 0; i < 4; ++i)
+        {
+            shadowCount += CheckShadow(shadowMap, location + d[i], distance);
+        }
+        return (shadowCount * 0.2f);
     }
 }
 
@@ -247,7 +275,7 @@ float4 CalculateLight(float4 color, float3 _Position, float3 _Normal) {
                 }
                 else if (lights[i].lightType == SPOT_LIGHT)
                 {
-                    if (i <= 0)
+                    if (i < NUM_SHADOW_MAP)
                     {
                         lightPercent = GetShadowRate(_Position, i);
                         if (lightPercent <= 0)
@@ -257,7 +285,8 @@ float4 CalculateLight(float4 color, float3 _Position, float3 _Normal) {
                         lightPercent = 1;
                 
                     newColor += SpotLight(i, _Position, _Normal, toCamera, color) * lightPercent;
-                }
+
+            }
         }
         }
 

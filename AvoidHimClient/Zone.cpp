@@ -720,13 +720,13 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pNewLight->specular = XMFLOAT4(1.0f, 0.1f, 0.1f, 1.0f);
 			pNewLight->falloff = 0.7f;
 			pNewLight->attenuation = XMFLOAT3(1.0f, 0.5f, 0.25f);
-			pNewLight->phi = (float)numbers::pi * 0.33f ;
-			pNewLight->theta = (float)numbers::pi * 0.5f;
+			pNewLight->phi = (float)numbers::pi * 0.5f;
+			pNewLight->theta = (float)numbers::pi * 0.8f;
 			pNewLight->range = 6.f;
 
 			if (auto pScene = wpScene.lock()) {
 				pScene->AddLight(pNewLight);
-				pNewLight->UpdateViewTransform();
+				pNewLight->UpdateLight();
 			}
 			break;
 		}

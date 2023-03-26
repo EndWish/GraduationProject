@@ -364,7 +364,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 
 	pDescriptorRanges[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[3].NumDescriptors = NUM_SHADOW_MAP;
-	pDescriptorRanges[3].BaseShaderRegister = 12;	// t12 ~ t15
+	pDescriptorRanges[3].BaseShaderRegister = 12;	// t12 ~ t17
 	pDescriptorRanges[3].RegisterSpace = 0;
 	pDescriptorRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
@@ -471,7 +471,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 	samplerDesc[2].AddressW = D3D12_TEXTURE_ADDRESS_MODE_WRAP;
 	samplerDesc[2].MipLODBias = 0;
 	samplerDesc[2].MaxAnisotropy = 1;
-	samplerDesc[2].ComparisonFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	samplerDesc[2].ComparisonFunc = D3D12_COMPARISON_FUNC_LESS;
 	samplerDesc[2].BorderColor = D3D12_STATIC_BORDER_COLOR_TRANSPARENT_BLACK;
 	samplerDesc[2].MinLOD = 0.0f;
 	samplerDesc[2].MaxLOD = D3D12_FLOAT32_MAX;

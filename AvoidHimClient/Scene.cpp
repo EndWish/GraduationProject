@@ -546,6 +546,7 @@ void LobbyScene::UpdateReadyState() {
 PlayScene::PlayScene() {
 	globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
 	remainTime = 1000.f;
+
 	professorObjectID = 0;
 }
 
@@ -874,7 +875,6 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 		pUIs["2DUI_hackingFrame"] = make_shared<Image2D>("2DUI_hackingFrame", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	}
 	
-
 
 	// 빛을 추가
 	shared_ptr<Light> baseLight = make_shared<Light>();
@@ -1591,6 +1591,7 @@ void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 
 	gameFramework.GetShader("BasicShadowShader")->Render(_pCommandList);
 	gameFramework.GetShader("InstancingShadowShader")->Render(_pCommandList);
+	gameFramework.GetShader("SkinnedShadowShader")->Render(_pCommandList);
 
 	// 다그린 후 쉐도우맵을 연결한다.
 }

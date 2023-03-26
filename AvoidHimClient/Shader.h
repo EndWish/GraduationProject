@@ -108,6 +108,19 @@ private:
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
 };
 
+class SkinnedShadowShader : public Shader {
+private:
+
+public:
+	SkinnedShadowShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~SkinnedShadowShader();
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+private:
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+};
+
+
 class UIShader : public Shader {
 
 public:

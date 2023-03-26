@@ -100,7 +100,7 @@ public:
 class PlayScene : public Scene, public enable_shared_from_this<PlayScene> {
 
 private:
-	int lightIndex[4];	
+	int lightIndex[NUM_SHADOW_MAP];
 	float remainTime;
 
 	shared_ptr<FrustumMesh> pFrustumMesh;
