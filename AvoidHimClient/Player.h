@@ -101,6 +101,7 @@ public:
 	virtual ~Student();
 
 	//virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void Animate(char _collideCheck, float _timeElapsed);
 
 	float GetHP() const { return hp; };
 	void SetHP(float _hp) { hp = _hp; };
@@ -129,7 +130,7 @@ public:
 	Professor();
 	virtual ~Professor();
 	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
-	
+
 	float GetSabotageCoolTime() const;
 	void SetSabotageCoolTime(float _sabotageCoolTime);
 	void SetCoolTime(AttackType _type, float _coolTime);

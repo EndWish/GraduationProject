@@ -791,13 +791,13 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			if (professorObjectID == recvPacket->playerInfo[i].objectID) {	// 교수 플레이어일 경우
 				pPlayer = make_shared<Professor>();
 				isPlayerProfessor = true;
-				
+				pPlayer->Create("Professor"s, _pDevice, _pCommandList);
 			}
 			else { // 학생일 경우
 				pPlayer = make_shared<Student>();
+				pPlayer->Create("Student"s, _pDevice, _pCommandList);
 			}
 			
-			pPlayer->Create("Student"s, _pDevice, _pCommandList);
 			pPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -813,11 +813,13 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 			if (professorObjectID == recvPacket->playerInfo[i].objectID) {	// 교수 플레이어일 경우
 				pOtherPlayer->SetNickname(wstring(recvPacket->nickname[i]), true);
+				pOtherPlayer->Create("Professor"s, _pDevice, _pCommandList);
 			}
 			else { // 학생일 경우
 				pOtherPlayer->SetNickname(wstring(recvPacket->nickname[i]), false);
+				pOtherPlayer->Create("Student"s, _pDevice, _pCommandList);
 			}
-			pOtherPlayer->Create("Student"s, _pDevice, _pCommandList);
+			
 			pOtherPlayer->SetLocalPosition(recvPacket->playerInfo[i].position);
 			pOtherPlayer->SetLocalRotation(recvPacket->playerInfo[i].rotation);
 			pOtherPlayer->SetLocalScale(recvPacket->playerInfo[i].scale);
@@ -976,6 +978,7 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 	if (_keysBuffers[VK_SPACE] & 0xF0) {
 		pPlayer->Jump(500.0f);
 	}
+
 }
 
 void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -1213,6 +1216,9 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			if (prevIndex.x != nextIndex.x || prevIndex.y != nextIndex.y || prevIndex.z != nextIndex.z) {
 				pZone->HandOffObject(SectorLayer::otherPlayer, pMoveClient->GetID(), pMoveClient, prevIndex, nextIndex);
 			}
+			// 애니메이션 처리
+			string clieName = pinfo.clipName;
+			pMoveClient->GetAniController()->ChangeClip(clieName);
 		}
 		break;
 	}

@@ -290,6 +290,7 @@ private:
 	shared_ptr<TextBox> nickname;
 
 	weak_ptr<GameObject> wpHandObject;
+	weak_ptr<AnimationController> wpAniController;
 
 public:
 	InterpolateMoveGameObject();
@@ -315,6 +316,7 @@ public:
 	bool GetVisible() const { return visible; };
 
 	shared_ptr<GameObject> GetHandObject();
+	shared_ptr<AnimationController> GetAniController();
 };
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -40,5 +40,9 @@ public:
 	void AddTime(float _time);
 	void LoadFromFile(ifstream& _file, UINT _nBone);
 	void UpdateBoneLocalTransform(vector<shared_ptr<GameObject>>& _pBones);
-	void ChangeClip(const string& _name);
+	void ChangeClip(const string& _name, float _time = 0);
+
+	const string& GetClipName() const { return currentAniClipName; }
+	float GetTime() const { return time; }
+	void SetTime(float _time) { time = _time; }
 };

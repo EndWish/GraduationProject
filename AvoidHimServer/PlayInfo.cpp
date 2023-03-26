@@ -155,7 +155,7 @@ void PlayInfo::Init(UINT _roomID) {
 	for (int index = 0; auto [objectID, pPlayer] : pPlayers) {
 		SC_PLAYER_INFO& playerInfo = sendPacket.playerInfo[index];
 
-		playerInfo.aniTime = 0.f;
+		*playerInfo.clipName = *"idle\0";
 		playerInfo.objectID = objectID;
 		playerInfo.position = pPlayer->GetPosition();
 		playerInfo.rotation = pPlayer->GetRotation();
@@ -233,7 +233,7 @@ void PlayInfo::FrameAdvance(float _timeElapsed) {
 		// 패킷을 보낸다.
 		SC_PLAYER_INFO& playerInfo = sendPacket.playersInfo[index];
 
-		playerInfo.aniTime = 0.f;
+		strcpy_s(playerInfo.clipName, pPlayer->GetClipName());
 		playerInfo.objectID = objectID;
 		playerInfo.position = pPlayer->GetPosition();
 		playerInfo.rotation = pPlayer->GetRotation();
@@ -266,12 +266,12 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		CS_PLAYER_INFO& recvPacket = GetPacket<CS_PLAYER_INFO>();
 		//cout << format("CS_PLAYER_INFO : cid - {}, objectID - {}, pid - {} \n", recvPacket.cid, recvPacket.objectID, recvPacket.pid);
 
-		GameObject* pPlayer = pPlayers[recvPacket.objectID];
+		Player* pPlayer = pPlayers[recvPacket.objectID];
 		//[수정] aniTime을 적용시켜 준다.
 		pPlayer->SetPosition(recvPacket.position);
 		pPlayer->SetRotation(recvPacket.rotation);
 		pPlayer->SetScale(recvPacket.scale);
-
+		pPlayer->SetClipName(recvPacket.clipName);
 		break;
 	}
 	case CS_PACKET_TYPE::toggleDoor: {

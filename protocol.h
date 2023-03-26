@@ -15,7 +15,7 @@
 #include <DirectXMath.h>
 using namespace DirectX;
 
-#define BUFSIZE 512
+#define BUFSIZE 600
 #define MAX_PARTICIPANT 5
 #define SERVER_PERIOD (1.f / 20)
 #define WATER_DISPENSER_COOLTIME 10.f
@@ -143,7 +143,7 @@ struct CS_PLAYER_INFO {
 	XMFLOAT3 position = XMFLOAT3(0, 0, 0);
 	XMFLOAT4 rotation = XMFLOAT4(0, 0, 0, 1);
 	XMFLOAT3 scale = XMFLOAT3(1, 1, 1);
-	float aniTime = 0.0f;
+	char clipName[20];
 	UINT pid = 0;
 };
 struct CS_ANICLIP_CHANGE {
@@ -296,7 +296,7 @@ struct SC_PLAYER_INFO {
 	XMFLOAT3 position = XMFLOAT3(0, 0, 0);
 	XMFLOAT4 rotation = XMFLOAT4(0, 0, 0, 1);
 	XMFLOAT3 scale = XMFLOAT3(1, 1, 1);
-	float aniTime = 0.0f;
+	char clipName[20];
 	UINT pid = 100'000;
 };
 struct SC_PLAYERS_INFO {

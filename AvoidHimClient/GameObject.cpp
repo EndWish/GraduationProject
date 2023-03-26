@@ -794,15 +794,22 @@ void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12De
 	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
 	wpHandObject = FindFrame("Bip001 R Hand");
 
-	SetBoundingBox(BoundingOrientedBox(XMFLOAT3(0, 0.88, 0),
-		XMFLOAT3(0.317352414, 0.88, 0.274967313),
+	SetBoundingBox(BoundingOrientedBox(XMFLOAT3(0, 0.8, 0),
+		XMFLOAT3(0.29, 0.8, 0.27),
 		XMFLOAT4(0, 0, 0, 1)));
+
+	auto pSkinnedChild = dynamic_pointer_cast<SkinnedGameObject>(pChildren[0]);
+	if (pSkinnedChild) {
+		wpAniController = pSkinnedChild->GetAniController();
+	}
 }
 
 InterpolateMoveGameObject::~InterpolateMoveGameObject() {
 }
 
 void InterpolateMoveGameObject::Animate(float _timeElapsed) {
+	GetAniController()->AddTime(_timeElapsed);
+
 	// 서버의 다음 주기가 돌때를 t = 1로 잡고 보간한다
 	XMFLOAT3 prevPositionFootStep = GetWorldPosition();
 	t += _timeElapsed / SERVER_PERIOD; 
@@ -854,6 +861,10 @@ void InterpolateMoveGameObject::SetNickname(wstring _name, bool _isProfessor) {
 
 shared_ptr<GameObject> InterpolateMoveGameObject::GetHandObject() {
 	return wpHandObject.lock();
+}
+
+shared_ptr<AnimationController> InterpolateMoveGameObject::GetAniController() {
+	return wpAniController.lock();
 }
 
 ///////////////////////////////////////////////////////////////////////////////

@@ -68,6 +68,8 @@ protected:
 	ObjectType item;
 	bool exit;
 	UINT clientID;
+	char clipName[20];
+
 public:
 	Player();
 	Player(const Player& _other);	// 복사생성자
@@ -85,6 +87,9 @@ public:
 
 	void SetClientID(UINT _clientID) { clientID = _clientID; }
 	UINT GetClientID() const { return clientID; }
+
+	void SetClipName(const char _clipName[20]) { strcpy_s(clipName, _clipName); }
+	const char* GetClipName() const { return clipName; }
 
 };
 

@@ -1,6 +1,6 @@
 
-#define CWIDTH 1280
-#define CHEIGHT 720
+#define CWIDTH 600
+#define CHEIGHT 400
 #define MAX_LIGHTS			20
 
 

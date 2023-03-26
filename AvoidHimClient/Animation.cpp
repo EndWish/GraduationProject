@@ -94,9 +94,14 @@ void AnimationController::UpdateBoneLocalTransform(vector<shared_ptr<GameObject>
 
 }
 
-void AnimationController::ChangeClip(const string& _name) {
+void AnimationController::ChangeClip(const string& _name, float _time) {
+	if (currentAniClipName == _name)
+		return;
+
 	if (pAniClips.contains(_name))
 		currentAniClipName = _name;
 	else
-		cout << "ChangeClip : 잘못된 클립이름\n";
+		cout << "ChangeClip : 잘못된 클립이름 " << _name << "\n";
+
+	time = _time;
 }

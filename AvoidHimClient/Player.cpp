@@ -44,8 +44,8 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 
 	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
 
-	SetBoundingBox(BoundingOrientedBox(	XMFLOAT3(0, 0.88, 0),
-										XMFLOAT3(0.317352414, 0.88, 0.274967313),
+	SetBoundingBox(BoundingOrientedBox(	XMFLOAT3(0, 0.8, 0),
+										XMFLOAT3(0.29, 0.8, 0.27),
 										XMFLOAT4(0, 0, 0, 1)));
 
 	auto pSkinnedChild = dynamic_pointer_cast<SkinnedGameObject>(pChildren[0]);
@@ -62,9 +62,6 @@ void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 }
 
 void Player::Animate(char _collideCheck, float _timeElapsed) {
-	if (auto pAniController = wpAniController.lock()) {
-		pAniController->AddTime(_timeElapsed);
-	}
 
 	XMFLOAT3 prevPosition = GetWorldPosition();
 	XMFLOAT3 position;
@@ -140,6 +137,13 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		packet.position = localPosition;
 		packet.rotation = localRotation;
 		packet.scale = localScale;
+		const string currentClipName = GetAniController()->GetClipName();
+		if (currentClipName.size() < 20) {
+			ranges::copy_n(currentClipName.c_str(), currentClipName.size(), packet.clipName);
+			packet.clipName[currentClipName.size()] = '\0';
+		}
+		else
+			cout << "클립의 이름이 20자 미만이여야 합니다.\n";
 		packet.objectID = id;
 		SendFixedPacket(packet);
 	}
@@ -227,9 +231,45 @@ Student::Student() {
 	imprisoned = false;
 	item = ObjectType::none;
 }
-
 Student::~Student() {
 
+}
+
+void Student::Animate(char _collideCheck, float _timeElapsed) {
+	// 애니메이션 처리
+	static float unlandingTime = 0;
+	if (!landed)
+		unlandingTime += _timeElapsed;
+	else
+		unlandingTime = 0;
+
+	if (auto pAniController = wpAniController.lock()) {
+		pAniController->AddTime(_timeElapsed);
+
+		float horizentalMoveSpeedPerSec = velocity.z / _timeElapsed;
+		float verticalMoveSpeedPerSec = velocity.y;
+
+		if (0.18f < unlandingTime) {
+			// 공중에 있을 경우
+			pAniController->ChangeClip("Jumping");
+		}
+		else if (horizentalMoveSpeedPerSec < 3) {
+			// 가만히 서있는 경우
+			pAniController->ChangeClip("idle");
+		}
+		else {
+			if (speed > baseSpeed) {
+				// 달리고 있을 경우
+				pAniController->ChangeClip("FastRun");
+			}
+			else {
+				// 걷고 있을 경우
+				pAniController->ChangeClip("run");
+			}
+		}
+	}
+
+	Player::Animate(_collideCheck, _timeElapsed);
 }
 
 void Student::LeftClick() {
@@ -323,6 +363,39 @@ float Professor::GetCoolTime(AttackType _type) const {
 }
 
 void Professor::Animate(char _collideCheck, float _timeElapsed) {
+	// 애니메이션 처리
+	static float unlandingTime = 0;
+	if (!landed)
+		unlandingTime += _timeElapsed;
+	else
+		unlandingTime = 0;
+
+	if (auto pAniController = wpAniController.lock()) {
+		pAniController->AddTime(_timeElapsed);
+
+		float horizentalMoveSpeedPerSec = velocity.z / _timeElapsed;
+		float verticalMoveSpeedPerSec = velocity.y;
+
+		if (0.18f < unlandingTime) {
+			// 공중에 있을 경우
+			pAniController->ChangeClip("jump");
+		}
+		else if (horizentalMoveSpeedPerSec < 3) {
+			// 가만히 서있는 경우
+			pAniController->ChangeClip("idle");
+		}
+		else {
+			if (speed > baseSpeed) {
+				// 달리고 있을 경우
+				pAniController->ChangeClip("FastRun");
+			}
+			else {
+				// 걷고 있을 경우
+				pAniController->ChangeClip("run");
+			}
+		}
+	}
+
 	Player::Animate(_collideCheck, _timeElapsed);
 
 	sabotageCoolTime -= _timeElapsed;
