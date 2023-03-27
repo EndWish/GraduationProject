@@ -23,7 +23,7 @@ void Sound::Play(bool _loop) {
 
 void Sound::SetSpeed(float _speed) {
 	// 지정된 샘플레이트를 벗어나게 하지 말것
-	pSecondaryBuffer->SetFrequency(sampleRate * _speed);
+	pSecondaryBuffer->SetFrequency(DWORD(sampleRate * _speed));
 }
 
 void Sound::Stop() {

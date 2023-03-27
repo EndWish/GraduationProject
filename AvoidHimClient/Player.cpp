@@ -17,6 +17,8 @@ Player::Player() {
 	mpTick = 1.f;
 	slowRate = 0;
 	slowTime = 0;
+
+	moveFrontVector = XMFLOAT3();
 }
 
 Player::~Player() {
@@ -44,9 +46,10 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 
 	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
 
-	SetBoundingBox(BoundingOrientedBox(	XMFLOAT3(0, 0.8, 0),
-										XMFLOAT3(0.29, 0.8, 0.27),
-										XMFLOAT4(0, 0, 0, 1)));
+	SetBoundingBox(BoundingOrientedBox(
+		XMFLOAT3(0.f, 0.8f, 0.f),
+		XMFLOAT3(0.28f, 0.8f, 0.24f),
+		XMFLOAT4(0.f, 0.f, 0.f, 1.f)));
 
 	auto pSkinnedChild = dynamic_pointer_cast<SkinnedGameObject>(pChildren[0]);
 	if (pSkinnedChild) {
@@ -230,6 +233,8 @@ Student::Student() {
 	hp = 100.0f;
 	imprisoned = false;
 	item = ObjectType::none;
+
+	isHacking = false;
 }
 Student::~Student() {
 
@@ -249,7 +254,10 @@ void Student::Animate(char _collideCheck, float _timeElapsed) {
 		float horizentalMoveSpeedPerSec = velocity.z / _timeElapsed;
 		float verticalMoveSpeedPerSec = velocity.y;
 
-		if (0.18f < unlandingTime) {
+		if (isHacking) {
+			pAniController->ChangeClip("Hacking");
+		}
+		else if (0.18f < unlandingTime) {
 			// 공중에 있을 경우
 			pAniController->ChangeClip("Jumping");
 		}
@@ -332,6 +340,10 @@ Professor::Professor() {
 
 	speed *= 1.2f;
 	baseSpeed *= 1.2f;
+
+	isSwingAttacking = false; 
+	isThrowAttacking = false;
+	isCreatedThrowAttack = false;
 }
 
 Professor::~Professor() {
@@ -376,7 +388,28 @@ void Professor::Animate(char _collideCheck, float _timeElapsed) {
 		float horizentalMoveSpeedPerSec = velocity.z / _timeElapsed;
 		float verticalMoveSpeedPerSec = velocity.y;
 
-		if (0.18f < unlandingTime) {
+		if (isSwingAttacking) {
+			pAniController->ChangeClip("Melee");
+			if (2 <= pAniController->GetNRepeat()) {
+				isSwingAttacking = false;
+			}
+		}
+		else if (isThrowAttacking) {
+			pAniController->ChangeClip("throw");
+			if (!isCreatedThrowAttack && 0.1 <= pAniController->GetTime()) {
+				isCreatedThrowAttack = true;
+				// 공격 패킷을 보내준다.
+				CS_ATTACK sendPacket;
+				sendPacket.attackType = AttackType::throwAttack;
+				sendPacket.cid = cid;
+				sendPacket.playerObjectID = myObjectID;
+				SendFixedPacket(sendPacket);
+			}
+			if (2 <= pAniController->GetNRepeat()) {
+				isThrowAttacking = false;
+			}
+		}
+		else if (0.18f < unlandingTime) {
 			// 공중에 있을 경우
 			pAniController->ChangeClip("jump");
 		}
@@ -417,6 +450,8 @@ void Professor::LeftClick() {
 		sendPacket.cid = cid;
 		sendPacket.playerObjectID = myObjectID;
 		Reload(AttackType::swingAttack);
+		wpAniController.lock()->ChangeClip("Melee");
+		isSwingAttacking = true;
 		SendFixedPacket(sendPacket);
 	}
 
@@ -435,7 +470,10 @@ void Professor::RightClick() {
 		// 서버가 늦어질 경우 이곳에서 대기 쿨타임을 주지 않을경우 계속해서 패킷을 전송하게 된다.
 		// 이후 서버에게 패킷을 받아 실제로 공격을 생성할 때 다시 쿨타임을 적용한다.
 		Reload(AttackType::throwAttack);
-		SendFixedPacket(sendPacket);
+		wpAniController.lock()->ChangeClip("throw");
+		isThrowAttacking = true;
+		isCreatedThrowAttack = false;
+		// SendFixedPacket(sendPacket); => 애니메이션에서 보내준다.
 	}
 
 	Scene::GetText("rightCoolTime")->SetEnable(true);

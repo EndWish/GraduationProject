@@ -6,7 +6,7 @@
 AnimationClip::AnimationClip() {
 	name = "unknown";
 	runTime = 0.f;
-	nKeyFrame = 0;
+	nKeyFrame = 1;
 }
 AnimationClip::~AnimationClip() {
 
@@ -43,6 +43,7 @@ AnimationController::AnimationController() {
 	nBone = 0;
 	currentAniClipName = "unknown";
 	time = 0.f;
+	nRepeat = 0;
 }
 AnimationController::~AnimationController() {
 
@@ -53,6 +54,7 @@ void AnimationController::AddTime(float _time) {
 	float maxTime = pAniClips[currentAniClipName]->GetRunTime();
 	if (maxTime <= time) {
 		time -= maxTime;
+		++nRepeat;
 	}
 }
 
@@ -103,5 +105,6 @@ void AnimationController::ChangeClip(const string& _name, float _time) {
 	else
 		cout << "ChangeClip : 잘못된 클립이름 " << _name << "\n";
 
+	nRepeat = 1;
 	time = _time;
 }

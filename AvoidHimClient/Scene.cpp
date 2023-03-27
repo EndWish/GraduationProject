@@ -548,6 +548,7 @@ PlayScene::PlayScene() {
 	remainTime = 1000.f;
 
 	professorObjectID = 0;
+	ranges::fill_n(lightIndex, NUM_SHADOW_MAP, 0);
 }
 
 PlayScene::~PlayScene() {
@@ -935,28 +936,34 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 	float moveSpeed = pPlayer->GetSpeed() * _timeElapsed * (1 - pPlayer->GetSlowRate() / 100.0f);
 	XMFLOAT3 moveVector = XMFLOAT3();
 
-	if (_keysBuffers['A'] & 0xF0) {
-		XMFLOAT3 cameraLeft = pPlayer->GetCamera()->GetWorldRightVector();
-		cameraLeft = Vector3::ScalarProduct(cameraLeft, -1);
-		moveVector = Vector3::Add(moveVector, cameraLeft);
-		move = true;
+	// "학생"이거나 "교수가 공격중이 아닐때" 이동할 수 있다.
+	auto pProfessor = dynamic_pointer_cast<Professor>(pPlayer);
+	if (!pProfessor || !(pProfessor->IsSwingAttacking() || pProfessor->IsThrowAttacking())) {
+
+		if (_keysBuffers['A'] & 0xF0) {
+			XMFLOAT3 cameraLeft = pPlayer->GetCamera()->GetWorldRightVector();
+			cameraLeft = Vector3::ScalarProduct(cameraLeft, -1);
+			moveVector = Vector3::Add(moveVector, cameraLeft);
+			move = true;
+		}
+		if (_keysBuffers['D'] & 0xF0) {
+			XMFLOAT3 cameraRight = pPlayer->GetCamera()->GetWorldRightVector();
+			moveVector = Vector3::Add(moveVector, cameraRight);
+			move = true;
+		}
+		if (_keysBuffers['W'] & 0xF0) {
+			XMFLOAT3 cameraLook = pPlayer->GetCamera()->GetWorldLookVector();
+			moveVector = Vector3::Add(moveVector, cameraLook);
+			move = true;
+		}
+		if (_keysBuffers['S'] & 0xF0) {
+			XMFLOAT3 cameraBack = pPlayer->GetCamera()->GetWorldLookVector();
+			cameraBack = Vector3::ScalarProduct(cameraBack, -1);
+			moveVector = Vector3::Add(moveVector, cameraBack);
+			move = true;
+		}
 	}
-	if (_keysBuffers['D'] & 0xF0) {
-		XMFLOAT3 cameraRight = pPlayer->GetCamera()->GetWorldRightVector();
-		moveVector = Vector3::Add(moveVector, cameraRight);
-		move = true;
-	}
-	if (_keysBuffers['W'] & 0xF0) {
-		XMFLOAT3 cameraLook = pPlayer->GetCamera()->GetWorldLookVector();
-		moveVector = Vector3::Add(moveVector, cameraLook);
-		move = true;
-	}
-	if (_keysBuffers['S'] & 0xF0) {
-		XMFLOAT3 cameraBack = pPlayer->GetCamera()->GetWorldLookVector();
-		cameraBack = Vector3::ScalarProduct(cameraBack, -1);
-		moveVector = Vector3::Add(moveVector, cameraBack);
-		move = true;
-	}
+	
 	if (move && !Vector3::IsSame(XMFLOAT3(), moveVector)) {
 		moveVector = Vector3::Normalize(moveVector);
 		pPlayer->RotateMoveHorizontal(moveVector, angleSpeed, moveSpeed);
@@ -1032,7 +1039,8 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 	auto pComputer = pEnableComputers.end();
 
-
+	if (!isPlayerProfessor)
+		static_pointer_cast<Student>(pPlayer)->SetHacking(false);
 	if (pInteractableObject) {
 
 		// 현재 플레이어가 해킹중인 컴퓨터가 있는지 확인
@@ -1046,6 +1054,10 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		}
 		// 내가 사용중인 컴퓨터인 경우
 		else {
+			// 플레이어가 해킹중이라고 상태를 변경한다.(애니메이션 판단)
+			if (!isPlayerProfessor)
+				static_pointer_cast<Student>(pPlayer)->SetHacking(true);
+
 			pComputer = ranges::find(pEnableComputers, myObjectID, &Computer::GetUse);
 			if (pComputer != pEnableComputers.end()) {
 				float hackingRate = (*pComputer)->GetHackingRate();
@@ -1055,6 +1067,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 			}
 		}
 	}
+
 
 	// 플레이어가 교수일경우의 UI
 	if (isPlayerProfessor) {
@@ -1264,7 +1277,7 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		pZone->AddAttack(packet->attackType, packet->attackObjectID, FindPlayerObject(packet->playerObjectID), _pDevice, _pCommandList);
 		if (packet->playerObjectID == myObjectID && isPlayerProfessor) {
 			auto pProfessor = static_pointer_cast<Professor>(pPlayer);
-			if(pProfessor) pProfessor->Reload(packet->attackType);
+			pProfessor->Reload(packet->attackType);
 		}
 		break;
 	}

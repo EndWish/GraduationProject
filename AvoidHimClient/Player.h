@@ -96,6 +96,8 @@ protected:
 	// 보유하고 있는 아이템을 type로만 저장
 	ObjectType item;
 
+	bool isHacking;
+
 public:
 	Student();
 	virtual ~Student();
@@ -105,13 +107,16 @@ public:
 
 	float GetHP() const { return hp; };
 	void SetHP(float _hp) { hp = _hp; };
-	void AddHP(float _hp) { hp = min(hp+_hp, 100.f); };
+	void AddHP(float _hp) { hp = min(hp+_hp, 100.f); }
 
 	bool GetImprisoned() const { return imprisoned; }
 	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
 
 	virtual void LeftClick();
 	virtual void RightClick();
+
+	bool IsHacking() const { return isHacking; }
+	void SetHacking(bool _isHacking) { isHacking = _isHacking; }
 
 	ObjectType GetItem() const { return item; };
 	void SetItem(ObjectType _objectType) { item = _objectType; };
@@ -126,6 +131,9 @@ protected:
 
 	weak_ptr<GameObject> wpHandObject;
 
+	bool isSwingAttacking, isThrowAttacking;
+	bool isCreatedThrowAttack;
+
 public:
 	Professor();
 	virtual ~Professor();
@@ -137,6 +145,14 @@ public:
 	void Reload(AttackType _type);
 	float GetCoolTime(AttackType _type) const;
 	virtual void Animate(char _collideCheck, float _timeElapsed);
+
+	bool IsSwingAttacking() const { return isSwingAttacking; }
+	void SetSwingAttacking(bool _isSwingAttacking) { isSwingAttacking = _isSwingAttacking; }
+	bool IsThrowAttacking() const { return isThrowAttacking; }
+	void SetThrowAttacking(bool _isThrowAttacking) { isThrowAttacking = _isThrowAttacking; }
+	bool IsCreatedThrowAttack() const { return isCreatedThrowAttack; }
+	void SetCreatedThrowAttack(bool _isCreatedThrowAttack) { isCreatedThrowAttack = _isCreatedThrowAttack; }
+
 	
 	virtual void LeftClick();
 	virtual void RightClick();

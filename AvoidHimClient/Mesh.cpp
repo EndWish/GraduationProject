@@ -11,6 +11,7 @@ Mesh::Mesh() {
 	tangentBufferView = D3D12_VERTEX_BUFFER_VIEW();
 	biTangentsBufferView = D3D12_VERTEX_BUFFER_VIEW();
 	texCoord0BufferView = D3D12_VERTEX_BUFFER_VIEW();
+	nVertex = 0;
 }
 Mesh::~Mesh() {
 
@@ -165,6 +166,8 @@ SkinnedMesh::SkinnedMesh() {
 	offsetMatrixBufferView = D3D12_VERTEX_BUFFER_VIEW();
 	boneIndexBufferView = D3D12_VERTEX_BUFFER_VIEW();
 	boneWeightBufferView = D3D12_VERTEX_BUFFER_VIEW();
+	nBone = 0;
+	bonesPerVertex = 0;
 }
 SkinnedMesh::~SkinnedMesh() {
 

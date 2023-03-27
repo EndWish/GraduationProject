@@ -32,6 +32,7 @@ protected:
 	string currentAniClipName;
 	unordered_map<string, shared_ptr<AnimationClip>> pAniClips;
 	float time;
+	int nRepeat;
 
 public:
 	AnimationController();
@@ -45,4 +46,8 @@ public:
 	const string& GetClipName() const { return currentAniClipName; }
 	float GetTime() const { return time; }
 	void SetTime(float _time) { time = _time; }
+
+	int GetNRepeat() const { return nRepeat; }
+	void SetNRepeat(int _nRepeat) { nRepeat = _nRepeat; }
+
 };

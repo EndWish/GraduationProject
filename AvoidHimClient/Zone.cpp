@@ -569,11 +569,11 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	for (auto& divx : sectors) {
 		for (auto& divy : divx) {
 			for (auto& sector : divy) {
-				sector.RenderHitBox(_pCommandList, hitBoxMesh);
+				//sector.RenderHitBox(_pCommandList, hitBoxMesh);
 			}
 		}
 	}
-	pPlayer->RenderHitBox(_pCommandList, hitBoxMesh);
+	//pPlayer->RenderHitBox(_pCommandList, hitBoxMesh);
 
 #endif
 
@@ -1046,24 +1046,39 @@ shared_ptr<Trap> Zone::GetTrap(UINT _objectID) {
 }
 
 void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	
+	auto pProfessor = dynamic_pointer_cast<Professor>(_pPlayerObject);
 
 	shared_ptr<Attack> pAttack;
 	if (_attackType == AttackType::swingAttack) {
 		pAttack = make_shared<SwingAttack>(_pPlayerObject->GetID());
 		pAttack->Create("SwingAttack", _pDevice, _pCommandList);
+
+		// 캐릭터의 중심위치로 이동시킨다.
+		if (pProfessor)
+			pAttack->SetLocalPosition(pProfessor->GetWorldPosition());
+		else
+			pAttack->SetLocalPosition(static_pointer_cast<InterpolateMoveGameObject>(_pPlayerObject)->GetWorldPosition());
+		pAttack->SetLocalRotation(_pPlayerObject->GetLocalRotate());
+		pAttack->MoveRight(-0.10f);
+		pAttack->MoveFront(1.2f);
+		pAttack->MoveUp(0.30f);
+		
+		pAttack->Rotate(pAttack->GetLocalLookVector(), -18.f);
+		pAttack->Rotate(pAttack->GetLocalRightVector(), -35.f);
 	}
 	else if (_attackType == AttackType::throwAttack) {
 
 		pAttack = make_shared<ThrowAttack>(_pPlayerObject->GetID(), _pPlayerObject->GetWorldLookVector());
 		pAttack->Create("BookAttack", _pDevice, _pCommandList);
-	}
 
-	if(auto pProfessor = dynamic_pointer_cast<Professor>(_pPlayerObject))
-		pAttack->SetLocalPosition(pProfessor->GetHandObject()->GetWorldPosition());
-	else
-		pAttack->SetLocalPosition(static_pointer_cast<InterpolateMoveGameObject>(_pPlayerObject)->GetHandObject()->GetWorldPosition());
-	pAttack->SetLocalRotation(_pPlayerObject->GetLocalRotate());
+		// 캐릭터의 손 위치로 이동
+		if (pProfessor)
+			pAttack->SetLocalPosition(pProfessor->GetHandObject()->GetWorldPosition());
+		else
+			pAttack->SetLocalPosition(static_pointer_cast<InterpolateMoveGameObject>(_pPlayerObject)->GetHandObject()->GetWorldPosition());
+		pAttack->SetLocalRotation(_pPlayerObject->GetLocalRotate());
+	}
+	
 	pAttack->UpdateObject();
 	AddObject(SectorLayer::attack, _objectID, pAttack, pAttack->GetWorldPosition());
 

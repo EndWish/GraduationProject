@@ -794,9 +794,10 @@ void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12De
 	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
 	wpHandObject = FindFrame("Bip001 R Hand");
 
-	SetBoundingBox(BoundingOrientedBox(XMFLOAT3(0, 0.8, 0),
-		XMFLOAT3(0.29, 0.8, 0.27),
-		XMFLOAT4(0, 0, 0, 1)));
+	SetBoundingBox(BoundingOrientedBox(
+		XMFLOAT3(0.f, 0.8f, 0.f),
+		XMFLOAT3(0.28f, 0.8f, 0.24f),
+		XMFLOAT4(0.f, 0.f, 0.f, 1.f)));
 
 	auto pSkinnedChild = dynamic_pointer_cast<SkinnedGameObject>(pChildren[0]);
 	if (pSkinnedChild) {
@@ -1352,15 +1353,15 @@ FullScreenObject::FullScreenObject(const ComPtr<ID3D12Device>& _pDevice, const C
 	uv[4] = XMFLOAT2(1.0f, 1.0f);
 	uv[5] = XMFLOAT2(0.0f, 1.0f);
 
-	pPositionBuffer = CreateBufferResource(_pDevice, _pCommandList, pos.data(), sizeof(XMFLOAT3) * pos.size(), D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pPositionUploadBuffer);
+	pPositionBuffer = CreateBufferResource(_pDevice, _pCommandList, pos.data(), UINT(sizeof(XMFLOAT3) * pos.size()), D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pPositionUploadBuffer);
 	positionBufferView.BufferLocation = pPositionBuffer->GetGPUVirtualAddress();
 	positionBufferView.StrideInBytes = sizeof(XMFLOAT3);
-	positionBufferView.SizeInBytes = sizeof(XMFLOAT3) * pos.size();
+	positionBufferView.SizeInBytes = UINT(sizeof(XMFLOAT3) * pos.size());
 
-	pTexCoordBuffer = CreateBufferResource(_pDevice, _pCommandList, uv.data(), sizeof(XMFLOAT2) * uv.size(), D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pTexCoordUploadBuffer);
+	pTexCoordBuffer = CreateBufferResource(_pDevice, _pCommandList, uv.data(), UINT(sizeof(XMFLOAT2) * uv.size()), D3D12_HEAP_TYPE_DEFAULT, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, pTexCoordUploadBuffer);
 	texCoordBufferView.BufferLocation = pTexCoordBuffer->GetGPUVirtualAddress();
 	texCoordBufferView.StrideInBytes = sizeof(XMFLOAT2);
-	texCoordBufferView.SizeInBytes = sizeof(XMFLOAT2) * uv.size();
+	texCoordBufferView.SizeInBytes = UINT(sizeof(XMFLOAT2) * uv.size());
 
 
 }

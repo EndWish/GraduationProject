@@ -24,7 +24,7 @@ using namespace DirectX;
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
 	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	useItem, removeItem, toggleLever, removeTrap, exitPlayer, exitGame, checkNickname,
+	useItem, removeItem, toggleLever, removeTrap, exitPlayer, exitGame, checkNickname
 };
 
 enum class SC_PACKET_TYPE : char {
@@ -32,7 +32,6 @@ enum class SC_PACKET_TYPE : char {
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
 	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
 	addItem, useItem, removeItem, toggleLever, removeTrap, exitPlayer, professorWin, checkNickname, escapeProfessor, escapeStudent,
-
 };
 enum class SC_FAIL_TYPE : int {
 	unknown = 1,	//  �ʱⰪ
@@ -97,7 +96,6 @@ enum class AttackType : char {
 	throwAttack,
 	num,
 };
-
 
 #pragma pack(push, 1)
 
@@ -250,7 +248,6 @@ struct CS_EXIT_GAME {
 	UINT cid = 0;
 	UINT pid = 0;
 };
-
 struct CS_CHECK_EXIST_NICKNAME {
 	CS_PACKET_TYPE type = CS_PACKET_TYPE::checkNickname;
 	UINT cid = 0;
