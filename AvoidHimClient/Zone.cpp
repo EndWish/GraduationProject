@@ -539,8 +539,10 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 
 #ifdef USING_INSTANCING
 	gameFramework.GetShader("BasicShader")->Render(_pCommandList);
-	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
 	gameFramework.GetShader("InstancingShader")->Render(_pCommandList);
+	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
+	gameFramework.GetShader("SkinnedTransparentShader")->Render(_pCommandList);
+
 #else
 	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);
 	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
@@ -721,7 +723,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pNewLight->falloff = 0.7f;
 			pNewLight->attenuation = XMFLOAT3(1.0f, 0.5f, 0.25f);
 			pNewLight->phi = (float)numbers::pi * 0.5f;
-			pNewLight->theta = (float)numbers::pi * 0.8f;
+			pNewLight->theta = (float)numbers::pi * 0.7f;
 			pNewLight->range = 6.f;
 
 			if (auto pScene = wpScene.lock()) {

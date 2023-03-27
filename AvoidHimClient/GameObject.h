@@ -139,6 +139,7 @@ public:
 	//  OOBB 갱신
 	void UpdateOOBB();
 
+
 	// 오브젝트 내용 전체적으로 갱신
 	virtual void UpdateObject();
 
@@ -246,8 +247,12 @@ public:
 struct SkinnedWorldTransformFormat {
 	array<XMFLOAT4X4, MAX_BONE> worldTransform;
 };
+
 class SkinnedGameObject : public GameObject {
 protected:
+
+	bool isTransparent; // 투명 상태인 경우 true
+	float transparentTime; // 투명 지속시간
 	ComPtr<ID3D12Resource> pSkinnedWorldTransformBuffer;
 	shared_ptr<SkinnedWorldTransformFormat> pMappedSkinnedWorldTransform;
 	vector<shared_ptr<GameObject>> pBones;
@@ -262,6 +267,11 @@ public:
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void CopyObject(const GameObject& _other, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	void SetTransparent(bool _isTransparent) { isTransparent = _isTransparent; }
+	bool GetTransparent() const { return isTransparent; }
+
+	void SetTransparentTime(float _transparentTime) { transparentTime = _transparentTime; }
+	float GetTransparentTime() const { return transparentTime; }
 
 	shared_ptr<AnimationController> GetAniController() { return pAniController; }
 
@@ -269,8 +279,10 @@ public:
 
 ///////////////////////////////////////////////////////////////////////////////
 /// InterpolateMoveGameObject ( 적 오브젝트 )
+
 class InterpolateMoveGameObject : public GameObject {
 private:
+	int isTransparent; // 투명 상태인 경우 true
 	float moveDistance;
 	XMFLOAT3 prevPosition;
 	XMFLOAT4 prevRotation;
@@ -286,6 +298,7 @@ private:
 
 	bool imprisoned;
 	bool visible;
+
 	shared_ptr<Camera> pCamera;
 	shared_ptr<TextBox> nickname;
 
@@ -298,6 +311,8 @@ public:
 	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 	virtual void Animate(float _timeElapsed);
+	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
 
 	void SetNickname(wstring _name, bool _isProfessor);
@@ -307,6 +322,8 @@ public:
 	void SetHP(float _hp) { hp = _hp; };
 	void AddHP(float _hp) { hp += _hp; };
 
+	void SetTransparent(int _isTransparent) { isTransparent = isTransparent; }
+	int GetTransparent() const { return isTransparent; }
 	bool GetImprisoned() const { return imprisoned; }
 	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
 
@@ -459,7 +476,6 @@ public:
 
 
 class SkyBox {
-
 	array<shared_ptr<SkyBoxMesh>, 6> pMeshs;
 	array<shared_ptr<Texture>, 6> pTextures;
 public:
@@ -488,9 +504,6 @@ public:
 private:
 
 };
-
-
-
 
 
 

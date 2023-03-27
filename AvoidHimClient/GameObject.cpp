@@ -48,6 +48,7 @@ GameObject::GameObject() {
 	id = 0;
 	objectClass = 0;
 	shaderType = ShaderType::none;
+
 }
 GameObject::~GameObject() {
 
@@ -500,6 +501,7 @@ void GameObject::CopyObject(const GameObject& _other) {
 	}
 	case ShaderType::skinned: {
 		gameFramework.GetShader("SkinnedShader")->AddObject(shared_from_this());
+		gameFramework.GetShader("SkinnedTransparentShader")->AddObject(shared_from_this());
 		break;
 	}
 	case ShaderType::effect: {
@@ -583,6 +585,8 @@ void Effect::CopyObject(const GameObject& _other) {
 SkinnedGameObject::SkinnedGameObject() {
 	objectClass = 1;
 	pAniController = make_shared<AnimationController>();
+	isTransparent = false;
+	transparentTime = 0.f;
 }
 SkinnedGameObject::~SkinnedGameObject() {
 
@@ -785,6 +789,7 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	moveDistance = 0.f;
 	visible = false;
 	imprisoned = false;
+	isTransparent = false;
 }
 
 void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -830,6 +835,11 @@ void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 		moveDistance = 0.f;
 	}
 
+}
+
+void InterpolateMoveGameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+
+	GameObject::RenderAll(_pCommandList);
 }
 
 void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale) {

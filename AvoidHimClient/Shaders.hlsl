@@ -1,6 +1,9 @@
 // 루드 시그니처는 64개의 32-비트 배열로 구성됨.
 // 많이 사용하는 매개변수를 앞쪽에 배치하는 것이 좋음.
 
+// 출력하지 않는 렌더타겟이 있을 수 있다.
+#pragma warning( disable :  3578 )
+
 cbuffer cbCameraInfo : register(b1) {
 	matrix view : packoffset(c0);
 	matrix projection : packoffset(c4);
@@ -11,9 +14,11 @@ cbuffer cbGameObjectInfo : register(b2) {
 	matrix worldTransform : packoffset(c0);
 };
 
-cbuffer cbShadowMapLightInfo : register(b5) {
-    int lightIndex : packoffset(c0);
+cbuffer cbIntVariable : register(b5) {
+    int intValue : packoffset(c0);
 };
+
+
 
 struct EFFECT_INDEX
 {
@@ -57,7 +62,8 @@ struct G_BUFFER_OUTPUT {
     float4 normal : SV_TARGET1;
     float4 position : SV_TARGET2;
     float4 emissive : SV_TARGET3;
-    float depth : SV_TARGET4;
+    float4 slideUVVec : SV_TARGET4;
+    float depth : SV_TARGET5;
 };
 
 
@@ -140,7 +146,7 @@ SHADOW_MAP_VS_OUTPUT DefaultShadowVertexShader(VS_INPUT input)
  	// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
     output.positionW = (float3) mul(float4(input.position, 1.0f), worldTransform);
     // 이 때 변환 행렬은 조명의 위치 기준 카메라의 변환 행렬이다.
-    output.position = mul(mul(float4(output.positionW, 1.0f), lights[lightIndex].view), lights[lightIndex].projection);
+    output.position = mul(mul(float4(output.positionW, 1.0f), lights[intValue].view), lights[intValue].projection);
     
     return output;
 }
@@ -151,7 +157,7 @@ float DefaultShadowPixelShader(SHADOW_MAP_VS_OUTPUT input) : SV_TARGET
 {
     float output;
     // 빛의 위치에서 정점의 위치까지의 거리를 저장한다.
-    return length(input.positionW - lights[lightIndex].position);
+    return length(input.positionW - lights[intValue].position);
 
 }
 
@@ -233,7 +239,6 @@ G_BUFFER_OUTPUT EffectPixelShader(VS_EFFECT_OUTPUT input)
     output.position = float4(input.positionW, 1.0f);
     output.emissive = float4(0, 0, 0, 1);
     // Effect는 깊이값을 쓰지 않는다. (그림자 x)
-    output.depth = depthTexture.Sample(gssWrap, input.uv);
     return output;
 }
 
@@ -257,6 +262,7 @@ struct VS_SKINNED_OUTPUT
     float4 position : SV_POSITION;
     float3 positionW : POSITION;
     float3 normal : NORMAL;
+    float4 slideUVVec : slideUV;
     float3 tangent : TANGENT;
     float3 biTangent : BITANGENT;
     float2 uv : TEXCOORD;
@@ -266,7 +272,7 @@ VS_SKINNED_OUTPUT SkinnedVertexShader(VS_SKINNED_INPUT input)
 {
     
     
-    VS_OUTPUT output;
+    VS_SKINNED_OUTPUT output;
     output.positionW = float3(0, 0, 0);
     output.normal = float3(0, 0, 0);
     output.tangent = float3(0, 0, 0);
@@ -284,6 +290,8 @@ VS_SKINNED_OUTPUT SkinnedVertexShader(VS_SKINNED_INPUT input)
             output.biTangent += input.boneWeight[i] * mul(input.biTangent, (float3x3) mtxVertexToBoneWorld);
         }
     }
+
+    output.slideUVVec = float4(output.normal, 1.0f);
     output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
     output.uv = input.uv;
 
@@ -315,14 +323,55 @@ G_BUFFER_OUTPUT SkinnedPixelShader(VS_SKINNED_OUTPUT input)
     {
         input.normal = normalize(input.normal);
     }
+    
 
+    output.depth = length(input.positionW - cameraPosition);
+
+    // 투명하지 않은경우에만 쓴다.
     output.color = cColor;
     output.normal = float4(input.normal, 1.0f);
     output.position = float4(input.positionW, 1.0f);
     output.emissive = float4(0, 0, 0, 1);
-    output.depth = length(input.positionW - cameraPosition);
+
     return output;
 }
+
+[earlydepthstencil]
+G_BUFFER_OUTPUT SkinnedTransparentPixelShader(VS_SKINNED_OUTPUT input)
+{
+    G_BUFFER_OUTPUT output;
+    float4 cColor = float4(0, 0, 0, 1);
+    if (drawMask & MATERIAL_ALBEDO_MAP)
+    {
+        cColor = albedoMap.Sample(gssWrap, input.uv);
+    }
+    else
+    {
+        cColor = diffuse;
+    }
+    
+    // 노멀값 조정
+    if (drawMask & MATERIAL_NORMAL_MAP)
+    {
+        float3x3 TBN = float3x3(normalize(input.tangent), normalize(input.biTangent), normalize(input.normal));
+        float3 vNormal = normalize(normalMap.Sample(gssWrap, input.uv).rgb * 2.0f - 1.0f); //[0, 1] → [-1, 1]
+        input.normal = normalize(mul(vNormal, TBN));
+    }
+    else
+    {
+        input.normal = normalize(input.normal);
+    }
+    
+
+    output.depth = length(input.positionW - cameraPosition);
+        
+    // 투명한 경우에만 쓴다.
+    output.slideUVVec = input.slideUVVec;
+    
+
+    return output;
+}
+
 
 
 SHADOW_MAP_VS_OUTPUT SkinnedShadowVertexShader(VS_SKINNED_INPUT input)
@@ -339,7 +388,7 @@ SHADOW_MAP_VS_OUTPUT SkinnedShadowVertexShader(VS_SKINNED_INPUT input)
             output.positionW += input.boneWeight[i] * mul(float4(input.position, 1.0f), mtxVertexToBoneWorld).xyz;
         }
     }
-    output.position = mul(mul(float4(output.positionW, 1.0f), lights[lightIndex].view), lights[lightIndex].projection);
+    output.position = mul(mul(float4(output.positionW, 1.0f), lights[intValue].view), lights[intValue].projection);
 
     return output;
 }
@@ -349,7 +398,7 @@ float SkinnedShadowPixelShader(SHADOW_MAP_VS_OUTPUT input) : SV_TARGET
 {
     float output;
     // 빛의 위치에서 정점의 위치까지의 거리를 저장한다.
-    return length(input.positionW - lights[lightIndex].position);
+    return length(input.positionW - lights[intValue].position);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -513,7 +562,7 @@ SHADOW_MAP_VS_OUTPUT InstanceShadowVertexShader(VS_INSTANCING_INPUT input)
     SHADOW_MAP_VS_OUTPUT output;
     output.positionW = (float3) mul(float4(input.position, 1.0f), input.worldMatrix);
     // 이 때 변환 행렬은 조명의 위치 기준 카메라의 변환 행렬이다.
-    output.position = mul(mul(float4(output.positionW, 1.0f), lights[lightIndex].view), lights[lightIndex].projection);
+    output.position = mul(mul(float4(output.positionW, 1.0f), lights[intValue].view), lights[intValue].projection);
     return output;
 }
 
@@ -523,7 +572,7 @@ float InstanceShadowPixelShader(SHADOW_MAP_VS_OUTPUT input) : SV_TARGET
 {
     float output;
     // 빛의 위치에서 정점의 위치까지의 거리를 저장한다.
-    return length(input.positionW - lights[lightIndex].position);
+    return length(input.positionW - lights[intValue].position);
 }
 
 
@@ -580,11 +629,17 @@ VS_LIGHTING_OUT LightingVertexShader(VS_LIGHTING_IN input)
 
 float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
 {
-    float4 color = colorTexture.Sample(gssWrap, input.uv);
-    float3 normal = normalTexture.Sample(gssWrap, input.uv).xyz;
+    
+    float4 uvSlide =  uvSlideTexture.Sample(gssWrap, input.uv);
+    //return abs(uvSlideTexture.Sample(gssWrap, input.uv));
     float3 positionW = positionTexture.Sample(gssWrap, input.uv).xyz;
+    
+    float3 changeNormal = uvSlideTexture.Sample(gssWrap, input.uv).xyz;
+    float3 normal = lerp(normalTexture.Sample(gssWrap, input.uv).xyz, changeNormal, float3(0.5, 0.5, 0.5));
+    //float3 normal =normalTexture.Sample(gssWrap, input.uv).xyz;
+    float4 color = colorTexture.Sample(gssWrap, input.uv);
 
-    //return float4(shadowMapTexture_1.Sample(gssWrap, input.uv) / 20, 0, 0, 1);
+    //return float4(depthTexture.Sample(gssWrap, input.uv) / 20, 0, 0, 1);
     // 이곳에서 조명처리를 해준다.
     float4 cColor = CalculateLight(color, positionW, normal);
     return cColor;

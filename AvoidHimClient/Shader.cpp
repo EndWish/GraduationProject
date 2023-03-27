@@ -43,7 +43,8 @@ void Shader::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootS
 		pipelineStateDesc.RTVFormats[1] = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		pipelineStateDesc.RTVFormats[2] = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		pipelineStateDesc.RTVFormats[3] = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		pipelineStateDesc.RTVFormats[4] = DXGI_FORMAT_R32_FLOAT;
+		pipelineStateDesc.RTVFormats[4] = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		pipelineStateDesc.RTVFormats[5] = DXGI_FORMAT_R32_FLOAT;
 		break;
 	}
 	case ShaderRenderType::SWAP_CHAIN_RENDER: {
@@ -205,6 +206,7 @@ void Shader::PrepareRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLis
 void Shader::AddObject(const weak_ptr<GameObject>& _pGameObject) {
 	wpGameObjects.push_back(_pGameObject);
 }
+
 
 void Shader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	// 쉐이더를 파이프라인에 연결한다.
@@ -411,6 +413,27 @@ SkinnedShader::~SkinnedShader() {
 
 }
 
+void SkinnedShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework gameFramework = GameFramework::Instance();
+
+	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
+	if (pGameObjects.size() > 0) {
+		PrepareRender(_pCommandList);
+		auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
+			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
+			if (!pGameObject)
+				return true;
+			// 해당 오브젝트가 존재하며 투명 상태가 아닐 경우 렌더링한다.
+			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
+				pGameObject->Render(_pCommandList);
+			return false;
+		};
+		pGameObjects.erase(
+			ranges::remove_if(pGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
+			pGameObjects.end());
+	}
+}
+
 D3D12_RASTERIZER_DESC SkinnedShader::CreateRasterizerState() {
 	D3D12_RASTERIZER_DESC rasterizerDesc;
 	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
@@ -445,6 +468,44 @@ D3D12_INPUT_LAYOUT_DESC SkinnedShader::CreateInputLayout() {
 	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
 
 	return inputLayoutDesc;
+}
+
+
+D3D12_BLEND_DESC SkinnedShader::CreateBlendState() {
+	D3D12_BLEND_DESC blendDesc;
+	ZeroMemory(&blendDesc, sizeof(D3D12_BLEND_DESC));
+	blendDesc.AlphaToCoverageEnable = FALSE;
+	// 사람이 투명한지, 아닌지에 따라 그리지 않을 렌더타겟이 존재하므로
+	//srcColor * d3d12_BLEND_SRC_ALPHA + destcolor * d3d12_BLEND_INV_SRC_ALPHA
+	// 식으로 그릴 렌더타겟을 HLSL코드에서 따로 설정한다.
+	blendDesc.IndependentBlendEnable = TRUE;
+
+	for (int i = 0; i < NUM_G_BUFFER - 1; ++i) {
+		blendDesc.AlphaToCoverageEnable = FALSE;
+		blendDesc.IndependentBlendEnable = FALSE;
+		blendDesc.RenderTarget[0].BlendEnable = TRUE;
+		blendDesc.RenderTarget[0].LogicOpEnable = FALSE;
+		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
+		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
+		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
+		blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
+		blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+		blendDesc.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
+		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	}
+	// depth값은 무조건 쓴다.
+	blendDesc.RenderTarget[NUM_G_BUFFER].BlendEnable = FALSE;
+	blendDesc.RenderTarget[NUM_G_BUFFER].LogicOpEnable = FALSE;
+	blendDesc.RenderTarget[NUM_G_BUFFER].SrcBlend = D3D12_BLEND_ONE;
+	blendDesc.RenderTarget[NUM_G_BUFFER].DestBlend = D3D12_BLEND_ZERO;
+	blendDesc.RenderTarget[NUM_G_BUFFER].BlendOp = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[NUM_G_BUFFER].SrcBlendAlpha = D3D12_BLEND_ONE;
+	blendDesc.RenderTarget[NUM_G_BUFFER].DestBlendAlpha = D3D12_BLEND_ZERO;
+	blendDesc.RenderTarget[NUM_G_BUFFER].BlendOpAlpha = D3D12_BLEND_OP_ADD;
+	blendDesc.RenderTarget[NUM_G_BUFFER].LogicOp = D3D12_LOGIC_OP_NOOP;
+	blendDesc.RenderTarget[NUM_G_BUFFER].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
+	return blendDesc;
 }
 
 SkinnedShadowShader::SkinnedShadowShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
@@ -521,7 +582,102 @@ D3D12_INPUT_LAYOUT_DESC SkinnedShadowShader::CreateInputLayout() {
 	return inputLayoutDesc;
 }
 
+SkinnedTransparentShader::SkinnedTransparentShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	renderType = ShaderRenderType::PRE_RENDER;
+	Init(_pDevice, _pRootSignature);
 
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "SkinnedVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "SkinnedTransparentPixelShader", "ps_5_1", pPSBlob);
+
+	HRESULT _hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (_hr == S_OK) cout << "SkinnedTransparentShader 생성 성공\n";
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+	inputElementDescs.clear();
+}
+SkinnedTransparentShader::~SkinnedTransparentShader() {
+
+}
+
+void SkinnedTransparentShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework gameFramework = GameFramework::Instance();
+
+	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
+	if (pGameObjects.size() > 0) {
+		PrepareRender(_pCommandList);
+		auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
+			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
+			if (!pGameObject)
+				return true;
+			// 해당 오브젝트가 존재하며 투명 상태일 경우 렌더링한다.
+			if(static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
+				pGameObject->Render(_pCommandList);
+			return false;
+		};
+		pGameObjects.erase(
+			ranges::remove_if(pGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
+			pGameObjects.end());
+	}
+}
+
+D3D12_RASTERIZER_DESC SkinnedTransparentShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+
+D3D12_INPUT_LAYOUT_DESC SkinnedTransparentShader::CreateInputLayout() {
+	inputElementDescs.assign(7, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[1] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[2] = { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[3] = { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[4] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 4, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[5] = { "BONEINDEX", 0, DXGI_FORMAT_R32G32B32A32_UINT, 5, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[6] = { "BONEWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 6, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
+}
+
+D3D12_DEPTH_STENCIL_DESC SkinnedTransparentShader::CreateDepthStencilState() {
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
+	depthStencilDesc.DepthEnable = TRUE;
+	// 투명한 상태의 사람은 depth값을 쓰지 않고 비춰보인다.
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	depthStencilDesc.StencilEnable = TRUE;
+	depthStencilDesc.StencilReadMask = 0x00;
+	depthStencilDesc.StencilWriteMask = 0x00;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+	depthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+	return depthStencilDesc;
+}
 
 
 //////////////////// UI Shader ( 2D Shader ) 
@@ -1216,6 +1372,10 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 
 	shared_ptr<Shader> instancingShadowShader = make_shared<InstancingShadowShader>(_pDevice, _pRootSignature);
 	if (instancingShadowShader) storage["InstancingShadowShader"] = instancingShadowShader;
+	else return false;
+
+	shared_ptr<Shader> skinnedTransparentShader = make_shared<SkinnedTransparentShader>(_pDevice, _pRootSignature);
+	if (skinnedTransparentShader) storage["SkinnedTransparentShader"] = skinnedTransparentShader;
 	else return false;
 
 	shared_ptr<Shader> skinnedShader = make_shared<SkinnedShader>(_pDevice, _pRootSignature);

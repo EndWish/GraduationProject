@@ -364,7 +364,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 
 	pDescriptorRanges[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[3].NumDescriptors = NUM_SHADOW_MAP;
-	pDescriptorRanges[3].BaseShaderRegister = 12;	// t12 ~ t17
+	pDescriptorRanges[3].BaseShaderRegister = 21;	// t21~
 	pDescriptorRanges[3].RegisterSpace = 0;
 	pDescriptorRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
@@ -545,9 +545,11 @@ void GameFramework::InitBuffer() {
 		DXGI_FORMAT_R32G32B32A32_FLOAT,
 		DXGI_FORMAT_R32G32B32A32_FLOAT,
 		DXGI_FORMAT_R32G32B32A32_FLOAT,
+		DXGI_FORMAT_R32G32B32A32_FLOAT,
 		DXGI_FORMAT_R32_FLOAT }
 	;
 	D3D12_CLEAR_VALUE clearValue[NUM_G_BUFFER] = {
+		{DXGI_FORMAT_R32G32B32A32_FLOAT, {1.0f, 1.0f, 1.0f, 1.0f}},
 		{DXGI_FORMAT_R32G32B32A32_FLOAT, {1.0f, 1.0f, 1.0f, 1.0f}},
 		{DXGI_FORMAT_R32G32B32A32_FLOAT, {1.0f, 1.0f, 1.0f, 1.0f}},
 		{DXGI_FORMAT_R32G32B32A32_FLOAT, {1.0f, 1.0f, 1.0f, 1.0f}},

@@ -66,19 +66,25 @@ Texture2D<float4> colorTexture : register(t7);
 Texture2D<float4> normalTexture : register(t8);
 Texture2D<float4> positionTexture : register(t9);
 Texture2D<float4> emissiveTexture : register(t10);
-Texture2D<float> depthTexture : register(t11);
+Texture2D<float4> uvSlideTexture : register(t11);
+Texture2D<float> depthTexture : register(t12);
 
-Texture2D<float> shadowMapTexture_1 : register(t12);
-Texture2D<float> shadowMapTexture_2 : register(t13);
-Texture2D<float> shadowMapTexture_3 : register(t14);
-Texture2D<float> shadowMapTexture_4 : register(t15);
-Texture2D<float> shadowMapTexture_5 : register(t16);
-Texture2D<float> shadowMapTexture_6 : register(t17);
-Texture2D<float> shadowMapTexture_7 : register(t18);
-Texture2D<float> shadowMapTexture_8 : register(t19);
-Texture2D<float> shadowMapTexture_9 : register(t20);
-Texture2D<float> shadowMapTexture_10 : register(t21);
 
+Texture2D<float> shadowMapTexture_1 : register(t21);
+Texture2D<float> shadowMapTexture_2 : register(t22);
+Texture2D<float> shadowMapTexture_3 : register(t23);
+Texture2D<float> shadowMapTexture_4 : register(t24);
+Texture2D<float> shadowMapTexture_5 : register(t25);
+Texture2D<float> shadowMapTexture_6 : register(t26);
+Texture2D<float> shadowMapTexture_7 : register(t27);
+Texture2D<float> shadowMapTexture_8 : register(t28);
+Texture2D<float> shadowMapTexture_9 : register(t29);
+Texture2D<float> shadowMapTexture_10 : register(t30);
+
+float2 convertViewportToUV(float2 _viewport) {
+    return float2((_viewport.x + 1) / 2, 1 - (_viewport.y + 1) / 2);
+    
+}
 
 float4 DirectionalLight(int _nIndex, float3 _normal, float3 _toCamera, float4 _color)
 {
@@ -159,7 +165,9 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
     return color;
 }
 
-static const int3 d[4] = { int3(0, -1, 0), int3(-1, 0, 0), int3(1, 0, 0), int3(0, 1, 0) };
+static const int3 d[8] = { int3(0, -1, 0), int3(-1, 0, 0), int3(1, 0, 0), int3(0, 1, 0),
+    int3(1, -1, 0), int3(-1, 1, 0), int3(1, 1, 0), int3(-1, -1, 0)
+};
     
 float CheckShadow(Texture2D<float> _shadowMap, int3 texLocation, float compareValue) {
     // 쉐도우 맵내 깊이를 구한다.
@@ -202,7 +210,7 @@ float GetShadowRate(float3 _Position, int _Index) {
     
     // 텍스처의 바깥 좌표일경우 쉐도우맵 반경 바깥이므로 처리하지 않는다.
     if (shadowMapUV.x < 0 || shadowMapUV.x > 1 || shadowMapUV.y < 0 || shadowMapUV.y > 1)
-        return 5555;
+        return 1;
     else
     {      
         Texture2D<float> shadowMap;
@@ -237,12 +245,12 @@ float GetShadowRate(float3 _Position, int _Index) {
 
         shadowCount += CheckShadow(shadowMap, location, distance);
         // 각 방향으로 다시 검사를 하여 그림자의 세기를 정한다.
-        [unroll(4)]
-        for (int i = 0; i < 4; ++i)
+        [unroll(8)]
+        for (int i = 0; i < 8; ++i)
         {
             shadowCount += CheckShadow(shadowMap, location + d[i], distance);
         }
-        return (shadowCount * 0.2f);
+        return (shadowCount / (1 + 8));
     }
 }
 

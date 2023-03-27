@@ -6,6 +6,7 @@ class Player : public GameObject {
 //class Player : public GameObject {
 
 protected:
+
 	// 0~100
 	float moveDistance;
 	float mp;
@@ -60,6 +61,7 @@ public:
 	XMFLOAT3 GetKnockBack() const { return knockBack; };
 	void SetMoveFrontVector(XMFLOAT3 _moveFrontVector) { moveFrontVector = _moveFrontVector; };
 	XMFLOAT3 GetMoveFrontVector() const { return moveFrontVector; };
+
 
 
 	void AddFrontVelocity(float _velocity);

@@ -1551,8 +1551,6 @@ void PlayScene::ProcessMouseInput(UINT _type, XMFLOAT2 _pos) {
 	case WM_RBUTTONDOWN:
 		// 투사체 공격
 		pPlayer->RightClick();
-
-
 		break;
 }
 }

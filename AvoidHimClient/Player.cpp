@@ -61,7 +61,8 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 }
 
 void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	GameObject::Render(_pCommandList);
+	// 투명 상태에 따라 다른 shader를 set한다.
+	GameObject::RenderAll(_pCommandList);
 }
 
 void Player::Animate(char _collideCheck, float _timeElapsed) {
@@ -322,10 +323,14 @@ void Student::LeftClick() {
 
 void Student::RightClick() {
 	// 은신 스킬 사용
+	auto obj = static_pointer_cast<SkinnedGameObject>(GetObj());
+	obj->SetTransparent(true);
+	obj->SetTransparentTime(10.0f);
+	// 은신했음을 서버에 알린다.
+	// 은신 ui를 설정한다.
 	return;
 	//pTexts["rightCoolTime"]->SetEnable(true);
-	Scene::GetUI("2DUI_rightSkill")->SetEnable(true);
-	Scene::GetUI("2DUI_rightSkill")->SetDark(true);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////
