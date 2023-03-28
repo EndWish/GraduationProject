@@ -47,8 +47,8 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
 
 	SetBoundingBox(BoundingOrientedBox(
-		XMFLOAT3(0.f, 0.8f, 0.f),
-		XMFLOAT3(0.28f, 0.8f, 0.24f),
+		XMFLOAT3(0.f, 0.72f, 0.f),
+		XMFLOAT3(0.28f, 0.72f, 0.24f),
 		XMFLOAT4(0.f, 0.f, 0.f, 1.f)));
 
 	auto pSkinnedChild = dynamic_pointer_cast<SkinnedGameObject>(pChildren[0]);
@@ -395,7 +395,7 @@ void Professor::Animate(char _collideCheck, float _timeElapsed) {
 
 		if (isSwingAttacking) {
 			pAniController->ChangeClip("Melee");
-			if (2 <= pAniController->GetNRepeat()) {
+			if (pAniController->IsMaxFrame()) {
 				isSwingAttacking = false;
 			}
 		}
@@ -410,7 +410,7 @@ void Professor::Animate(char _collideCheck, float _timeElapsed) {
 				sendPacket.playerObjectID = myObjectID;
 				SendFixedPacket(sendPacket);
 			}
-			if (2 <= pAniController->GetNRepeat()) {
+			if (pAniController->IsMaxFrame()) {
 				isThrowAttacking = false;
 			}
 		}
@@ -449,7 +449,7 @@ void Professor::Animate(char _collideCheck, float _timeElapsed) {
 
 void Professor::LeftClick() {
 	// 휘두르기 공격
-	if (GetCoolTime(AttackType::swingAttack) <= 0.f) {
+	if (GetCoolTime(AttackType::swingAttack) <= 0.f && !isThrowAttacking) {
 		CS_ATTACK sendPacket;
 		sendPacket.attackType = AttackType::swingAttack;
 		sendPacket.cid = cid;
@@ -467,7 +467,7 @@ void Professor::LeftClick() {
 }
 
 void Professor::RightClick() {
-	if (GetCoolTime(AttackType::throwAttack) <= 0.f) {
+	if (GetCoolTime(AttackType::throwAttack) <= 0.f && !isSwingAttacking) {
 		CS_ATTACK sendPacket;
 		sendPacket.attackType = AttackType::throwAttack;
 		sendPacket.cid = cid;

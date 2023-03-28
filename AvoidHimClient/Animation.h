@@ -7,6 +7,8 @@ protected:
 	string name;
 	float runTime;
 	UINT nKeyFrame;
+	bool isLoop;
+
 	vector<vector<XMFLOAT3>> scales, position;
 	vector<vector<XMFLOAT4>> rotation;
 
@@ -21,9 +23,11 @@ public:
 	XMFLOAT3 GetPosition(int boneIndex, int keyFrameIndex) const { return position[boneIndex][keyFrameIndex]; }
 	XMFLOAT4 GetRotation(int boneIndex, int keyFrameIndex) const { return rotation[boneIndex][keyFrameIndex]; }
 
+	bool IsLoop() const { return isLoop; }
+	void SetLoop(bool _isLoop) { isLoop = _isLoop; }
+
 	void LoadFromFile(ifstream& _file, UINT _nBone);
 	
-
 };
 
 class AnimationController {
@@ -49,5 +53,7 @@ public:
 
 	int GetNRepeat() const { return nRepeat; }
 	void SetNRepeat(int _nRepeat) { nRepeat = _nRepeat; }
+
+	bool IsMaxFrame() const;
 
 };

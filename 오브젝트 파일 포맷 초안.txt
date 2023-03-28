@@ -7,6 +7,7 @@ nAnimationSet (UINT)		// 애니메이션 클립의 개수
 {
 	animationSetName (string)	// 애니메이션 클립의 이름
 	animationSetRuntime (float)	// 애니메이션 클립의 런타임
+	animationSetLoop (bool)		// 애니메이션 반복 여부
 	animationNKeyFrame (UINT)	// 키프레임의 수
 	{
 		{

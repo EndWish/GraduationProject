@@ -7,6 +7,7 @@ AnimationClip::AnimationClip() {
 	name = "unknown";
 	runTime = 0.f;
 	nKeyFrame = 1;
+	isLoop = false;
 }
 AnimationClip::~AnimationClip() {
 
@@ -20,6 +21,7 @@ void AnimationClip::LoadFromFile(ifstream& _file, UINT _nBone) {
 
 	ReadStringBinary(name, _file);	// animationSetName(string)	// 애니메이션 셋의 이름
 	_file.read((char*)&runTime, sizeof(float));	// animationSetRuntime(float)	// 애니메이션 셋의 런타임
+	_file.read((char*)&isLoop, sizeof(bool));	 // animationSetLoop(bool)		// 애니메이션 반복 여부
 	_file.read((char*)&nKeyFrame, sizeof(UINT));	// animationNKeyFrame(UINT)	// 키프레임의 수
 
 	scales.assign(_nBone, vector<XMFLOAT3>(nKeyFrame));
@@ -50,11 +52,18 @@ AnimationController::~AnimationController() {
 }
 
 void AnimationController::AddTime(float _time) {
+	shared_ptr<AnimationClip>& pAniClip = pAniClips[currentAniClipName];
+
 	time += _time;
-	float maxTime = pAniClips[currentAniClipName]->GetRunTime();
+	float maxTime = pAniClip->GetRunTime();
 	if (maxTime <= time) {
-		time -= maxTime;
-		++nRepeat;
+		if (pAniClip->IsLoop()) {
+			time -= maxTime;
+			++nRepeat;
+		}
+		else {
+			time = maxTime;
+		}
 	}
 }
 
@@ -85,7 +94,7 @@ void AnimationController::UpdateBoneLocalTransform(vector<shared_ptr<GameObject>
 	
 	shared_ptr<AnimationClip> pCurrentAniClip = pAniClips[currentAniClipName];
 
-	int keyFrameIndex = (int)(time / pCurrentAniClip->GetRunTime() * pCurrentAniClip->GetNKeyFrame());
+	int keyFrameIndex = min( int(time / pCurrentAniClip->GetRunTime() * pCurrentAniClip->GetNKeyFrame()), int(pCurrentAniClip->GetNKeyFrame() - 1));
 
 	for (UINT boneIndex = 0; boneIndex < nBone; ++boneIndex) {
 		_pBones[boneIndex]->SetLocalScale(pCurrentAniClip->GetScale(boneIndex, keyFrameIndex));
@@ -107,4 +116,8 @@ void AnimationController::ChangeClip(const string& _name, float _time) {
 
 	nRepeat = 1;
 	time = _time;
+}
+
+bool AnimationController::IsMaxFrame() const {
+	return pAniClips.at(currentAniClipName)->GetRunTime() <= time;\
 }

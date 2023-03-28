@@ -571,11 +571,11 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	for (auto& divx : sectors) {
 		for (auto& divy : divx) {
 			for (auto& sector : divy) {
-				//sector.RenderHitBox(_pCommandList, hitBoxMesh);
+				sector.RenderHitBox(_pCommandList, hitBoxMesh);
 			}
 		}
 	}
-	//pPlayer->RenderHitBox(_pCommandList, hitBoxMesh);
+	pPlayer->RenderHitBox(_pCommandList, hitBoxMesh);
 
 #endif
 
