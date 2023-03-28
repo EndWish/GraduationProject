@@ -310,10 +310,6 @@ shared_ptr<GameObject> GameObject::FindFrame(const string& _name) {
 	return nullptr;
 }
 
-void GameObject::PrepareAnimate() {
-
-}
-
 void GameObject::Animate(float _timeElapsed) {
 	for (const auto& pChild : pChildren) {
 		pChild->Animate(_timeElapsed);
@@ -673,6 +669,15 @@ void SkinnedGameObject::CopyObject(const GameObject& _other, const ComPtr<ID3D12
 	}
 }
 
+void SkinnedGameObject::Animate(float _timeElapsed) {
+	
+	if (isTransparent) {
+		transparentTime -= _timeElapsed;
+		if (transparentTime < 0.f) isTransparent = false;
+	}
+	GameObject::Animate(_timeElapsed);
+}
+
 /////////////////////////// GameObjectManager /////////////////////
 bool GameObjectManager::LoadGameObject(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	ifstream file("GameObject/" + _name, ios::binary);	// ∆ƒ¿œ¿ª ø¨¥Ÿ
@@ -779,17 +784,16 @@ void GameObjectManager::InitInstanceResource(const ComPtr<ID3D12Device>& _pDevic
 InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	prevPosition = XMFLOAT3();
 	prevRotation = Vector4::QuaternionIdentity();
-	prevScale = XMFLOAT3(1,1,1);
-	
+	prevScale = XMFLOAT3(1, 1, 1);
+
 	nextPosition = XMFLOAT3();
 	nextRotation = Vector4::QuaternionIdentity();
-	nextScale = XMFLOAT3(1,1,1);
+	nextScale = XMFLOAT3(1, 1, 1);
 	t = 0;
 	hp = 100.0f;
 	moveDistance = 0.f;
 	visible = false;
 	imprisoned = false;
-	isTransparent = false;
 }
 
 void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -834,7 +838,7 @@ void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 		pFootStepSound->Play();
 		moveDistance = 0.f;
 	}
-
+	GameObject::Animate(_timeElapsed);
 }
 
 void InterpolateMoveGameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -868,6 +872,17 @@ void InterpolateMoveGameObject::SetNickname(wstring _name, bool _isProfessor) {
 	nickname = make_shared<TextBox>((WCHAR*)L"»ﬁ∏’µ∏øÚ√º", color, XMFLOAT2(1.55f, 1.55f), XMFLOAT2(0.3f, 0.1f), C_WIDTH / 60.0f, false);
 	nickname->SetText(_name);
 	nickname->SetAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
+}
+
+void InterpolateMoveGameObject::SetTransparent(bool _isTransparent) {
+	auto obj = static_pointer_cast<SkinnedGameObject>(GetObj());
+	obj->SetTransparent(true);
+	obj->SetTransparentTime(10.0f);
+}
+
+bool InterpolateMoveGameObject::GetTransparent() {
+	auto obj = static_pointer_cast<SkinnedGameObject>(GetObj());
+	return obj->GetTransparent();
 }
 
 shared_ptr<GameObject> InterpolateMoveGameObject::GetHandObject() {

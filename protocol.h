@@ -24,7 +24,7 @@ using namespace DirectX;
 enum class CS_PACKET_TYPE : char {
 	none, makeRoom, queryRoomlistInfo, visitRoom, outRoom, ready, loadingComplete, playerInfo, aniClipChange,
 	toggleDoor, useWaterDispenser, queryUseComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
-	useItem, removeItem, toggleLever, removeTrap, exitPlayer, exitGame, checkNickname
+	useItem, removeItem, toggleLever, removeTrap, exitPlayer, exitGame, checkNickname, transparentPlayer, 
 };
 
 enum class SC_PACKET_TYPE : char {
@@ -32,6 +32,7 @@ enum class SC_PACKET_TYPE : char {
 	ready, gameStart, allPlayerLoadingComplete, playerInfo, aniClipChange, yourPlayerObjectID,
 	playersInfo, toggleDoor, useWaterDispenser, useComputer, hackingRate, attack, hit, goPrison, openPrisonDoor,
 	addItem, useItem, removeItem, toggleLever, removeTrap, exitPlayer, professorWin, checkNickname, escapeProfessor, escapeStudent,
+	transparentPlayer,
 };
 enum class SC_FAIL_TYPE : int {
 	unknown = 1,	//  초기값
@@ -255,6 +256,13 @@ struct CS_CHECK_EXIST_NICKNAME {
 	UINT pid = 0;
 };
 
+struct CS_TRANSPARENT_PLAYER {
+	CS_PACKET_TYPE type = CS_PACKET_TYPE::checkNickname;
+	UINT cid = 0;
+	UINT playerObjectID = 0;
+	UINT pid = 0;
+};
+
 /// 서버->클라
 struct SC_GIVE_CLIENT_ID {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::giveClientID;
@@ -454,6 +462,12 @@ struct SC_ESCAPE_PROFESSOR {
 struct SC_ESCAPE_STUDENT {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::escapeStudent;
 	UINT escapeObjectID = 0;
+	UINT pid = 100'000;
+};
+
+struct SC_TRANSPARENT_PLAYER {
+	SC_PACKET_TYPE type = SC_PACKET_TYPE::transparentPlayer;
+	UINT playerObjectID = 0;
 	UINT pid = 100'000;
 };
 

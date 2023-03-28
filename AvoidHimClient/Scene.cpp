@@ -862,7 +862,9 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	}
 	else {		// 학생일 경우의 UI 로드
 		pUIs["2DUI_leftSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
-		pUIs["2DUI_rightSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.75f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+		pUIs["2DUI_leftSkill"]->SetDark(true);
+		
+		pUIs["2DUI_transparent"] = make_shared<Image2D>("2DUI_transparent", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.75f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 
 		pUIs["2DUI_energyDrink"] = make_shared<Image2D>("2DUI_energyDrink", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 		pUIs["2DUI_medicalKit"] = make_shared<Image2D>("2DUI_medicalKit", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
@@ -1108,7 +1110,8 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
 		
 		shared_ptr<TextBox> nickname = pOtherPlayer->GetNickname();
-		if (pOtherPlayer->GetVisible()) {
+		// 은신상태가 아니면서 가려지지 않은 경우
+		if (pOtherPlayer->GetVisible() && !pOtherPlayer->GetTransparent()) {
 			XMFLOAT3 position = pOtherPlayer->GetBoundingBox().Center;
 			position.y += pOtherPlayer->GetBoundingBox().Extents.y;
 			// 뷰포트 좌표계 -1~1 -> UI좌표계 0~2    
@@ -1141,7 +1144,6 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 						pTexts["leftCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3));
 					}
 				}
-				
 			}
 		}
 		if (pTexts["rightCoolTime"]->GetEnable()) {	// 왼쪽 스킬이 쿨타임일 경우
@@ -1160,14 +1162,28 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 						pTexts["rightCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3));
 					}
 				}
-
 			}
 		}
 
 	}
 	else {	// 학생
+		auto pStudent = static_pointer_cast<Student>(pPlayer);
+		if (pTexts["rightCoolTime"]->GetEnable()) {
+			float coolTime = pStudent->GetCoolTime();
+			if (coolTime <= 0.f) {	// 쿨타임이 끝난경우
+				pTexts["rightCoolTime"]->SetEnable(false);
+				pUIs["2DUI_transparent"]->SetDark(false);
+			}
+			else {
+				if (coolTime >= 1.0f) { // 1초 이상일경우에는 정수로 출력한다.
 
-
+					pTexts["rightCoolTime"]->SetText(to_wstring((int)coolTime));
+				}
+				else {
+					pTexts["rightCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3));
+				}
+			}
+		}
 	}
 
 	// zone 내 오브젝트들에 대한 animate를 수행
@@ -1460,6 +1476,11 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		cout << format("escapeObjectID : {}\n", packet->escapeObjectID);
 		pZone->RemoveObject(SectorLayer::otherPlayer, packet->escapeObjectID, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
 		pOtherPlayers.erase(packet->escapeObjectID);
+		break;
+	}
+	case SC_PACKET_TYPE::transparentPlayer: {
+		SC_TRANSPARENT_PLAYER* packet = GetPacket<SC_TRANSPARENT_PLAYER>();
+		pOtherPlayers[packet->playerObjectID]->SetTransparent(true);
 		break;
 	}
 	default:

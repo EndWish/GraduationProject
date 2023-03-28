@@ -106,8 +106,6 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 	knockBack = XMFLOAT3();
 	rotation = Vector4::QuaternionIdentity();
 
-	if (pChildren[0]) pChildren[0]->Animate(_timeElapsed);
-
 	// 속도를 업데이트 해준다.
 	UpdateRigidBody(_timeElapsed);
 
@@ -152,6 +150,7 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		SendFixedPacket(packet);
 	}
 
+	GameObject::Animate(_timeElapsed);
 }
 
 shared_ptr<Camera> Player::GetCamera() {
@@ -236,6 +235,8 @@ Student::Student() {
 	item = ObjectType::none;
 
 	isHacking = false;
+	transparentMaxCoolTime = 30.0f;
+	transparentRemainCoolTime = 0.f;
 }
 Student::~Student() {
 
@@ -243,6 +244,11 @@ Student::~Student() {
 
 void Student::Animate(char _collideCheck, float _timeElapsed) {
 	// 애니메이션 처리
+
+	if (transparentRemainCoolTime > 0.f) {
+		transparentRemainCoolTime -= _timeElapsed;
+	}
+
 	static float unlandingTime = 0;
 	if (!landed)
 		unlandingTime += _timeElapsed;
@@ -323,14 +329,26 @@ void Student::LeftClick() {
 
 void Student::RightClick() {
 	// 은신 스킬 사용
-	auto obj = static_pointer_cast<SkinnedGameObject>(GetObj());
-	obj->SetTransparent(true);
-	obj->SetTransparentTime(10.0f);
-	// 은신했음을 서버에 알린다.
-	// 은신 ui를 설정한다.
-	return;
-	//pTexts["rightCoolTime"]->SetEnable(true);
+	if (transparentRemainCoolTime > 0.f) return;
 
+	SetTransparent(true);
+	SetCoolTime();
+	// 은신했음을 서버에 알린다.
+	CS_TRANSPARENT_PLAYER packet;
+	packet.type = CS_PACKET_TYPE::transparentPlayer;
+	packet.playerObjectID = myObjectID;
+	packet.cid = cid;
+	SendFixedPacket(packet);
+
+	// 은신 ui를 설정한다.
+	Scene::GetText("rightCoolTime")->SetEnable(true);
+	Scene::GetUI("2DUI_transparent")->SetDark(true);
+}
+
+void Student::SetTransparent(bool _isTransparent) {
+	auto obj = static_pointer_cast<SkinnedGameObject>(GetObj());
+	obj->SetTransparent(_isTransparent);
+	obj->SetTransparentTime(10.0f);
 }
 
 ///////////////////////////////////////////////////////////////////////////////

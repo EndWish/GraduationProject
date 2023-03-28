@@ -536,8 +536,9 @@ void SkinnedShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComm
 			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
 			if (!pGameObject)
 				return true;
-			// 해당 오브젝트가 존재한다면 렌더링한다.
-			pGameObject->Render(_pCommandList);
+			// 해당 오브젝트가 존재한다면 렌더링한다. 은신상태가 아닐경우만 그림자를 그린다.
+			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
+				pGameObject->Render(_pCommandList);
 			return false;
 		};
 		pGameObjects.erase(

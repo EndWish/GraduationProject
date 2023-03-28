@@ -564,6 +564,20 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		}
 		break;
 	}
+	case CS_PACKET_TYPE::transparentPlayer: {
+		CS_TRANSPARENT_PLAYER& recvPacket = GetPacket<CS_TRANSPARENT_PLAYER>();
+		cout << format("CS_TRANSPARENT_PLAYER : cid - {}, pid - {} \n", recvPacket.cid, recvPacket.pid);
+		// 해당 플레이어가 은신을 쓴 사실을 알린다.
+		
+		SC_TRANSPARENT_PLAYER sendPacket;
+		sendPacket.playerObjectID = recvPacket.playerObjectID;
+		for (auto [participant, pClient] : participants) {
+			if (participant == recvPacket.cid)
+				continue;
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+		}
+		break;
+	}
 	default:
 		READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
 		cout << format("잘못된 패킷 번호 : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);

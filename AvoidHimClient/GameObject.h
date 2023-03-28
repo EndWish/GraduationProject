@@ -148,7 +148,7 @@ public:
 	// 충돌 체크
 	// 애니메이션
 	shared_ptr<GameObject> FindFrame(const string& _name);	// 이름으로 자식(자신포함)을 오브젝트를 찾는다.
-	virtual void PrepareAnimate();
+
 	virtual void Animate(float _timeElapsed);
 
 
@@ -269,6 +269,7 @@ public:
 	void CopyObject(const GameObject& _other, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void SetTransparent(bool _isTransparent) { isTransparent = _isTransparent; }
 	bool GetTransparent() const { return isTransparent; }
+	virtual void Animate(float _timeElapsed);
 
 	void SetTransparentTime(float _transparentTime) { transparentTime = _transparentTime; }
 	float GetTransparentTime() const { return transparentTime; }
@@ -282,7 +283,7 @@ public:
 
 class InterpolateMoveGameObject : public GameObject {
 private:
-	int isTransparent; // 투명 상태인 경우 true
+
 	float moveDistance;
 	XMFLOAT3 prevPosition;
 	XMFLOAT4 prevRotation;
@@ -322,8 +323,8 @@ public:
 	void SetHP(float _hp) { hp = _hp; };
 	void AddHP(float _hp) { hp += _hp; };
 
-	void SetTransparent(int _isTransparent) { isTransparent = isTransparent; }
-	int GetTransparent() const { return isTransparent; }
+	void SetTransparent(bool _isTransparent);
+
 	bool GetImprisoned() const { return imprisoned; }
 	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
 
@@ -332,6 +333,7 @@ public:
 	void SetVisible(bool _visible) { visible = _visible; };
 	bool GetVisible() const { return visible; };
 
+	bool GetTransparent();
 	shared_ptr<GameObject> GetHandObject();
 	shared_ptr<AnimationController> GetAniController();
 };

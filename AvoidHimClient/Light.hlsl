@@ -9,7 +9,7 @@
 #define DIRECTIONAL_LIGHT	3
 
 #define EPSILON				1.0e-5
-#define NUM_SHADOW_MAP 10
+#define NUM_SHADOW_MAP 6
 
 struct LIGHT
 {
@@ -76,10 +76,6 @@ Texture2D<float> shadowMapTexture_3 : register(t23);
 Texture2D<float> shadowMapTexture_4 : register(t24);
 Texture2D<float> shadowMapTexture_5 : register(t25);
 Texture2D<float> shadowMapTexture_6 : register(t26);
-Texture2D<float> shadowMapTexture_7 : register(t27);
-Texture2D<float> shadowMapTexture_8 : register(t28);
-Texture2D<float> shadowMapTexture_9 : register(t29);
-Texture2D<float> shadowMapTexture_10 : register(t30);
 
 float2 convertViewportToUV(float2 _viewport) {
     return float2((_viewport.x + 1) / 2, 1 - (_viewport.y + 1) / 2);
@@ -171,7 +167,7 @@ static const int3 d[8] = { int3(0, -1, 0), int3(-1, 0, 0), int3(1, 0, 0), int3(0
     
 float CheckShadow(Texture2D<float> _shadowMap, int3 texLocation, float compareValue) {
     // 쉐도우 맵내 깊이를 구한다.
-    float bias = 0.1f;
+    float bias = 0.2f;
 
     float depth = _shadowMap.Load(texLocation);
 
@@ -232,16 +228,7 @@ float GetShadowRate(float3 _Position, int _Index) {
             shadowMap = shadowMapTexture_5;
         else if (_Index == 5) 
             shadowMap = shadowMapTexture_6;
-        else if (_Index == 6) 
-            shadowMap = shadowMapTexture_7;
-        else if (_Index == 7) 
-            shadowMap = shadowMapTexture_8;
-        else if (_Index == 8) 
-            shadowMap = shadowMapTexture_9;
-        else if (_Index == 9) 
-            shadowMap = shadowMapTexture_10;
 
-        
 
         shadowCount += CheckShadow(shadowMap, location, distance);
         // 각 방향으로 다시 검사를 하여 그림자의 세기를 정한다.

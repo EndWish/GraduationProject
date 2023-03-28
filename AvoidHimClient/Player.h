@@ -36,6 +36,7 @@ protected:
 
 	weak_ptr<AnimationController> wpAniController;
 
+	
 public:
 	Player();
 	virtual ~Player();
@@ -99,6 +100,8 @@ protected:
 	ObjectType item;
 
 	bool isHacking;
+	float transparentRemainCoolTime;
+	float transparentMaxCoolTime;
 
 public:
 	Student();
@@ -116,6 +119,10 @@ public:
 
 	virtual void LeftClick();
 	virtual void RightClick();
+
+	void SetTransparent(bool _isTransparent);
+	float GetCoolTime() const { return transparentRemainCoolTime; }
+	void SetCoolTime() { transparentRemainCoolTime = transparentMaxCoolTime; }
 
 	bool IsHacking() const { return isHacking; }
 	void SetHacking(bool _isHacking) { isHacking = _isHacking; }

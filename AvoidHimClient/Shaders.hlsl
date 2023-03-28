@@ -368,7 +368,6 @@ G_BUFFER_OUTPUT SkinnedTransparentPixelShader(VS_SKINNED_OUTPUT input)
     // 투명한 경우에만 쓴다.
     output.slideUVVec = input.slideUVVec;
     
-
     return output;
 }
 

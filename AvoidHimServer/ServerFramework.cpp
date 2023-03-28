@@ -332,6 +332,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     case CS_PACKET_TYPE::removeTrap:
     case CS_PACKET_TYPE::exitPlayer:
     case CS_PACKET_TYPE::exitGame:
+    case CS_PACKET_TYPE::transparentPlayer:
     {
         READ_CID_IN_PACKET& readFrontPart = GetPacket<READ_CID_IN_PACKET>();
         //cout << format("READ_CID_IN_PACKET : {}, cid - {}\n", (int)readFrontPart.packetType, readFrontPart.cid);
