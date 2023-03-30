@@ -24,5 +24,6 @@ public:
 	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void SetTexture(shared_ptr<Texture> _pTexture) { pTexture = _pTexture; };
+	void SetBumpTexture(shared_ptr<Texture> _pBumpTexture) { pBumpTexture = _pBumpTexture; };
 };
 

@@ -63,6 +63,7 @@ protected:
 
 	vector<shared_ptr<Material>> materials;
 
+
 public:
 
 	GameObject();
@@ -139,6 +140,8 @@ public:
 	//  OOBB 갱신
 	void UpdateOOBB();
 
+	// 해당 오브젝트의 메쉬의 index번째 마테리얼의 텍스처를 변경
+	void SetMaterial(int _index, shared_ptr<Material> _pMaterial);
 
 	// 오브젝트 내용 전체적으로 갱신
 	virtual void UpdateObject();
@@ -164,6 +167,8 @@ public:
 	void UpdateHitboxShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void LoadFromFile(ifstream& _file, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const shared_ptr<GameObject>& _coverObject);
 	virtual void CopyObject(const GameObject& _other);
+
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -406,9 +411,21 @@ public:
 	virtual bool IsInteractable();
 	virtual void Animate(float _timeElapsed);
 };
+
+enum class ComputerState : char {
+	off,
+	on,
+	done,
+	num
+};
+
 class Computer : public InteractObject {
 private:
-
+	static array<shared_ptr<Material>, (size_t)ComputerState::num> pMaterials;
+public:
+	static void InitMaterials(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+private:
+	ComputerState state;
 	bool power;			// 전원이 켜져있는지 여부
 	float hackingRate;	// 해킹률
 	UINT use;			// 현재 사용중인 플레이어의 objectID (미사용시 0)
@@ -422,12 +439,14 @@ public:
 	void SetHackingRate(float _rate);
 	void SetUse(UINT _use);
 	void SetPower(bool _power);
-
+	void ChangeMonitor(ComputerState _state);
+	void ToggleMonitor(bool _on);
 	virtual void Animate(float _timeElapsed);
 	virtual void EndInteract();
 	float GetHackingRate() const;
 	UINT GetUse() const;
 	virtual bool IsInteractable();
+
 };
 
 ////////////////// Item //////////////////

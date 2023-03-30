@@ -362,7 +362,7 @@ bool Sector::CheckObstacleBetweenPlayerAndCamera(const XMVECTOR& _origin, const 
 }
 
 pair<float, shared_ptr<InteractObject>> Sector::GetNearestInteractObject(const shared_ptr<Player>& _pPlayer) {
-	float minDist = 1.0f;
+	float minDist = 2.0f;
 	float dist = 0.f;
 	shared_ptr<InteractObject> pNearestObject;
 	for (auto [objectID, pGameObject] : pInteractionObjects) {
@@ -376,7 +376,8 @@ pair<float, shared_ptr<InteractObject>> Sector::GetNearestInteractObject(const s
 			continue;
 		}
 		// 플레이어가 바라보는 방향으로 바운딩 박스를 이동시켜본다.
-		playerBoundingBox.Center = Vector3::Add(playerBoundingBox.Center, _pPlayer->GetWorldLookVector(), playerBoundingBox.Extents.z * 2);
+		playerBoundingBox.Center = Vector3::Add(playerBoundingBox.Center, _pPlayer->GetWorldLookVector(), playerBoundingBox.Extents.z * 4);
+		playerBoundingBox.Extents.z *= 3;
 		if (playerBoundingBox.Intersects(boundingBox)) {
 			minDist = dist;
 			pNearestObject = pGameObject;
@@ -1008,13 +1009,6 @@ void Zone::AnimateObjects(float _timeElapsed) {
 	}
 }
 
-void Zone::SetAllComputerPower(bool _power) {
-	for (auto [objectID, pGameObject] : pInteractObjTable) {
-		if (pGameObject->GetObjectType() == ObjectType::computer) {
-			static_pointer_cast<Computer>(pGameObject)->SetPower(_power);
-		}
-	}
-}
 
 
 shared_ptr<InteractObject> Zone::UpdateInteractableObject() {

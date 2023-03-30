@@ -5,6 +5,7 @@
 
 
 unordered_map<string, Instancing_Data> GameObject::instanceDatas;
+array<shared_ptr<Material>, (size_t)ComputerState::num> Computer::pMaterials;
 
 //////////////////////////////////////////
 
@@ -279,6 +280,11 @@ void GameObject::UpdateOOBB() {
 	for (const auto& pChild : pChildren) {
 		pChild->UpdateOOBB();
 	}
+}
+
+void GameObject::SetMaterial(int _index, shared_ptr<Material> _pMaterial) {
+	GameFramework gameFramework = GameFramework::Instance();
+	materials[_index] = _pMaterial;
 }
 
 
@@ -1092,11 +1098,28 @@ void Lever::Animate(float _timeElapsed) {
 ///////////////////////////////////////////////////////////////////////////////
 ///
 
+void Computer::InitMaterials(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	
+	auto& pTextureManager = GameFramework::Instance().GetTextureManager();
+	string texNames[] = 
+	{ "PRMonitor_AlbedoTransparency", 
+	  "PRWall200x260_AlbedoTransparency",
+	  "Trap_AlbedoTransparency" };
+
+	for (int i = 0; i < pMaterials.size(); ++i) {
+		pMaterials[i] = make_shared<Material>();
+		pMaterials[i]->DefaultMaterial(_pDevice, _pCommandList);
+		pMaterials[i]->SetTexture(pTextureManager.GetTexture(texNames[i], _pDevice, _pCommandList));
+	}
+	// 모니터는 노말맵이 없다.
+}
+
 Computer::Computer() {
 	type = ObjectType::computer;
 	power = false;
 	hackingRate = 0.f;
 	use = false;
+	state = ComputerState::on;
 }
 Computer::~Computer() {
 	
@@ -1123,6 +1146,10 @@ bool Computer::IsEnable() {
 
 void Computer::SetHackingRate(float _rate) {
 	hackingRate = _rate;
+	if (hackingRate >= 100.0f) {
+		state = ComputerState::done;
+		ChangeMonitor(state);
+	}
 }
 
 void Computer::SetUse(UINT _use) {
@@ -1131,6 +1158,20 @@ void Computer::SetUse(UINT _use) {
 
 void Computer::SetPower(bool _power) {
 	power = _power;
+	ToggleMonitor(_power);
+	cout << "컴퓨터를 " << boolalpha << _power << "상태로 합니다.\n";
+}
+
+void Computer::ChangeMonitor(ComputerState _state) {
+	GetObj()->SetMaterial(0, Computer::pMaterials[(int)_state]);
+}
+
+void Computer::ToggleMonitor(bool _on) {
+	
+	if (_on)
+		ChangeMonitor(state);
+	else
+		ChangeMonitor(ComputerState::off);
 }
 
 
@@ -1138,7 +1179,6 @@ void Computer::Animate(float _timeElapsed) {
 	float hackingSpeed = 5.0f;
 	// 내가 컴퓨터를 사용중일 경우
 	if (hackingRate < 100.0f && use == myObjectID && power) {
-		cout << hackingRate << " % 해킹완료\n";
 		hackingRate += 5.0f * _timeElapsed;
 	}
 	else if ((hackingRate >= 100.0f || !power) && use == myObjectID) {
@@ -1148,7 +1188,10 @@ void Computer::Animate(float _timeElapsed) {
 		sendPacket.computerObjectID = id;
 		sendPacket.rate = hackingRate;
 		SendFixedPacket(sendPacket);
-		cout << "해킹 완료.\n";
+		if (hackingRate >= 100.0f) {
+			state = ComputerState::done;
+			ChangeMonitor(state);
+		}
 	}
 }
 void Computer::EndInteract() {
@@ -1159,7 +1202,6 @@ void Computer::EndInteract() {
 		sendPacket.computerObjectID = id;
 		sendPacket.rate = hackingRate;
 		SendFixedPacket(sendPacket);
-		cout << "해킹 취소 \n ";
 	}
 }
 
@@ -1174,6 +1216,7 @@ bool Computer::IsInteractable() {
 	// 학생만 할 수 있다.
 	return !isPlayerProfessor;
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 ///
 

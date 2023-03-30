@@ -130,7 +130,8 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	shared_ptr<TextBox> pText = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 1.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, false);
 	pTexts["pageNum"] = pText;
 
-	
+	Computer::InitMaterials(_pDevice, _pCommandList);
+
 	////////////////////////////////////
 
 
@@ -572,7 +573,7 @@ void PlayScene::changeUI(bool _enable) {
 	}
 	else {		// 학생일 경우의 UI 
 		pUIs["2DUI_leftSkill"]->SetEnable(_enable);
-		pUIs["2DUI_rightSkill"]->SetEnable(_enable);
+		pUIs["2DUI_transparent"]->SetEnable(_enable);
 		pUIs["2DUI_energyDrink"]->SetEnable(_enable);
 		pUIs["2DUI_medicalKit"]->SetEnable(_enable);
 		pUIs["2DUI_prisonKey"]->SetEnable(_enable);
@@ -1376,7 +1377,9 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 	case SC_PACKET_TYPE::toggleLever: {
 		SC_LEVER_TOGGLE* packet = GetPacket<SC_LEVER_TOGGLE>();
 		
-		pZone->SetAllComputerPower(packet->allLeverPowerOn);
+		for (auto& pComputer : pEnableComputers) {
+			pComputer->SetPower(packet->allLeverPowerOn);
+		}
 		if (packet->allLeverPowerOn) {
 			globalAmbient = XMFLOAT4(0.5, 0.5, 0.5, 1.0);
 			AllLeverPowerOn = true;
@@ -1390,10 +1393,6 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			
 
 		pZone->Interact(packet->leverObjectID);
-		// 교수일 경우 쿨타임 초기화해준다.
-		if (!packet->setPower && isPlayerProfessor) {
-			dynamic_pointer_cast<Professor>(pPlayer)->SetSabotageCoolTime(10.f);
-		}
 		break;
 	}
 	case SC_PACKET_TYPE::addItem: { // 특정위치에 아이템이 추가된 경우

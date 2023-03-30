@@ -171,6 +171,5 @@ public:
 	void AnimateObjects(float _timeElapsed);
 	void SetPlayer(shared_ptr<Player> _pPlayer) { pPlayer = _pPlayer; };
 
-	void SetAllComputerPower(bool _power);
 
 };
