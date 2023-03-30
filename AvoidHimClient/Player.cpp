@@ -60,11 +60,6 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 
 }
 
-void Player::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	// 투명 상태에 따라 다른 shader를 set한다.
-	GameObject::RenderAll(_pCommandList);
-}
-
 void Player::Animate(char _collideCheck, float _timeElapsed) {
 
 	XMFLOAT3 prevPosition = GetWorldPosition();
@@ -266,7 +261,7 @@ void Student::Animate(char _collideCheck, float _timeElapsed) {
 		}
 		else if (0.18f < unlandingTime) {
 			// 공중에 있을 경우
-			pAniController->ChangeClip("Jumping");
+			pAniController->ChangeClip("jump");
 		}
 		else if (horizentalMoveSpeedPerSec < 3) {
 			// 가만히 서있는 경우
@@ -415,12 +410,16 @@ void Professor::Animate(char _collideCheck, float _timeElapsed) {
 			pAniController->ChangeClip("Melee");
 			if (pAniController->IsMaxFrame()) {
 				isSwingAttacking = false;
+				auto pHandObject = wpHandObject.lock();
+				pHandObject->RemoveFrame("Book");
 			}
 		}
 		else if (isThrowAttacking) {
 			pAniController->ChangeClip("throw");
 			if (!isCreatedThrowAttack && 0.1 <= pAniController->GetTime()) {
 				isCreatedThrowAttack = true;
+				auto pHandObject = wpHandObject.lock();
+				pHandObject->RemoveFrame("Book");
 				// 공격 패킷을 보내준다.
 				CS_ATTACK sendPacket;
 				sendPacket.attackType = AttackType::throwAttack;
@@ -473,8 +472,19 @@ void Professor::LeftClick() {
 		sendPacket.cid = cid;
 		sendPacket.playerObjectID = myObjectID;
 		Reload(AttackType::swingAttack);
+
+		// 애니메이션 처리
 		wpAniController.lock()->ChangeClip("Melee");
 		isSwingAttacking = true;
+		// 손에 책을 추가한다.
+		shared_ptr<GameObject> pBookObject = GameFramework::Instance().GetGameObjectManager().GetGameObject("Book", nullptr, nullptr);
+		pBookObject->Rotate(pBookObject->GetLocalLookVector(), 90.f);
+		pBookObject->MoveUp(0.2f);
+		pBookObject->MoveRight(0.05f);
+		pBookObject->UpdateObject();
+		if(auto pHandObject = wpHandObject.lock())
+			pHandObject->SetChild(pBookObject);
+
 		SendFixedPacket(sendPacket);
 	}
 
@@ -493,10 +503,19 @@ void Professor::RightClick() {
 		// 서버가 늦어질 경우 이곳에서 대기 쿨타임을 주지 않을경우 계속해서 패킷을 전송하게 된다.
 		// 이후 서버에게 패킷을 받아 실제로 공격을 생성할 때 다시 쿨타임을 적용한다.
 		Reload(AttackType::throwAttack);
+
+		// 애니메이션 처리
 		wpAniController.lock()->ChangeClip("throw");
 		isThrowAttacking = true;
+		// 손에 책을 추가한다.
+		shared_ptr<GameObject> pBookObject = GameFramework::Instance().GetGameObjectManager().GetGameObject("Book", nullptr, nullptr);
+		pBookObject->Rotate(pBookObject->GetLocalLookVector(), 90.f);
+		pBookObject->MoveUp(0.2f);
+		pBookObject->MoveRight(0.05f);
+		if (auto pHandObject = wpHandObject.lock())
+			pHandObject->SetChild(pBookObject);
+
 		isCreatedThrowAttack = false;
-		// SendFixedPacket(sendPacket); => 애니메이션에서 보내준다.
 	}
 
 	Scene::GetText("rightCoolTime")->SetEnable(true);

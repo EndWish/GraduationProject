@@ -44,7 +44,6 @@ public:
 public:
 	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
-	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) final;
 	virtual void Animate(char _collideCheck, float _timeElapsed);
 	shared_ptr<Camera> GetCamera();
 

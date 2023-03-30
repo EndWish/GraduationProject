@@ -309,6 +309,9 @@ shared_ptr<GameObject> GameObject::FindFrame(const string& _name) {
 	}
 	return nullptr;
 }
+void GameObject::RemoveFrame(const string& _name) {
+	pChildren.erase(ranges::remove(pChildren, _name, &GameObject::GetName).begin(), pChildren.end());
+}
 
 void GameObject::Animate(float _timeElapsed) {
 	for (const auto& pChild : pChildren) {
@@ -819,6 +822,24 @@ InterpolateMoveGameObject::~InterpolateMoveGameObject() {
 
 void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 	GetAniController()->AddTime(_timeElapsed);
+
+	// 공격 애니메이션도중 책 오브젝트의 생성과 삭제를 처리
+	auto pHandObject = wpHandObject.lock();
+	if (	GetAniController()->GetClipName() == "Melee"
+		|| (GetAniController()->GetClipName() == "throw" && GetAniController()->GetTime() < 0.1f) ) {
+		auto pBookObject = pHandObject->FindFrame("Book");
+		if (!pBookObject) {
+			pBookObject = GameFramework::Instance().GetGameObjectManager().GetGameObject("Book", nullptr, nullptr);
+			pBookObject->Rotate(pBookObject->GetLocalLookVector(), 90.f);
+			pBookObject->MoveUp(0.2f);
+			pBookObject->MoveRight(0.05f);
+			pBookObject->UpdateObject();
+			pHandObject->SetChild(pBookObject);
+		}
+	}
+	else {
+		pHandObject->RemoveFrame("Book");
+	}
 
 	// 서버의 다음 주기가 돌때를 t = 1로 잡고 보간한다
 	XMFLOAT3 prevPositionFootStep = GetWorldPosition();

@@ -148,6 +148,7 @@ public:
 	// 충돌 체크
 	// 애니메이션
 	shared_ptr<GameObject> FindFrame(const string& _name);	// 이름으로 자식(자신포함)을 오브젝트를 찾는다.
+	void RemoveFrame(const string& _name);
 
 	virtual void Animate(float _timeElapsed);
 

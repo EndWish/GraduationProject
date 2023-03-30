@@ -768,6 +768,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	gameFramework.GetGameObjectManager().LoadGameObject("EnergyDrink", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("Trap", _pDevice, _pCommandList);
 	gameFramework.GetGameObjectManager().LoadGameObject("Trap_attack", _pDevice, _pCommandList);
+	gameFramework.GetGameObjectManager().LoadGameObject("Book", _pDevice, _pCommandList);
 
 	pFullScreenObject = make_shared<FullScreenObject>(_pDevice, _pCommandList);
 
@@ -981,7 +982,7 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		pPlayer->GetAniController()->ChangeClip("Hacking");
 	}
 	if (_keysBuffers['4'] & 0xF0) {
-		pPlayer->GetAniController()->ChangeClip("Jumping");
+		pPlayer->GetAniController()->ChangeClip("Jump");
 	}
 
 	if (_keysBuffers[VK_SPACE] & 0xF0) {
@@ -1056,9 +1057,6 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		}
 		// 내가 사용중인 컴퓨터인 경우
 		else {
-			// 플레이어가 해킹중이라고 상태를 변경한다.(애니메이션 판단)
-			if (!isPlayerProfessor)
-				static_pointer_cast<Student>(pPlayer)->SetHacking(true);
 
 			pComputer = ranges::find(pEnableComputers, myObjectID, &Computer::GetUse);
 			if (pComputer != pEnableComputers.end()) {
@@ -1066,6 +1064,10 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 				pUIs["2DUI_hacking"]->SetEnable(true);
 				pUIs["2DUI_hacking"]->SetSizeUV(XMFLOAT2(hackingRate / 100, 1.f));
 				pUIs["2DUI_hackingFrame"]->SetEnable(true);
+
+				// 플레이어가 해킹중이라고 상태를 변경한다.(애니메이션 판단)
+				if (!isPlayerProfessor)
+					static_pointer_cast<Student>(pPlayer)->SetHacking(true);
 			}
 		}
 	}
