@@ -167,7 +167,10 @@ shared_ptr<GameObject> Sector::CheckCollisionHorizontal(BoundingOrientedBox& _bo
 			float heightGap = boundingBox.Extents.y + boundingBox.Center.y + _boundingBox.Extents.y - _boundingBox.Center.y;
 			if (heightGap < bias) {
 				// 플레이어를 그 높이만큼 이동
-				_pPlayer->MoveUp(bias);
+				bool isStair = (pGameObject->GetName().find("Stair") != string::npos);
+
+				if(isStair) _pPlayer->MoveUp(bias);
+				else if(heightGap < bias / 4.0f) _pPlayer->MoveUp(bias);
 			}
 			else return pGameObject;
 		}
@@ -610,12 +613,14 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 	XMFLOAT4 rotation;
 
 	bool activeComputer;
+	bool isDoor;
 	// nInstance (UINT)
 	file.read((char*)&nInstance, sizeof(UINT));
 
 	for (UINT objectID = 1; objectID <= nInstance; ++objectID) {
 		// nameSize(UINT) / fileName (string)
 		activeComputer = false;
+		isDoor = false;
 		ReadStringBinary(objName, file);
 		// SectorLayer(char)
 		file.read((char*)&objLayer, sizeof(SectorLayer));
@@ -639,6 +644,7 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 				pGameObject = make_shared<Door>(objType);
 				AddInteractObject(objectID, pGameObject, GetIndex(position));
 				pInteractObjTable[objectID] = static_pointer_cast<InteractObject>(pGameObject);
+				isDoor = true;
 				break;
 			}
 			case ObjectType::lever: {
@@ -667,7 +673,6 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 				else {
 					continue;
 					pGameObject = make_shared<GameObject>();
-
 				}
 				break;
 			}
@@ -681,6 +686,12 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pGameObject->SetLocalRotation(rotation);
 			pGameObject->UpdateObject();
 			pGameObject->SetID(objectID);
+			if (isDoor) {
+				BoundingOrientedBox oobb = pGameObject->GetBaseBoundingBox();
+				oobb.Extents.z -= 0.1038f;
+				pGameObject->SetBoundingBox(oobb);
+				pGameObject->UpdateObject();
+			}
 
 			// 섹터에 오브젝트를 추가한다. (충돌체크, 프러스텀 컬링용)
 			AddObject(objLayer, objectID, pGameObject, GetIndex(position));
@@ -754,7 +765,6 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			switch (objType) {
 			case ObjectType::prisonPosition:
 				prisonPosition = position;
-				cout << "감옥위치 : " << position << "\n";
 				break;
 			case ObjectType::prisonExitPosition:
 				prisonExitPosition = position;

@@ -48,7 +48,7 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 
 	SetBoundingBox(BoundingOrientedBox(
 		XMFLOAT3(0.f, 0.72f, 0.f),
-		XMFLOAT3(0.28f, 0.72f, 0.24f),
+		XMFLOAT3(0.24f, 0.72f, 0.16f),
 		XMFLOAT4(0.f, 0.f, 0.f, 1.f)));
 
 	auto pSkinnedChild = dynamic_pointer_cast<SkinnedGameObject>(pChildren[0]);

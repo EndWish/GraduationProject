@@ -813,8 +813,8 @@ void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12De
 	wpHandObject = FindFrame("Bip001 R Hand");
 
 	SetBoundingBox(BoundingOrientedBox(
-		XMFLOAT3(0.f, 0.8f, 0.f),
-		XMFLOAT3(0.28f, 0.8f, 0.24f),
+		XMFLOAT3(0.f, 0.72f, 0.f),
+		XMFLOAT3(0.24f, 0.72f, 0.16f),
 		XMFLOAT4(0.f, 0.f, 0.f, 1.f)));
 
 	auto pSkinnedChild = dynamic_pointer_cast<SkinnedGameObject>(pChildren[0]);
@@ -1103,8 +1103,8 @@ void Computer::InitMaterials(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<
 	auto& pTextureManager = GameFramework::Instance().GetTextureManager();
 	string texNames[] = 
 	{ "PRMonitor_AlbedoTransparency", 
-	  "PRWall200x260_AlbedoTransparency",
-	  "Trap_AlbedoTransparency" };
+	  "PRMonitor_Hacking_AlbedoTransparency",
+	  "PRMonitor_Complete_Emission" };
 
 	for (int i = 0; i < pMaterials.size(); ++i) {
 		pMaterials[i] = make_shared<Material>();
@@ -1159,7 +1159,6 @@ void Computer::SetUse(UINT _use) {
 void Computer::SetPower(bool _power) {
 	power = _power;
 	ToggleMonitor(_power);
-	cout << "컴퓨터를 " << boolalpha << _power << "상태로 합니다.\n";
 }
 
 void Computer::ChangeMonitor(ComputerState _state) {
