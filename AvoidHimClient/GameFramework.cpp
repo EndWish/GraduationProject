@@ -342,7 +342,7 @@ void GameFramework::CreateDepthStencilView() {
 void GameFramework::CreateGraphicsRootSignature() {
 	HRESULT hResult;
 
-	D3D12_DESCRIPTOR_RANGE pDescriptorRanges[4];
+	D3D12_DESCRIPTOR_RANGE pDescriptorRanges[5];
 
 	pDescriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[0].NumDescriptors = 1;
@@ -358,7 +358,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 
 	pDescriptorRanges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[2].NumDescriptors = NUM_G_BUFFER;
-	pDescriptorRanges[2].BaseShaderRegister = 7;	// t7 ~ t11
+	pDescriptorRanges[2].BaseShaderRegister = 7;	// t7 ~ t12
 	pDescriptorRanges[2].RegisterSpace = 0;
 	pDescriptorRanges[2].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
@@ -368,9 +368,15 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pDescriptorRanges[3].RegisterSpace = 0;
 	pDescriptorRanges[3].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
 
+	pDescriptorRanges[4].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	pDescriptorRanges[4].NumDescriptors = 1;
+	pDescriptorRanges[4].BaseShaderRegister = 13;	// t13 ~
+	pDescriptorRanges[4].RegisterSpace = 0;
+	pDescriptorRanges[4].OffsetInDescriptorsFromTableStart = D3D12_DESCRIPTOR_RANGE_OFFSET_APPEND;
+
 	// 루트 시그니처는 이후 계속 수정 
 
-	D3D12_ROOT_PARAMETER pRootParameters[12];
+	D3D12_ROOT_PARAMETER pRootParameters[13];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
@@ -434,6 +440,11 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[11].Constants.ShaderRegister = 5; // 쉐도우맵을 만들 빛의 인덱스
 	pRootParameters[11].Constants.RegisterSpace = 0;
 	pRootParameters[11].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pRootParameters[12].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	pRootParameters[12].DescriptorTable.NumDescriptorRanges = 1;
+	pRootParameters[12].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[4];
+	pRootParameters[12].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// Emissive Texture
 
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[3];
 	::ZeroMemory(samplerDesc, sizeof(D3D12_STATIC_SAMPLER_DESC) * 3);
@@ -647,7 +658,7 @@ void GameFramework::FrameAdvance() {
 	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
 
 	
-	float pClearColor[4] = { 0.0f, 0.4f, 0.1f, 1.0f };
+	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	// 후면 버퍼의 핸들
 	D3D12_CPU_DESCRIPTOR_HANDLE swapChainDescriptorHandle = pRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	swapChainDescriptorHandle.ptr += (rtvDescriptorIncrementSize * swapChainBufferCurrentIndex);

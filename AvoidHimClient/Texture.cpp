@@ -29,7 +29,7 @@ Texture::Texture(int _nTexture, UINT _textureType, int _nSampler, int _nRootPara
 
 	nRootParameter = _nRootParameter;
 
-	if (nRootParameter > 0) rootParameterIndices.resize(_nRootParameter + 1);
+	if (nRootParameter > 0) rootParameterIndices.resize(nRootParameter);
 
 	for (int i = 0; i < nRootParameter; i++) rootParameterIndices[i] = -1;
 

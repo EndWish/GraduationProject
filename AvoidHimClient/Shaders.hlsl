@@ -1,8 +1,17 @@
 // 루드 시그니처는 64개의 32-비트 배열로 구성됨.
 // 많이 사용하는 매개변수를 앞쪽에 배치하는 것이 좋음.
 
+#define CWIDTH 1280
+#define CHEIGHT 720
+
 // 출력하지 않는 렌더타겟이 있을 수 있다.
 #pragma warning( disable :  3578 )
+
+static const int3 d[8] =
+{
+    int3(0, -1, 0), int3(-1, 0, 0), int3(1, 0, 0), int3(0, 1, 0),
+    int3(1, -1, 0), int3(-1, 1, 0), int3(1, 1, 0), int3(-1, -1, 0)
+};
 
 cbuffer cbCameraInfo : register(b1) {
 	matrix view : packoffset(c0);
@@ -51,11 +60,13 @@ cbuffer cbSkinnedWorldTransforms : register(b8)
 
 #define MATERIAL_ALBEDO_MAP		0x01
 #define MATERIAL_NORMAL_MAP      0x02
+#define MATERIAL_EMISSIVE_MAP      0x04
 
 
 // 텍스처
 Texture2D albedoMap : register(t5);
 Texture2D normalMap : register(t6);
+Texture2D emissiveMap : register(t13);
 
 struct G_BUFFER_OUTPUT {
     float4 color : SV_TARGET0;   // 조명을 처리하기 전의 픽셀의 색상
@@ -133,7 +144,7 @@ G_BUFFER_OUTPUT DefaultPixelShader(VS_OUTPUT input)
     output.color = cColor;
     output.normal = float4(input.normal, 1.0f);
     output.position = float4(input.positionW, 1.0f);
-    output.emissive = float4(0, 0, 0, 1);
+    output.emissive = (drawMask & MATERIAL_EMISSIVE_MAP) ? emissiveMap.Sample(gssWrap, input.uv) * emissive : emissive;
     // 깊이값으로 카메라에서 해당 점의 위치까지의 거리를 담는다.
     output.depth = length(input.positionW - cameraPosition);
     return output;
@@ -237,7 +248,7 @@ G_BUFFER_OUTPUT EffectPixelShader(VS_EFFECT_OUTPUT input)
     output.color = cColor;
     output.normal = float4(input.normal, 1.0f);
     output.position = float4(input.positionW, 1.0f);
-    output.emissive = float4(0, 0, 0, 1);
+    output.emissive = (drawMask & MATERIAL_EMISSIVE_MAP) ? emissiveMap.Sample(gssWrap, input.uv) * emissive : emissive;
     // Effect는 깊이값을 쓰지 않는다. (그림자 x)
     return output;
 }
@@ -331,7 +342,7 @@ G_BUFFER_OUTPUT SkinnedPixelShader(VS_SKINNED_OUTPUT input)
     output.color = cColor;
     output.normal = float4(input.normal, 1.0f);
     output.position = float4(input.positionW, 1.0f);
-    output.emissive = float4(0, 0, 0, 1);
+    output.emissive = (drawMask & MATERIAL_EMISSIVE_MAP) ? emissiveMap.Sample(gssWrap, input.uv) * emissive : emissive;
 
     return output;
 }
@@ -549,7 +560,7 @@ G_BUFFER_OUTPUT InstancePixelShader(VS_OUTPUT input)
     output.color = cColor;
     output.normal = float4(input.normal, 1.0f);
     output.position = float4(input.positionW, 1.0f);
-    output.emissive = float4(0, 0, 0, 1);
+    output.emissive = (drawMask & MATERIAL_EMISSIVE_MAP) ? emissiveMap.Sample(gssWrap, input.uv) * emissive : emissive;
     output.depth = length(input.positionW - cameraPosition);
     return output;
 }
@@ -641,6 +652,22 @@ float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
     //return float4(depthTexture.Sample(gssWrap, input.uv) / 20, 0, 0, 1);
     // 이곳에서 조명처리를 해준다.
     float4 cColor = CalculateLight(color, positionW, normal);
+    
+    // uv좌표를 텍셀좌표로 바꾼다. (Load함수를 쓰기 위함)
+    int3 texLocation = int3(input.uv.x * CWIDTH, input.uv.y * CHEIGHT, 0);
+    cColor += emissiveTexture.Load(texLocation) / 5.f;
+    
+    [unroll(8)]
+    for (int i = 0; i < 8; ++i)
+    {
+        [unroll(15)]
+        for (int j = 1; j <= 15; ++j)
+        {
+            float4 emissiveColor = emissiveTexture.Load(texLocation + d[i] * j);
+            cColor += emissiveColor / (pow(j, 1.7f) + 3);
+        }
+    }
+    
     return cColor;
 }
 

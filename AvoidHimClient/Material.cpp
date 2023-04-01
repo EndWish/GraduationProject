@@ -18,7 +18,7 @@ void Material::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pC
 		D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pMaterialBuffer->GetGPUVirtualAddress();
 		_pCommandList->SetGraphicsRootConstantBufferView(3, gpuVirtualAddress);
 	}
-	vector<shared_ptr<Texture>> pTextures{ pTexture, pBumpTexture };
+	vector<shared_ptr<Texture>> pTextures{ pTexture, pBumpTexture, pEmissiveTexture };
 	for (auto& pTex : pTextures) {
 			
 		if (pTex) {
@@ -36,27 +36,32 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 	// albedoNameSize(UINT) / albedoName(string) -> 알베도 텍스처 이름
 	// bumpNameSize(UINT) / bumpName(string) -> 노말맵 텍스처 이름
 
-	vector<shared_ptr<Texture>> pTextures(2);
+	vector<int> rootParameterIndice{4, 5, 12};
+	vector<shared_ptr<Texture>> pTextures(3);
 	string textureName;
-	int i = 0;
 
-	for (auto& pTex : pTextures) {
+	for (int i = 0; auto & pTex : pTextures) {
 
 		ReadStringBinary(textureName, _file);
 
 		if (textureName != "null") {
-			pTex = gameFramework.GetTextureManager().GetTexture(textureName, _pDevice, _pCommandList, 4 + i);
+			pTex = gameFramework.GetTextureManager().GetTexture(textureName, _pDevice, _pCommandList, rootParameterIndice[i]);
 
 			if (pTex) {
-				nType += 1 << i++;
+				nType |= 1 << i;
 			}
 			else {
 				cout << textureName << "로드 실패..\n";
 			}
 		}
+
+		
+		++i;
 	}
+
 	pTexture = pTextures[0];
 	pBumpTexture = pTextures[1];
+	pEmissiveTexture = pTextures[2];
 
 	shared_ptr<VS_MaterialMappedFormat> pMappedMaterial;
 	UINT cbElementSize = (sizeof(VS_MaterialMappedFormat) + 255) & (~255);

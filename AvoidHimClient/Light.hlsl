@@ -1,6 +1,3 @@
-
-#define CWIDTH 1280
-#define CHEIGHT 720
 #define MAX_LIGHTS			20
 
 
@@ -160,10 +157,6 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
     
     return color;
 }
-
-static const int3 d[8] = { int3(0, -1, 0), int3(-1, 0, 0), int3(1, 0, 0), int3(0, 1, 0),
-    int3(1, -1, 0), int3(-1, 1, 0), int3(1, 1, 0), int3(-1, -1, 0)
-};
     
 float CheckShadow(Texture2D<float> _shadowMap, int3 texLocation, float compareValue) {
     // Ω¶µµøÏ ∏ ≥ª ±Ì¿Ã∏¶ ±∏«—¥Ÿ.

@@ -84,6 +84,8 @@ nMaterial(UINT)
 {
         	albedoNameSize(UINT) / albedoName(string) -> 알베도 텍스처 이름
             bumpNameSize(UINT) / bumpName(string) -> 노말맵 텍스처 이름
+		emissionMapNameSize(UINT) / emissionMapName(string) -> 발산광맵 텍스처 이름
+		
 	ambient(float * 4)
 	diffuse(float * 4)
 	specular(float * 4)
