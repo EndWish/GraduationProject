@@ -101,6 +101,30 @@ struct VS_OUTPUT {
     float2 uv : TEXCOORD;
 };
 
+
+bool isBorder(float2 uv)
+{
+    int3 coord;
+    float depth;
+    int3 baseCoord = int3(uv.x * CWIDTH, uv.y * CHEIGHT, 0);
+    float baseDepth = 0;
+    baseDepth = depthTexture.Load(baseCoord);
+    if (baseDepth != -1)
+        return false;
+    else
+    {
+        for (int i = 0; i < 8; ++i)
+        {
+            coord = baseCoord + d[i];
+            depth = depthTexture.Load(coord);
+            if (abs(depth - baseDepth) > 0.2f)
+                return true;
+        }
+        return false;
+    }
+}
+
+
 VS_OUTPUT DefaultVertexShader(VS_INPUT input) {
     VS_OUTPUT output;
 
@@ -334,16 +358,15 @@ G_BUFFER_OUTPUT SkinnedPixelShader(VS_SKINNED_OUTPUT input)
     {
         input.normal = normalize(input.normal);
     }
-    
-
-    output.depth = length(input.positionW - cameraPosition);
 
     // 투명하지 않은경우에만 쓴다.
+
     output.color = cColor;
     output.normal = float4(input.normal, 1.0f);
     output.position = float4(input.positionW, 1.0f);
     output.emissive = (drawMask & MATERIAL_EMISSIVE_MAP) ? emissiveMap.Sample(gssWrap, input.uv) * emissive : emissive;
-
+    //output.depth = length(input.positionW - cameraPosition);
+    output.depth = -1;
     return output;
 }
 
@@ -629,6 +652,8 @@ struct VS_LIGHTING_OUT
     float4 position : SV_POSITION;
     float2 uv : TEXCOORD;
 };
+
+
 VS_LIGHTING_OUT LightingVertexShader(VS_LIGHTING_IN input)
 {
     VS_LIGHTING_OUT output;
@@ -648,8 +673,14 @@ float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
     float3 normal = lerp(normalTexture.Sample(gssWrap, input.uv).xyz, changeNormal, float3(0.5, 0.5, 0.5));
     //float3 normal =normalTexture.Sample(gssWrap, input.uv).xyz;
     float4 color = colorTexture.Sample(gssWrap, input.uv);
+  
 
     //return float4(depthTexture.Sample(gssWrap, input.uv) / 20, 0, 0, 1);
+    //return emissiveTexture.Sample(gssWrap, input.uv);
+    if (isBorder(input.uv))
+    {
+        return float4(0.0, 0, 0.1, 1);
+    }
     // 이곳에서 조명처리를 해준다.
     float4 cColor = CalculateLight(color, positionW, normal);
     

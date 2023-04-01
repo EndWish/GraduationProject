@@ -226,11 +226,11 @@ float GetShadowRate(float3 _Position, int _Index) {
         shadowCount += CheckShadow(shadowMap, location, distance);
         // 각 방향으로 다시 검사를 하여 그림자의 세기를 정한다.
         [unroll(8)]
-        for (int i = 0; i < 8; ++i)
+        for (int i = 0; i < 4; ++i)
         {
             shadowCount += CheckShadow(shadowMap, location + d[i], distance);
         }
-        return (shadowCount / (1 + 8));
+        return (shadowCount / (1 + 4));
     }
 }
 

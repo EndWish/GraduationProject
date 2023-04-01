@@ -546,6 +546,7 @@ void LobbyScene::UpdateReadyState() {
 
 PlayScene::PlayScene() {
 	globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
+	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	remainTime = 1000.f;
 
 	professorObjectID = 0;
@@ -1495,7 +1496,7 @@ void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandLis
 	XMFLOAT3 playerPos = pPlayer->GetWorldPosition();
 
 	auto IsInside = [](float lightPosY, float playerPosY) {
-		return playerPosY <= lightPosY && lightPosY <= playerPosY + 3.f;
+		return playerPosY <= lightPosY && lightPosY <= playerPosY + 4.f;
 	};
 	auto Pred = [playerPos, IsInside](const shared_ptr<Light>& a, const shared_ptr<Light>& b) {
 		bool isInsideA = IsInside(a->position.y, playerPos.y);
@@ -1635,7 +1636,6 @@ void PlayScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
 
 	// 쉐이더 클래스에 정적으로 정의된 디스크립터 힙을 연결한다.
-
 
 	gameFramework.GetShader("SkyBoxShader")->PrepareRender(_pCommandList);
 	pSkyBox->Render(_pCommandList);

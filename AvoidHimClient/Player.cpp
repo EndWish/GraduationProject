@@ -14,9 +14,10 @@ Player::Player() {
 	baseSpeed = 5.0f;
 
 	mp = 100.0f;
-	mpTick = 1.f;
+	mpTick = 5.f;
 	slowRate = 0;
 	slowTime = 0;
+	lastDashTime = 0.f;
 
 	moveFrontVector = XMFLOAT3();
 }
@@ -70,11 +71,15 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 	}
 	else {
 		// 스태미너 회복
-		mp += mpTick * _timeElapsed;
-		mp = min(100.0f, mp);
+		if (lastDashTime > 4.0f)
+		{
+			mp += mpTick * _timeElapsed;
+			mp = min(100.0f, mp);
+		}
 	}
 
 	sendMovePacketTime += (float)_timeElapsed;
+	lastDashTime += (float)_timeElapsed;
 	// y방향으로 충돌하지 않을 경우
 	if (_collideCheck & (1<<0)) {
 		MoveUp(velocity.y, (float)_timeElapsed);
@@ -201,7 +206,7 @@ void Player::Dash(float _timeElapsed) {
 	if (mp > (costPerSec * _timeElapsed))
 	{
 		speed = baseSpeed * 1.5f;
-
+		lastDashTime = 0.f;
 
 		mp -= costPerSec * _timeElapsed;
 	}

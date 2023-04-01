@@ -471,43 +471,6 @@ D3D12_INPUT_LAYOUT_DESC SkinnedShader::CreateInputLayout() {
 }
 
 
-D3D12_BLEND_DESC SkinnedShader::CreateBlendState() {
-	D3D12_BLEND_DESC blendDesc;
-	ZeroMemory(&blendDesc, sizeof(D3D12_BLEND_DESC));
-	blendDesc.AlphaToCoverageEnable = FALSE;
-	// 사람이 투명한지, 아닌지에 따라 그리지 않을 렌더타겟이 존재하므로
-	//srcColor * d3d12_BLEND_SRC_ALPHA + destcolor * d3d12_BLEND_INV_SRC_ALPHA
-	// 식으로 그릴 렌더타겟을 HLSL코드에서 따로 설정한다.
-	blendDesc.IndependentBlendEnable = TRUE;
-
-	for (int i = 0; i < NUM_G_BUFFER - 1; ++i) {
-		blendDesc.AlphaToCoverageEnable = FALSE;
-		blendDesc.IndependentBlendEnable = FALSE;
-		blendDesc.RenderTarget[0].BlendEnable = TRUE;
-		blendDesc.RenderTarget[0].LogicOpEnable = FALSE;
-		blendDesc.RenderTarget[0].SrcBlend = D3D12_BLEND_SRC_ALPHA;
-		blendDesc.RenderTarget[0].DestBlend = D3D12_BLEND_INV_SRC_ALPHA;
-		blendDesc.RenderTarget[0].BlendOp = D3D12_BLEND_OP_ADD;
-		blendDesc.RenderTarget[0].SrcBlendAlpha = D3D12_BLEND_ONE;
-		blendDesc.RenderTarget[0].DestBlendAlpha = D3D12_BLEND_ZERO;
-		blendDesc.RenderTarget[0].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-		blendDesc.RenderTarget[0].LogicOp = D3D12_LOGIC_OP_NOOP;
-		blendDesc.RenderTarget[0].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-	}
-	// depth값은 무조건 쓴다.
-	blendDesc.RenderTarget[NUM_G_BUFFER].BlendEnable = FALSE;
-	blendDesc.RenderTarget[NUM_G_BUFFER].LogicOpEnable = FALSE;
-	blendDesc.RenderTarget[NUM_G_BUFFER].SrcBlend = D3D12_BLEND_ONE;
-	blendDesc.RenderTarget[NUM_G_BUFFER].DestBlend = D3D12_BLEND_ZERO;
-	blendDesc.RenderTarget[NUM_G_BUFFER].BlendOp = D3D12_BLEND_OP_ADD;
-	blendDesc.RenderTarget[NUM_G_BUFFER].SrcBlendAlpha = D3D12_BLEND_ONE;
-	blendDesc.RenderTarget[NUM_G_BUFFER].DestBlendAlpha = D3D12_BLEND_ZERO;
-	blendDesc.RenderTarget[NUM_G_BUFFER].BlendOpAlpha = D3D12_BLEND_OP_ADD;
-	blendDesc.RenderTarget[NUM_G_BUFFER].LogicOp = D3D12_LOGIC_OP_NOOP;
-	blendDesc.RenderTarget[NUM_G_BUFFER].RenderTargetWriteMask = D3D12_COLOR_WRITE_ENABLE_ALL;
-	return blendDesc;
-}
-
 SkinnedShadowShader::SkinnedShadowShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	renderType = ShaderRenderType::SHADOW_RENDER;
 	Init(_pDevice, _pRootSignature);

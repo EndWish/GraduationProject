@@ -6,6 +6,7 @@
 
 unordered_map<string, Instancing_Data> GameObject::instanceDatas;
 array<shared_ptr<Material>, (size_t)ComputerState::num> Computer::pMaterials;
+array<shared_ptr<Material>, (size_t)ComputerState::num> Computer::pEmissiveMaterials;
 
 //////////////////////////////////////////
 
@@ -194,6 +195,7 @@ shared_ptr<GameObject> GameObject::GetObj() {
 		return nullptr;
 	}
 }
+
 void GameObject::SetLocalPosition(const XMFLOAT3& _position) {
 	localPosition = _position;
 }
@@ -388,6 +390,7 @@ void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _
 	XMFLOAT4X4 world;
 	XMStoreFloat4x4(&world, XMMatrixTranspose(XMLoadFloat4x4(&worldTransform)));
 	_pCommandList->SetGraphicsRoot32BitConstants(1, 16, &world, 0);
+
 }
 
 
@@ -1104,12 +1107,19 @@ void Computer::InitMaterials(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<
 	string texNames[] = 
 	{ "PRMonitor_AlbedoTransparency", 
 	  "PRMonitor_Hacking_AlbedoTransparency",
+	  "PRMonitor_Complete_AlbedoTransparency" };
+
+	string emissiveNames[] =
+	{ "null",
+	  "PRMonitor_Hacking_Emission",
 	  "PRMonitor_Complete_Emission" };
 
+	// off상태일때는 emissive가 없다.
 	for (int i = 0; i < pMaterials.size(); ++i) {
 		pMaterials[i] = make_shared<Material>();
-		pMaterials[i]->DefaultMaterial(_pDevice, _pCommandList);
 		pMaterials[i]->SetTexture(pTextureManager.GetTexture(texNames[i], _pDevice, _pCommandList));
+		if(i!=0) pMaterials[i]->SetEmissiveTexture(pTextureManager.GetTexture(emissiveNames[i], _pDevice, _pCommandList, 12));
+		pMaterials[i]->DefaultMaterial(_pDevice, _pCommandList);
 	}
 	// 모니터는 노말맵이 없다.
 }

@@ -76,7 +76,7 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 	_file.read((char*)&diffuse, sizeof(XMFLOAT4));
 	_file.read((char*)&specular, sizeof(XMFLOAT4));
 	_file.read((char*)&emissive, sizeof(XMFLOAT4));
-
+	   
 	diffuse = XMFLOAT4(diffuse.x / 2, diffuse.y / 2, diffuse.z / 2, diffuse.w);
 
 	memcpy(&pMappedMaterial->ambient, &ambient, sizeof(XMFLOAT4));
@@ -85,6 +85,27 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 	memcpy(&pMappedMaterial->emissive, &emissive, sizeof(XMFLOAT4));
 	memcpy(&pMappedMaterial->nTypes, &nType, sizeof(UINT));
 }
+
+void Material::SetTexture(shared_ptr<Texture> _pTexture) {
+	if (_pTexture) nType |= 1;
+	else nType &= ~1;
+	pTexture = _pTexture;
+}
+
+void Material::SetBumpTexture(shared_ptr<Texture> _pBumpTexture) {
+	if (_pBumpTexture) nType |= 2;
+	else nType &= ~2;
+	pBumpTexture = _pBumpTexture;
+}
+
+void Material::SetEmissiveTexture(shared_ptr<Texture> _pEmissiveTexture) {
+	if (_pEmissiveTexture) nType |= 4;
+	else nType &= ~4;
+	pEmissiveTexture = _pEmissiveTexture;
+}
+
+
+
 
 void Material::DefaultMaterial(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
@@ -98,8 +119,8 @@ void Material::DefaultMaterial(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 	XMFLOAT4 ambient = XMFLOAT4(0, 0, 0, 1);
 	XMFLOAT4 diffuse = XMFLOAT4(0, 0, 0, 1);
 	XMFLOAT4 specular = XMFLOAT4(0, 0, 0, 1);
-	XMFLOAT4 emissive = XMFLOAT4(0, 0, 0, 1);
-	nType = 1;
+	XMFLOAT4 emissive = XMFLOAT4(1, 1, 1, 1);
+
 	// format에 맞는값을 파일에서 읽어 리소스에 복사
 
 	memcpy(&pMappedMaterial->ambient, &ambient, sizeof(XMFLOAT4));

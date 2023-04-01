@@ -35,6 +35,7 @@ public:
 protected:
 	ShaderType shaderType;
 	UINT objectClass;	// 0은 GameObject, 1은 SkinnedObject, 2는 Effect
+
 	UINT id;
 	string name;
 
@@ -112,6 +113,7 @@ public:
 
 	// 해당 인스턴스가 가진 오브젝트의 정보
 	shared_ptr<GameObject> GetObj();
+
 	// 위치를 강제로 이동시킨다.
 	void SetLocalPosition(const XMFLOAT3& _position);
 	// 특정 회전값을 대입한다.
@@ -422,6 +424,7 @@ enum class ComputerState : char {
 class Computer : public InteractObject {
 private:
 	static array<shared_ptr<Material>, (size_t)ComputerState::num> pMaterials;
+	static array<shared_ptr<Material>, (size_t)ComputerState::num> pEmissiveMaterials;
 public:
 	static void InitMaterials(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 private:

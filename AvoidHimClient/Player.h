@@ -10,8 +10,8 @@ protected:
 	// 0~100
 	float moveDistance;
 	float mp;
-	// 자연 마나 회복량
-	float mpTick;
+	float mpTick; // 자연 마나 회복량
+	float lastDashTime;
 
 	bool landed;
 	float mass;

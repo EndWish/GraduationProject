@@ -170,7 +170,7 @@ shared_ptr<GameObject> Sector::CheckCollisionHorizontal(BoundingOrientedBox& _bo
 				bool isStair = (pGameObject->GetName().find("Stair") != string::npos);
 
 				if(isStair) _pPlayer->MoveUp(bias);
-				else if(heightGap < bias / 4.0f) _pPlayer->MoveUp(bias);
+				else if(heightGap < bias / 2.0f) _pPlayer->MoveUp(bias);
 			}
 			else return pGameObject;
 		}
@@ -379,8 +379,8 @@ pair<float, shared_ptr<InteractObject>> Sector::GetNearestInteractObject(const s
 			continue;
 		}
 		// 플레이어가 바라보는 방향으로 바운딩 박스를 이동시켜본다.
-		playerBoundingBox.Center = Vector3::Add(playerBoundingBox.Center, _pPlayer->GetWorldLookVector(), playerBoundingBox.Extents.z * 4);
-		playerBoundingBox.Extents.z *= 3;
+		playerBoundingBox.Center = Vector3::Add(playerBoundingBox.Center, _pPlayer->GetWorldLookVector(), playerBoundingBox.Extents.z * 5);
+		playerBoundingBox.Extents.z *= 4;
 		if (playerBoundingBox.Intersects(boundingBox)) {
 			minDist = dist;
 			pNearestObject = pGameObject;
@@ -575,11 +575,11 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	for (auto& divx : sectors) {
 		for (auto& divy : divx) {
 			for (auto& sector : divy) {
-				sector.RenderHitBox(_pCommandList, hitBoxMesh);
+				//sector.RenderHitBox(_pCommandList, hitBoxMesh);
 			}
 		}
 	}
-	pPlayer->RenderHitBox(_pCommandList, hitBoxMesh);
+	//pPlayer->RenderHitBox(_pCommandList, hitBoxMesh);
 
 #endif
 
