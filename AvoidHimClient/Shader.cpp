@@ -217,13 +217,15 @@ void Shader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 			if (!pGameObject)
 				return true;
 			// 해당 오브젝트가 존재한다면 렌더링한다.
-			pGameObject->Render(_pCommandList);
+			if (pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum())
+				pGameObject->Render(_pCommandList);
 			return false;
 		};
 		wpGameObjects.erase(
 			ranges::remove_if(wpGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
 			wpGameObjects.end());
 	}
+;
 }
 
 void Shader::PrepareRenderSO(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -339,6 +341,7 @@ void BasicShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 	GameFramework gameFramework = GameFramework::Instance();
 
 	auto& pGameObjects = gameFramework.GetShader("BasicShader")->GetGameObjects();
+
 	if (pGameObjects.size() > 0) {
 		PrepareRender(_pCommandList);
 		auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
@@ -346,7 +349,8 @@ void BasicShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 			if (!pGameObject)
 				return true;
 			// 해당 오브젝트가 존재한다면 렌더링한다.
-			pGameObject->Render(_pCommandList);
+			if (pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum())
+				pGameObject->Render(_pCommandList);
 			return false;
 		};
 		pGameObjects.erase(
@@ -470,7 +474,6 @@ D3D12_INPUT_LAYOUT_DESC SkinnedShader::CreateInputLayout() {
 	return inputLayoutDesc;
 }
 
-
 SkinnedShadowShader::SkinnedShadowShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	renderType = ShaderRenderType::SHADOW_RENDER;
 	Init(_pDevice, _pRootSignature);
@@ -500,7 +503,7 @@ void SkinnedShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComm
 			if (!pGameObject)
 				return true;
 			// 해당 오브젝트가 존재한다면 렌더링한다. 은신상태가 아닐경우만 그림자를 그린다.
-			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
+			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent() && pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum())
 				pGameObject->Render(_pCommandList);
 			return false;
 		};
@@ -575,7 +578,7 @@ void SkinnedTransparentShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _
 			if (!pGameObject)
 				return true;
 			// 해당 오브젝트가 존재하며 투명 상태일 경우 렌더링한다.
-			if(static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
+			if(static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent() && pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum())
 				pGameObject->Render(_pCommandList);
 			return false;
 		};

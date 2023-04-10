@@ -565,7 +565,7 @@ void PlayScene::changeUI(bool _enable) {
 	pTexts["leftCoolTime"]->SetEnable(_enable);
 	pTexts["rightCoolTime"]->SetEnable(_enable);
 	pTexts["remainTime"]->SetEnable(_enable);
-	pTexts["hackRate"]->SetEnable(_enable);
+	//pTexts["hackRate"]->SetEnable(_enable);
 	
 
 	if (isPlayerProfessor) {	// 교수일 경우의 UI 
@@ -785,7 +785,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	}
 
 	// Zone을 생성 후 맵파일을 읽어 오브젝트들을 로드한다.
-	pZone = make_shared<Zone>(XMFLOAT3(100.f, 100.f, 100.f), XMINT3(10, 10, 10), shared_from_this());
+	pZone = make_shared<Zone>(XMFLOAT3(75.0f, 12.0f, 38.0f), XMINT3(10, 5, 10), shared_from_this());
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList, enComID);
 	
 	professorObjectID = recvPacket->professorObjectID;
@@ -850,13 +850,13 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pUIs["2DUI_stamina"] = make_shared<Image2D>("2DUI_stamina", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	pUIs["2DUI_interact"] = make_shared<Image2D>("2DUI_interact", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-	pUIs["2DUI_hackRate"] = make_shared<Image2D>("2DUI_hackRate", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+	//pUIs["2DUI_hackRate"] = make_shared<Image2D>("2DUI_hackRate", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 
 	pTexts["leftCoolTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.55f, 1.5f), XMFLOAT2(0.1f, 0.1f), C_WIDTH / 30.0f, false);
 	pTexts["rightCoolTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.8f, 1.5f), XMFLOAT2(0.1f, 0.1f), C_WIDTH / 30.0f, false);
 
 	pTexts["remainTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.1f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, true);
-	pTexts["hackRate"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 60.0f, true);
+	pTexts["hackRate"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 60.0f, false);
 
 
 	if (isPlayerProfessor) {	// 교수일 경우의 UI 로드
@@ -1022,6 +1022,10 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 	// 플레이어 애니메이션
 	pPlayer->Animate(_collideCheck, _timeElapsed);
+	camera->UpdateObject();
+
+	// 플레이어 기준에서 프러스텀에 포함되는 섹터를 업데이트 해준다.
+	pZone->UpdateFrustumSectors(*camera->GetBoundingFrustum());
 
 	// 청자의 위치를 업데이트해준다. ( 최초 Play 전 호출시 프레임 드랍 )
 	gameFramework.GetSoundManager().UpdateListener(pPlayer->GetWorldPosition(), camera->GetWorldLookVector(), camera->GetWorldUpVector());
@@ -1626,7 +1630,6 @@ void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 	gameFramework.GetShader("BasicShadowShader")->Render(_pCommandList);
 	gameFramework.GetShader("InstancingShadowShader")->Render(_pCommandList);
 	gameFramework.GetShader("SkinnedShadowShader")->Render(_pCommandList);
-
 	// 다그린 후 쉐도우맵을 연결한다.
 }
 

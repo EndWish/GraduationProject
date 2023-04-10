@@ -8,10 +8,11 @@ class Professor;
 class PlayScene;
 class HitBoxMesh;
 
-class Sector {
+class Sector : public enable_shared_from_this<Sector> {
 	typedef unordered_map<UINT, shared_ptr<GameObject>> Layer;
 
 private:
+	bool isInFrustum;
 	BoundingBox boundingBox;
 	vector<Layer> pGameObjectLayers;
 	unordered_map<UINT, shared_ptr<InteractObject>> pInteractionObjects;
@@ -34,6 +35,8 @@ public:
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	void RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, HitBoxMesh& _mesh);
 	
+	void SetInFrustum(bool _isInFrustum);
+	bool GetInFrustum() const;
 
 	bool SetVisiblePlayer(shared_ptr<Camera> _pCamera, const XMFLOAT3& _playerCenter);
 	// 바운딩박스 설정
@@ -67,7 +70,7 @@ private:
 private:
 	shared_ptr<Player> pPlayer;
 
-	vector< shared_ptr<GameObject>> pEnemy;
+	vector<shared_ptr<GameObject>> pEnemy;
 	// 현재 플레이어가 속한 섹터의 인덱스
 	XMINT3 pindex;
 	UINT pid;
@@ -125,6 +128,7 @@ public:
 
 	// 뷰프러스텀과 충돌하는 섹터 얻기
 	vector<Sector*> GetFrustumSectors(const BoundingFrustum& _frustum);
+	void UpdateFrustumSectors(const BoundingFrustum& _frustum);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum);
 	void LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const array<UINT, MAX_PARTICIPANT>& _enableComputers);
 	

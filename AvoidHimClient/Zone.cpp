@@ -8,6 +8,7 @@
 /// Sector
 Sector::Sector() {
 	pGameObjectLayers.assign((UINT)SectorLayer::num, {});
+	isInFrustum = true;
 }
 Sector::~Sector() {
 
@@ -19,6 +20,7 @@ void Sector::AddObject(SectorLayer _sectorLayer, UINT _objectID, shared_ptr<Game
 
 	if (it == pGameObjectLayer.end()) {		// 객체가 존재하지 않을 경우
 		pGameObjectLayer[_objectID] = _pGameObject;	// 추가한다.
+		_pGameObject->SetSector(this);
 	}
 	else {
 		cout << _objectID << "오류! ";
@@ -31,7 +33,8 @@ void Sector::RemoveObject(SectorLayer _sectorLayer, UINT _objectID) {
 	auto it = pGameObjectLayer.find(_objectID);
 
 	if (it != pGameObjectLayer.end()) {		// 객체가 존재할 경우
-		pGameObjectLayer.erase(it);
+		pGameObjectLayer.erase(it);	
+		(*it).second->SetSector(nullptr);
 	}
 	else {
 		cout << format("버그 : 해당 ID를 가지는 오브젝트가 없습니다.\n");
@@ -104,6 +107,14 @@ void Sector::RenderHitBox(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 			pGameObject->RenderHitBox(_pCommandList, _mesh);
 		}
 	}
+}
+
+void Sector::SetInFrustum(bool _isInFrustum) {
+	isInFrustum = _isInFrustum;
+}
+
+bool Sector::GetInFrustum() const {
+	return isInFrustum;
 }
 
 bool Sector::SetVisiblePlayer(shared_ptr<Camera> _pCamera, const XMFLOAT3& _playerCenter) {
@@ -405,7 +416,7 @@ Zone::Zone() {
 Zone::Zone(const XMFLOAT3& _size, const XMINT3& _div, shared_ptr<PlayScene> _pScene) : size(_size), div(_div), wpScene(_pScene) {
 	sectors.assign(div.x, vector<vector<Sector>>(div.y, vector<Sector>(div.z, Sector())));
 	sectorSize = Vector3::Division(size, div);
-	startPoint = XMFLOAT3(-50, -50, -50);
+	startPoint = XMFLOAT3(-15, -5, -30);
 	pindex = XMINT3(0, 0, 0);
 	pid = 0;
 
@@ -536,13 +547,34 @@ vector<Sector*> Zone::GetFrustumSectors(const BoundingFrustum& _frustum) {
 	return result;
 }
 
+// 뷰프러스텀과 충돌하는 섹터 업데이트
+void Zone::UpdateFrustumSectors(const BoundingFrustum& _frustum) {
+	int count = 0;
+	for (int x = 0; x < div.x; ++x) {
+		for (int y = 0; y < div.y; ++y) {
+			for (int z = 0; z < div.z; ++z) {
+				XMINT3 index = XMINT3(x, y, z);
+				XMFLOAT3 extents = Vector3::ScalarProduct(sectorSize, 0.5f);
+				//center = startPoint + index * sectorSize + extent;
+				XMFLOAT3 center = Vector3::Add(Vector3::Add(startPoint, Vector3::Multiple(sectorSize, index)), extents);
+
+				BoundingBox boundingBox(center, extents);
+				GetSector(index)->SetInFrustum(_frustum.Intersects(boundingBox));
+			}
+		}
+	}
+}
+
+
 void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
 
 
 #ifdef USING_INSTANCING
+
 	gameFramework.GetShader("BasicShader")->Render(_pCommandList);
+
 	gameFramework.GetShader("InstancingShader")->Render(_pCommandList);
 	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
 	gameFramework.GetShader("SkinnedTransparentShader")->Render(_pCommandList);

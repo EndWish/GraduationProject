@@ -18,6 +18,7 @@ class Player;
 class TerrainMap;
 class Camera;
 class TextBox;
+class Sector;
 
 struct Instancing_Data {
 	UINT activeInstanceCount;
@@ -64,6 +65,7 @@ protected:
 
 	vector<shared_ptr<Material>> materials;
 
+	Sector* pSector;
 
 public:
 
@@ -144,6 +146,9 @@ public:
 
 	// 해당 오브젝트의 메쉬의 index번째 마테리얼의 텍스처를 변경
 	void SetMaterial(int _index, shared_ptr<Material> _pMaterial);
+
+	void SetSector(Sector* _pSector);
+	const Sector* GetSector() const;
 
 	// 오브젝트 내용 전체적으로 갱신
 	virtual void UpdateObject();

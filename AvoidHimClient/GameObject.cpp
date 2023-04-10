@@ -50,6 +50,7 @@ GameObject::GameObject() {
 	id = 0;
 	objectClass = 0;
 	shaderType = ShaderType::none;
+	pSector = nullptr;
 
 }
 GameObject::~GameObject() {
@@ -287,6 +288,18 @@ void GameObject::UpdateOOBB() {
 void GameObject::SetMaterial(int _index, shared_ptr<Material> _pMaterial) {
 	GameFramework gameFramework = GameFramework::Instance();
 	materials[_index] = _pMaterial;
+}
+
+
+
+void GameObject::SetSector(Sector* _pSector) {
+	pSector = _pSector;
+	for (auto& pChild : pChildren)
+		pChild->SetSector(_pSector);
+}
+
+const Sector* GameObject::GetSector() const {
+	return pSector;
 }
 
 
