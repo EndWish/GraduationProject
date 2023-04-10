@@ -181,7 +181,8 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
                 MessageBox(hDlg, L"닉네임이 20자 이상입니다.", L"알림", MB_OK);
             else
             {
-                if (nicklen != 0) nickName.assign(nickNameBuffer, nickNameBuffer + nicklen + 1);
+                if (nicklen != 0)
+                    wcscpy_s(nickname, nickNameBuffer);
 #ifdef UNICODE
                 // 유니코드
                 serverIP.assign((WCHAR*)IPbuffer, (WCHAR*)IPbuffer + wcslen((WCHAR*)IPbuffer));
@@ -273,14 +274,12 @@ void ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam
             SC_GIVE_CLIENT_ID* recvPacket = GetPacket<SC_GIVE_CLIENT_ID>();
             cid = recvPacket->clientID;
             cout << "내 클라이언트 id = " << cid << "\n";
-            if (nickName.size() == 0) {
-                nickName = L"Player" + to_wstring(cid);
+            if (wcslen(nickname) == 0) {
+                wcscpy_s(nickname, (L"Player" + to_wstring(cid)).c_str());
             }
             CS_CHECK_EXIST_NICKNAME packet;
             packet.cid = cid;
-            for (int i = 0; i < nickName.size(); ++i) {
-                packet.nickname[i] = nickName[i];
-            }
+            wcscpy_s(packet.nickname, nickname);
             SendFixedPacket(packet);
             break;
         }
@@ -288,7 +287,7 @@ void ProcessSocketMessage(HWND _hWnd, UINT _uMsg, WPARAM _wParam, LPARAM _lParam
             SC_CHECK_NICKNAME* packet = GetPacket<SC_CHECK_NICKNAME>();
             // 닉네임이 중복일경우 다시 입력받는다.
             cout << "nickName : ";
-            wcout << nickName;
+            wcout << nickname;
             if (packet->isExist)
                 MessageBox(hLoginDlg, L"닉네임이 중복됩니다.", L"알림", MB_OK);
             else {

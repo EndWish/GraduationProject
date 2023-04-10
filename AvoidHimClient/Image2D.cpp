@@ -98,8 +98,8 @@ TextBox::~TextBox() {
 	
 }
 
-void TextBox::SetText(wstring _text) {
-	text = _text;
+void TextBox::SetText(const WCHAR _text[20]) {
+	wcscpy_s(text, _text);
 }
 
 void TextBox::Render()
@@ -121,7 +121,7 @@ void TextBox::Render()
 	pD3D11On12Device->AcquireWrappedResources(ppResources, _countof(ppResources));
 
 	pD2DDeviceContext->BeginDraw();
-	pD2DDeviceContext->DrawText(text.c_str(), (UINT32)text.size(), format.Get(), rect, brush.Get());
+	pD2DDeviceContext->DrawText(text, (UINT32)wcslen(text), format.Get(), rect, brush.Get());
 	pD2DDeviceContext->EndDraw();
 	pD3D11On12Device->ReleaseWrappedResources(ppResources, _countof(ppResources));
 	pD3D11DeviceContext->Flush();

@@ -472,7 +472,7 @@ void LobbyScene::changeUI(LobbyState _state, bool _active) {
 }
 
 void LobbyScene::UpdateRoomText() {
-	pTexts["pageNum"]->SetText(to_wstring(roomPage));
+	pTexts["pageNum"]->SetText(to_wstring(roomPage).c_str());
 	// 현재 페이지 기준 방 리스트의 정보로 갱신 해준다.
 	bool lastRoom = false;
 
@@ -595,7 +595,7 @@ void PlayScene::AddComputer(const shared_ptr<Computer>& _pComputer) {
 void PlayScene::UpdateTimeText() {
 	UINT UINTTime = (UINT)remainTime;
 
-	pTexts["remainTime"]->SetText(to_wstring(UINTTime / 60) + L" : " + to_wstring(UINTTime % 60));
+	pTexts["remainTime"]->SetText((to_wstring(UINTTime / 60) + L" : " + to_wstring(UINTTime % 60)).c_str());
 	
 }
 
@@ -817,11 +817,11 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 			shared_ptr<InterpolateMoveGameObject> pOtherPlayer = make_shared<InterpolateMoveGameObject>();
 
 			if (professorObjectID == recvPacket->playerInfo[i].objectID) {	// 교수 플레이어일 경우
-				pOtherPlayer->SetNickname(wstring(recvPacket->nickname[i]), true);
+				pOtherPlayer->SetNickname(recvPacket->nickname[i], true);
 				pOtherPlayer->Create("Professor"s, _pDevice, _pCommandList);
 			}
 			else { // 학생일 경우
-				pOtherPlayer->SetNickname(wstring(recvPacket->nickname[i]), false);
+				pOtherPlayer->SetNickname(recvPacket->nickname[i], false);
 				pOtherPlayer->Create("Student"s, _pDevice, _pCommandList);
 			}
 			
@@ -1142,10 +1142,10 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 				else {
 					if (coolTime >= 1.0f) { // 1초 이상일경우에는 정수로 출력한다.
 
-						pTexts["leftCoolTime"]->SetText(to_wstring((int)coolTime));
+						pTexts["leftCoolTime"]->SetText(to_wstring((int)coolTime).c_str());
 					}
 					else {
-						pTexts["leftCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3));
+						pTexts["leftCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3).c_str());
 					}
 				}
 			}
@@ -1160,10 +1160,10 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 				else {
 					if (coolTime >= 1.0f) { // 1초 이상일경우에는 정수로 출력한다.
 
-						pTexts["rightCoolTime"]->SetText(to_wstring((int)coolTime));
+						pTexts["rightCoolTime"]->SetText(to_wstring((int)coolTime).c_str());
 					}
 					else {
-						pTexts["rightCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3));
+						pTexts["rightCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3).c_str());
 					}
 				}
 			}
@@ -1181,10 +1181,10 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 			else {
 				if (coolTime >= 1.0f) { // 1초 이상일경우에는 정수로 출력한다.
 
-					pTexts["rightCoolTime"]->SetText(to_wstring((int)coolTime));
+					pTexts["rightCoolTime"]->SetText(to_wstring((int)coolTime).c_str());
 				}
 				else {
-					pTexts["rightCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3));
+					pTexts["rightCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3).c_str());
 				}
 			}
 		}

@@ -22,7 +22,7 @@ RECT clientRect;
 random_device rd;
 mt19937 gen;
 
-wstring nickName;
+WCHAR nickname[20];
 string serverIP;
 
 array<char, BUFSIZE> sendBuffer;

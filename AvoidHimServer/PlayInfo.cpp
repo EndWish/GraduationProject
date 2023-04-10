@@ -168,7 +168,7 @@ void PlayInfo::Init(UINT _roomID) {
 	}
 
 	for (int i = 0; i < participants.size(); ++i) {
-		memcpy(sendPacket.nickname[i], participants[i].second->GetNickname().data(), sizeof(WCHAR) * (participants[i].second->GetNickname().size() + 1));
+		wcscpy_s(sendPacket.nickname[i], participants[i].second->GetNickname());
 	}
 
 	// 내용을 전부다 채운 buf를 각 플레이어들에게 전송한다.

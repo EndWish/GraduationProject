@@ -145,12 +145,14 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
     switch (packetType) {
     case CS_PACKET_TYPE::checkNickname: {
         // 닉네임 중복 체크를 하고 중복이 없을경우 그 아이디를 저장한다.
+        CS_CHECK_EXIST_NICKNAME& recvPacket = GetPacket<CS_CHECK_EXIST_NICKNAME>();
+
         SC_CHECK_NICKNAME sendPacket;
         sendPacket.isExist = false;
-        CS_CHECK_EXIST_NICKNAME& recvPacket = GetPacket<CS_CHECK_EXIST_NICKNAME>();
+        
         for (auto [cid, pCheckClient] : pClients) {
             if (pClients[recvPacket.cid] == pCheckClient) continue;
-            if (wcscmp(pCheckClient->GetNickname().c_str(), recvPacket.nickname) == 0) {
+            if (wcscmp(pCheckClient->GetNickname(), recvPacket.nickname) == 0) {
                 // 닉네임이 같은 경우
                 sendPacket.isExist = true;
 
@@ -160,8 +162,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
         }
         SendContents(_socket, pClient->GetRemainBuffer(), sendPacket);
         if (!sendPacket.isExist) {
-            pClients[recvPacket.cid]->SetNickname(wstring(recvPacket.nickname));
-
+            pClients[recvPacket.cid]->SetNickname(recvPacket.nickname);
         }
         else {
             // 중복되는 이름일 경우 해당 클라이언트를 바로 삭제해준다.
@@ -229,7 +230,7 @@ void ServerFramework::ProcessRecv(SOCKET _socket) {
 
         // 2. 기존에 접속해 있는 플레이어 에게 정보를 전송한다.
         SC_ROOM_VISIT_PLAYER_INFO sendPacket;
-        memcpy(sendPacket.name, pClients[recvPacket.cid]->GetNickname().c_str(), sizeof(WCHAR)* (pClients[recvPacket.cid]->GetNickname().size() + 1));
+        wcscpy_s(sendPacket.name, pClients[recvPacket.cid]->GetNickname());
         sendPacket.visitClientID = recvPacket.cid;
         for (UINT clientID : pRoom->GetParticipants()) {
             if (clientID == recvPacket.cid)  // 입장한 플레이어의 경우 제외한다.

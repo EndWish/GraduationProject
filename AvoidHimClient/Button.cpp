@@ -92,13 +92,13 @@ void RoomButton::UpdateState(UINT _roomID, UINT _participant, RoomState _state) 
 		pTexts[0]->SetText(L"²Ë Âü");
 	}
 	else if (state == RoomState::joinable) {
-		pTexts[0]->SetText(to_wstring(_participant) + L"/5");
+		pTexts[0]->SetText((to_wstring(_participant) + L"/5").c_str());
 	}
 	else if (state == RoomState::started) {
 		pTexts[0]->SetText(L"½ÃÀÛÇÔ");
 	}
 
-	pTexts[1]->SetText(L"#" + to_wstring(_roomID));
+	pTexts[1]->SetText((L"#" + to_wstring(_roomID)).c_str());
 	SetRoomIndex(_roomID);
 }
 

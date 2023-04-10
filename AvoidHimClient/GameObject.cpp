@@ -897,7 +897,7 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 	t = 0;
 }
 
-void InterpolateMoveGameObject::SetNickname(wstring _name, bool _isProfessor) {
+void InterpolateMoveGameObject::SetNickname(const WCHAR _name[20], bool _isProfessor) {
 	D2D1::ColorF color = _isProfessor ? D2D1::ColorF(1, 0, 0, 1) : D2D1::ColorF(1, 1, 1, 1);
 	nickname = make_shared<TextBox>((WCHAR*)L"ÈÞ¸Õµ¸¿òÃ¼", color, XMFLOAT2(1.55f, 1.55f), XMFLOAT2(0.3f, 0.1f), C_WIDTH / 60.0f, false);
 	nickname->SetText(_name);

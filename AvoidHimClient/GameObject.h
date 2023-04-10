@@ -324,7 +324,7 @@ public:
 	
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
 
-	void SetNickname(wstring _name, bool _isProfessor);
+	void SetNickname(const WCHAR _name[20], bool _isProfessor);
 	shared_ptr<TextBox> GetNickname()  { return nickname; };
 
 	float GetHP() const { return hp; };

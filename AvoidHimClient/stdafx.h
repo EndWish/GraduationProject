@@ -118,7 +118,7 @@ extern XMFLOAT3 prisonPosition, prisonExitPosition;
 extern RECT clientRect;
 
 // 플레이어의 닉네임
-extern wstring nickName;
+extern WCHAR nickname[20];
 
 // 서버의 IP
 extern string serverIP;

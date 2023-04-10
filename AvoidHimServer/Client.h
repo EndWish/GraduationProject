@@ -27,7 +27,7 @@ private:
 	// 최근 받은 패킷의 타입을 저장
 	CS_PACKET_TYPE lastPacketType;
 
-	wstring nickname;
+	WCHAR nickname[20];
 
 public:
 	// 생성자 및 소멸자
@@ -62,8 +62,8 @@ public:
 	PlayInfo* GetCurrentPlayInfo() const { return pCurrentPlayInfo; }
 	void SetCurrentPlayInfo(PlayInfo* _pCurrentPlayInfo) { pCurrentPlayInfo = _pCurrentPlayInfo; }
 
-	const wstring& GetNickname() const { return nickname; }
-	void SetNickname(const wstring& _nickname)  { nickname = _nickname; }
+	const WCHAR* GetNickname() const { return nickname; }
+	void SetNickname(const WCHAR* _nickname)  { wcscpy_s(nickname, _nickname); }
 	// 일반 함수
 
 
