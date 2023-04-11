@@ -37,6 +37,7 @@ protected:
 	ShaderType shaderType;
 	UINT objectClass;	// 0은 GameObject, 1은 SkinnedObject, 2는 Effect
 
+	bool alwaysDraw;	// 프러스텀 컬링을 사용하지 않고 항상 그리는지
 	UINT id;
 	string name;
 
@@ -162,7 +163,8 @@ public:
 
 	virtual void Animate(float _timeElapsed);
 
-
+	void SetAlwaysDraw(bool _alwaysDraw);
+	bool GetAlwaysDraw() const;
 	// 렌더
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void RenderAll(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -290,6 +292,21 @@ public:
 	shared_ptr<AnimationController> GetAniController() { return pAniController; }
 
 };
+
+/////////////////////////////////////////////////////////////
+
+class RoomPlayerObject : public GameObject {
+private:
+	weak_ptr<AnimationController> wpAniController;
+public:
+	RoomPlayerObject();
+	~RoomPlayerObject();
+	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void Animate(float _timeElapsed);
+	shared_ptr<AnimationController> GetAniController();
+};
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// InterpolateMoveGameObject ( 적 오브젝트 )

@@ -514,6 +514,7 @@ void Professor::RightClick() {
 		isThrowAttacking = true;
 		// 손에 책을 추가한다.
 		shared_ptr<GameObject> pBookObject = GameFramework::Instance().GetGameObjectManager().GetGameObject("Book", nullptr, nullptr);
+		pBookObject->SetAlwaysDraw(true);
 		pBookObject->Rotate(pBookObject->GetLocalLookVector(), 90.f);
 		pBookObject->MoveUp(0.2f);
 		pBookObject->MoveRight(0.05f);

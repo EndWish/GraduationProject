@@ -36,7 +36,7 @@ void Camera::Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gra
 	pCameraBuffer->Map(0, NULL, (void**)&pMappedCamera);
 
 	//UpdateViewTransform();
-	UpdateProjectionTransform(0.1f, 50.0f, float(width) / height, 65.0f);
+	UpdateProjectionTransform(0.1f, 80.0f, float(width) / height, 65.0f);
 	pBoundingFrustum = make_shared<BoundingFrustum>(XMLoadFloat4x4(&projectionTransform));
 
 }

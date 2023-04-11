@@ -130,7 +130,7 @@ extern array<char, BUFSIZE> sendBuffer;
 extern array<char, BUFSIZE> recvBuffer;
 
 using Microsoft::WRL::ComPtr;
-
+extern int testcount;
 
 
 // float 난수 생성

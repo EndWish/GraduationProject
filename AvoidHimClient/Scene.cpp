@@ -78,6 +78,15 @@ LobbyScene::LobbyScene()
 	viewPort = { 0,0, C_WIDTH, C_HEIGHT, 0, 1 };
 	scissorRect = { 0,0, C_WIDTH, C_HEIGHT };
 	roomList.resize(6);
+
+	for (int i = 0; i < 5; ++i) {
+		roomViewPort[i].Width = 0.2 * C_WIDTH;
+		roomViewPort[i].Height = 0.5 * C_HEIGHT;
+
+		roomViewPort[i].TopLeftX = (float)i * C_WIDTH * 0.195f + C_WIDTH * 0.01f;
+		roomViewPort[i].TopLeftY = 0.2 * C_HEIGHT;
+	}
+	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 }
 
 LobbyScene::~LobbyScene()
@@ -105,6 +114,24 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	pUIs["2DUI_ready_4"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.244f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	pUIs["2DUI_ready_5"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(1.632f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 
+
+	pCamera = make_shared<Camera>();
+	pCamera->Create(_pDevice, _pCommandList);
+	pCamera->UpdateProjectionTransform(0.1f, 10.f, 0.5f, 60.0f);
+	pCamera->SetLocalPosition(XMFLOAT3(0.f, 0.8f, 2.0f));
+	pCamera->SetLocalRotation(Vector4::QuaternionRotation(XMFLOAT3(0, 1, 0), 180.0f));
+	pCamera->UpdateObject();
+
+	pLight = make_shared<Light>();
+	pLight->lightType = 3;
+	pLight->direction = XMFLOAT3(0.f, -1.f, -0.5f);
+
+	for (auto& pRoomPlayerObject : pRoomPlayerObjects) {
+		pRoomPlayerObject = make_shared<RoomPlayerObject>();
+		pRoomPlayerObject->Create("Student"s, _pDevice, _pCommandList);
+
+		pRoomPlayerObject->GetAniController()->ChangeClip("idle");
+	}
 
 	pButtons["startButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.5f, 1.2f), ButtonType::start, _pDevice, _pCommandList);;
 
@@ -134,7 +161,10 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 
 	////////////////////////////////////
 
-
+	ComPtr<ID3D12Resource> temp;
+	UINT ncbElementBytes = ((sizeof(LightsMappedFormat) + 255) & ~255); //256의 배수
+	pLightsBuffer = ::CreateBufferResource(_pDevice, _pCommandList, NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
+	pLightsBuffer->Map(0, NULL, (void**)&pMappedLights);
 
 	pButtons["gameStartButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::gameStart, _pDevice, _pCommandList, false);
 	pButtons["quitRoomButton"] = make_shared<Button>("2DUI_quitRoomButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::quitRoom, _pDevice, _pCommandList, false);
@@ -149,7 +179,9 @@ void LobbyScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, co
 }
 
 void LobbyScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)  {
-
+	for (auto& pRoomPlayerObject : pRoomPlayerObjects) {
+		pRoomPlayerObject->Animate(_timeElapsed);
+	}
 }
 
 void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -312,6 +344,9 @@ void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, 
 	}
 	for (auto [name, pButton] : pButtons) {
 		pButton->Render(_pCommandList);
+	}
+	if (currState == LobbyState::inRoom) {
+		RenderPlayerMesh(_pCommandList);
 	}
 }
 
@@ -506,9 +541,32 @@ void LobbyScene::SetBackGround(string _bgName) {
 	pBackGround->SetEnable(true);
 }
 
+void LobbyScene::RenderPlayerMesh(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	
+	GameFramework gameFramework = GameFramework::Instance();
+
+	int nLight = 1;
+	memcpy(&pMappedLights->lights[0], pLight.get(), sizeof(Light));
+	memcpy(&pMappedLights->globalAmbient, &globalAmbient, sizeof(XMFLOAT4));
+	memcpy(&pMappedLights->nLight, &nLight, sizeof(int));
+
+	D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pLightsBuffer->GetGPUVirtualAddress();
+	_pCommandList->SetGraphicsRootConstantBufferView(2, gpuVirtualAddress);
+
+
+	pCamera->UpdateShaderVariable(_pCommandList);
+	gameFramework.GetShader("SkinnedLobbyShader")->PrepareRender(_pCommandList);
+	for (UINT i = 0; i < roomInfo.nParticipant; ++i) {
+
+		_pCommandList->RSSetViewports(1, &roomViewPort[i]);
+
+		pRoomPlayerObjects[i]->GetObj()->Render(_pCommandList);
+	}
+}
+
 void LobbyScene::UpdateReadyState() {
 
-	// 현재 방에 ui, 버튼 상태등을 갱신
+	// 현재 방에 ui, 버튼 상태, 애니메이션 등을 갱신
 	bool bChange = false;
 	for (int i = 0; i < 5; ++i) {
 		pUIs["2DUI_ready_" + to_string(i + 1)]->SetEnable(false);
@@ -526,6 +584,7 @@ void LobbyScene::UpdateReadyState() {
 		}
 		// 준비상태일 경우 
 		else if (roomInfo.players[i].ready) {
+			pRoomPlayerObjects[i]->GetAniController()->ChangeClip("FastRun");
 			pUIs["2DUI_ready_" + to_string(i + 1)]->SetTexture("2DUI_ready");
 			pUIs["2DUI_ready_" + to_string(i + 1)]->SetEnable(true);
 			// 본인이 준비상태일 경우
@@ -533,6 +592,9 @@ void LobbyScene::UpdateReadyState() {
 				pButtons["gameStartButton"]->SetTexture("2DUI_readyCancelButton");
 				bChange = true;
 			}
+		}
+		else {
+			pRoomPlayerObjects[i]->GetAniController()->ChangeClip("idle");
 		}
 
 	}
@@ -561,7 +623,6 @@ void PlayScene::changeUI(bool _enable) {
 	pUIs["2DUI_stamina"]->SetEnable(_enable);
 	pUIs["2DUI_staminaFrame"]->SetEnable(_enable);
 	pUIs["2DUI_interact"]->SetEnable(_enable);
-	pUIs["2DUI_hackRate"]->SetEnable(_enable);
 	pTexts["leftCoolTime"]->SetEnable(_enable);
 	pTexts["rightCoolTime"]->SetEnable(_enable);
 	pTexts["remainTime"]->SetEnable(_enable);
@@ -1627,9 +1688,12 @@ void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 	_pCommandList->SetGraphicsRoot32BitConstants(11, 1, &lightIndex[_lightIndex], 0);
 	// 그림자에 영향을 주는 오브젝트들을 그린다. basic, instancing, effect..
 
+	testcount = 0;
 	gameFramework.GetShader("BasicShadowShader")->Render(_pCommandList);
+
 	gameFramework.GetShader("InstancingShadowShader")->Render(_pCommandList);
 	gameFramework.GetShader("SkinnedShadowShader")->Render(_pCommandList);
+
 	// 다그린 후 쉐도우맵을 연결한다.
 }
 

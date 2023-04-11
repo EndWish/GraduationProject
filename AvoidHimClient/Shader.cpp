@@ -26,6 +26,18 @@ vector<weak_ptr<GameObject>>& Shader::GetGameObjects() {
 	return wpGameObjects;
 }
 
+void Shader::UpdateShaderObject() {
+	if (wpGameObjects.size() > 0) {
+		auto removePred = [](const shared_ptr<GameObject>& pGameObject) {
+			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
+			return !pGameObject;
+		};
+		wpGameObjects.erase(
+			ranges::remove_if(wpGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
+			wpGameObjects.end());
+	}
+}
+
 void Shader::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	ZeroMemory(&pipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
 	pipelineStateDesc.pRootSignature = _pRootSignature.Get();
@@ -193,6 +205,12 @@ void Shader::SetCamera(const weak_ptr<Camera>& _wpCamera) {
 	wpCamera = _wpCamera;
 }
 
+void Shader::UpdateShadersObject() {
+	GameFramework& gameFramework = GameFramework::Instance();
+	gameFramework.GetShader("BasicShader")->UpdateShaderObject();
+
+}
+
 
 void Shader::PrepareRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	if (pPipelineState) {
@@ -207,23 +225,21 @@ void Shader::AddObject(const weak_ptr<GameObject>& _pGameObject) {
 	wpGameObjects.push_back(_pGameObject);
 }
 
+void Shader::ClearObject() {
+	wpGameObjects.clear();
+}
+
 
 void Shader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	// 쉐이더를 파이프라인에 연결한다.
 	if (wpGameObjects.size() > 0) {
 		PrepareRender(_pCommandList);
-		auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
-			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
-			if (!pGameObject)
-				return true;
-			// 해당 오브젝트가 존재한다면 렌더링한다.
-			if (pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum())
+		for (auto& wpGameObject : wpGameObjects) {
+			if (wpGameObject.expired()) continue;
+			auto pGameObject = wpGameObject.lock();
+			if (pGameObject->GetAlwaysDraw() || (pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum()))
 				pGameObject->Render(_pCommandList);
-			return false;
-		};
-		wpGameObjects.erase(
-			ranges::remove_if(wpGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
-			wpGameObjects.end());
+		}
 	}
 ;
 }
@@ -344,19 +360,17 @@ void BasicShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 
 	if (pGameObjects.size() > 0) {
 		PrepareRender(_pCommandList);
-		auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
-			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
-			if (!pGameObject)
-				return true;
-			// 해당 오브젝트가 존재한다면 렌더링한다.
-			if (pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum())
+		for (auto& wpGameObject : pGameObjects) {
+			if (wpGameObject.expired()) continue;
+			auto pGameObject = wpGameObject.lock();
+			if (pGameObject->GetAlwaysDraw() || (pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum()))
+			{
 				pGameObject->Render(_pCommandList);
-			return false;
-		};
-		pGameObjects.erase(
-			ranges::remove_if(pGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
-			pGameObjects.end());
+				testcount++;
+			}
+		}
 	}
+
 }
 
 D3D12_RASTERIZER_DESC BasicShadowShader::CreateRasterizerState() {
@@ -423,18 +437,15 @@ void SkinnedShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLis
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {
 		PrepareRender(_pCommandList);
-		auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
-			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
-			if (!pGameObject)
-				return true;
-			// 해당 오브젝트가 존재하며 투명 상태가 아닐 경우 렌더링한다.
+		for (auto& wpGameObject : pGameObjects) {
+			if (wpGameObject.expired()) continue;
+			auto pGameObject = wpGameObject.lock();
+			// 플레이어는 sector에 포함되지 않는다.
 			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
+			{
 				pGameObject->Render(_pCommandList);
-			return false;
-		};
-		pGameObjects.erase(
-			ranges::remove_if(pGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
-			pGameObjects.end());
+			}
+		}
 	}
 }
 
@@ -498,18 +509,12 @@ void SkinnedShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComm
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {
 		PrepareRender(_pCommandList);
-		auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
-			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
-			if (!pGameObject)
-				return true;
-			// 해당 오브젝트가 존재한다면 렌더링한다. 은신상태가 아닐경우만 그림자를 그린다.
-			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent() && pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum())
+		for (auto& wpGameObject : pGameObjects) {
+			if (wpGameObject.expired()) continue;
+			auto pGameObject = wpGameObject.lock();
+			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
 				pGameObject->Render(_pCommandList);
-			return false;
-		};
-		pGameObjects.erase(
-			ranges::remove_if(pGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
-			pGameObjects.end());
+		}
 	}
 }
 
@@ -573,18 +578,12 @@ void SkinnedTransparentShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {
 		PrepareRender(_pCommandList);
-		auto removePred = [_pCommandList](const shared_ptr<GameObject>& pGameObject) {
-			// 해당 오브젝트가 이미 삭제되어 없다면 컨테이너에서 제거한다.
-			if (!pGameObject)
-				return true;
-			// 해당 오브젝트가 존재하며 투명 상태일 경우 렌더링한다.
-			if(static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent() && pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum())
+		for (auto& wpGameObject : pGameObjects) {
+			if (wpGameObject.expired()) continue;
+			auto pGameObject = wpGameObject.lock();
+			if (static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
 				pGameObject->Render(_pCommandList);
-			return false;
-		};
-		pGameObjects.erase(
-			ranges::remove_if(pGameObjects, removePred, &weak_ptr<GameObject>::lock).begin(),
-			pGameObjects.end());
+		}
 	}
 }
 
@@ -645,6 +644,92 @@ D3D12_DEPTH_STENCIL_DESC SkinnedTransparentShader::CreateDepthStencilState() {
 
 	return depthStencilDesc;
 }
+
+
+SkinnedLobbyShader::SkinnedLobbyShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
+	Init(_pDevice, _pRootSignature);
+
+	// 스왑체인에 바로 그리는 Skinned Shader. 로비용
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "SkinnedVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "SkinnedLobbyPixelShader", "ps_5_1", pPSBlob);
+
+	HRESULT _hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (_hr == S_OK) cout << "SkinnedLobbyShader 생성 성공\n";
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+	inputElementDescs.clear();
+}
+SkinnedLobbyShader::~SkinnedLobbyShader() {
+
+}
+
+void SkinnedLobbyShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	// 미사용
+}
+
+D3D12_RASTERIZER_DESC SkinnedLobbyShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+
+D3D12_INPUT_LAYOUT_DESC SkinnedLobbyShader::CreateInputLayout() {
+	inputElementDescs.assign(7, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[1] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[2] = { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[3] = { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[4] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 4, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[5] = { "BONEINDEX", 0, DXGI_FORMAT_R32G32B32A32_UINT, 5, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[6] = { "BONEWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 6, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
+}
+
+D3D12_DEPTH_STENCIL_DESC SkinnedLobbyShader::CreateDepthStencilState() {
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
+	depthStencilDesc.DepthEnable = TRUE;
+	// UI와 같이 항상 위에 그린다.
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	depthStencilDesc.StencilEnable = TRUE;
+	depthStencilDesc.StencilReadMask = 0x00;
+	depthStencilDesc.StencilWriteMask = 0x00;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+	depthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+	return depthStencilDesc;
+}
+
+
+
+
 
 
 //////////////////// UI Shader ( 2D Shader ) 
@@ -1353,6 +1438,10 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 	if (skinnedShadowShader) storage["SkinnedShadowShader"] = skinnedShadowShader;
 	else return false;
 
+	shared_ptr<Shader> skinnedLobbyShader = make_shared<SkinnedLobbyShader>(_pDevice, _pRootSignature);
+	if (skinnedLobbyShader) storage["SkinnedLobbyShader"] = skinnedLobbyShader;
+	else return false;
+
 	shared_ptr<Shader> blendingShader = make_shared<BlendingShader>(_pDevice, _pRootSignature);
 	if (blendingShader) storage["BlendingShader"] = blendingShader;
 	else return false;
@@ -1384,3 +1473,4 @@ shared_ptr<Shader> ShaderManager::GetShader(const string& _name)
 	}
 	
 }
+

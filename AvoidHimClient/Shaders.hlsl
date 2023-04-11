@@ -405,6 +405,35 @@ G_BUFFER_OUTPUT SkinnedTransparentPixelShader(VS_SKINNED_OUTPUT input)
     return output;
 }
 
+[earlydepthstencil]
+float4 SkinnedLobbyPixelShader(VS_SKINNED_OUTPUT input) : SV_TARGET
+{
+    float4 cColor = float4(0, 0, 0, 1);
+    if (drawMask & MATERIAL_ALBEDO_MAP)
+    {
+        cColor = albedoMap.Sample(gssWrap, input.uv);
+    }
+    else
+    {
+        cColor = diffuse;
+    }
+    
+    // 노멀값 조정
+    if (drawMask & MATERIAL_NORMAL_MAP)
+    {
+        float3x3 TBN = float3x3(normalize(input.tangent), normalize(input.biTangent), normalize(input.normal));
+        float3 vNormal = normalize(normalMap.Sample(gssWrap, input.uv).rgb * 2.0f - 1.0f); //[0, 1] → [-1, 1]
+        input.normal = normalize(mul(vNormal, TBN));
+    }
+    else
+    {
+        input.normal = normalize(input.normal);
+    }
+    
+    float4 color = CalculateLight(cColor, input.positionW, input.normal);
+    return color;
+}
+
 
 
 SHADOW_MAP_VS_OUTPUT SkinnedShadowVertexShader(VS_SKINNED_INPUT input)

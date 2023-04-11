@@ -576,6 +576,7 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 	gameFramework.GetShader("BasicShader")->Render(_pCommandList);
 
 	gameFramework.GetShader("InstancingShader")->Render(_pCommandList);
+
 	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
 	gameFramework.GetShader("SkinnedTransparentShader")->Render(_pCommandList);
 
@@ -1108,7 +1109,7 @@ void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObje
 
 		pAttack = make_shared<ThrowAttack>(_pPlayerObject->GetID(), _pPlayerObject->GetWorldLookVector());
 		pAttack->Create("BookAttack", _pDevice, _pCommandList);
-
+		pAttack->GetObj()->SetAlwaysDraw(true);
 		// 손 오브젝트를 얻는다.
 		shared_ptr<GameObject> pHandObject;
 		if (pProfessor)

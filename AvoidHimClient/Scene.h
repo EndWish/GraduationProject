@@ -76,6 +76,15 @@ private:
 	RoomInfo roomInfo;
 	LobbyState currState;
 
+	ComPtr<ID3D12Resource> pLightsBuffer;
+	shared_ptr<Light> pLight;
+	shared_ptr<LightsMappedFormat> pMappedLights;
+
+	XMFLOAT4 globalAmbient;
+
+	shared_ptr<Camera> pCamera;
+	array<D3D12_VIEWPORT, 5> roomViewPort;
+	array<shared_ptr<RoomPlayerObject>, 5> pRoomPlayerObjects;
 
 public:
 	LobbyScene();
@@ -96,6 +105,7 @@ public:
 	void UpdateReadyState();
 	void UpdateRoomText();
 	void SetBackGround(string _bgName);
+	void RenderPlayerMesh(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 class PlayScene : public Scene, public enable_shared_from_this<PlayScene> {
 

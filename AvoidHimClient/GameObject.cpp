@@ -51,7 +51,7 @@ GameObject::GameObject() {
 	objectClass = 0;
 	shaderType = ShaderType::none;
 	pSector = nullptr;
-
+	alwaysDraw = false;
 }
 GameObject::~GameObject() {
 
@@ -338,6 +338,14 @@ void GameObject::Animate(float _timeElapsed) {
 	for (const auto& pChild : pChildren) {
 		pChild->Animate(_timeElapsed);
 	}
+}
+
+void GameObject::SetAlwaysDraw(bool _alwaysDraw) {
+	alwaysDraw = _alwaysDraw;
+}
+
+bool GameObject::GetAlwaysDraw() const {
+	return alwaysDraw;
 }
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -1486,4 +1494,32 @@ void FullScreenObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommand
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferViews[2] = { positionBufferView, texCoordBufferView };
 	_pCommandList->IASetVertexBuffers(0, 2, vertexBufferViews);
 	_pCommandList->DrawInstanced(6, 1, 0, 0);
+}
+
+RoomPlayerObject::RoomPlayerObject() {
+
+}
+
+RoomPlayerObject::~RoomPlayerObject() {
+
+}
+
+void RoomPlayerObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework& gameFramework = GameFramework::Instance();
+	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
+	name = "RoomPlayerObject";
+
+	auto pSkinnedChild = dynamic_pointer_cast<SkinnedGameObject>(pChildren[0]);
+	if (pSkinnedChild) {
+		wpAniController = pSkinnedChild->GetAniController();
+	}
+}
+
+void RoomPlayerObject::Animate(float _timeElapsed) {
+	wpAniController.lock()->AddTime(_timeElapsed);
+	GameObject::Animate(_timeElapsed);
+}
+
+shared_ptr<AnimationController> RoomPlayerObject::GetAniController() {
+	return wpAniController.lock();
 }

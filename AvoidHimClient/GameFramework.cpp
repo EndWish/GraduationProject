@@ -643,6 +643,9 @@ void GameFramework::FrameAdvance() {
 		pScenes.top()->AnimateObjects(pScenes.top()->CheckCollision(timeElapsed), timeElapsed, pDevice, pCommandList);
 	}
 
+	// 사라져야 할 오브젝트들을 쉐이더의 오브젝트 벡터에서 없앤다.
+	Shader::UpdateShadersObject();
+
 	// 현재 렌더 타겟에 대한 Present가 끝나기를 기다림.  (PRESENT = 프리젠트 상태, RENDER_TARGET = 렌더 타겟 상태
 	D3D12_RESOURCE_BARRIER resourceBarrier;
 	ZeroMemory(&resourceBarrier, sizeof(D3D12_RESOURCE_BARRIER));

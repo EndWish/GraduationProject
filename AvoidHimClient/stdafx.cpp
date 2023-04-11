@@ -28,6 +28,8 @@ string serverIP;
 array<char, BUFSIZE> sendBuffer;
 array<char, BUFSIZE> recvBuffer;
 
+int testcount = 0;
+
 float random(float min, float max) {
 	uniform_real_distribution<float> dis(min, max);
 	return dis(rd);
