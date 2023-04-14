@@ -354,7 +354,7 @@ BasicShadowShader::~BasicShadowShader() {
 }
 
 void BasicShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	GameFramework gameFramework = GameFramework::Instance();
+	GameFramework& gameFramework = GameFramework::Instance();
 
 	auto& pGameObjects = gameFramework.GetShader("BasicShader")->GetGameObjects();
 
@@ -432,7 +432,7 @@ SkinnedShader::~SkinnedShader() {
 }
 
 void SkinnedShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	GameFramework gameFramework = GameFramework::Instance();
+	GameFramework& gameFramework = GameFramework::Instance();
 
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {
@@ -504,7 +504,7 @@ SkinnedShadowShader::~SkinnedShadowShader() {
 }
 
 void SkinnedShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	GameFramework gameFramework = GameFramework::Instance();
+	GameFramework& gameFramework = GameFramework::Instance();
 
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {
@@ -573,7 +573,7 @@ SkinnedTransparentShader::~SkinnedTransparentShader() {
 }
 
 void SkinnedTransparentShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	GameFramework gameFramework = GameFramework::Instance();
+	GameFramework& gameFramework = GameFramework::Instance();
 
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {

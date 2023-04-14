@@ -543,7 +543,7 @@ void LobbyScene::SetBackGround(string _bgName) {
 
 void LobbyScene::RenderPlayerMesh(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	
-	GameFramework gameFramework = GameFramework::Instance();
+	GameFramework& gameFramework = GameFramework::Instance();
 
 	int nLight = 1;
 	memcpy(&pMappedLights->lights[0], pLight.get(), sizeof(Light));
@@ -1059,13 +1059,14 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
 	if (3 <= fadeOut) {
 		GameFramework& gameFramework = GameFramework::Instance();
+		changeUI(false);
+		gameFramework.PopScene();
 
 		// 게임을 끝낸다.
 		CS_EXIT_GAME sendPacket;
 		sendPacket.cid = cid;
 		SendFixedPacket(sendPacket);
-		changeUI(false);
-		gameFramework.PopScene();
+
 		ReleaseCapture();
 
 		auto pLobbyScene = dynamic_pointer_cast<LobbyScene>(gameFramework.GetCurrentScene());

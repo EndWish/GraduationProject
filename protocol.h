@@ -465,6 +465,7 @@ struct SC_ESCAPE_STUDENT {
 	UINT pid = 100'000;
 };
 
+
 struct SC_TRANSPARENT_PLAYER {
 	SC_PACKET_TYPE type = SC_PACKET_TYPE::transparentPlayer;
 	UINT playerObjectID = 0;

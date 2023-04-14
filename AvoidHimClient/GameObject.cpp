@@ -286,7 +286,7 @@ void GameObject::UpdateOOBB() {
 }
 
 void GameObject::SetMaterial(int _index, shared_ptr<Material> _pMaterial) {
-	GameFramework gameFramework = GameFramework::Instance();
+	GameFramework& gameFramework = GameFramework::Instance();
 	materials[_index] = _pMaterial;
 }
 

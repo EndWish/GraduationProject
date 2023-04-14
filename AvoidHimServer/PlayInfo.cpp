@@ -556,12 +556,31 @@ void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {
 		if (it != participants.end()) {
 			it->second->SetCurrentPlayInfo(nullptr);
 			participants.erase(it);
+
+			// 갱신된 룸 정보를 다시 클라이언트에게 보내준다.
+			
+			ServerFramework& serverFramework = ServerFramework::Instance();
+			Room* pRoom = serverFramework.GetClient(recvPacket.cid)->GetCurrentRoom();
+			Client* pClient = serverFramework.GetClient(recvPacket.cid);
+
+			SC_ROOM_PLAYERS_INFO sendPacket;
+			sendPacket.roomID = pRoom->GetID();
+			sendPacket.hostID = pRoom->GetHostID();
+			sendPacket.nParticipant = pRoom->GetNumOfParticipants();
+			for (UINT i = 0; UINT participant : pRoom->GetParticipants()) {
+				Client* pParticipantClient = serverFramework.GetClient(participant);
+				sendPacket.participantInfos[i].clientID = participant;
+				sendPacket.participantInfos[i].ready = pParticipantClient->GetClientState() == ClientState::roomReady;
+				++i;
+			}
+			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 		}
 		// 모든 클라이언트가 빠져나갔을 경우 playInfo를 삭제 시킨다.
 		if (participants.empty()) {
 			ServerFramework::Instance().GetRoom(playInfoID)->SetGameRunning(false);
 			ServerFramework::Instance().RemovePlayInfo(playInfoID);
 		}
+
 		break;
 	}
 	case CS_PACKET_TYPE::transparentPlayer: {
