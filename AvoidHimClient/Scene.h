@@ -102,7 +102,7 @@ public:
 	virtual void ReActButton(shared_ptr<Button> _pButton);
 	virtual void NoticeCloseToServer();
 	void changeUI(LobbyState _state, bool _active);
-	void UpdateReadyState();
+	void UpdateInRoomState();
 	void UpdateRoomText();
 	void SetBackGround(string _bgName);
 	void RenderPlayerMesh(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);

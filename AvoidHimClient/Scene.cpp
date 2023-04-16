@@ -157,6 +157,12 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	shared_ptr<TextBox> pText = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 1.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, false);
 	pTexts["pageNum"] = pText;
 
+	pTexts["inRoomName1"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.08f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+	pTexts["inRoomName2"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.47f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+	pTexts["inRoomName3"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.856f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+	pTexts["inRoomName4"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.244f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+	pTexts["inRoomName5"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.632f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+
 	Computer::InitMaterials(_pDevice, _pCommandList);
 
 	////////////////////////////////////
@@ -239,7 +245,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 
 		changeUI(LobbyState::roomList, false);
 		changeUI(LobbyState::inRoom, true);
-		UpdateReadyState();
+		UpdateInRoomState();
 		break;
 	} 
 	case SC_PACKET_TYPE::fail: { 	// 방이 시작했거나, 꽉차거나 삭제되어 방 입장 실패한 경우
@@ -255,7 +261,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		// 해당 cid를 가진 플레이어를 찾아 레디상태를 반대로 바꾸어준다.
 		auto pindex = roomInfo.findPlayerIndex(packet->readyClientID);
 		pindex->ready = !pindex->ready;
-		UpdateReadyState();
+		UpdateInRoomState();
 		break;
 	}
 	case SC_PACKET_TYPE::roomVisitPlayerInfo: {	// 누가 방에 들어온 경우
@@ -266,7 +272,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		memcpy(pi.name, packet->name, 20);
 		roomInfo.players.push_back(pi);
 		roomInfo.nParticipant++;
-		UpdateReadyState();
+		UpdateInRoomState();
 		break;
 	}
 	case SC_PACKET_TYPE::roomOutPlayerInfo: { // 누가 방에서 나간 경우
@@ -277,7 +283,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		roomInfo.players.erase(pindex);
 		roomInfo.nParticipant--;
 		roomInfo.host = packet->newHostID;
-		UpdateReadyState();
+		UpdateInRoomState();
 		break;
 	}
 	case SC_PACKET_TYPE::gameStart: {
@@ -333,7 +339,7 @@ void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, 
 	_pCommandList->RSSetViewports(1, &viewPort);
 	_pCommandList->RSSetScissorRects(1, &scissorRect);
 
-	// 텍스처가 들어있는 디스크립터 힙을 연결한다.
+	// 텍스처가 들어있는 디스크립터 힙을 연결한다.	
 	Shader::SetDescriptorHeap(_pCommandList);
 
 	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);
@@ -390,7 +396,7 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 
 		changeUI(LobbyState::roomList, false);
 		changeUI(LobbyState::inRoom, true);
-		UpdateReadyState();
+		UpdateInRoomState();
 		break;
 	}
 	case ButtonType::quitRoom: {
@@ -499,6 +505,11 @@ void LobbyScene::changeUI(LobbyState _state, bool _active) {
 		pUIs["2DUI_ready_4"]->SetEnable(_active);
 		pUIs["2DUI_ready_5"]->SetEnable(_active);
 
+		pTexts["inRoomName1"]->SetEnable(_active);
+		pTexts["inRoomName2"]->SetEnable(_active);
+		pTexts["inRoomName3"]->SetEnable(_active);
+		pTexts["inRoomName4"]->SetEnable(_active);
+		pTexts["inRoomName5"]->SetEnable(_active);
 		if (_active) {
 			SetBackGround("2DUI_roomBG");
 		}
@@ -564,14 +575,21 @@ void LobbyScene::RenderPlayerMesh(const ComPtr<ID3D12GraphicsCommandList>& _pCom
 	}
 }
 
-void LobbyScene::UpdateReadyState() {
+void LobbyScene::UpdateInRoomState() {
 
-	// 현재 방에 ui, 버튼 상태, 애니메이션 등을 갱신
+	// 현재 방에 ui, 버튼 상태, 애니메이션, 닉네임 등을 갱신
 	bool bChange = false;
+	string baseName = "inRoomName";
 	for (int i = 0; i < 5; ++i) {
 		pUIs["2DUI_ready_" + to_string(i + 1)]->SetEnable(false);
+		pTexts[baseName + to_string(i + 1)]->SetEnable(false);
 	}
 	for (UINT i = 0; i < roomInfo.nParticipant; ++i) {
+
+		// 닉네임 업데이트
+		pTexts[baseName + to_string(i + 1)]->SetText(roomInfo.players[i].name);
+		pTexts[baseName + to_string(i + 1)]->SetEnable(true);
+
 		// 방장일 경우
 		if (roomInfo.host == roomInfo.players[i].clientID) {
 			pUIs["2DUI_ready_" + to_string(i + 1)]->SetTexture("2DUI_host");
@@ -724,12 +742,10 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 		for (auto& collideObj : collideObjs) {
 			collideNormalVector = GetCollideNormalVector(collideObj);
 			// 정지상태일 경우
-			if (moveDistance == 0.f) {
-				knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(collideNormalVector, 0.01f));
-			}
-			
-			// 플레이어가 이동한 변위에 대해, 부딪힌 면의 법선벡터 방향의 성분을 뺀다.
-			else knockBack = Vector3::Subtract(knockBack, Vector3::ScalarProduct(collideNormalVector, Vector3::DotProduct(moveVector, collideNormalVector)));
+			// 물체의 부딪힌 면의 법선벡터 방향만큼 밀어준다.
+			knockBack = Vector3::Add(knockBack, Vector3::ScalarProduct(collideNormalVector, 0.01f));
+			// 추가로 플레이어가 이동한 변위에 대해, 부딪힌 면의 법선벡터 방향의 성분을 뺀다.
+			 if (moveDistance != 0.f)knockBack = Vector3::Subtract(knockBack, Vector3::ScalarProduct(collideNormalVector, Vector3::DotProduct(moveVector, collideNormalVector)));
 		}
 		pPlayer->SetKnockBack(knockBack);
 		// 후에 플레이어를 이동시킨후, 합성된 knockBack 벡터로 다시 밀어준다.
@@ -846,7 +862,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	}
 
 	// Zone을 생성 후 맵파일을 읽어 오브젝트들을 로드한다.
-	pZone = make_shared<Zone>(XMFLOAT3(75.0f, 12.0f, 38.0f), XMINT3(10, 5, 10), shared_from_this());
+	pZone = make_shared<Zone>(XMFLOAT3(75.0f, 25.0f, 38.0f), XMINT3(10, 5, 5), shared_from_this());
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList, enComID);
 	
 	professorObjectID = recvPacket->professorObjectID;
@@ -1072,7 +1088,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		auto pLobbyScene = dynamic_pointer_cast<LobbyScene>(gameFramework.GetCurrentScene());
 		if (pLobbyScene) {
 			pLobbyScene->changeUI(LobbyState::inRoom, true);
-			pLobbyScene->UpdateReadyState();
+			pLobbyScene->UpdateInRoomState();
 		}
 		return;
 	}
@@ -1095,6 +1111,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	bool enable = false;
 	// 현재 플레이어가 상호작용 가능한 오브젝트를 찾는다.
 	auto pObject = pZone->UpdateInteractableObject();
+	if(pObject) pObject->GetObj()->SetDrawOutline(true);
 
 	// 교수의 사보타지 쿨타임일때는 상호작용하지 못하도록 한다.
 	if (dynamic_pointer_cast<Lever>(pObject) && isPlayerProfessor 
@@ -1105,6 +1122,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	// 주변에 상호작용 오브젝트가 있다가 없어진 경우
 	if (pInteractableObject && !pObject) {
 		pInteractableObject->EndInteract();
+		pInteractableObject->GetObj()->SetDrawOutline(false);
 	}
 	pInteractableObject = pObject;
 
@@ -1375,6 +1393,7 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			auto pAttack = pZone->GetAttack(packet->attackObjectID);
 			if (!pAttack) break;
 			pHitPlayerObject->AddHP(-pAttack->GetDamage());
+			pHitPlayerObject->SetHit(true);
 		}
 		else {
 			cout << "해당 플레이어가 없습니다!!\n";
@@ -1473,6 +1492,7 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 	case SC_PACKET_TYPE::removeItem: {	// 특정위치에 아이템이 사라진 경우
 		SC_REMOVE_ITEM* packet = GetPacket<SC_REMOVE_ITEM>();
 		pZone->RemoveItem(packet->itemObjectID);
+
 		break;
 	}
 	case SC_PACKET_TYPE::useItem: {	// 누군가 의료키트, 트랩을 설치한 경우
@@ -1554,7 +1574,6 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 	default:
 		cout << "나머지 패킷. 타입 = " << (int)packetType << "\n";
 	}
-
 }
 
 void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -1686,7 +1705,7 @@ void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 	camera->UpdateShaderVariable(_pCommandList);
 
 	// 빛의 인덱스를 보내준다.
-	_pCommandList->SetGraphicsRoot32BitConstants(11, 1, &lightIndex[_lightIndex], 0);
+	_pCommandList->SetGraphicsRoot32BitConstants(14, 1, &lightIndex[_lightIndex], 0);
 	// 그림자에 영향을 주는 오브젝트들을 그린다. basic, instancing, effect..
 
 	testcount = 0;

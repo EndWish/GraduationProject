@@ -376,7 +376,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 
 	// 루트 시그니처는 이후 계속 수정 
 
-	D3D12_ROOT_PARAMETER pRootParameters[13];
+	D3D12_ROOT_PARAMETER pRootParameters[15];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
@@ -437,7 +437,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 
 	pRootParameters[11].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
 	pRootParameters[11].Constants.Num32BitValues = 1;
-	pRootParameters[11].Constants.ShaderRegister = 5; // 쉐도우맵을 만들 빛의 인덱스
+	pRootParameters[11].Constants.ShaderRegister = 5; // int값
 	pRootParameters[11].Constants.RegisterSpace = 0;
 	pRootParameters[11].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
@@ -445,6 +445,18 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[12].DescriptorTable.NumDescriptorRanges = 1;
 	pRootParameters[12].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[4];
 	pRootParameters[12].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// Emissive Texture
+
+	pRootParameters[13].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	pRootParameters[13].Constants.Num32BitValues = 1;
+	pRootParameters[13].Constants.ShaderRegister = 6; // float값
+	pRootParameters[13].Constants.RegisterSpace = 0;
+	pRootParameters[13].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pRootParameters[14].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	pRootParameters[14].Constants.Num32BitValues = 1;
+	pRootParameters[14].Constants.ShaderRegister = 10; // shadow map을 위한 light index
+	pRootParameters[14].Constants.RegisterSpace = 0;
+	pRootParameters[14].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[3];
 	::ZeroMemory(samplerDesc, sizeof(D3D12_STATIC_SAMPLER_DESC) * 3);

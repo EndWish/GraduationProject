@@ -52,6 +52,7 @@ GameObject::GameObject() {
 	shaderType = ShaderType::none;
 	pSector = nullptr;
 	alwaysDraw = false;
+	drawOutline = false;
 }
 GameObject::~GameObject() {
 
@@ -298,7 +299,7 @@ void GameObject::SetSector(Sector* _pSector) {
 		pChild->SetSector(_pSector);
 }
 
-const Sector* GameObject::GetSector() const {
+Sector* GameObject::GetSector() {
 	return pSector;
 }
 
@@ -346,6 +347,14 @@ void GameObject::SetAlwaysDraw(bool _alwaysDraw) {
 
 bool GameObject::GetAlwaysDraw() const {
 	return alwaysDraw;
+}
+
+void GameObject::SetDrawOutline(bool _drawOutline) {
+	drawOutline = _drawOutline;
+}
+
+const int& GameObject::GetDrawOutline() const {
+	return drawOutline;
 }
 
 void GameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -412,6 +421,7 @@ void GameObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _
 	XMStoreFloat4x4(&world, XMMatrixTranspose(XMLoadFloat4x4(&worldTransform)));
 	_pCommandList->SetGraphicsRoot32BitConstants(1, 16, &world, 0);
 
+	_pCommandList->SetGraphicsRoot32BitConstants(11, 1, &drawOutline, 0);
 }
 
 
@@ -616,6 +626,8 @@ SkinnedGameObject::SkinnedGameObject() {
 	pAniController = make_shared<AnimationController>();
 	isTransparent = false;
 	transparentTime = 0.f;
+	isHit = 0;
+	hitTime = 0.f;
 }
 SkinnedGameObject::~SkinnedGameObject() {
 
@@ -707,6 +719,10 @@ void SkinnedGameObject::Animate(float _timeElapsed) {
 	if (isTransparent) {
 		transparentTime -= _timeElapsed;
 		if (transparentTime < 0.f) isTransparent = false;
+	}
+	if (isHit) {
+		hitTime -= _timeElapsed;
+		if (hitTime < 0.f) isHit = false;
 	}
 	GameObject::Animate(_timeElapsed);
 }
@@ -827,6 +843,8 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	moveDistance = 0.f;
 	visible = false;
 	imprisoned = false;
+
+
 }
 
 void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -931,9 +949,20 @@ void InterpolateMoveGameObject::SetTransparent(bool _isTransparent) {
 	obj->SetTransparentTime(10.0f);
 }
 
+void InterpolateMoveGameObject::SetHit(bool _isHit) {
+	auto obj = static_pointer_cast<SkinnedGameObject>(GetObj());
+	obj->SetHit(true);
+	obj->SetHitTime(0.5f);
+}
+
 bool InterpolateMoveGameObject::GetTransparent() {
 	auto obj = static_pointer_cast<SkinnedGameObject>(GetObj());
 	return obj->GetTransparent();
+}
+
+const int& InterpolateMoveGameObject::GetHit() {
+	auto obj = static_pointer_cast<SkinnedGameObject>(GetObj());
+	return obj->GetHit();
 }
 
 shared_ptr<GameObject> InterpolateMoveGameObject::GetHandObject() {
@@ -1436,6 +1465,7 @@ void Item::Animate(float _timeElapsed) {
 
 void Item::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
+	GetObj()->SetDrawOutline(true);
 
 	SetLocalRotation(Vector4::QuaternionRotation(GetLocalRightVector(), 30.0f));
 	UpdateObject();

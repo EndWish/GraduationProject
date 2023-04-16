@@ -433,6 +433,7 @@ SkinnedShader::~SkinnedShader() {
 
 void SkinnedShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
+	static float hitRate;
 
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {
@@ -440,6 +441,12 @@ void SkinnedShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLis
 		for (auto& wpGameObject : pGameObjects) {
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
+			auto pSkinnedGameObject = static_pointer_cast<SkinnedGameObject>(pGameObject);
+
+			// 1 ~ 0 값을 넘겨줌
+			hitRate = pSkinnedGameObject->GetHitTime() * 2.f * pSkinnedGameObject->GetHit();
+			_pCommandList->SetGraphicsRoot32BitConstants(13, 1, &hitRate, 0);
+
 			// 플레이어는 sector에 포함되지 않는다.
 			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
 			{

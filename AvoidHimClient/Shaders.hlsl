@@ -27,6 +27,15 @@ cbuffer cbIntVariable : register(b5) {
     int intValue : packoffset(c0);
 };
 
+cbuffer cbFloatVariable : register(b6) {
+    float floatValue : packoffset(c0);
+};
+
+
+cbuffer cbIntVariable : register(b10) {
+    int lightIndex : packoffset(c0);
+};
+
 
 
 struct EFFECT_INDEX
@@ -115,7 +124,7 @@ bool isBorder(float2 uv)
     {
         for (int i = 0; i < 8; ++i)
         {
-            coord = baseCoord + d[i];
+            coord = baseCoord + d[i] * 1;
             depth = depthTexture.Load(coord);
             if (abs(depth - baseDepth) > 0.2f)
                 return true;
@@ -124,8 +133,34 @@ bool isBorder(float2 uv)
     }
 }
 
+float4 blurTest(float2 uv) {
+    int3 coord;
+    int3 baseCoord = int3(uv.x * CWIDTH, uv.y * CHEIGHT, 0);
+    float4 result = float4(0, 0, 0, 1);
+    int size = 10;
+    int sampleCount = 0;
+    [unroll(size)]
+    for (int i = -size / 2; i < size / 2; ++i)
+    {
+        [unroll(size)]
+        for (int j = -size / 2; j < size / 2; ++j)
+        {
+            coord = baseCoord;
+            coord.x += i;
+            coord.y += j;
+            if(coord.x < CWIDTH && coord.x >= 0 && coord.y < CHEIGHT && coord.y >= 0)
+            {
+                result += colorTexture.Load(coord);
+                sampleCount++;
+            }
+        }
 
-VS_OUTPUT DefaultVertexShader(VS_INPUT input) {
+    }
+    result /= sampleCount;
+    return result;
+}
+
+VS_OUTPUT DefaultVertexShader(VS_INPUT input){
     VS_OUTPUT output;
 
     output.normal = mul(input.normal, (float3x3) worldTransform);
@@ -169,8 +204,8 @@ G_BUFFER_OUTPUT DefaultPixelShader(VS_OUTPUT input)
     output.normal = float4(input.normal, 1.0f);
     output.position = float4(input.positionW, 1.0f);
     output.emissive = (drawMask & MATERIAL_EMISSIVE_MAP) ? emissiveMap.Sample(gssWrap, input.uv) * emissive : emissive;
-    // 깊이값으로 카메라에서 해당 점의 위치까지의 거리를 담는다.
-    output.depth = length(input.positionW - cameraPosition);
+    // drawOutline 옵션이 true인 오브젝트들은 외곽선을 그린다.
+    output.depth = intValue ? -1.f : length(input.positionW - cameraPosition);
     return output;
 }
 
@@ -181,7 +216,7 @@ SHADOW_MAP_VS_OUTPUT DefaultShadowVertexShader(VS_INPUT input)
  	// 조명 계산을 위해 월드좌표내에서의 포지션값을 계산해 따로 저장
     output.positionW = (float3) mul(float4(input.position, 1.0f), worldTransform);
     // 이 때 변환 행렬은 조명의 위치 기준 카메라의 변환 행렬이다.
-    output.position = mul(mul(float4(output.positionW, 1.0f), lights[intValue].view), lights[intValue].projection);
+    output.position = mul(mul(float4(output.positionW, 1.0f), lights[lightIndex].view), lights[lightIndex].projection);
     
     return output;
 }
@@ -192,7 +227,7 @@ float DefaultShadowPixelShader(SHADOW_MAP_VS_OUTPUT input) : SV_TARGET
 {
     float output;
     // 빛의 위치에서 정점의 위치까지의 거리를 저장한다.
-    return length(input.positionW - lights[intValue].position);
+    return length(input.positionW - lights[lightIndex].position);
 
 }
 
@@ -360,8 +395,7 @@ G_BUFFER_OUTPUT SkinnedPixelShader(VS_SKINNED_OUTPUT input)
     }
 
     // 투명하지 않은경우에만 쓴다.
-
-    output.color = cColor;
+    output.color = lerp(cColor, float4(1, 0, 0, 1), floatValue);
     output.normal = float4(input.normal, 1.0f);
     output.position = float4(input.positionW, 1.0f);
     output.emissive = (drawMask & MATERIAL_EMISSIVE_MAP) ? emissiveMap.Sample(gssWrap, input.uv) * emissive : emissive;
@@ -404,6 +438,7 @@ G_BUFFER_OUTPUT SkinnedTransparentPixelShader(VS_SKINNED_OUTPUT input)
     
     return output;
 }
+
 
 [earlydepthstencil]
 float4 SkinnedLobbyPixelShader(VS_SKINNED_OUTPUT input) : SV_TARGET
@@ -450,7 +485,7 @@ SHADOW_MAP_VS_OUTPUT SkinnedShadowVertexShader(VS_SKINNED_INPUT input)
             output.positionW += input.boneWeight[i] * mul(float4(input.position, 1.0f), mtxVertexToBoneWorld).xyz;
         }
     }
-    output.position = mul(mul(float4(output.positionW, 1.0f), lights[intValue].view), lights[intValue].projection);
+    output.position = mul(mul(float4(output.positionW, 1.0f), lights[lightIndex].view), lights[lightIndex].projection);
 
     return output;
 }
@@ -460,7 +495,7 @@ float SkinnedShadowPixelShader(SHADOW_MAP_VS_OUTPUT input) : SV_TARGET
 {
     float output;
     // 빛의 위치에서 정점의 위치까지의 거리를 저장한다.
-    return length(input.positionW - lights[intValue].position);
+    return length(input.positionW - lights[lightIndex].position);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -624,7 +659,7 @@ SHADOW_MAP_VS_OUTPUT InstanceShadowVertexShader(VS_INSTANCING_INPUT input)
     SHADOW_MAP_VS_OUTPUT output;
     output.positionW = (float3) mul(float4(input.position, 1.0f), input.worldMatrix);
     // 이 때 변환 행렬은 조명의 위치 기준 카메라의 변환 행렬이다.
-    output.position = mul(mul(float4(output.positionW, 1.0f), lights[intValue].view), lights[intValue].projection);
+    output.position = mul(mul(float4(output.positionW, 1.0f), lights[lightIndex].view), lights[lightIndex].projection);
     return output;
 }
 
@@ -634,7 +669,7 @@ float InstanceShadowPixelShader(SHADOW_MAP_VS_OUTPUT input) : SV_TARGET
 {
     float output;
     // 빛의 위치에서 정점의 위치까지의 거리를 저장한다.
-    return length(input.positionW - lights[intValue].position);
+    return length(input.positionW - lights[lightIndex].position);
 }
 
 
@@ -699,11 +734,14 @@ float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
     float3 positionW = positionTexture.Sample(gssWrap, input.uv).xyz;
     
     float3 changeNormal = uvSlideTexture.Sample(gssWrap, input.uv).xyz;
+    
+    // 투명한 경우 기존 픽셀의 노말을 흔들어 주고, 약간 어둡게 칠한다.
     float3 normal = lerp(normalTexture.Sample(gssWrap, input.uv).xyz, changeNormal, float3(0.5, 0.5, 0.5));
-    //float3 normal =normalTexture.Sample(gssWrap, input.uv).xyz;
     float4 color = colorTexture.Sample(gssWrap, input.uv);
-  
-
+    if (length(changeNormal) > 0.f)
+        color *= 0.9f;
+    //color = blurTest(input.uv);
+    
     //return float4(depthTexture.Sample(gssWrap, input.uv) / 20, 0, 0, 1);
     //return emissiveTexture.Sample(gssWrap, input.uv);
     if (isBorder(input.uv))

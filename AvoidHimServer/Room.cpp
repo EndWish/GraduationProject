@@ -39,6 +39,7 @@ bool Room::EnterUser(UINT _clientID) {
 		Client* pParticipantClient = serverFramework.GetClient(participant);
 		sendPacket.participantInfos[i].clientID = participant;
 		sendPacket.participantInfos[i].ready = pParticipantClient->GetClientState() == ClientState::roomReady;
+		wcscpy_s(sendPacket.participantInfos[i].name, pParticipantClient->GetNickname());
 		++i;
 	}
 	SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);

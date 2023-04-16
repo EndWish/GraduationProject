@@ -120,6 +120,8 @@ public:
 	virtual void RightClick();
 
 	void SetTransparent(bool _isTransparent);
+	void SetHit(bool _isTransparent);
+
 	float GetCoolTime() const { return transparentRemainCoolTime; }
 	void SetCoolTime() { transparentRemainCoolTime = transparentMaxCoolTime; }
 

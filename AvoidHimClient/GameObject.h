@@ -38,6 +38,7 @@ protected:
 	UINT objectClass;	// 0은 GameObject, 1은 SkinnedObject, 2는 Effect
 
 	bool alwaysDraw;	// 프러스텀 컬링을 사용하지 않고 항상 그리는지
+	int drawOutline;	// 외곽선을 그릴경우 1
 	UINT id;
 	string name;
 
@@ -149,7 +150,7 @@ public:
 	void SetMaterial(int _index, shared_ptr<Material> _pMaterial);
 
 	void SetSector(Sector* _pSector);
-	const Sector* GetSector() const;
+	Sector* GetSector();
 
 	// 오브젝트 내용 전체적으로 갱신
 	virtual void UpdateObject();
@@ -165,6 +166,10 @@ public:
 
 	void SetAlwaysDraw(bool _alwaysDraw);
 	bool GetAlwaysDraw() const;
+
+	void SetDrawOutline(bool _drawOutline);
+	const int& GetDrawOutline() const;
+
 	// 렌더
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void RenderAll(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -268,6 +273,8 @@ protected:
 
 	bool isTransparent; // 투명 상태인 경우 true
 	float transparentTime; // 투명 지속시간
+	int isHit;			// 피격 상태인 경우 1
+	float hitTime;		
 	ComPtr<ID3D12Resource> pSkinnedWorldTransformBuffer;
 	shared_ptr<SkinnedWorldTransformFormat> pMappedSkinnedWorldTransform;
 	vector<shared_ptr<GameObject>> pBones;
@@ -288,6 +295,12 @@ public:
 
 	void SetTransparentTime(float _transparentTime) { transparentTime = _transparentTime; }
 	float GetTransparentTime() const { return transparentTime; }
+
+	void SetHit(bool _isHit) { isHit = _isHit; }
+	const int& GetHit() { return isHit; }
+
+	void SetHitTime(float _hitTime) { hitTime = _hitTime; }
+	float GetHitTime() const { return hitTime; }
 
 	shared_ptr<AnimationController> GetAniController() { return pAniController; }
 
@@ -354,6 +367,7 @@ public:
 	void AddHP(float _hp) { hp += _hp; };
 
 	void SetTransparent(bool _isTransparent);
+	void SetHit(bool _isHit);
 
 	bool GetImprisoned() const { return imprisoned; }
 	void SetImprisoned(bool _imprisoned) { imprisoned = _imprisoned; }
@@ -364,6 +378,7 @@ public:
 	bool GetVisible() const { return visible; };
 
 	bool GetTransparent();
+	const int& GetHit();
 	shared_ptr<GameObject> GetHandObject();
 	shared_ptr<AnimationController> GetAniController();
 };

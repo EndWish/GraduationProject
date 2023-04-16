@@ -351,6 +351,12 @@ void Student::SetTransparent(bool _isTransparent) {
 	obj->SetTransparentTime(10.0f);
 }
 
+void Student::SetHit(bool _isHit) {
+	auto obj = static_pointer_cast<SkinnedGameObject>(GetObj());
+	obj->SetHit(_isHit);
+	obj->SetHitTime(0.5f);
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 /// Professor
 
