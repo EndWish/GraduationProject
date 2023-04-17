@@ -89,8 +89,8 @@ TextBox::TextBox(WCHAR* _fontName, D2D1::ColorF _color, XMFLOAT2 _position, XMFL
 	rect = rc;
 	size = _size;
 	brush = textLayer.CreateBrush(_color);
-	format = textLayer.CreateTextFormat(_fontName, _fontSize);
 
+	format = textLayer.CreateTextFormat(_fontName, _fontSize);
 	enable = _enable;
 }
 
@@ -181,11 +181,39 @@ ComPtr<ID2D1SolidColorBrush> TextLayer::CreateBrush(D2D1::ColorF _color)
 ComPtr<IDWriteTextFormat> TextLayer::CreateTextFormat(WCHAR* _fontName, float _fontSize)
 {
 	ComPtr<IDWriteTextFormat> textFormat;
-	pWriteFactory->CreateTextFormat(_fontName, nullptr, DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, _fontSize, L"en-us", &textFormat);
+
+	HRESULT hr = pWriteFactory->CreateTextFormat(_fontName, fonts.Get(), DWRITE_FONT_WEIGHT_NORMAL, DWRITE_FONT_STYLE_NORMAL, DWRITE_FONT_STRETCH_NORMAL, _fontSize, L"en-us", &textFormat);
+
 	textFormat->SetTextAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 	textFormat->SetParagraphAlignment(DWRITE_PARAGRAPH_ALIGNMENT_NEAR);
+
 	return textFormat;
 }
+
+void TextLayer::LoadFont() {
+
+	ComPtr<IDWriteFontSetBuilder1> fontSetBuilder;
+	pWriteFactory->CreateFontSetBuilder(&fontSetBuilder);
+
+	// 파일 확장자까지 써야함
+	vector<wstring> fileNames{
+		L"Fonts/LeeSeoyun.ttf",
+		L"Fonts/Friday13SH.ttf",
+		L"Fonts/LeeSeoyun.ttf",
+		L"Fonts/Who asks Satan.ttf",
+	};
+
+	for (auto& fileName : fileNames) {
+		ComPtr<IDWriteFontFile> fontFile;
+		pWriteFactory->CreateFontFileReference(fileName.c_str(), nullptr, &fontFile);
+		fontSetBuilder->AddFontFile(fontFile.Get());
+	}
+
+
+	ComPtr<IDWriteFontSet> customFontSet;
+	fontSetBuilder->CreateFontSet(&customFontSet);
+	pWriteFactory->CreateFontCollectionFromFontSet(customFontSet.Get(), &fonts);
+} 
 
 void TextLayer::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12CommandQueue>& _pCommandQueue, array<ComPtr<ID3D12Resource>, 2> _renderTargets)
 {
@@ -210,8 +238,11 @@ void TextLayer::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Co
 
 	pD2dDeviceContext->SetTextAntialiasMode(D2D1_TEXT_ANTIALIAS_MODE_GRAYSCALE);
 
-	hr = ::DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory), (IUnknown**)&pWriteFactory);
+	hr = ::DWriteCreateFactory(DWRITE_FACTORY_TYPE_SHARED, __uuidof(IDWriteFactory5), (IUnknown**)&pWriteFactory);
 	pdxgiDevice->Release();
+
+	LoadFont();
+
 
 	D2D1_BITMAP_PROPERTIES1 d2dBitmapProperties = D2D1::BitmapProperties1(D2D1_BITMAP_OPTIONS_TARGET | D2D1_BITMAP_OPTIONS_CANNOT_DRAW, D2D1::PixelFormat(DXGI_FORMAT_UNKNOWN, D2D1_ALPHA_MODE_PREMULTIPLIED));
 

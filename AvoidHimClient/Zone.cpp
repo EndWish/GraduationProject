@@ -239,6 +239,8 @@ shared_ptr<GameObject> Sector::CheckCollisionVertical(BoundingOrientedBox& _boun
 
 void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 	BoundingOrientedBox playerOOBB = _pPlayer->GetBoundingBox();
+	GameFramework gameFramework = GameFramework::Instance();
+
 	for (auto [objectID, pGameObject] : pGameObjectLayers[(UINT)SectorLayer::attack]) {
 
 		shared_ptr<Attack> pAttack = dynamic_pointer_cast<Attack>(pGameObject);
@@ -279,6 +281,7 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 			sendAttackPacket.cid = cid;
 			SendFixedPacket(sendAttackPacket);
 			pStudent->SetHit(true);	// 플레이어를 잠시 빨갛게 그린다.
+			static_pointer_cast<PlayScene>(gameFramework.GetCurrentScene())->GetFullScreenObject()->SetScreenType(ScreenType::hit, 1.0f);
 			// 플레이어에게 무적시간을 잠시 적용
 			
 			pAttack->Remove();

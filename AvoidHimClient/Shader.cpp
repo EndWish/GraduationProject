@@ -16,6 +16,7 @@ weak_ptr<Camera> Shader::wpCamera;
 
 Shader::Shader() {
 	pipelineStateDesc = D3D12_GRAPHICS_PIPELINE_STATE_DESC();
+	renderType = SWAP_CHAIN_RENDER;
 }
 
 Shader::~Shader() {

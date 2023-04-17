@@ -111,7 +111,8 @@ protected:
 	
 	// 쉐이더 생성
 	bool InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
-
+	// 루트 시그니처 Get
+	ComPtr<ID3D12RootSignature> GetRootSignature() { return pRootSignature; }
 	// get set 함수
 public:
 
@@ -121,8 +122,7 @@ public:
 	pair<int, int> GetClientSize();
 	POINT GetOldCursorPos() { return oldCursorPos; };
 	HitBoxMesh& GetHitBoxMesh() { return hitBoxMesh; };
-	// 루트 시그니처 Get
-	ComPtr<ID3D12RootSignature> GetRootSignature() { return pRootSignature; }
+	
 	const shared_ptr<Scene>& GetCurrentScene() const;
 
 	void InitOldCursor();
@@ -132,7 +132,7 @@ public:
 	GameObjectManager& GetGameObjectManager();
 	SoundManager& GetSoundManager();
 	shared_ptr<Shader> GetShader(const string& _name);
-	UINT GetCurrentSwapChainIndex() { return swapChainBufferCurrentIndex; };
+	UINT GetCurrentSwapChainIndex() const { return swapChainBufferCurrentIndex; };
 
 	void FrameAdvance();
 	void WaitForGpuComplete();			// GPU와 동기화하기 위한 대기

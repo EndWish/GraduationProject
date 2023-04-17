@@ -165,6 +165,7 @@ public:
 	virtual void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);
 	virtual void ProcessCursorMove(XMFLOAT2 _delta);
 
+	shared_ptr<FullScreenObject> GetFullScreenObject() const;
 	void changeUI(bool _enable);
 	void AddComputer(const shared_ptr<Computer>& _pComputer);
 	void UpdateTimeText();

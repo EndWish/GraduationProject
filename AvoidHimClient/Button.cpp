@@ -18,11 +18,11 @@ Button::Button(string _imgName, XMFLOAT2 _size, XMFLOAT2 _position, ButtonType _
 	// 방 버튼일 경우 방 번호와 방 인원에 대한 텍스처를 넣어준다.
 	if (type == ButtonType::room) {
 		float fontSize = C_WIDTH / 40.0f;
-		shared_ptr<TextBox> newText = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1,1,1,1), XMFLOAT2(_position.x + _size.x/2, _position.y + _size.y/2), XMFLOAT2(_size.x / 2, _size.y / 2), fontSize);
+		shared_ptr<TextBox> newText = make_shared<TextBox>((WCHAR*)L"Who asks Satan", D2D1::ColorF(1,1,1,1), XMFLOAT2(_position.x + _size.x/2, _position.y + _size.y/2), XMFLOAT2(_size.x / 2, _size.y / 2), fontSize);
 		newText->SetText(L"1/5");
 		pTexts.push_back(newText);
 
-		newText = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), _position, XMFLOAT2(_size.x/2, _size.y/2), fontSize);
+		newText = make_shared<TextBox>((WCHAR*)L"Who asks Satan", D2D1::ColorF(1, 1, 1, 1), _position, XMFLOAT2(_size.x/2, _size.y/2), fontSize);
 		newText->SetText(L"#1");
 		pTexts.push_back(newText);
 	}

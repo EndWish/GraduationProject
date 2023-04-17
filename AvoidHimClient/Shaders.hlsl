@@ -133,17 +133,14 @@ bool isBorder(float2 uv)
     }
 }
 
-float4 blurTest(float2 uv) {
+float4 GaussianFilter(float2 uv, int filterRate) {
     int3 coord;
     int3 baseCoord = int3(uv.x * CWIDTH, uv.y * CHEIGHT, 0);
     float4 result = float4(0, 0, 0, 1);
-    int size = 10;
     int sampleCount = 0;
-    [unroll(size)]
-    for (int i = -size / 2; i < size / 2; ++i)
+    for (int i = -filterRate / 2; i < filterRate / 2; ++i)
     {
-        [unroll(size)]
-        for (int j = -size / 2; j < size / 2; ++j)
+        for (int j = -filterRate / 2; j < filterRate / 2; ++j)
         {
             coord = baseCoord;
             coord.x += i;
@@ -726,6 +723,33 @@ VS_LIGHTING_OUT LightingVertexShader(VS_LIGHTING_IN input)
     return output;
 }
 
+
+
+float4 PreLightingColor(float4 baseColor, float2 uv)
+{
+    float4 color = baseColor;
+    // blur
+    if (intValue == 4)
+    {
+        color = GaussianFilter(uv, (int) floatValue);
+    }
+    return color;
+}
+
+float4 PostLightingColor(float4 baseColor, float2 uv)
+{
+    float4 color = baseColor;
+    // hit value
+    if (intValue == 1)
+    {
+        float dist = length(uv - float2(0.5f, 0.5f));
+        // 화면 바깥 부분이 빨갛게 보이는 효과
+        color = lerp(color, float4(1, 0, 0, 1), max(dist - 0.3f, 0) * floatValue);
+    }
+    return color;
+}
+
+
 float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
 {
     
@@ -737,19 +761,26 @@ float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
     
     // 투명한 경우 기존 픽셀의 노말을 흔들어 주고, 약간 어둡게 칠한다.
     float3 normal = lerp(normalTexture.Sample(gssWrap, input.uv).xyz, changeNormal, float3(0.5, 0.5, 0.5));
-    float4 color = colorTexture.Sample(gssWrap, input.uv);
-    if (length(changeNormal) > 0.f)
-        color *= 0.9f;
-    //color = blurTest(input.uv);
+    float4 color;
     
-    //return float4(depthTexture.Sample(gssWrap, input.uv) / 20, 0, 0, 1);
-    //return emissiveTexture.Sample(gssWrap, input.uv);
     if (isBorder(input.uv))
     {
-        return float4(0.0, 0, 0.1, 1);
+        color = float4(0.0, 0, 0.1, 1);
     }
+    else
+    {
+        color = colorTexture.Sample(gssWrap, input.uv);
+        if (length(changeNormal) > 0.f)
+            color *= 0.9f;
+    }
+
+ 
+    
+    color = PreLightingColor(color, input.uv);
+
     // 이곳에서 조명처리를 해준다.
     float4 cColor = CalculateLight(color, positionW, normal);
+    
     
     // uv좌표를 텍셀좌표로 바꾼다. (Load함수를 쓰기 위함)
     int3 texLocation = int3(input.uv.x * CWIDTH, input.uv.y * CHEIGHT, 0);
@@ -766,6 +797,7 @@ float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
         }
     }
     
+    cColor = PostLightingColor(cColor, input.uv);
     return cColor;
 }
 

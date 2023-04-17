@@ -2,17 +2,22 @@
 #include "GameObject.h"
 
 class TextBox  {
+
+private:
 	WCHAR text[20];	// 텍스트 내용
 	D2D1_RECT_F  rect; // 범위
 	XMFLOAT2 size;
 	ComPtr<IDWriteTextFormat> format;	// 텍스트 포맷
 	ComPtr<ID2D1SolidColorBrush> brush;
+
 	bool enable;
+public:
 public:
 	TextBox(WCHAR* _fontName, D2D1::ColorF _color, XMFLOAT2 _position, XMFLOAT2 _size, float _fontSize, bool _enable = true);
 	~TextBox();
 
 	void SetText(const WCHAR _text[20]);
+
 	const WCHAR* GetText() const { return text; };
 
 	void SetEnable(bool _enable) { enable = _enable; };
@@ -37,10 +42,12 @@ public:
 private:
 	float                           fWidth;
 	float                           fHeight;
+	
+	ComPtr<IDWriteFontCollection1> fonts;
 
 	ComPtr<ID3D11DeviceContext> pD3d11DeviceContext = NULL;
 	ComPtr<ID3D11On12Device> pD3d11On12Device = NULL;
-	ComPtr<IDWriteFactory> pWriteFactory = NULL;
+	ComPtr<IDWriteFactory5> pWriteFactory = NULL;
 	ComPtr<ID2D1Factory3> pD2dFactory = NULL;
 	ComPtr<ID2D1Device2> pD2dDevice = NULL;
 	ComPtr<ID2D1DeviceContext2> pD2dDeviceContext = NULL;
@@ -52,6 +59,7 @@ public:
 	TextLayer();
 	~TextLayer();
 
+	void LoadFont();
 	void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12CommandQueue>& _pCommandQueue, array<ComPtr<ID3D12Resource>, 2> _renderTargets);
 	ComPtr<ID2D1SolidColorBrush> CreateBrush(D2D1::ColorF _color);
 	ComPtr<IDWriteTextFormat> CreateTextFormat(WCHAR* _fontName, float _fontSize);	

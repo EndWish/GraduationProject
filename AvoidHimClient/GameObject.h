@@ -548,8 +548,20 @@ public:
 };
 
 //////////////// FullScreenObject //////////////
+
+enum class ScreenType : int {
+	basic,
+	hit,
+	fadein,
+	fadeout,
+	blur,
+	num
+};
+
 class FullScreenObject {
-public:
+private:
+	ScreenType screenType;
+	float param;
 
 	ComPtr<ID3D12Resource> pPositionBuffer;	// 화면을 꽉채우는 삼각형 두개로만 되어있다.
 	ComPtr<ID3D12Resource> pPositionUploadBuffer;
@@ -558,13 +570,15 @@ public:
 	ComPtr<ID3D12Resource> pTexCoordBuffer;	// 화면을 꽉채우는 삼각형 두개로만 되어있다.
 	ComPtr<ID3D12Resource> pTexCoordUploadBuffer;
 	D3D12_VERTEX_BUFFER_VIEW texCoordBufferView;
-
+public:
 	FullScreenObject(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	~FullScreenObject();
+
+	void Animate(float _timeElapesd);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
-private:
-
+	void SetScreenType(ScreenType _screenType, float _param);
+	void UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 
 

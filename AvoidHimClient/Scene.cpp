@@ -154,14 +154,14 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	pButtons["titleButton"] = make_shared<Button>("2DUI_titleButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::title, _pDevice, _pCommandList, false);
 	pButtons["makeRoom"] = make_shared<Button>("2DUI_makeRoom", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::makeRoom, _pDevice, _pCommandList, false);
 
-	shared_ptr<TextBox> pText = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 1.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, false);
+	shared_ptr<TextBox> pText = make_shared<TextBox>((WCHAR*)L"Who asks Satan", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 1.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, false);
 	pTexts["pageNum"] = pText;
 
-	pTexts["inRoomName1"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.08f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
-	pTexts["inRoomName2"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.47f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
-	pTexts["inRoomName3"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.856f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
-	pTexts["inRoomName4"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.244f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
-	pTexts["inRoomName5"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.632f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+	pTexts["inRoomName1"] = make_shared<TextBox>((WCHAR*)L"LeeSeoyun", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.08f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+	pTexts["inRoomName2"] = make_shared<TextBox>((WCHAR*)L"LeeSeoyun", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.47f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+	pTexts["inRoomName3"] = make_shared<TextBox>((WCHAR*)L"LeeSeoyun", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.856f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+	pTexts["inRoomName4"] = make_shared<TextBox>((WCHAR*)L"LeeSeoyun", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.244f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+	pTexts["inRoomName5"] = make_shared<TextBox>((WCHAR*)L"LeeSeoyun", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.632f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
 
 	Computer::InitMaterials(_pDevice, _pCommandList);
 
@@ -311,6 +311,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		SetCapture(hWnd);
 		gameFramework.InitOldCursor();
 		gameFramework.PushScene(loadingScene);
+		
 		loadingScene = nullptr;
 		break;
 	}
@@ -614,7 +615,6 @@ void LobbyScene::UpdateInRoomState() {
 		else {
 			pRoomPlayerObjects[i]->GetAniController()->ChangeClip("idle");
 		}
-
 	}
 	// 준비상태가 아닐경우
 	if (!bChange) {
@@ -626,7 +626,7 @@ void LobbyScene::UpdateInRoomState() {
 
 PlayScene::PlayScene() {
 	globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
-	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	//globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	remainTime = 1000.f;
 
 	professorObjectID = 0;
@@ -635,6 +635,10 @@ PlayScene::PlayScene() {
 
 PlayScene::~PlayScene() {
 	pLightsBuffer->Unmap(0, NULL);
+}
+
+shared_ptr<FullScreenObject> PlayScene::GetFullScreenObject() const {
+	return pFullScreenObject;
 }
 
 void PlayScene::changeUI(bool _enable) {
@@ -929,11 +933,11 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pUIs["2DUI_interact"] = make_shared<Image2D>("2DUI_interact", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	//pUIs["2DUI_hackRate"] = make_shared<Image2D>("2DUI_hackRate", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 
-	pTexts["leftCoolTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.55f, 1.5f), XMFLOAT2(0.1f, 0.1f), C_WIDTH / 30.0f, false);
-	pTexts["rightCoolTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.8f, 1.5f), XMFLOAT2(0.1f, 0.1f), C_WIDTH / 30.0f, false);
+	pTexts["leftCoolTime"] = make_shared<TextBox>((WCHAR*)L"Who asks Satan", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.55f, 1.5f), XMFLOAT2(0.1f, 0.1f), C_WIDTH / 30.0f, false);
+	pTexts["rightCoolTime"] = make_shared<TextBox>((WCHAR*)L"Who asks Satan", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.8f, 1.5f), XMFLOAT2(0.1f, 0.1f), C_WIDTH / 30.0f, false);
 
-	pTexts["remainTime"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.1f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, true);
-	pTexts["hackRate"] = make_shared<TextBox>((WCHAR*)L"휴먼돋움체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 60.0f, false);
+	pTexts["remainTime"] = make_shared<TextBox>((WCHAR*)L"Who asks Satan", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.1f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 40.0f, true);
+	pTexts["hackRate"] = make_shared<TextBox>((WCHAR*)L"Who asks Satan", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.9f, 0.3f), XMFLOAT2(0.2f, 0.2f), C_WIDTH / 60.0f, false);
 
 
 	if (isPlayerProfessor) {	// 교수일 경우의 UI 로드
@@ -1007,7 +1011,7 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 	}
 
 	if (_keyDownBuffer['T']) {
-
+		GetFullScreenObject()->SetScreenType(ScreenType::blur, 50.0f);
 	}
 
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
@@ -1101,6 +1105,9 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	// 플레이어 애니메이션
 	pPlayer->Animate(_collideCheck, _timeElapsed);
 	camera->UpdateObject();
+
+	// 그려지는 화면 오브젝트에 대한 업데이트
+	pFullScreenObject->Animate(_timeElapsed);
 
 	// 플레이어 기준에서 프러스텀에 포함되는 섹터를 업데이트 해준다.
 	pZone->UpdateFrustumSectors(*camera->GetBoundingFrustum());

@@ -938,7 +938,7 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 
 void InterpolateMoveGameObject::SetNickname(const WCHAR _name[20], bool _isProfessor) {
 	D2D1::ColorF color = _isProfessor ? D2D1::ColorF(1, 0, 0, 1) : D2D1::ColorF(1, 1, 1, 1);
-	nickname = make_shared<TextBox>((WCHAR*)L"ÈÞ¸Õµ¸¿òÃ¼", color, XMFLOAT2(1.55f, 1.55f), XMFLOAT2(0.3f, 0.1f), C_WIDTH / 60.0f, false);
+	nickname = make_shared<TextBox>((WCHAR*)L"Who asks Satan", color, XMFLOAT2(1.55f, 1.55f), XMFLOAT2(0.3f, 0.1f), C_WIDTH / 60.0f, false);
 	nickname->SetText(_name);
 	nickname->SetAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 }
@@ -1485,6 +1485,8 @@ Trap::~Trap() {
 /////////////// FullScreenObject
 
 FullScreenObject::FullScreenObject(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	screenType = ScreenType::basic;
+	param = 0.f;
 
 	vector<XMFLOAT3> pos(6);
 	vector<XMFLOAT2> uv(6);
@@ -1519,11 +1521,39 @@ FullScreenObject::~FullScreenObject() {
 
 }
 
+void FullScreenObject::Animate(float _timeElapesd) {
+	
+	if (screenType == ScreenType::hit) {
+		param -= _timeElapesd;
+		if (param <= 0.f) {
+			screenType = ScreenType::basic;
+		}
+	}
+	if (screenType == ScreenType::blur) {
+		// ÃÊ´ç 100¾¿ °¨¼Ò
+		param -= _timeElapesd * 100;
+		if (param <= 2.f) {
+			screenType = ScreenType::basic;
+		}
+	}
+}
+
 void FullScreenObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	UpdateShaderVariable(_pCommandList);
 	_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
 	D3D12_VERTEX_BUFFER_VIEW vertexBufferViews[2] = { positionBufferView, texCoordBufferView };
 	_pCommandList->IASetVertexBuffers(0, 2, vertexBufferViews);
 	_pCommandList->DrawInstanced(6, 1, 0, 0);
+}
+
+void FullScreenObject::SetScreenType(ScreenType _screenType, float _param) {
+	screenType = _screenType;
+	param = _param;
+}
+
+void FullScreenObject::UpdateShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	_pCommandList->SetGraphicsRoot32BitConstants(11, 1, &screenType, 0);
+	_pCommandList->SetGraphicsRoot32BitConstants(13, 1, &param, 0);
 }
 
 RoomPlayerObject::RoomPlayerObject() {
