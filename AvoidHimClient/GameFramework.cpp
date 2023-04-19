@@ -33,9 +33,12 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 		if (!gameFramework.InitShader(gameFramework.pDevice, gameFramework.pRootSignature)) {
 			cout << "쉐이더 생성 실패\n";
 		}
+		// 쉐이더에 사용될 변수(경과시간 등)들 할당.
+		gameFramework.CreateShaderVariables();
 
 		// cbv, srv를 담기 위한 정적 디스크립터 힙 생성
 		Shader::CreateCbvSrvDescriptorHeaps(gameFramework.pDevice, 0, 300);
+
 
 
 		// 텍스처 출력을 위한 TextLayer 인스턴스 초기화
@@ -47,10 +50,16 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 		// G Buffer 생성
 		gameFramework.InitBuffer();
 
+		// 파티클을 그리기 위한 리소스들 생성
+		Shader::InitParticleResource(gameFramework.pDevice, gameFramework.pCommandList);
+
 		// 최초씬 생성
 		shared_ptr<Scene> pScene = make_shared<LobbyScene>();
 		gameFramework.LoadingScene(pScene);
 		gameFramework.PushScene(pScene);
+
+
+
 
 		// 히트박스용 메쉬 생성
 		//gameFramework.meshManager.GetHitBoxMesh().Create(gameFramework.pDevice, gameFramework.pCommandList);
@@ -376,7 +385,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 
 	// 루트 시그니처는 이후 계속 수정 
 
-	D3D12_ROOT_PARAMETER pRootParameters[15];
+	D3D12_ROOT_PARAMETER pRootParameters[16];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
 	pRootParameters[0].Descriptor.ShaderRegister = 1; //Camera //shader.hlsl의 레지스터 번호 (예시 register(b1) )
@@ -458,6 +467,11 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[14].Constants.RegisterSpace = 0;
 	pRootParameters[14].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
+	pRootParameters[15].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	pRootParameters[15].Descriptor.ShaderRegister = 11; // 월드 정보(시간)
+	pRootParameters[15].Descriptor.RegisterSpace = 0;
+	pRootParameters[15].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[3];
 	::ZeroMemory(samplerDesc, sizeof(D3D12_STATIC_SAMPLER_DESC) * 3);
 	samplerDesc[0].Filter = D3D12_FILTER_MIN_MAG_MIP_LINEAR;	// 선형 필터링
@@ -518,6 +532,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 	hResult = pDevice->CreateRootSignature(0, pSignatureBlob->GetBufferPointer(), pSignatureBlob->GetBufferSize(), __uuidof(ID3D12RootSignature), (void**)&pRootSignature);
 }
 
+// 쉐이더 관련 변수
 bool GameFramework::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature)
 {
 	return shaderManager.InitShader(_pDevice, _pRootSignature);
@@ -935,6 +950,20 @@ shared_ptr<Texture> GameFramework::GetShadowMap() const {
 	return pShadowMap;
 }
 
+void GameFramework::CreateShaderVariables() {
+	ComPtr<ID3D12Resource> temp;
+	UINT ncbElementBytes = ((sizeof(CB_FRAMEWORK_INFO) + 255) & ~255); //256의 배수
 
+	pcbFrameworkInfo = ::CreateBufferResource(pDevice.Get(), pCommandList.Get(), NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
 
+	pcbFrameworkInfo->Map(0, NULL, (void**)&pcbMappedFrameworkInfo);
+}
+void GameFramework::UpdateShaderVariables() {
+	float tempTimeElapsed = gameTimer.GetTimeElapsed();
+	pcbMappedFrameworkInfo->currentTime = (float)gameTimer.GetTimeElapsed();
+	pcbMappedFrameworkInfo->elapsedTime = (float)gameTimer.GetTimeElapsed();
+
+	D3D12_GPU_VIRTUAL_ADDRESS d3dGpuVirtualAddress = pcbFrameworkInfo->GetGPUVirtualAddress();
+	pCommandList->SetGraphicsRootConstantBufferView(15, d3dGpuVirtualAddress);
+}
 

@@ -4,6 +4,43 @@ class Texture;
 class GameObject;
 class Camera;
 
+enum class PARTICLE_TYPE {
+	waterDispenserUse
+};
+
+struct VS_ParticleMappedFormat {
+	XMFLOAT3 position;
+	XMFLOAT3 velocity;
+	XMFLOAT2 boardSize;
+	float lifetime;
+	UINT type;
+};
+
+struct ParticleResource {
+	static const UINT nMaxParticle = 10000;
+	UINT nDefaultStreamInputParticle = 0;	// defaultStreamInputBuffer의 파티클의 개수
+	UINT nUploadStreamInputParticle = 0;	// uploadStreamInputBuffer의 파티클의 개수
+	UINT nDefaultStreamOutputParticle = 0;
+	ComPtr<ID3D12Resource> uploadStreamInputBuffer, defaultStreamInputBuffer, defaultDrawBuffer;	// 각각 파티클 추가를 위한 upload_heap버퍼, 스트림출력의 입력을 담당할 버퍼, 스트림 출력의 출력이 될 버퍼 
+	shared_ptr<VS_ParticleMappedFormat[nMaxParticle]> mappedUploadStreamInputBuffer;	// upload버퍼에 값을 쓰기위해 맵핑을할 포인터
+	D3D12_VERTEX_BUFFER_VIEW uploadStreamInputBufferView, defaultStreamInputBufferView;	// 스트림 출력의 입력으로 쓸 리소스에 대한 뷰
+	D3D12_STREAM_OUTPUT_BUFFER_VIEW defaultStreamOutputBufferView;	// 스트림의 출력이 될 리소스에 대한 뷰
+	D3D12_VERTEX_BUFFER_VIEW defaultDrawBufferView;	// 출력된 리소스들을 그릴기 위해 사용할 뷰
+	ComPtr<ID3D12Resource> defaultBufferFilledSize, uploadBufferFilledSize, readBackBufferFilledSize;	// 각각 SO에서 write한 크기가 입력될 버퍼, default버퍼에 0을 쓰기위한 버퍼, defualt에 써진 값을 읽어오기 위한 버퍼
+	shared_ptr<UINT> mappedReadBackBufferFilledSize;
+
+	// 텍스처 관련 변수
+	shared_ptr<Texture> texture;
+	ComPtr<ID3D12DescriptorHeap> textureDescriptorHeap;
+	//shared_ptr<TextureBundle> textures;
+
+
+	ParticleResource() {}
+
+	void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
+};
+
 enum ShaderRenderType {
 	PRE_RENDER,			// 정해놓은 멀티 렌더타겟에 그리는 쉐이더
 	SWAP_CHAIN_RENDER,	// 후면버퍼에 실제로 그리는 쉐이더
@@ -22,6 +59,8 @@ protected:
 
 	static D3D12_CPU_DESCRIPTOR_HANDLE			srvCPUDescriptorNextHandle;
 	static D3D12_GPU_DESCRIPTOR_HANDLE			srvGPUDescriptorNextHandle;
+
+	static ParticleResource particleResource;
 public:
 
 	static void SetDescriptorHeap(ComPtr<ID3D12GraphicsCommandList> _pCommandList);
@@ -36,10 +75,15 @@ public:
 
 	static D3D12_GPU_DESCRIPTOR_HANDLE CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, int nResources, ID3D12Resource** ppd3dResources, DXGI_FORMAT* pdxgiSrvFormats);
 
+	//  StreamOutput과 관련된 함수들
+	static void AddParticle(const VS_ParticleMappedFormat& _particle);
+	static void RenderParticle(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
 	static void SetCamera(const weak_ptr<Camera>& _wpCamera);
 	
 	static void UpdateShadersObject();
 
+	static void InitParticleResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) { particleResource.Init(_pDevice, _pCommandList); }
 protected:
 	ComPtr<ID3DBlob> pVSBlob, pPSBlob;
 	ComPtr<ID3D12PipelineState> pPipelineState;
@@ -273,3 +317,34 @@ public:
 	bool InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
 	shared_ptr<Shader> GetShader(const string& _name);
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+class ParticleStreamOutShader : public Shader {
+protected:
+	ComPtr<ID3DBlob> pGSBlob;
+public:
+	ParticleStreamOutShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~ParticleStreamOutShader();
+
+	virtual D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	virtual D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+	virtual D3D12_STREAM_OUTPUT_DESC CreateStreamOuputState() final;
+	virtual D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState();
+
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) { cout << "사용되지 않는다.\n"; };	// Render 순수가상함수?
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool isUploadInput);	// Render 순수가상함수?
+};
+class ParticleDrawShader : public Shader {
+protected:
+	ComPtr<ID3DBlob> pGSBlob;
+public:
+	ParticleDrawShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~ParticleDrawShader();
+
+	virtual D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	virtual D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+};
+

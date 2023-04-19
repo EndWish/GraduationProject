@@ -3,6 +3,11 @@
 #include "Scene.h"
 #include "Sound.h"
 
+struct CB_FRAMEWORK_INFO {
+	float currentTime;
+	float elapsedTime;
+};
+
 class GameFramework {
 	// Á¤Àû º¯¼ö 
 private:
@@ -93,6 +98,10 @@ private:
 	// ½¦µµ¿ì ¸ÊÀÇ ·»´õÅ¸°Ùºä ÁÖ¼Ò
 	vector<D3D12_CPU_DESCRIPTOR_HANDLE> shadowMapCPUDescriptorHandles;
 	
+	// ½¦ÀÌ´õ º¯¼ö
+	ComPtr<ID3D12Resource> pcbFrameworkInfo;
+	shared_ptr<CB_FRAMEWORK_INFO> pcbMappedFrameworkInfo;
+
 	// »ý¼º, ¼Ò¸êÀÚ
 private:
 	GameFramework();
@@ -149,4 +158,7 @@ public:
 
 	shared_ptr<Texture> GetGBuffer() const;
 	shared_ptr<Texture> GetShadowMap() const;
+
+	void CreateShaderVariables();
+	void UpdateShaderVariables();
 };

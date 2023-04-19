@@ -863,6 +863,8 @@ void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12De
 	if (pSkinnedChild) {
 		wpAniController = pSkinnedChild->GetAniController();
 	}
+
+	wpHeadObject = FindFrame("Bip001 HeadNub");
 }
 
 InterpolateMoveGameObject::~InterpolateMoveGameObject() {
@@ -967,6 +969,10 @@ const int& InterpolateMoveGameObject::GetHit() {
 
 shared_ptr<GameObject> InterpolateMoveGameObject::GetHandObject() {
 	return wpHandObject.lock();
+}
+
+shared_ptr<GameObject> InterpolateMoveGameObject::GetHeadObject() {
+	return wpHeadObject.lock();
 }
 
 shared_ptr<AnimationController> InterpolateMoveGameObject::GetAniController() {

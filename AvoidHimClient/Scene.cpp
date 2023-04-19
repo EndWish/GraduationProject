@@ -625,8 +625,8 @@ void LobbyScene::UpdateInRoomState() {
 /////////////////////////
 
 PlayScene::PlayScene() {
-	globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
-	//globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	//globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
+	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	remainTime = 1000.f;
 
 	professorObjectID = 0;
@@ -1354,11 +1354,30 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 	}
 	case SC_PACKET_TYPE::useWaterDispenser: {
 		SC_USE_WATER_DISPENSER* packet = GetPacket<SC_USE_WATER_DISPENSER>();
+		XMFLOAT3 particlePos;
+
 		// 해당 오브젝트에 대한 상호작용을 한다.
 		pZone->Interact(packet->waterDispenserObjectID);
 		if (packet->playerObjectID == myObjectID) {	// 자신이 정수기를 사용했을 경우
 			// 스테미너를 충전한다.
 			pPlayer->SetMP(100.f);
+			particlePos = pPlayer->GetHeadObject()->GetWorldPosition();
+		}
+		else {
+			particlePos = pOtherPlayers[packet->playerObjectID]->GetHeadObject()->GetWorldPosition();
+		}
+
+		// 파티클 생성
+		VS_ParticleMappedFormat particle;
+		particle.boardSize = { 0.03f, 0.03f };
+		particle.lifetime = 1.f;
+		particle.position = particlePos;
+		particle.type = (int)PARTICLE_TYPE::waterDispenserUse;
+
+		uniform_real_distribution<float> urd(-5.f, 5.f);
+		for (int i = 0; i < 100; ++i) {
+			particle.velocity = XMFLOAT3(urd(rd), urd(rd), urd(rd));
+			Shader::AddParticle(particle);
 		}
 		break;
 	}
@@ -1727,6 +1746,8 @@ void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 void PlayScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
+
+	gameFramework.UpdateShaderVariables();
 	// 프레임워크에서 렌더링 전에 루트시그니처를 set
 
 	// 쉐이더 클래스에 정적으로 정의된 디스크립터 힙을 연결한다.
@@ -1737,6 +1758,7 @@ void PlayScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 	pZone->Render(_pCommandList, pPlayer->GetCamera()->GetBoundingFrustum());
 
 	gameFramework.GetShader("EffectShader")->Render(_pCommandList);
+	Shader::RenderParticle(_pCommandList);
 
 	// 다 그린 후 G버퍼를 연결한다.
 	gameFramework.GetGBuffer()->UpdateShaderVariable(_pCommandList);
@@ -1745,6 +1767,7 @@ void PlayScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
+
 
 	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
 	if (exit && fadeOut < 3) {

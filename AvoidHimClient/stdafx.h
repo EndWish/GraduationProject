@@ -117,6 +117,7 @@ extern XMFLOAT3 prisonPosition, prisonExitPosition;
 
 // 현재 클라이언트 크기
 extern RECT clientRect;
+extern random_device rd;
 
 // 플레이어의 닉네임
 extern WCHAR nickname[20];
@@ -139,9 +140,9 @@ float random(float min, float max);
 
 // file로 부터 string을 읽는다.
 void ReadStringBinary(string& _dest, ifstream& _file);
-void SynchronizeResourceTransition(ID3D12GraphicsCommandList* pd3dCommandList, ID3D12Resource* pd3dResource, D3D12_RESOURCE_STATES d3dStateBefore, D3D12_RESOURCE_STATES d3dStateAfter);
+void SynchronizeResourceTransition(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const ComPtr<ID3D12Resource>& _pResource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter);
 // 리소스 생성
-ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* _pData, UINT _byteSize, D3D12_HEAP_TYPE _heapType, D3D12_RESOURCE_STATES _resourceStates, ComPtr<ID3D12Resource>& _pUploadBuffer);
+ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* _pData, UINT _byteSize, D3D12_HEAP_TYPE _heapType, D3D12_RESOURCE_STATES _resourceStates, const ComPtr<ID3D12Resource>& _pUploadBuffer);
 
 //xmfloat, xmint 출력하기
 std::ostream& operator<<(std::ostream& os, const XMFLOAT2& f2);

@@ -30,6 +30,8 @@ protected:
 	shared_ptr<GameObject> pFloor;
 	float sendMovePacketTime;
 
+	weak_ptr<GameObject> wpHeadObject;
+
 	// µÐÈ­¿¡ »ç¿ë
 	float slowTime;
 	float slowRate;
@@ -81,6 +83,7 @@ public:
 	virtual void LeftClick() {};
 	virtual void RightClick() {};
 
+	shared_ptr<GameObject> GetHeadObject();
 
 	void SetSlowRate(float _slowRate);
 	void SetSlowTime(float _slowTime);

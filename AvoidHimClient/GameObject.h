@@ -347,6 +347,7 @@ private:
 	shared_ptr<TextBox> nickname;
 
 	weak_ptr<GameObject> wpHandObject;
+	weak_ptr<GameObject> wpHeadObject;
 	weak_ptr<AnimationController> wpAniController;
 
 public:
@@ -380,6 +381,7 @@ public:
 	bool GetTransparent();
 	const int& GetHit();
 	shared_ptr<GameObject> GetHandObject();
+	shared_ptr<GameObject> GetHeadObject();
 	shared_ptr<AnimationController> GetAniController();
 };
 

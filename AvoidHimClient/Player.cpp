@@ -59,6 +59,7 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 
 	UpdateObject();
 
+	wpHeadObject = FindFrame("Bip001 HeadNub");
 }
 
 void Player::Animate(char _collideCheck, float _timeElapsed) {
@@ -212,6 +213,10 @@ void Player::Dash(float _timeElapsed) {
 	}
 }
 
+
+shared_ptr<GameObject> Player::GetHeadObject() {
+	return wpHeadObject.lock();
+}
 
 void Player::SetSlowRate(float _slowRate) {
 	slowRate = _slowRate;

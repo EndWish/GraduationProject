@@ -27,6 +27,11 @@ cbuffer cbIntVariable : register(b5) {
     int intValue : packoffset(c0);
 };
 
+cbuffer cbFrameworkInfo : register(b11)
+{
+    float currentTime : packoffset(c0.x);
+    float elapsedTime : packoffset(c0.y);
+};
 cbuffer cbFloatVariable : register(b6) {
     float floatValue : packoffset(c0);
 };
@@ -61,6 +66,10 @@ cbuffer cbSkinnedWorldTransforms : register(b8)
 }
 
 #include "Light.hlsl"
+
+
+float3 RandomDirection(float seedOffset);
+float RandomFloat(float2 co);
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -124,7 +133,7 @@ bool isBorder(float2 uv)
     {
         for (int i = 0; i < 8; ++i)
         {
-            coord = baseCoord + d[i] * 1;
+            coord = baseCoord + d[i];
             depth = depthTexture.Load(coord);
             if (abs(depth - baseDepth) > 0.2f)
                 return true;
@@ -801,3 +810,165 @@ float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
     return cColor;
 }
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ParticleStreamOut
+#define GRAVITY 98
+
+#define PARTICLES_TEXTURE_ROW 5
+#define PARTICLES_TEXTURE_COLUMN 5
+
+#define WATER_DISPENSER_USE 0
+
+struct VS_PARTICLE_INPUT
+{
+    float3 position : POSITION;
+    float3 velocity : VELOCITY;
+    float2 boardSize : BOARDSIZE;
+    float lifetime : LIFETIME;
+    uint type : PARTICLETYPE;
+};
+
+VS_PARTICLE_INPUT ParticleStreamOutVertexShader(VS_PARTICLE_INPUT input)
+{
+    return input;
+}
+
+void WaterDispenserUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream);
+
+[maxvertexcount(20)] // sizeof(VS_PARTICLE_INPUT) 와 maxvertexcount 를 곱해서 1024바이트를 넘으면 안된다.
+void ParticleStreamOutGeometryShader(point VS_PARTICLE_INPUT input[1], inout PointStream<VS_PARTICLE_INPUT> outStream)
+{
+    VS_PARTICLE_INPUT particle = input[0];
+    switch (particle.type)
+    {
+        case WATER_DISPENSER_USE:
+            WaterDispenserUseParticle(particle, outStream);
+            break;
+    }
+}
+
+void WaterDispenserUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream)
+{
+    // 수명이 남아 있으면 이동시키고(중력의 영향을 받도록 한다.), 
+    if (input.lifetime > 0.0f)  // 수명이 남아있을 경우
+    {
+        input.lifetime -= elapsedTime;
+        input.position += input.velocity * elapsedTime;
+        input.velocity *= 1.0 - elapsedTime * 4.f;
+        
+        outStream.Append(input);
+    }
+}
+
+
+float3 RandomDirection(float seedOffset)
+{
+    float2 seed = float2(currentTime + seedOffset, currentTime - seedOffset);
+    float3 direction;
+    
+    direction.x = RandomFloat(seed) - 0.5f;
+    direction.y = RandomFloat(seed + float2(0.435, 0.12)) - 0.5f;
+    direction.z = RandomFloat(seed + float2(0.0345, 0.74)) - 0.5f;
+    direction = normalize(direction);
+    return direction;
+}
+
+float RandomFloat(float2 co)
+{
+    return frac(sin(dot(co.xy, float2(12.9898, 78.233))) * 43758.5453123);
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ParticleDraw
+
+struct VS_PARTICLE_OUTPUT
+{
+    float3 positionW : POSITION;
+    float2 boardSize : BOARDSIZE;
+    float3 normal : NORMAL;
+    uint type : PARTICLETYPE;
+    float lifetime : LIFETIME;
+};
+
+struct GS_PARTICLE_OUTPUT
+{
+    float3 positionW : POSITION;
+    float4 position : SV_POSITION;
+    float3 normal : NORMAL;
+    float2 uv : TEXCOORD;
+    uint type : PARTICLETYPE;
+    float lifetime : LIFETIME;
+};
+
+VS_PARTICLE_OUTPUT ParticleDrawVertexShader(VS_PARTICLE_INPUT input)
+{
+    VS_PARTICLE_OUTPUT output;
+    
+    output.positionW = input.position;
+    output.boardSize = input.boardSize;
+
+    output.normal = cameraPosition - output.positionW;
+    output.normal = normalize(output.normal);
+    
+    output.type = input.type;
+    output.lifetime = input.lifetime;
+    
+    return output;
+}
+
+[maxvertexcount(4)]
+void ParticleDrawGeometryShader(point VS_PARTICLE_OUTPUT input[1], inout TriangleStream<GS_PARTICLE_OUTPUT> outStream)
+{
+    GS_PARTICLE_OUTPUT output;
+    output.normal = input[0].normal;
+    output.type = input[0].type;
+    output.lifetime = input[0].lifetime;
+    
+    float3 rightVector = normalize(cross(float3(0, 1, 0), input[0].normal)); // Y축과 look벡터 외적해서 rightVector를 얻는다.
+    float3 upVector = normalize(cross(input[0].normal, rightVector)); //
+    
+    float3 dxOffset = rightVector * input[0].boardSize.x / 2.0f;
+    float3 dyOffset = upVector * input[0].boardSize.y / 2.0f;
+    
+     // 시계방향이 앞쪽
+    float3 dx[4] = { -dxOffset, dxOffset, -dxOffset, dxOffset };
+    float3 dy[4] = { -dyOffset, -dyOffset, dyOffset, dyOffset };
+    
+    float2 startUV = float2(output.type % PARTICLES_TEXTURE_COLUMN / (float) (PARTICLES_TEXTURE_COLUMN), output.type / PARTICLES_TEXTURE_ROW / (float) (PARTICLES_TEXTURE_ROW));
+    float2 widUV = float2(1.0f / PARTICLES_TEXTURE_COLUMN, 1.0f / PARTICLES_TEXTURE_ROW);
+    
+    float2 uv[4] = { startUV + widUV, startUV + float2(0, widUV.y), startUV + float2(widUV.x, 0), startUV }; // 오른쪽위, 왼쪽위, 오른쪽아래, 왼쪽아래
+    for (int i = 0; i < 4; ++i)
+    {
+        output.positionW = input[0].positionW + dx[i] + dy[i];
+        output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
+        output.uv = uv[i];
+        outStream.Append(output);
+    }
+}
+
+G_BUFFER_OUTPUT ParticleDrawPixelShader(GS_PARTICLE_OUTPUT input)
+{
+    // type을 이용하여 원하는 텍스처를 선택
+    float4 color = albedoMap.Sample(gssWrap, input.uv);
+    
+    if (color.a < 0.1f)
+        discard;
+    
+    G_BUFFER_OUTPUT output;
+    output.depth = length(input.positionW - cameraPosition);
+    output.normal = float4(input.normal, 1.0f);
+    output.position = float4(input.positionW, 1.0f);
+    
+    //output.color = color;
+    if (input.type == WATER_DISPENSER_USE)
+    {
+        output.emissive = color * (input.lifetime / 1.f);
+    }
+    else
+    {
+        output.emissive = color;
+    }
+    
+    return output;
+}

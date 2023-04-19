@@ -43,7 +43,7 @@ void ReadStringBinary(string& _dest, ifstream& _file){
 	_file.read((char*)_dest.data(), sizeof(char) * len);
 }
 
-ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* _pData, UINT _byteSize, D3D12_HEAP_TYPE _heapType, D3D12_RESOURCE_STATES _resourceStates, ComPtr<ID3D12Resource>& _pUploadBuffer) {
+ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* _pData, UINT _byteSize, D3D12_HEAP_TYPE _heapType, D3D12_RESOURCE_STATES _resourceStates, const ComPtr<ID3D12Resource>& _pUploadBuffer) {
 	ComPtr<ID3D12Resource> pBuffer;
 
 	// 리소스의 처음 상태
@@ -69,9 +69,8 @@ ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice
 
 			// GPU에 업로드 버퍼를 만든다(할당한다).
 			heapType.Type = D3D12_HEAP_TYPE_UPLOAD;
-			hResult = _pDevice->CreateCommittedResource(&heapType, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, IID_PPV_ARGS(&_pUploadBuffer));
+			hResult = _pDevice->CreateCommittedResource(&heapType, D3D12_HEAP_FLAG_NONE, &resourceDesc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL, __uuidof(ID3D12Resource), (void**)_pUploadBuffer.GetAddressOf());
 
-			auto t =  _pDevice->GetDeviceRemovedReason();
 			// 위에서 만든 업로드버퍼의 주소값을 알아내어 CPU메모리 에 있는 데이터(_pData)를 GPU메모리(pUploadBuffer)에 복사한다.
 			D3D12_RANGE readRange = { 0, 0 };
 			shared_ptr<UINT8> pBufferDataBegin;
@@ -98,11 +97,11 @@ ComPtr<ID3D12Resource> CreateBufferResource(const ComPtr<ID3D12Device>& _pDevice
 			memcpy(pBufferDataBegin.get(), _pData, _byteSize);
 			pBuffer->Unmap(0, NULL);
 		}
-		else if (_heapType == D3D12_HEAP_TYPE_READBACK) {	
-			D3D12_RANGE d3dReadRange = { 0, 0 };
-			UINT8* pBufferDataBegin = NULL;
-			pBuffer->Map(0, &d3dReadRange, (void**)&pBufferDataBegin);
-			memcpy(pBufferDataBegin, _pData, _byteSize);
+		else if (_heapType == D3D12_HEAP_TYPE_READBACK) {
+			D3D12_RANGE readRange = { 0, 0 };
+			shared_ptr<UINT8> pBufferDataBegin;
+			hResult = pBuffer->Map(0, &readRange, (void**)&pBufferDataBegin);
+			memcpy(pBufferDataBegin.get(), _pData, _byteSize);
 			pBuffer->Unmap(0, NULL);
 		}
 	}
@@ -137,18 +136,17 @@ std::ostream& operator<<(std::ostream& os, const XMINT3& i3) {
 	return os;
 }
 
-void SynchronizeResourceTransition(ID3D12GraphicsCommandList* pd3dCommandList, ID3D12Resource* pd3dResource, D3D12_RESOURCE_STATES d3dStateBefore, D3D12_RESOURCE_STATES d3dStateAfter)
-{
-	D3D12_RESOURCE_BARRIER d3dResourceBarrier;
-	d3dResourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	d3dResourceBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	d3dResourceBarrier.Transition.pResource = pd3dResource;
-	d3dResourceBarrier.Transition.StateBefore = d3dStateBefore;
-	d3dResourceBarrier.Transition.StateAfter = d3dStateAfter;
-	d3dResourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	pd3dCommandList->ResourceBarrier(1, &d3dResourceBarrier);
+// 리소스 배리어
+void SynchronizeResourceTransition(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const ComPtr<ID3D12Resource>& _pResource, D3D12_RESOURCE_STATES stateBefore, D3D12_RESOURCE_STATES stateAfter) {
+	D3D12_RESOURCE_BARRIER resourceBarrier;
+	resourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+	resourceBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+	resourceBarrier.Transition.pResource = _pResource.Get();
+	resourceBarrier.Transition.StateBefore = stateBefore;
+	resourceBarrier.Transition.StateAfter = stateAfter;
+	resourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+	_pCommandList->ResourceBarrier(1, &resourceBarrier);
 }
-
 
 ////////// 텍스처 load 함수
 ComPtr<ID3D12Resource> CreateTextureResourceFromDDSFile(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, const wchar_t* pszFileName, ID3D12Resource** ppd3dUploadBuffer, D3D12_RESOURCE_STATES d3dResourceStates)
