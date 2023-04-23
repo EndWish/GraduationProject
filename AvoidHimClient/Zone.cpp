@@ -975,8 +975,9 @@ void Zone::SetVisiblePlayer(shared_ptr<Camera> _pCamera) {
 	for (auto pOtherPlayer : pOtherPlayers) {
 
 		XMFLOAT3 rayWorldDirection = Vector3::Normalize(Vector3::Subtract(pOtherPlayer->GetWorldPosition(), _pCamera->GetWorldPosition()));
-
-		if (Vector3::Angle(_pCamera->GetWorldLookVector(), rayWorldDirection, false) > 90.0f) {
+		auto t = Vector3::Angle(_pCamera->GetWorldLookVector(), rayWorldDirection, false);
+		cout << t << "µµ ";
+		if (t > 90.0f) {
 			pOtherPlayer->SetVisible(false);
 			break;
 		}

@@ -233,7 +233,6 @@ public:
 private:
 	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
-	virtual D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState();
 };
 
 class UIShader : public Shader {

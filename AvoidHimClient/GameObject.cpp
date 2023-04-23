@@ -834,7 +834,8 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	prevPosition = XMFLOAT3();
 	prevRotation = Vector4::QuaternionIdentity();
 	prevScale = XMFLOAT3(1, 1, 1);
-		
+	footStepCooltime = 0.f;
+	moveDistance = 0.f;
 	nextPosition = XMFLOAT3();
 	nextRotation = Vector4::QuaternionIdentity();
 	nextScale = XMFLOAT3(1, 1, 1);
@@ -918,7 +919,7 @@ void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 	// 발 간격이 12 프레임
 	if (footStepCooltime >= (12.0f / 29.97f)) {
 		pFootStepSound->Play();
-		footStepCooltime = 0;
+		footStepCooltime = 0.01f;
 	}
 	GameObject::Animate(_timeElapsed);
 }

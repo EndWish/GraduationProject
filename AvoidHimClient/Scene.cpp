@@ -87,6 +87,8 @@ LobbyScene::LobbyScene()
 
 		roomViewPort[i].TopLeftX = (float)i * C_WIDTH * 0.195f + C_WIDTH * 0.01f;
 		roomViewPort[i].TopLeftY = 0.2 * C_HEIGHT;
+		roomViewPort[i].MinDepth = 0.f;
+		roomViewPort[i].MaxDepth = 1.f;
 	}
 	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 }
@@ -105,7 +107,10 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 
 	gameFramework.GetSoundManager().Play("step");
 	pUIs["2DUI_title"] = make_shared<Image2D>("2DUI_title", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList, false);
+	
 	pUIs["2DUI_roomBG"] = make_shared<Image2D>("2DUI_roomBG", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
+	pUIs["2DUI_roomBG"]->SetDepth(1.f);
+	
 	pUIs["2DUI_roomListBG"] = make_shared<Image2D>("2DUI_roomListBG", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 
 	SetBackGround("2DUI_title");
@@ -120,13 +125,13 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	pCamera = make_shared<Camera>();
 	pCamera->Create(_pDevice, _pCommandList);
 	pCamera->UpdateProjectionTransform(0.1f, 10.f, 0.5f, 60.0f);
-	pCamera->SetLocalPosition(XMFLOAT3(0.f, 0.8f, 2.0f));
+	pCamera->SetLocalPosition(XMFLOAT3(0.f, 0.8f, 1.5f));
 	pCamera->SetLocalRotation(Vector4::QuaternionRotation(XMFLOAT3(0, 1, 0), 180.0f));
 	pCamera->UpdateObject();
 
 	pLight = make_shared<Light>();
 	pLight->lightType = 3;
-	pLight->direction = XMFLOAT3(0.f, -1.f, -0.5f);
+	pLight->direction = XMFLOAT3(0.f, -0.5f, -0.1f);
 
 	for (auto& pRoomPlayerObject : pRoomPlayerObjects) {
 		pRoomPlayerObject = make_shared<RoomPlayerObject>();
@@ -349,7 +354,7 @@ void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, 
 	Shader::SetDescriptorHeap(_pCommandList);
 
 	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);
-	pBackGround->Render(_pCommandList);
+	//pBackGround->Render(_pCommandList);
 	if (!isLoading) {
 	for (auto [name, pUI] : pUIs) {
 		pUI->Render(_pCommandList);
@@ -586,7 +591,7 @@ void LobbyScene::RenderPlayerMesh(const ComPtr<ID3D12GraphicsCommandList>& _pCom
 
 void LobbyScene::UpdateInRoomState() {
 
-	// 현재 방에 ui, 버튼 상태, 애니메이션, 닉네임 등을 갱신
+	// 현재 방에 ui, 버튼 상태, 애니메이션, 닉네임 등을 갱신 
 	bool bChange = false;
 	string baseName = "inRoomName";
 	for (int i = 0; i < 5; ++i) {
@@ -1206,12 +1211,15 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 			pZone->HandOffObject(SectorLayer::otherPlayer, pOtherPlayer->GetID(), pOtherPlayer, prevIndex, nextIndex);
 		}
 	}
+	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
+		pOtherPlayer->SetVisible(false);
+	}
 
 	// 이동 수행후 해당 플레이어가 화면에 보이는지 판단
 	pZone->SetVisiblePlayer(camera);
 
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
-		
+
 		shared_ptr<TextBox> nickname = pOtherPlayer->GetNickname();
 		// 은신상태가 아니면서 가려지지 않은 경우
 		if (pOtherPlayer->GetVisible() && !pOtherPlayer->GetTransparent()) {

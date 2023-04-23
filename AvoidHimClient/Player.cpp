@@ -121,7 +121,6 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		moveDistance = Vector3::Length(Vector3::Subtract(prevPosition, position));
 	}
 
-
 	if (moveDistance > 0)
 	{
 		if (footStepCooltime == 0) {
@@ -137,7 +136,7 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 	float footFrame = isDash ? 10.0f : 12.0f;
 	if (footStepCooltime >= (footFrame / 29.97f)) {
 		pFootStepSound->Play();
-		footStepCooltime = 0.01;
+		footStepCooltime = 0.01f;
 	}
 
 	if (slowTime > 0) {

@@ -504,9 +504,9 @@ VS_2D_OUT Vertex2DShader(VS_2D_IN input) {
 
     //startpos = float2(0,0);
     
-    // 2DUI는 항상 z = 0 (맨 앞)에 그려지고, depth값도 쓴다.
+    // 2DUI는 항상 z = 0 (맨 앞)에 그려지고, depth값도 쓴다. (기본값일 경우)
     // 이미지를 그릴 기본 사각형 좌표에 이미지의 좌표값을 쉐이더단계에서 더한다. 
-    output.position = float4(input.position.x + startpos.x, input.position.y + startpos.y, 0, 1);
+    output.position = float4(input.position.x + startpos.x, input.position.y + startpos.y, floatValue, 1);
     
     float x, y;
     
@@ -717,7 +717,6 @@ VS_LIGHTING_OUT LightingVertexShader(VS_LIGHTING_IN input)
 float4 PreLightingColor(float4 baseColor, float2 uv)
 {
     float4 color = baseColor;
-
     return color;
 }
 

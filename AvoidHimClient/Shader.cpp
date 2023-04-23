@@ -932,30 +932,6 @@ D3D12_INPUT_LAYOUT_DESC SkinnedLobbyShader::CreateInputLayout() {
 	return inputLayoutDesc;
 }
 
-D3D12_DEPTH_STENCIL_DESC SkinnedLobbyShader::CreateDepthStencilState() {
-	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
-	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
-	depthStencilDesc.DepthEnable = TRUE;
-	// UI와 같이 항상 위에 그린다.
-	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
-	depthStencilDesc.StencilEnable = TRUE;
-	depthStencilDesc.StencilReadMask = 0x00;
-	depthStencilDesc.StencilWriteMask = 0x00;
-	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	depthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-	depthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
-	depthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
-	depthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
-	depthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
-	depthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
-
-	return depthStencilDesc;
-}
-
-
-
 
 
 

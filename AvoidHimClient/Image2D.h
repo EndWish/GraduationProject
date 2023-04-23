@@ -77,6 +77,7 @@ private:
 	// -1 ~ 1
 	string name;
 
+	float depth;		// 기본값은 0. 
 	bool pressed;	// 버튼에 있는 이미지가 눌렸을 경우
 	bool dark;	// 일부 이미지의 경우 회색으로 그릴 bool값
 	bool enable;	// 해당 이미지가 그려지는지
@@ -109,6 +110,7 @@ public:
 	void SetDark(bool _isDark) { dark = _isDark; };
 
 	void SetTexture(const string& _name);
+	void SetDepth(float _depth) { depth = _depth; };
 };
 
 /////////////////////////////////////
