@@ -1018,14 +1018,21 @@ void Zone::AnimateObjects(float _timeElapsed) {
 	}
 
 	auto pAttackTableIter = pAttackObjTable.begin();
+
 	while (pAttackTableIter != pAttackObjTable.end()) {
 		auto& [objectID, pAttack] = *pAttackTableIter;
-
+		if (!pAttack) {
+			GetSector(prevIndex)->RemoveObject(SectorLayer::attack, objectID);
+			pAttackTableIter = pAttackObjTable.erase(pAttackTableIter);
+			continue;
+		}
 		prevIndex = GetIndex(pAttack->GetWorldPosition());
 		// 사라져야할 공격은 삭제, 소속 섹터 업데이트
 		if (pAttack->GetIsRemove()) {
+			cout << (*pAttackTableIter).second->GetID() << " 삭제\n";
 			GetSector(prevIndex)->RemoveObject(SectorLayer::attack, objectID);
 			pAttackTableIter = pAttackObjTable.erase(pAttackTableIter);
+
 		}
 		else {
 			pAttack->Animate(_timeElapsed);
@@ -1053,7 +1060,7 @@ void Zone::AnimateObjects(float _timeElapsed) {
 	auto pTrapTableIter = pTrapObjTable.begin();
 	while (pTrapTableIter != pTrapObjTable.end()) {
 		auto& [objectID, pTrap] = *pTrapTableIter;
-		// 사라져야할 아이템은 삭제
+		// 사라져야할 트랩은 삭제
 		if (pTrap->GetIsRemove()) {
 			GetSector(pTrap->GetWorldPosition())->RemoveObject(SectorLayer::trap, objectID);
 			pTrapTableIter = pTrapObjTable.erase(pTrapTableIter);
@@ -1085,12 +1092,12 @@ shared_ptr<InteractObject> Zone::UpdateInteractableObject() {
 }
 
 shared_ptr<Attack> Zone::GetAttack(UINT _objectID) {
-	if (pAttackObjTable[_objectID]) return pAttackObjTable[_objectID];
+	if (pAttackObjTable.contains(_objectID)) return pAttackObjTable[_objectID];
 	return nullptr;
 }
 
 shared_ptr<Trap> Zone::GetTrap(UINT _objectID) {
-	if (pTrapObjTable[_objectID]) return pTrapObjTable[_objectID];
+	if (pTrapObjTable.contains(_objectID)) return pTrapObjTable[_objectID];
 	return nullptr;
 }
 

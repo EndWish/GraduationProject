@@ -908,7 +908,7 @@ void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 		moveDistance = Vector3::Length(Vector3::Subtract(prevPositionFootStep, position));
 	}
 
-	if (moveDistance > 0)
+	if (moveDistance > 0 )
 	{
 		// 클립 시작 4프레임 후에 첫 발 내딛음
 		if (footStepCooltime == 0) footStepCooltime = 8.0f / 29.97f;
@@ -1178,15 +1178,14 @@ void Computer::InitMaterials(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<
 	  "PRMonitor_Complete_AlbedoTransparency" };
 
 	string emissiveNames[] =
-	{ "null",
+	{ "PRMonitor_Emission",
 	  "PRMonitor_Hacking_Emission",
 	  "PRMonitor_Complete_Emission" };
 
-	// off상태일때는 emissive가 없다.
 	for (int i = 0; i < pMaterials.size(); ++i) {
 		pMaterials[i] = make_shared<Material>();
 		pMaterials[i]->SetTexture(pTextureManager.GetTexture(texNames[i], _pDevice, _pCommandList));
-		if(i!=0) pMaterials[i]->SetEmissiveTexture(pTextureManager.GetTexture(emissiveNames[i], _pDevice, _pCommandList, 12));
+		pMaterials[i]->SetEmissiveTexture(pTextureManager.GetTexture(emissiveNames[i], _pDevice, _pCommandList, 12));
 		pMaterials[i]->DefaultMaterial(_pDevice, _pCommandList);
 	}
 	// 모니터는 노말맵이 없다.

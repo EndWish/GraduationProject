@@ -89,13 +89,13 @@ void RoomButton::UpdateState(UINT _roomID, UINT _participant, RoomState _state) 
 	state = _state;
 	// 이후 이미지도 변경해준다.
 	if (state == RoomState::full) {
-		pTexts[0]->SetText(L"꽉 참");
+		pTexts[0]->SetText(L"Full");
 	}
 	else if (state == RoomState::joinable) {
 		pTexts[0]->SetText((to_wstring(_participant) + L"/5").c_str());
 	}
 	else if (state == RoomState::started) {
-		pTexts[0]->SetText(L"시작함");
+		pTexts[0]->SetText(L"Started");
 	}
 
 	pTexts[1]->SetText((L"#" + to_wstring(_roomID)).c_str());

@@ -107,12 +107,13 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 
 	gameFramework.GetSoundManager().Play("step");
 	pUIs["2DUI_title"] = make_shared<Image2D>("2DUI_title", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList, false);
-	
+	pUIs["2DUI_title"]->SetDepth(1.f);
+
 	pUIs["2DUI_roomBG"] = make_shared<Image2D>("2DUI_roomBG", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	pUIs["2DUI_roomBG"]->SetDepth(1.f);
 	
 	pUIs["2DUI_roomListBG"] = make_shared<Image2D>("2DUI_roomListBG", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
-
+	pUIs["2DUI_roomListBG"]->SetDepth(1.f);
 	SetBackGround("2DUI_title");
 
 	pUIs["2DUI_ready_1"] = make_shared<Image2D>("2DUI_ready", XMFLOAT2(0.285f, 0.142f), XMFLOAT2(0.08f, 1.58f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
@@ -354,18 +355,21 @@ void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, 
 	Shader::SetDescriptorHeap(_pCommandList);
 
 	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);
-	//pBackGround->Render(_pCommandList);
+	pBackGround->Render(_pCommandList);
+
 	if (!isLoading) {
-	for (auto [name, pUI] : pUIs) {
-		pUI->Render(_pCommandList);
+		for (auto [name, pUI] : pUIs) {
+			if(pUI.get() != pBackGround.get())
+				pUI->Render(_pCommandList);
+		}
+		for (auto [name, pButton] : pButtons) {
+			pButton->Render(_pCommandList);
+		}
+		if (currState == LobbyState::inRoom) {
+			RenderPlayerMesh(_pCommandList);
+		}
 	}
-	}
-	for (auto [name, pButton] : pButtons) {
-		pButton->Render(_pCommandList);
-	}
-	if (currState == LobbyState::inRoom) {
-		RenderPlayerMesh(_pCommandList);
-	}
+
 }
 
 void LobbyScene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
@@ -638,8 +642,8 @@ void LobbyScene::UpdateInRoomState() {
 /////////////////////////
 
 PlayScene::PlayScene() {
-	//globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
-	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
+	//globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	remainTime = 1000.f;
 
 	professorObjectID = 0;
@@ -1428,6 +1432,7 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		break;
 	}
 	case SC_PACKET_TYPE::hit: {
+		// 해당플레이어의 체력을 깎고, 해당 오브젝트를 삭제한다.
 		SC_ATTACK_HIT* packet = GetPacket<SC_ATTACK_HIT>();
 		// 내가 맞은 패킷은 받지 않는다.
 		auto pHitPlayerObject = dynamic_pointer_cast<InterpolateMoveGameObject>(FindPlayerObject(packet->hitPlayerObjectID));
@@ -1440,10 +1445,11 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		else {
 			cout << "해당 플레이어가 없습니다!!\n";
 		}
-		if(!pAttack)
-			pZone->RemoveAttack(packet->attackObjectID);
+		if (pAttack && pAttack->GetAttackType() == AttackType::throwAttack)
+			pAttack->Remove();
+		else cout << "내가 이미 맞은 공격의 대한 패킷입니다.\n";
 		break;
-		// 해당플레이어의 체력을 깎고, 해당 오브젝트를 삭제한다.
+		
 	}
 	case SC_PACKET_TYPE::goPrison: {
 		SC_GO_PRISON* packet = GetPacket<SC_GO_PRISON>();

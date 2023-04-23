@@ -121,7 +121,7 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 		moveDistance = Vector3::Length(Vector3::Subtract(prevPosition, position));
 	}
 
-	if (moveDistance > 0)
+	if (moveDistance > 0 && (prevPosition.y - position.y) == 0)
 	{
 		if (footStepCooltime == 0) {
 			if(isDash) footStepCooltime = 7.0f / 29.97f;
