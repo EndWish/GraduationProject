@@ -33,8 +33,8 @@ void Sector::RemoveObject(SectorLayer _sectorLayer, UINT _objectID) {
 	auto it = pGameObjectLayer.find(_objectID);
 
 	if (it != pGameObjectLayer.end()) {		// 객체가 존재할 경우
-		pGameObjectLayer.erase(it);	
 		(*it).second->SetSector(nullptr);
+		pGameObjectLayer.erase(it);
 	}
 	else {
 		cout << format("버그 : 해당 ID를 가지는 오브젝트가 없습니다.\n");
@@ -251,7 +251,9 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 		if (boundingBox.Intersects(playerOOBB)) {
 			// 박혀있는 투사체일경우 건너뛴다.
 			auto pThrowAttack = dynamic_pointer_cast<ThrowAttack>(pAttack);
-			if (pThrowAttack && pThrowAttack->GetIsStuck()) {
+			auto pSwingAttack = dynamic_pointer_cast<SwingAttack>(pAttack);
+			if ((pThrowAttack && pThrowAttack->GetIsStuck()) || 
+				(pSwingAttack && (!pSwingAttack->CanGiveDmg() || pSwingAttack->IsProcessAttack())) ) {
 				continue;
 			}
 			_pPlayer->AddHP(-pAttack->GetDamage());
@@ -284,7 +286,12 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 			static_pointer_cast<PlayScene>(gameFramework.GetCurrentScene())->GetFullScreenObject()->SetScreenType(ScreenType::hit, 1.0f);
 			// 플레이어에게 무적시간을 잠시 적용
 			
-			pAttack->Remove();
+			if (pSwingAttack)
+				pSwingAttack->SetProcessAttack(true);
+
+			// 던지기 공격을 경우 투사체를 삭제한다.
+			if(pThrowAttack)
+				pAttack->Remove();
 		}
 	}
 }
@@ -976,7 +983,6 @@ void Zone::SetVisiblePlayer(shared_ptr<Camera> _pCamera) {
 
 		XMFLOAT3 rayWorldDirection = Vector3::Normalize(Vector3::Subtract(pOtherPlayer->GetWorldPosition(), _pCamera->GetWorldPosition()));
 		auto t = Vector3::Angle(_pCamera->GetWorldLookVector(), rayWorldDirection, false);
-		cout << t << "도 ";
 		if (t > 90.0f) {
 			pOtherPlayer->SetVisible(false);
 			break;
@@ -1018,7 +1024,7 @@ void Zone::AnimateObjects(float _timeElapsed) {
 		prevIndex = GetIndex(pAttack->GetWorldPosition());
 		// 사라져야할 공격은 삭제, 소속 섹터 업데이트
 		if (pAttack->GetIsRemove()) {
-			GetSector(pAttack->GetWorldPosition())->RemoveObject(SectorLayer::attack, objectID);
+			GetSector(prevIndex)->RemoveObject(SectorLayer::attack, objectID);
 			pAttackTableIter = pAttackObjTable.erase(pAttackTableIter);
 		}
 		else {
@@ -1030,7 +1036,6 @@ void Zone::AnimateObjects(float _timeElapsed) {
 			}
 			pAttackTableIter++;
 		}
-		
 	}
 
 	auto pItemTableIter = pItemObjTable.begin();

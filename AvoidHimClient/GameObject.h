@@ -235,6 +235,8 @@ public:
 
 class SwingAttack : public Attack {
 protected:
+	bool isProcessAttack;
+	bool canGiveDmg;
 
 public:
 	SwingAttack();
@@ -242,6 +244,12 @@ public:
 	~SwingAttack();
 	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void Animate(float _timeElapsed);
+
+	// getter, setter
+	bool IsProcessAttack() { return isProcessAttack; }
+	void SetProcessAttack(bool _isProcessAttack) { isProcessAttack = _isProcessAttack; }
+	bool CanGiveDmg() { return canGiveDmg; }
+
 };
 
 class ThrowAttack : public Attack {

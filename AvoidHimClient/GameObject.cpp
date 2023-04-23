@@ -1373,6 +1373,8 @@ void Attack::Animate(float _timeElapsed) {
 SwingAttack::SwingAttack() {
 	attackType = AttackType::swingAttack;
 	damage = 20.0f;
+	isProcessAttack = false;
+	canGiveDmg = false;
 }
 
 SwingAttack::SwingAttack(UINT _playerObjectID) : SwingAttack() {
@@ -1394,6 +1396,9 @@ void SwingAttack::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevic
 void SwingAttack::Animate(float _timeElapsed) {
 	Attack::Animate(_timeElapsed);
 	lifeTime -= _timeElapsed;
+	if (lifeTime <= 0.6f && !canGiveDmg)
+		canGiveDmg = true;
+
 	if (lifeTime < 0) {
 		isRemove = true;
 	}

@@ -1431,8 +1431,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		SC_ATTACK_HIT* packet = GetPacket<SC_ATTACK_HIT>();
 		// 내가 맞은 패킷은 받지 않는다.
 		auto pHitPlayerObject = dynamic_pointer_cast<InterpolateMoveGameObject>(FindPlayerObject(packet->hitPlayerObjectID));
+		auto pAttack = pZone->GetAttack(packet->attackObjectID);
 		if (pHitPlayerObject) {
-			auto pAttack = pZone->GetAttack(packet->attackObjectID);
 			if (!pAttack) break;
 			pHitPlayerObject->AddHP(-pAttack->GetDamage());
 			pHitPlayerObject->SetHit(true);
@@ -1440,7 +1440,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		else {
 			cout << "해당 플레이어가 없습니다!!\n";
 		}
-		pZone->RemoveAttack(packet->attackObjectID);
+		if(!pAttack)
+			pZone->RemoveAttack(packet->attackObjectID);
 		break;
 		// 해당플레이어의 체력을 깎고, 해당 오브젝트를 삭제한다.
 	}
