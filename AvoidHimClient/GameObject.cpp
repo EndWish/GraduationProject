@@ -834,13 +834,13 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	prevPosition = XMFLOAT3();
 	prevRotation = Vector4::QuaternionIdentity();
 	prevScale = XMFLOAT3(1, 1, 1);
-
+		
 	nextPosition = XMFLOAT3();
 	nextRotation = Vector4::QuaternionIdentity();
 	nextScale = XMFLOAT3(1, 1, 1);
 	t = 0;
 	hp = 100.0f;
-	moveDistance = 0.f;
+
 	visible = false;
 	imprisoned = false;
 
@@ -892,7 +892,6 @@ void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 	}
 
 	// 서버의 다음 주기가 돌때를 t = 1로 잡고 보간한다
-	XMFLOAT3 prevPositionFootStep = GetWorldPosition();
 	t += _timeElapsed / SERVER_PERIOD; 
 	t = min(t, 1.1f);
 	localPosition = Vector3::Lerp(prevPosition, nextPosition, t);
@@ -902,12 +901,24 @@ void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 	UpdateObject();
 	XMFLOAT3 position = GetWorldPosition();
 	pFootStepSound->SetPosition(position);
+
+	XMFLOAT3 prevPositionFootStep = GetWorldPosition();
 	if (position.y == prevPositionFootStep.y) {
-		moveDistance += Vector3::Length(Vector3::Subtract(prevPositionFootStep, position));
+		moveDistance = Vector3::Length(Vector3::Subtract(prevPositionFootStep, position));
 	}
-	if (moveDistance > (1.0f * 2)) {
+
+	if (moveDistance > 0)
+	{
+		// 클립 시작 4프레임 후에 첫 발 내딛음
+		if (footStepCooltime == 0) footStepCooltime = 8.0f / 29.97f;
+		else footStepCooltime += _timeElapsed;
+	}
+	else footStepCooltime = 0;
+
+	// 발 간격이 12 프레임
+	if (footStepCooltime >= (12.0f / 29.97f)) {
 		pFootStepSound->Play();
-		moveDistance = 0.f;
+		footStepCooltime = 0;
 	}
 	GameObject::Animate(_timeElapsed);
 }

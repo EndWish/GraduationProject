@@ -327,7 +327,6 @@ public:
 class InterpolateMoveGameObject : public GameObject {
 private:
 
-	float moveDistance;
 	XMFLOAT3 prevPosition;
 	XMFLOAT4 prevRotation;
 	XMFLOAT3 prevScale;
@@ -336,8 +335,10 @@ private:
 	XMFLOAT4 nextRotation;
 	XMFLOAT3 nextScale;
 
+	float moveDistance;
 	float t;
 	float hp;
+	float footStepCooltime;
 	shared_ptr<Sound> pFootStepSound;
 
 	bool imprisoned;

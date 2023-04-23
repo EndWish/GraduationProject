@@ -54,8 +54,6 @@ void GaussianBlur(int3 n3GroupThreadID : SV_GroupThreadID, int3 threadID : SV_Di
                 color += weight * renderTexture[threadID.xy + int2(i, j)];
                 weightsum += weight;
             }
-            
-            
         }     
         output[threadID.xy] = color / weightsum;
         

@@ -64,10 +64,12 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 
 void Player::Animate(char _collideCheck, float _timeElapsed) {
 
+	bool isDash = false;
 	XMFLOAT3 prevPosition = GetWorldPosition();
 	XMFLOAT3 position;
 	if (speed > baseSpeed) {
 		// 속도 초기화
+		isDash = true;
 		speed = baseSpeed;
 	}
 	else {
@@ -116,13 +118,26 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 
 	position = GetWorldPosition();
 	if (!(_collideCheck & 1)) {
-		moveDistance += Vector3::Length(Vector3::Subtract(prevPosition, position));
+		moveDistance = Vector3::Length(Vector3::Subtract(prevPosition, position));
 	}
 
 
-	if (moveDistance > 1.0f) {
+	if (moveDistance > 0)
+	{
+		if (footStepCooltime == 0) {
+			if(isDash) footStepCooltime = 7.0f / 29.97f;
+			else footStepCooltime = 8.0f / 29.97f;
+			
+		}
+		else footStepCooltime += _timeElapsed;
+	}
+	else footStepCooltime = 0;
+
+	// 발 간격이 12 프레임
+	float footFrame = isDash ? 10.0f : 12.0f;
+	if (footStepCooltime >= (footFrame / 29.97f)) {
 		pFootStepSound->Play();
-		moveDistance = 0.f;
+		footStepCooltime = 0.01;
 	}
 
 	if (slowTime > 0) {

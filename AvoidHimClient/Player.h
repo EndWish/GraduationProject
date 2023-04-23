@@ -17,6 +17,8 @@ protected:
 	float mass;
 	float speed;
 	float baseSpeed;
+	
+	float footStepCooltime;
 
 	XMFLOAT3 velocity;
 	XMFLOAT4 rotation;

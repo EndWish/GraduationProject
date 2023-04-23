@@ -80,7 +80,7 @@ LobbyScene::LobbyScene()
 	viewPort = { 0,0, C_WIDTH, C_HEIGHT, 0, 1 };
 	scissorRect = { 0,0, C_WIDTH, C_HEIGHT };
 	roomList.resize(6);
-
+	isLoading = false;
 	for (int i = 0; i < 5; ++i) {
 		roomViewPort[i].Width = 0.2 * C_WIDTH;
 		roomViewPort[i].Height = 0.5 * C_HEIGHT;
@@ -293,7 +293,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		for (auto& player : roomInfo.players) {
 			player.ready = false;
 		}
-
+		isLoading = true;
 		changeUI(LobbyState::inRoom, false);
 		loadingScene = make_shared<PlayScene>();
 
@@ -311,6 +311,8 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 	case SC_PACKET_TYPE::allPlayerLoadingComplete: {
 		pBackGround->SetEnable(false);
 		SetCapture(hWnd);
+
+		isLoading = false;
 		gameFramework.InitOldCursor();
 		gameFramework.PushScene(loadingScene);
 		
@@ -348,9 +350,10 @@ void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, 
 
 	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);
 	pBackGround->Render(_pCommandList);
-
+	if (!isLoading) {
 	for (auto [name, pUI] : pUIs) {
 		pUI->Render(_pCommandList);
+	}
 	}
 	for (auto [name, pButton] : pButtons) {
 		pButton->Render(_pCommandList);
@@ -361,12 +364,14 @@ void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, 
 }
 
 void LobbyScene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	for (auto [name, pButton] : pButtons) {
-		pButton->PostRender();
-	}
-	// 글자는 Render과정이 전부 끝난 후에 가능
-	for (auto [name, pText] : pTexts) {
-		pText->Render();
+	if (!isLoading) {
+		for (auto [name, pButton] : pButtons) {
+			pButton->PostRender();
+		}
+		// 글자는 Render과정이 전부 끝난 후에 가능
+		for (auto [name, pText] : pTexts) {
+			pText->Render();
+		}
 	}
 }
 
@@ -931,7 +936,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 
 	shared_ptr<Image2D> pImg;
 
-	pUIs["2DUI_stamina"] = make_shared<Image2D>("2DUI_stamina", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+	pUIs["2DUI_stamina"] = make_shared<Image2D>("2DUI_stamina", XMFLOAT2(0.488f, 0.15f), XMFLOAT2(1.512f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	pUIs["2DUI_staminaFrame"] = make_shared<Image2D>("2DUI_staminaFrame", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.85f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	pUIs["2DUI_interact"] = make_shared<Image2D>("2DUI_interact", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	//pUIs["2DUI_hackRate"] = make_shared<Image2D>("2DUI_hackRate", XMFLOAT2(0.3f, 0.1f), XMFLOAT2(0.f, 0.f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
@@ -958,7 +963,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 		pUIs["2DUI_prisonKey"] = make_shared<Image2D>("2DUI_prisonKey", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 		pUIs["2DUI_trap"] = make_shared<Image2D>("2DUI_trap", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 
-		pUIs["2DUI_hp"] = make_shared<Image2D>("2DUI_hp", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+		pUIs["2DUI_hp"] = make_shared<Image2D>("2DUI_hp", XMFLOAT2(0.488f, 0.15f), XMFLOAT2(1.512f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 		pUIs["2DUI_hpFrame"] = make_shared<Image2D>("2DUI_hpFrame", XMFLOAT2(0.6f, 0.15f), XMFLOAT2(1.4f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 
 		pUIs["2DUI_hacking"] = make_shared<Image2D>("2DUI_hacking", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);

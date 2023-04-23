@@ -63,6 +63,7 @@ struct RoomInfo {
 
 class LobbyScene : public Scene {
 private:
+	bool isLoading;
 	shared_ptr<Image2D> pBackGround;
 
 	D3D12_VIEWPORT viewPort;

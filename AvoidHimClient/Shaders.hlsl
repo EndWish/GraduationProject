@@ -146,30 +146,6 @@ bool isBorder(float2 uv)
     }
 }
 
-float4 GaussianFilter(float2 uv, int filterRate) {
-    int3 coord;
-    int3 baseCoord = int3(uv.x * CWIDTH, uv.y * CHEIGHT, 0);
-    float4 result = float4(0, 0, 0, 1);
-    int sampleCount = 0;
-    for (int i = -filterRate / 2; i < filterRate / 2; ++i)
-    {
-        for (int j = -filterRate / 2; j < filterRate / 2; ++j)
-        {
-            coord = baseCoord;
-            coord.x += i;
-            coord.y += j;
-            if(coord.x < CWIDTH && coord.x >= 0 && coord.y < CHEIGHT && coord.y >= 0)
-            {
-                result += colorTexture.Load(coord);
-                sampleCount++;
-            }
-        }
-
-    }
-    result /= sampleCount;
-    return result;
-}
-
 VS_OUTPUT DefaultVertexShader(VS_INPUT input){
     VS_OUTPUT output;
 
@@ -741,11 +717,7 @@ VS_LIGHTING_OUT LightingVertexShader(VS_LIGHTING_IN input)
 float4 PreLightingColor(float4 baseColor, float2 uv)
 {
     float4 color = baseColor;
-    // blur
-    if (intValue == 4)
-    {
-        color = GaussianFilter(uv, (int) floatValue);
-    }
+
     return color;
 }
 
