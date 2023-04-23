@@ -794,6 +794,7 @@ float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
 #define PARTICLES_TEXTURE_COLUMN 5
 
 #define WATER_DISPENSER_USE 0
+#define HEAL_ITEM_USE 1
 
 struct VS_PARTICLE_INPUT
 {
@@ -810,6 +811,7 @@ VS_PARTICLE_INPUT ParticleStreamOutVertexShader(VS_PARTICLE_INPUT input)
 }
 
 void WaterDispenserUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream);
+void HealItemUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream);
 
 [maxvertexcount(20)] // sizeof(VS_PARTICLE_INPUT) 와 maxvertexcount 를 곱해서 1024바이트를 넘으면 안된다.
 void ParticleStreamOutGeometryShader(point VS_PARTICLE_INPUT input[1], inout PointStream<VS_PARTICLE_INPUT> outStream)
@@ -819,6 +821,9 @@ void ParticleStreamOutGeometryShader(point VS_PARTICLE_INPUT input[1], inout Poi
     {
         case WATER_DISPENSER_USE:
             WaterDispenserUseParticle(particle, outStream);
+            break;
+        case HEAL_ITEM_USE:
+            HealItemUseParticle(particle, outStream);
             break;
     }
 }
@@ -830,6 +835,19 @@ void WaterDispenserUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PAR
     {
         input.lifetime -= elapsedTime;
         input.position += input.velocity * elapsedTime;
+        input.velocity *= 1.0 - elapsedTime * 4.f;
+        
+        outStream.Append(input);
+    }
+}
+void HealItemUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream)
+{
+    // 수명이 남아 있으면 이동시키고(중력의 영향을 받도록 한다.), 
+    if (input.lifetime > 0.0f)  // 수명이 남아있을 경우
+    {
+        input.lifetime -= elapsedTime;
+        input.position += input.velocity * elapsedTime;
+        input.position.y += elapsedTime;
         input.velocity *= 1.0 - elapsedTime * 4.f;
         
         outStream.Append(input);
@@ -937,13 +955,13 @@ G_BUFFER_OUTPUT ParticleDrawPixelShader(GS_PARTICLE_OUTPUT input)
     output.position = float4(input.positionW, 1.0f);
     
     //output.color = color;
-    if (input.type == WATER_DISPENSER_USE)
+    if (input.type == WATER_DISPENSER_USE || input.type == HEAL_ITEM_USE)
     {
         output.emissive = color * (input.lifetime / 1.f);
     }
     else
     {
-        output.emissive = color;
+        output.emissive = color * (input.lifetime / 1.f);;
     }
     
     return output;

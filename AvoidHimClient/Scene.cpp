@@ -1536,6 +1536,20 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			auto pStudent = static_pointer_cast<Student>(pPlayer);
 			if(packet->objectType == ObjectType::medicalKitItem) {
 				pStudent->AddHP(50.0f);
+
+				// 파티클 생성
+				VS_ParticleMappedFormat particle;
+				particle.boardSize = { 0.03f, 0.03f };
+				particle.lifetime = 1.f;
+				particle.position = pStudent->GetHeadObject()->GetWorldPosition();
+				particle.type = (int)PARTICLE_TYPE::healItemUse;
+
+				uniform_real_distribution<float> urd(-5.f, 5.f);
+				for (int i = 0; i < 100; ++i) {
+					particle.velocity = XMFLOAT3(urd(rd), urd(rd), urd(rd));
+					Shader::AddParticle(particle);
+				}
+
 			}
 
 			if (packet->objectType == ObjectType::trapItem) {
@@ -1553,6 +1567,19 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			auto pStudent = static_pointer_cast<InterpolateMoveGameObject>(FindPlayerObject(packet->playerObjectID));
 			if (packet->objectType == ObjectType::medicalKitItem) {
 				pStudent->AddHP(50.0f);
+
+				// 파티클 생성
+				VS_ParticleMappedFormat particle;
+				particle.boardSize = { 0.03f, 0.03f };
+				particle.lifetime = 1.f;
+				particle.position = pStudent->GetHeadObject()->GetWorldPosition();
+				particle.type = (int)PARTICLE_TYPE::healItemUse;
+
+				uniform_real_distribution<float> urd(-5.f, 5.f);
+				for (int i = 0; i < 100; ++i) {
+					particle.velocity = XMFLOAT3(urd(rd), urd(rd), urd(rd));
+					Shader::AddParticle(particle);
+				}
 			}
 			if (packet->objectType == ObjectType::trapItem) {
 				XMFLOAT3 position = pStudent->GetWorldPosition();

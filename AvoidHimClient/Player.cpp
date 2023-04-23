@@ -328,6 +328,19 @@ void Student::LeftClick() {
 		pUI = Scene::GetUI("2DUI_energyDrink");
 		// 스태미너 100% 회복
 		SetMP(100.0f);
+
+		// 파티클 생성
+		VS_ParticleMappedFormat particle;
+		particle.boardSize = { 0.03f, 0.03f };
+		particle.lifetime = 1.f;
+		particle.position = GetHeadObject()->GetWorldPosition();
+		particle.type = (int)PARTICLE_TYPE::waterDispenserUse;
+
+		uniform_real_distribution<float> urd(-5.f, 5.f);
+		for (int i = 0; i < 100; ++i) {
+			particle.velocity = XMFLOAT3(urd(rd), urd(rd), urd(rd));
+			Shader::AddParticle(particle);
+		}
 	}
 	else if (item == ObjectType::trapItem) {
 		// 공중에서는 사용할 수 없다.

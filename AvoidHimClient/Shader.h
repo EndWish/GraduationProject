@@ -5,7 +5,8 @@ class GameObject;
 class Camera;
 
 enum class PARTICLE_TYPE {
-	waterDispenserUse
+	waterDispenserUse,
+	healItemUse,
 };
 
 struct VS_ParticleMappedFormat {
