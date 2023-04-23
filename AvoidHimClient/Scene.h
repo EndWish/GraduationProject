@@ -34,6 +34,7 @@ public:
 	virtual char CheckCollision(float _timeElapsed);
 	virtual void RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex) = 0;
 	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
+	virtual void LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
 	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void NoticeCloseToServer();
@@ -97,7 +98,10 @@ public:
 
 	virtual void RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex);
 	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
+	
+
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
+	
 	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ReActButton(shared_ptr<Button> _pButton);
 	virtual void NoticeCloseToServer();
@@ -158,6 +162,7 @@ public:
 	
 	virtual void RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex);
 	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
+	virtual void LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 

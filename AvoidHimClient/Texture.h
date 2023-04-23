@@ -25,6 +25,10 @@ private:
 	vector<int> rootParameterIndices;
 
 	vector<D3D12_GPU_DESCRIPTOR_HANDLE> srvGpuDescriptorHandles;
+	vector<D3D12_GPU_DESCRIPTOR_HANDLE> uavGpuDescriptorHandles;
+
+	vector<D3D12_GPU_DESCRIPTOR_HANDLE> srvComputeGpuDescriptorHandles;
+	vector<D3D12_GPU_DESCRIPTOR_HANDLE> uavComputeGpuDescriptorHandles;
 
 	int nSampler;
 	vector<D3D12_GPU_DESCRIPTOR_HANDLE> samplerGpuDescriptorHandles;
@@ -33,20 +37,32 @@ private:
 public:
 	void SetRootParameterIndex(int _index, UINT _nRootParameterIndex);
 	void UpdateShaderVariable(ComPtr<ID3D12GraphicsCommandList> _pCommandList);
+	void UpdateComputeShaderVariable(ComPtr<ID3D12GraphicsCommandList> _pCommandList, int _srvIndex, int _uavIndex);
+
+	// 특정 인덱스의 텍스처만 전달
+	void UpdateComputeShaderVariable(ComPtr<ID3D12GraphicsCommandList> _pCommandList, int _srvIndex, int _uavIndex, int _index);
 	bool LoadFromFile(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _resourceType, int _index, int _startRootSignatureIndex);
 
 	ComPtr<ID3D12Resource> CreateTexture(const ComPtr<ID3D12Device>& _pDevice, UINT _width, UINT _height, DXGI_FORMAT _format, D3D12_RESOURCE_FLAGS _resourceFlags, D3D12_RESOURCE_STATES _resourceStates, D3D12_CLEAR_VALUE* _clearValue, UINT _ResourceType, UINT _index);
 	void CreateBuffer(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, void* pData, UINT nElements, UINT nStride, DXGI_FORMAT ndxgiFormat, D3D12_HEAP_TYPE d3dHeapType, D3D12_RESOURCE_STATES d3dResourceStates, UINT nIndex);
 	void ReleaseUploadBuffers();
 
-	void SetGpuDescriptorHandle(int _index, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuDescriptorHandle);
+	void SetSRVGpuDescriptorHandle(int _index, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuDescriptorHandle);
+	void SetUAVGpuDescriptorHandle(int _index, D3D12_GPU_DESCRIPTOR_HANDLE urvGpuDescriptorHandle);
+
+	void SetSRVComputeGpuDescriptorHandle(int _index, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuDescriptorHandle);
+	void SetUAVComputeGpuDescriptorHandle(int _index, D3D12_GPU_DESCRIPTOR_HANDLE urvGpuDescriptorHandle);
 
 	// 해당 인덱스의 텍스처 리소스를 반환
 	ComPtr<ID3D12Resource> GetResource(int _index) { return pTextureBuffers[_index]; };
 	// 해당 인덱스의 텍스처의 서술자 핸들을 반환
-	D3D12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(int _index) { return(srvGpuDescriptorHandles[_index]); }
-	// 
+	D3D12_GPU_DESCRIPTOR_HANDLE GetGpuDescriptorHandle(int _index) { return(srvGpuDescriptorHandles[_index]); } 
+	D3D12_GPU_DESCRIPTOR_HANDLE GetUAVGpuDescriptorHandle(int _index) { return(uavGpuDescriptorHandles[_index]); }
+	D3D12_GPU_DESCRIPTOR_HANDLE GetComputeGpuDescriptorHandle(int _index) { return(srvComputeGpuDescriptorHandles[_index]); }
+	D3D12_GPU_DESCRIPTOR_HANDLE GetComputeUAVGpuDescriptorHandle(int _index) { return(uavComputeGpuDescriptorHandles[_index]); }
+
 	D3D12_SHADER_RESOURCE_VIEW_DESC GetShaderResourceViewDesc(int _index);
+	D3D12_UNORDERED_ACCESS_VIEW_DESC GetUnorderedAccessViewDesc(int _index);
 	UINT GetTextureType(int _index) { return(resourceTypes[_index]); }
 	int GetnTexture() { return(nTexture); }
 	int GetnRootParameter() { return(nRootParameter); };

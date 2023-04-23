@@ -57,23 +57,59 @@ protected:
 	static D3D12_CPU_DESCRIPTOR_HANDLE			srvCPUDescriptorStartHandle;
 	static D3D12_GPU_DESCRIPTOR_HANDLE			srvGPUDescriptorStartHandle;
 
+	static D3D12_CPU_DESCRIPTOR_HANDLE			uavCPUDescriptorStartHandle;
+	static D3D12_GPU_DESCRIPTOR_HANDLE			uavGPUDescriptorStartHandle;
+
 	static D3D12_CPU_DESCRIPTOR_HANDLE			srvCPUDescriptorNextHandle;
 	static D3D12_GPU_DESCRIPTOR_HANDLE			srvGPUDescriptorNextHandle;
 
+	static D3D12_CPU_DESCRIPTOR_HANDLE			uavCPUDescriptorNextHandle;
+	static D3D12_GPU_DESCRIPTOR_HANDLE			uavGPUDescriptorNextHandle;
+
+	static ComPtr<ID3D12DescriptorHeap>			computeDescriptorHeap;
+
+	static D3D12_CPU_DESCRIPTOR_HANDLE			cbvComputeCPUDescriptorStartHandle;
+	static D3D12_GPU_DESCRIPTOR_HANDLE			cbvComputeGPUDescriptorStartHandle;
+	static D3D12_CPU_DESCRIPTOR_HANDLE			srvComputeCPUDescriptorStartHandle;
+	static D3D12_GPU_DESCRIPTOR_HANDLE			srvComputeGPUDescriptorStartHandle;
+
+	static D3D12_CPU_DESCRIPTOR_HANDLE			uavComputeCPUDescriptorStartHandle;
+	static D3D12_GPU_DESCRIPTOR_HANDLE			uavComputeGPUDescriptorStartHandle;
+
+	static D3D12_CPU_DESCRIPTOR_HANDLE			srvComputeCPUDescriptorNextHandle;
+	static D3D12_GPU_DESCRIPTOR_HANDLE			srvComputeGPUDescriptorNextHandle;
+
+	static D3D12_CPU_DESCRIPTOR_HANDLE			uavComputeCPUDescriptorNextHandle;
+	static D3D12_GPU_DESCRIPTOR_HANDLE			uavComputeGPUDescriptorNextHandle;
 	static ParticleResource particleResource;
 public:
 
 	static void SetDescriptorHeap(ComPtr<ID3D12GraphicsCommandList> _pCommandList);
 
-	static void CreateCbvSrvDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nConstantBufferViews, int nShaderResourceViews);
+	static void CreateCbvSrvUavDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nConstantBufferViews, int nShaderResourceViews, int nUnorderedAccessViews);
+	
+	static void SetComputeDescriptorHeap(ComPtr<ID3D12GraphicsCommandList> _pCommandList);
+
+	static void CreateComputeDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nConstantBufferViews, int nShaderResourceViews, int nUnorderedAccessViews);
+
 	// CBV 생성
 	static void CreateConstantBufferView();
 	// SRV 생성 (단일)
 	static void CreateShaderResourceView(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, int _Index);
 	// SRV 생성 (다중)
 	static void CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, UINT _nDescriptorHeapIndex, UINT _nRootParameterStartIndex);
-
 	static D3D12_GPU_DESCRIPTOR_HANDLE CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, int nResources, ID3D12Resource** ppd3dResources, DXGI_FORMAT* pdxgiSrvFormats);
+
+	// UAV 생성
+	static void CreateUnorderedAccessView(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, int _Index);
+
+	// SRV 생성 (단일)
+	static void CreateComputeShaderResourceView(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, int _Index);
+	// SRV 생성 (다중)
+	static void CreateComputeShaderResourceViews(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, UINT _nDescriptorHeapIndex, UINT _nRootParameterStartIndex);
+	// UAV 생성
+	static void CreateComputeUnorderedAccessView(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, int _Index);
+
 
 	//  StreamOutput과 관련된 함수들
 	static void AddParticle(const VS_ParticleMappedFormat& _particle);
@@ -314,7 +350,7 @@ private:
 	unordered_map<string, shared_ptr<Shader>> storage;
 
 public:
-	bool InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	bool InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature, const ComPtr<ID3D12RootSignature>& _pComputeRootSiganture);
 	shared_ptr<Shader> GetShader(const string& _name);
 };
 
@@ -335,6 +371,9 @@ public:
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) { cout << "사용되지 않는다.\n"; };	// Render 순수가상함수?
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool isUploadInput);	// Render 순수가상함수?
 };
+
+
+
 class ParticleDrawShader : public Shader {
 protected:
 	ComPtr<ID3DBlob> pGSBlob;
@@ -348,3 +387,30 @@ public:
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 };
 
+class BlurComputeShader : public Shader {
+
+protected:
+	XMUINT3 numThreads;
+	D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc;
+	ComPtr<ID3DBlob> pCSBlob;
+public:
+	BlurComputeShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~BlurComputeShader();
+
+	virtual void Dispatch(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual D3D12_RASTERIZER_DESC CreateRasterizerState();
+	virtual D3D12_INPUT_LAYOUT_DESC CreateInputLayout();
+};
+
+class PostShader : public Shader {
+private:
+
+public:
+	
+public:
+	PostShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~PostShader();
+private:
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+};

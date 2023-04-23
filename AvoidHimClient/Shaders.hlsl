@@ -7,6 +7,8 @@
 // 출력하지 않는 렌더타겟이 있을 수 있다.
 #pragma warning( disable :  3578 )
 
+
+
 static const int3 d[8] =
 {
     int3(0, -1, 0), int3(-1, 0, 0), int3(1, 0, 0), int3(0, 1, 0),
@@ -85,6 +87,8 @@ float RandomFloat(float2 co);
 Texture2D albedoMap : register(t5);
 Texture2D normalMap : register(t6);
 Texture2D emissiveMap : register(t13);
+
+Texture2D PostBuffer : register(t14);
 
 struct G_BUFFER_OUTPUT {
     float4 color : SV_TARGET0;   // 조명을 처리하기 전의 픽셀의 색상
@@ -767,7 +771,7 @@ float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
     float3 positionW = positionTexture.Sample(gssWrap, input.uv).xyz;
     
     float3 changeNormal = uvSlideTexture.Sample(gssWrap, input.uv).xyz;
-    
+
     // 투명한 경우 기존 픽셀의 노말을 흔들어 주고, 약간 어둡게 칠한다.
     float3 normal = lerp(normalTexture.Sample(gssWrap, input.uv).xyz, changeNormal, float3(0.5, 0.5, 0.5));
     float4 color;
@@ -971,4 +975,30 @@ G_BUFFER_OUTPUT ParticleDrawPixelShader(GS_PARTICLE_OUTPUT input)
     }
     
     return output;
+}
+
+struct VS_POST_IN
+{
+    float3 position : POSITION;
+    float2 uv : TEXCOORD;
+};
+
+struct VS_POST_OUT
+{
+    float4 position : SV_POSITION;
+    float2 uv : TEXCOORD;
+};
+
+
+VS_POST_OUT PostVertexShader(VS_POST_IN input)
+{
+    VS_POST_OUT output;
+    output.position = float4(input.position, 1.0f);
+    output.uv = input.uv;
+    return output;
+}
+
+float4 PostPixelShader(VS_POST_OUT input) : SV_TARGET
+{
+    return PostBuffer.Sample(gssWrap, input.uv);
 }

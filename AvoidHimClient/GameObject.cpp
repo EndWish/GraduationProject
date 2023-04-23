@@ -940,7 +940,7 @@ void InterpolateMoveGameObject::SetNextTransform(const XMFLOAT3& _position, cons
 
 void InterpolateMoveGameObject::SetNickname(const WCHAR _name[20], bool _isProfessor) {
 	D2D1::ColorF color = _isProfessor ? D2D1::ColorF(1, 0, 0, 1) : D2D1::ColorF(1, 1, 1, 1);
-	nickname = make_shared<TextBox>((WCHAR*)L"Who asks Satan", color, XMFLOAT2(1.55f, 1.55f), XMFLOAT2(0.3f, 0.1f), C_WIDTH / 60.0f, false);
+	nickname = make_shared<TextBox>((WCHAR*)L"LeeSeoyun", color, XMFLOAT2(1.55f, 1.55f), XMFLOAT2(0.3f, 0.1f), C_WIDTH / 60.0f, false);
 	nickname->SetText(_name);
 	nickname->SetAlignment(DWRITE_TEXT_ALIGNMENT_CENTER);
 }

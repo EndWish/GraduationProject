@@ -3,15 +3,37 @@
 #include "GameFramework.h"
 
 ComPtr<ID3D12DescriptorHeap> Shader::cbvSrvDescriptorHeap;
+ComPtr<ID3D12DescriptorHeap> Shader::computeDescriptorHeap;
 
 D3D12_CPU_DESCRIPTOR_HANDLE Shader::srvCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
 D3D12_GPU_DESCRIPTOR_HANDLE Shader::srvGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
 
+D3D12_CPU_DESCRIPTOR_HANDLE Shader::uavCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::uavGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
 D3D12_CPU_DESCRIPTOR_HANDLE Shader::srvCPUDescriptorNextHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
 D3D12_GPU_DESCRIPTOR_HANDLE Shader::srvGPUDescriptorNextHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
 
+D3D12_CPU_DESCRIPTOR_HANDLE Shader::uavCPUDescriptorNextHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::uavGPUDescriptorNextHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
 D3D12_CPU_DESCRIPTOR_HANDLE Shader::cbvCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
 D3D12_GPU_DESCRIPTOR_HANDLE Shader::cbvGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
+D3D12_CPU_DESCRIPTOR_HANDLE Shader::srvComputeCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::srvComputeGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
+D3D12_CPU_DESCRIPTOR_HANDLE Shader::uavComputeCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::uavComputeGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
+D3D12_CPU_DESCRIPTOR_HANDLE Shader::srvComputeCPUDescriptorNextHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::srvComputeGPUDescriptorNextHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
+D3D12_CPU_DESCRIPTOR_HANDLE Shader::uavComputeCPUDescriptorNextHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::uavComputeGPUDescriptorNextHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
+
+D3D12_CPU_DESCRIPTOR_HANDLE Shader::cbvComputeCPUDescriptorStartHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
+D3D12_GPU_DESCRIPTOR_HANDLE Shader::cbvComputeGPUDescriptorStartHandle = D3D12_GPU_DESCRIPTOR_HANDLE();
 weak_ptr<Camera> Shader::wpCamera;
 
 // StreamOutput과 관련된 변수들
@@ -153,7 +175,7 @@ void Shader::CreateShaderResourceView(ComPtr<ID3D12Device> _pDevice, shared_ptr<
 		_pDevice->CreateShaderResourceView(pShaderResource.Get(), &d3dShaderResourceViewDesc, srvCPUDescriptorNextHandle);
 		srvCPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
 
-		_pTexture->SetGpuDescriptorHandle(_Index, srvGPUDescriptorNextHandle);
+		_pTexture->SetSRVGpuDescriptorHandle(_Index, srvGPUDescriptorNextHandle);
 		srvGPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
 	}
 }
@@ -171,12 +193,29 @@ void Shader::CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, shared_ptr
 		_pDevice->CreateShaderResourceView(pShaderResource.Get(), &d3dShaderResourceViewDesc, srvCPUDescriptorNextHandle);
 		srvCPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
 
-		_pTexture->SetGpuDescriptorHandle(i, srvGPUDescriptorNextHandle);
+		_pTexture->SetSRVGpuDescriptorHandle(i, srvGPUDescriptorNextHandle);
 
 		srvGPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
 	}
 	int nRootParameters = _pTexture->GetnRootParameter();
 	for (int i = 0; i < nRootParameters; i++) _pTexture->SetRootParameterIndex(i, _nRootParameterStartIndex + i);
+}
+
+void Shader::CreateUnorderedAccessView(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, int _Index) {
+	// 셰이더 내 디스크립터 힙에 해당 uav를 생성
+	// 여러개를 만들거면, Heap 생성시 uav 개수를 늘려주어야 한다!! 현재 1로 해둠
+	ComPtr<ID3D12Resource> pShaderResource = _pTexture->GetResource(_Index);
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = _pTexture->GetUAVGpuDescriptorHandle(_Index);
+	if (pShaderResource && !gpuDescriptorHandle.ptr)
+	{
+		D3D12_UNORDERED_ACCESS_VIEW_DESC d3dShaderResourceViewDesc = _pTexture->GetUnorderedAccessViewDesc(_Index);
+
+		_pDevice->CreateUnorderedAccessView(pShaderResource.Get(), NULL, &d3dShaderResourceViewDesc, uavCPUDescriptorNextHandle);
+		uavCPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
+
+		_pTexture->SetUAVGpuDescriptorHandle(_Index, uavGPUDescriptorNextHandle);
+		uavGPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
+	}
 }
 
 D3D12_GPU_DESCRIPTOR_HANDLE Shader::CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, int nResources, ID3D12Resource** ppd3dResources, DXGI_FORMAT* pdxgiSrvFormats)
@@ -203,6 +242,62 @@ D3D12_GPU_DESCRIPTOR_HANDLE Shader::CreateShaderResourceViews(ComPtr<ID3D12Devic
 	}
 	// 첫 리소스의 핸들을 반환
 	return resourceStartHandle;
+}
+
+void Shader::CreateComputeShaderResourceView(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, int _Index)
+{
+	// 셰이더 내 디스크립터 힙에 해당 srv를 생성
+	ComPtr<ID3D12Resource> pShaderResource = _pTexture->GetResource(_Index);
+
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = _pTexture->GetComputeGpuDescriptorHandle(_Index);
+	if (pShaderResource && !gpuDescriptorHandle.ptr)
+	{
+		D3D12_SHADER_RESOURCE_VIEW_DESC d3dShaderResourceViewDesc = _pTexture->GetShaderResourceViewDesc(_Index);
+
+		_pDevice->CreateShaderResourceView(pShaderResource.Get(), &d3dShaderResourceViewDesc, srvComputeCPUDescriptorNextHandle);
+		srvComputeCPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
+
+		_pTexture->SetSRVComputeGpuDescriptorHandle(_Index, srvComputeGPUDescriptorNextHandle);
+		srvComputeGPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
+	}
+}
+
+void Shader::CreateComputeShaderResourceViews(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, UINT _nDescriptorHeapIndex, UINT _nRootParameterStartIndex)
+{
+	srvComputeCPUDescriptorNextHandle.ptr += (::cbvSrvDescriptorIncrementSize * _nDescriptorHeapIndex);
+	srvComputeGPUDescriptorNextHandle.ptr += (::cbvSrvDescriptorIncrementSize * _nDescriptorHeapIndex);
+
+	int nTextures = _pTexture->GetnTexture();
+	for (int i = 0; i < nTextures; i++)
+	{
+		ComPtr<ID3D12Resource> pShaderResource = _pTexture->GetResource(i);
+		D3D12_SHADER_RESOURCE_VIEW_DESC d3dShaderResourceViewDesc = _pTexture->GetShaderResourceViewDesc(i);
+		_pDevice->CreateShaderResourceView(pShaderResource.Get(), &d3dShaderResourceViewDesc, srvComputeCPUDescriptorNextHandle);
+		srvComputeCPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
+
+		_pTexture->SetSRVComputeGpuDescriptorHandle(i, srvComputeGPUDescriptorNextHandle);
+
+		srvComputeGPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
+	}
+	int nRootParameters = _pTexture->GetnRootParameter();
+}
+
+void Shader::CreateComputeUnorderedAccessView(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, int _Index) {
+	// 셰이더 내 디스크립터 힙에 해당 uav를 생성
+	// 여러개를 만들거면, Heap 생성시 uav 개수를 늘려주어야 한다!! 현재 1로 해둠
+	ComPtr<ID3D12Resource> pShaderResource = _pTexture->GetResource(_Index);
+	D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = _pTexture->GetComputeUAVGpuDescriptorHandle(_Index);
+	if (pShaderResource && !gpuDescriptorHandle.ptr)
+	{
+
+		D3D12_UNORDERED_ACCESS_VIEW_DESC d3dShaderResourceViewDesc = _pTexture->GetUnorderedAccessViewDesc(_Index);
+
+		_pDevice->CreateUnorderedAccessView(pShaderResource.Get(), NULL, &d3dShaderResourceViewDesc, uavComputeCPUDescriptorNextHandle);
+		uavComputeCPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
+
+		_pTexture->SetUAVComputeGpuDescriptorHandle(_Index, uavGPUDescriptorNextHandle);
+		uavComputeGPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
+	}
 }
 
 //  StreamOutput과 관련된 함수들
@@ -337,6 +432,7 @@ void Shader::PrepareRenderSO(const ComPtr<ID3D12GraphicsCommandList>& _pCommandL
 
 void Shader::CreateConstantBufferView()
 {
+	// 미사용
 }
 
 void Shader::SetDescriptorHeap(ComPtr<ID3D12GraphicsCommandList> _pCommandList) {
@@ -344,10 +440,11 @@ void Shader::SetDescriptorHeap(ComPtr<ID3D12GraphicsCommandList> _pCommandList) 
 }
 
 
-void Shader::CreateCbvSrvDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nConstantBufferViews, int nShaderResourceViews)
+
+void Shader::CreateCbvSrvUavDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nConstantBufferViews, int nShaderResourceViews, int nUnorderedAccessViews)
 {
 	D3D12_DESCRIPTOR_HEAP_DESC d3dDescriptorHeapDesc;
-	d3dDescriptorHeapDesc.NumDescriptors = nConstantBufferViews + nShaderResourceViews; //CBVs + SRVs 
+	d3dDescriptorHeapDesc.NumDescriptors = nConstantBufferViews + nShaderResourceViews + nUnorderedAccessViews; //CBVs + SRVs + UAVs
 	d3dDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
 	d3dDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	d3dDescriptorHeapDesc.NodeMask = 0;
@@ -359,9 +456,45 @@ void Shader::CreateCbvSrvDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nCon
 	srvCPUDescriptorStartHandle.ptr = cbvCPUDescriptorStartHandle.ptr + (::cbvSrvDescriptorIncrementSize * nConstantBufferViews);
 	srvGPUDescriptorStartHandle.ptr = cbvGPUDescriptorStartHandle.ptr + (::cbvSrvDescriptorIncrementSize * nConstantBufferViews);
 
+	uavCPUDescriptorStartHandle.ptr = srvCPUDescriptorStartHandle.ptr + (::cbvSrvDescriptorIncrementSize * nShaderResourceViews);
+	uavGPUDescriptorStartHandle.ptr = srvGPUDescriptorStartHandle.ptr + (::cbvSrvDescriptorIncrementSize * nShaderResourceViews);
+
 	srvCPUDescriptorNextHandle = srvCPUDescriptorStartHandle;
 	srvGPUDescriptorNextHandle = srvGPUDescriptorStartHandle;
+
+	uavCPUDescriptorNextHandle = srvCPUDescriptorStartHandle;
+	uavGPUDescriptorNextHandle = srvGPUDescriptorStartHandle;
 }
+
+
+void Shader::SetComputeDescriptorHeap(ComPtr<ID3D12GraphicsCommandList> _pCommandList) {
+	_pCommandList->SetDescriptorHeaps(1, computeDescriptorHeap.GetAddressOf());
+}
+
+void Shader::CreateComputeDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nConstantBufferViews, int nShaderResourceViews, int nUnorderedAccessViews) {
+	D3D12_DESCRIPTOR_HEAP_DESC d3dDescriptorHeapDesc;
+	d3dDescriptorHeapDesc.NumDescriptors = nConstantBufferViews + nShaderResourceViews + nUnorderedAccessViews; //CBVs + SRVs + UAVs
+	d3dDescriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
+	d3dDescriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
+	d3dDescriptorHeapDesc.NodeMask = 0;
+	_pDevice->CreateDescriptorHeap(&d3dDescriptorHeapDesc, IID_PPV_ARGS(&computeDescriptorHeap));
+
+	cbvComputeCPUDescriptorStartHandle = computeDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	cbvComputeGPUDescriptorStartHandle = computeDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
+
+	srvComputeCPUDescriptorStartHandle.ptr = cbvComputeCPUDescriptorStartHandle.ptr + (::cbvSrvDescriptorIncrementSize * nConstantBufferViews);
+	srvComputeGPUDescriptorStartHandle.ptr = cbvComputeGPUDescriptorStartHandle.ptr + (::cbvSrvDescriptorIncrementSize * nConstantBufferViews);
+
+	uavComputeCPUDescriptorStartHandle.ptr = srvComputeCPUDescriptorStartHandle.ptr + (::cbvSrvDescriptorIncrementSize * nShaderResourceViews);
+	uavComputeGPUDescriptorStartHandle.ptr = srvComputeGPUDescriptorStartHandle.ptr + (::cbvSrvDescriptorIncrementSize * nShaderResourceViews);
+
+	srvComputeCPUDescriptorNextHandle = srvComputeCPUDescriptorStartHandle;
+	srvComputeGPUDescriptorNextHandle = srvComputeGPUDescriptorStartHandle;
+
+	uavComputeCPUDescriptorNextHandle = srvComputeCPUDescriptorStartHandle;
+	uavComputeGPUDescriptorNextHandle = srvComputeGPUDescriptorStartHandle;
+}
+
 
 
 //////////////////// Basic Shader
@@ -1494,7 +1627,7 @@ D3D12_INPUT_LAYOUT_DESC LightingShader::CreateInputLayout() {
 
 /////////////////////////    Shader Manager   ////////////////////////////////
 
-bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature)
+bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature, const ComPtr<ID3D12RootSignature>& _pComputeRootSignature)
 {
 	shared_ptr<Shader> basicShader = make_shared<BasicShader>(_pDevice, _pRootSignature);
 	if (basicShader) storage["BasicShader"] = basicShader;
@@ -1558,6 +1691,14 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 
 	shared_ptr<Shader> particleStreamOutShader = make_shared<ParticleStreamOutShader>(_pDevice, _pRootSignature);
 	if (particleStreamOutShader) storage["ParticleStreamOutShader"] = particleStreamOutShader;
+	else return false;
+
+	shared_ptr<Shader> blurComputeShader = make_shared<BlurComputeShader>(_pDevice, _pComputeRootSignature);
+	if (blurComputeShader) storage["BlurComputeShader"] = blurComputeShader;
+	else return false;
+
+	shared_ptr<Shader> postShader = make_shared<PostShader>(_pDevice, _pRootSignature);
+	if (postShader) storage["PostShader"] = postShader;
 	else return false;
 
 	// 이후에 계속 추가
@@ -1828,4 +1969,104 @@ void ParticleDrawShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 	_pCommandList->IASetVertexBuffers(0, 1, vertexBuffersViews);
 
 	_pCommandList->DrawInstanced((UINT)Shader::particleResource.nDefaultStreamOutputParticle, 1, 0, 0);
+}
+
+BlurComputeShader::BlurComputeShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+
+	D3D12_CACHED_PIPELINE_STATE d3dCachedPipelineState = { };
+
+	ZeroMemory(&computePipelineStateDesc, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
+	computePipelineStateDesc.pRootSignature = _pRootSignature.Get();
+	computePipelineStateDesc.CS = CompileShaderFromFile(L"ComputeShader.hlsl", "GaussianBlur", "cs_5_1", pCSBlob);
+	computePipelineStateDesc.NodeMask = 0;
+	computePipelineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	computePipelineStateDesc.CachedPSO = d3dCachedPipelineState;
+
+	HRESULT _hr = _pDevice->CreateComputePipelineState(&computePipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (!FAILED(_hr)) cout << "BlueComputeShader 생성 성공\n";
+	
+	numThreads = XMUINT3(ceil(C_WIDTH / 32.0f), ceil(C_HEIGHT / 32.0f), 1);
+
+}
+
+BlurComputeShader::~BlurComputeShader() {
+
+}
+
+void BlurComputeShader::Dispatch(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework& gameFramework = GameFramework::Instance();
+	PrepareRender(_pCommandList);
+
+
+	// 빛처리가 완료된 결과물을 0번으로 전달
+	gameFramework.GetPostBuffer()->UpdateComputeShaderVariable(_pCommandList, 0, -1);
+
+	//깊이값이 담긴 텍스처를 srv 1번에 전달
+	gameFramework.GetGBuffer()->UpdateComputeShaderVariable(_pCommandList, 1, -1);
+
+	// RWTexture를 uav 2번에 연결
+	gameFramework.GetComputeBuffer()->UpdateComputeShaderVariable(_pCommandList, -1, 2);
+	
+	// 컴퓨트 쉐이더를 수행한다.
+	_pCommandList->Dispatch(numThreads.x, numThreads.y, 1);
+
+}
+
+D3D12_RASTERIZER_DESC BlurComputeShader::CreateRasterizerState() {
+	return D3D12_RASTERIZER_DESC();
+}
+
+D3D12_INPUT_LAYOUT_DESC BlurComputeShader::CreateInputLayout()
+{
+	return D3D12_INPUT_LAYOUT_DESC();
+}
+
+PostShader::PostShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
+	Init(_pDevice, _pRootSignature);
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "PostVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "PostPixelShader", "ps_5_1", pPSBlob);
+
+	HRESULT hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (hr == S_OK) cout << "PostShader 생성 성공\n";
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+
+	inputElementDescs.clear();
+}
+
+PostShader::~PostShader() {
+
+}
+
+D3D12_RASTERIZER_DESC PostShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 2.0f;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+
+D3D12_INPUT_LAYOUT_DESC PostShader::CreateInputLayout() {
+	inputElementDescs.assign(2, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[1] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
 }

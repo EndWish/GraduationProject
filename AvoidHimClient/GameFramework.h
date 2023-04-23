@@ -59,6 +59,9 @@ private:
 	// 루트 시그니처
 	ComPtr<ID3D12RootSignature> pRootSignature;
 
+	// 컴퓨트 쉐이더를 위한 루트 시그니처
+	ComPtr<ID3D12RootSignature> pComputeRootSignature;
+
 	// 게임 타이머
 	Timer gameTimer;
 
@@ -98,6 +101,16 @@ private:
 	// 쉐도우 맵의 렌더타겟뷰 주소
 	vector<D3D12_CPU_DESCRIPTOR_HANDLE> shadowMapCPUDescriptorHandles;
 	
+	// 빛 처리를 마친 화면 버퍼
+	shared_ptr<Texture> pPostBuffer;
+	D3D12_CPU_DESCRIPTOR_HANDLE postBufferCPUDescriptorHandle;
+
+	// 컴퓨트 쉐이더의 계산 결과를 출력할 버퍼
+	shared_ptr<Texture> pComputeBuffer;
+
+	// 컴퓨트 쉐이더의 계산 결과를 복사할 버퍼
+	shared_ptr<Texture> pDestBuffer;
+
 	// 쉐이더 변수
 	ComPtr<ID3D12Resource> pcbFrameworkInfo;
 	shared_ptr<CB_FRAMEWORK_INFO> pcbMappedFrameworkInfo;
@@ -117,11 +130,11 @@ protected:
 	void CreateRenderTargetViews();		// 렌더타겟뷰 생성 후 서술자 힙에 적재
 	void CreateDepthStencilView();
 	void CreateGraphicsRootSignature();	// 루트 시그니쳐 생성
+	void CreateComputeRootSignature();	// 루트 시그니쳐 생성
 	
 	// 쉐이더 생성
-	bool InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
-	// 루트 시그니처 Get
-	ComPtr<ID3D12RootSignature> GetRootSignature() { return pRootSignature; }
+	bool InitShader();
+	void InitBuffer();
 	// get set 함수
 public:
 
@@ -135,7 +148,7 @@ public:
 	const shared_ptr<Scene>& GetCurrentScene() const;
 
 	void InitOldCursor();
-	void InitBuffer();
+
 
 	TextureManager& GetTextureManager();
 	GameObjectManager& GetGameObjectManager();
@@ -158,6 +171,11 @@ public:
 
 	shared_ptr<Texture> GetGBuffer() const;
 	shared_ptr<Texture> GetShadowMap() const;
+	shared_ptr<Texture> GetPostBuffer() const;
+	shared_ptr<Texture> GetComputeBuffer() const;
+	shared_ptr<Texture> GetDestBuffer() const;
+
+
 
 	void CreateShaderVariables();
 	void UpdateShaderVariables();

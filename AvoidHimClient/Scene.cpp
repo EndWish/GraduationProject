@@ -60,6 +60,8 @@ char Scene::CheckCollision(float _timeElapsed) {
 	return 0;
 }
 
+void Scene::LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
+}
 
 
 void Scene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)
@@ -333,6 +335,7 @@ void LobbyScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComm
 
 void LobbyScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 }
+
 
 void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 	GameFramework& gameFramework = GameFramework::Instance();
@@ -1764,15 +1767,14 @@ void PlayScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 	gameFramework.GetGBuffer()->UpdateShaderVariable(_pCommandList);
 }
 
-void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
-
+void PlayScene::LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
 
 	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
 	if (exit && fadeOut < 3) {
 		fadeOut += _timeElapsed;
-		if(isPlayerProfessor)
+		if (isPlayerProfessor)
 			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(-1, -1, -1, 1)));
 		else
 			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(5, 5, 5, 5)));
@@ -1790,7 +1792,22 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	gameFramework.GetShader("LightingShader")->PrepareRender(_pCommandList);
 	pFullScreenObject->Render(_pCommandList);
 
-	// 빛 처리를 끝낸 후 UI를 그린다.
+	// 반투명한 오브젝트를 마지막에 그린다.
+	gameFramework.GetShader("BlendingShader")->Render(_pCommandList);
+
+
+}
+
+void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
+	
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	gameFramework.GetShader("PostShader")->PrepareRender(_pCommandList);
+	// 컴퓨트 쉐이더 수행이 끝난 결과를 후면버퍼에 그대로 그린다.
+	gameFramework.GetComputeBuffer()->UpdateShaderVariable(_pCommandList);
+	pFullScreenObject->Render(_pCommandList);
+
+	// 모든 처리를 끝낸 후 UI를 그린다.
 	gameFramework.GetShader("UIShader")->PrepareRender(_pCommandList);
 	for (auto [name, pUI] : pUIs) {
 		pUI->Render(_pCommandList);
@@ -1798,9 +1815,6 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	for (auto [name, pButton] : pButtons) {
 		pButton->Render(_pCommandList);
 	}
-
-	// 반투명한 오브젝트를 마지막에 그린다.
-	gameFramework.GetShader("BlendingShader")->Render(_pCommandList);
 
 	//gameFramework.GetShader("BoundingMeshShader")->PrepareRender(_pCommandList);
 	//pFrustumMesh->UpdateMesh(camera->GetBoundingFrustum());

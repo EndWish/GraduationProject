@@ -18,7 +18,12 @@ Texture::Texture(int _nTexture, UINT _textureType, int _nSampler, int _nRootPara
 		pTextureBuffers.assign(_nTexture, {});
 		pTextureUploadBuffers.assign(_nTexture, {});
 		name.assign(_nTexture, {});
+
 		srvGpuDescriptorHandles.resize(_nTexture);
+		uavGpuDescriptorHandles.resize(_nTexture);
+		srvComputeGpuDescriptorHandles.resize(_nTexture);
+		uavComputeGpuDescriptorHandles.resize(_nTexture);
+
 		for (int i = 0; i < _nTexture; i++) srvGpuDescriptorHandles[i].ptr = NULL;
 
 		resourceTypes.resize(_nTexture);
@@ -66,6 +71,44 @@ void Texture::UpdateShaderVariable(ComPtr<ID3D12GraphicsCommandList> _pCommandLi
 	}
 }
 
+void Texture::UpdateComputeShaderVariable(ComPtr<ID3D12GraphicsCommandList> _pCommandList, int _srvIndex, int _uavIndex) {
+
+	if (nRootParameter == nTexture)
+	{
+		for (int i = 0; i < nRootParameter; i++)
+		{
+			if (srvComputeGpuDescriptorHandles[i].ptr && _srvIndex != -1) {
+				_pCommandList->SetComputeRootDescriptorTable(_srvIndex, srvComputeGpuDescriptorHandles[i]);
+			}
+			if (uavComputeGpuDescriptorHandles[i].ptr && _uavIndex != -1) {
+				_pCommandList->SetComputeRootDescriptorTable(_uavIndex, uavComputeGpuDescriptorHandles[i]);
+			}
+		}
+	}
+	else
+	{
+		if (srvComputeGpuDescriptorHandles[0].ptr && _srvIndex != -1) {
+			_pCommandList->SetComputeRootDescriptorTable(_srvIndex, srvComputeGpuDescriptorHandles[0]);
+		}
+		if (uavComputeGpuDescriptorHandles[0].ptr && _uavIndex != -1) {
+
+			_pCommandList->SetComputeRootDescriptorTable(_uavIndex, uavComputeGpuDescriptorHandles[0]);
+		}
+	}
+}
+
+void Texture::UpdateComputeShaderVariable(ComPtr<ID3D12GraphicsCommandList> _pCommandList, int _srvIndex, int _uavIndex, int _index) {
+
+	if (srvComputeGpuDescriptorHandles[_index].ptr && _srvIndex != -1) {
+		cout << _index << "는 " << GetResource(_index).Get() << "입니다.\n";
+		_pCommandList->SetComputeRootDescriptorTable(_srvIndex, srvComputeGpuDescriptorHandles[_index]);
+	}
+	if (uavComputeGpuDescriptorHandles[_index].ptr && _uavIndex != -1) {
+		_pCommandList->SetComputeRootDescriptorTable(_uavIndex, uavComputeGpuDescriptorHandles[_index]);
+	}
+
+}
+
 bool Texture::LoadFromFile(const string& _name, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _resourceType, int _index, int _startRootSignatureIndex) {
 
 	// 텍스처 로드
@@ -92,11 +135,31 @@ void Texture::ReleaseUploadBuffers() {
 	}
 }
 
-void Texture::SetGpuDescriptorHandle(int _index, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuDescriptorHandle)
+void Texture::SetSRVGpuDescriptorHandle(int _index, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuDescriptorHandle)
 {
 	// 텍스처에 GPU 디스크립터 핸들을 저장한다.
 	srvGpuDescriptorHandles[_index] = srvGpuDescriptorHandle;
 }
+
+void Texture::SetUAVGpuDescriptorHandle(int _index, D3D12_GPU_DESCRIPTOR_HANDLE uavGpuDescriptorHandle)
+{
+	// 텍스처에 uav에 대한 GPU 디스크립터 핸들을 저장한다.
+	uavGpuDescriptorHandles[_index] = uavGpuDescriptorHandle;
+}
+
+void Texture::SetSRVComputeGpuDescriptorHandle(int _index, D3D12_GPU_DESCRIPTOR_HANDLE srvGpuDescriptorHandle)
+{
+	// 텍스처에 GPU 디스크립터 핸들을 저장한다.
+	srvComputeGpuDescriptorHandles[_index] = srvGpuDescriptorHandle;
+}
+
+void Texture::SetUAVComputeGpuDescriptorHandle(int _index, D3D12_GPU_DESCRIPTOR_HANDLE uavGpuDescriptorHandle)
+{
+	// 텍스처에 uav에 대한 GPU 디스크립터 핸들을 저장한다.
+	uavComputeGpuDescriptorHandles[_index] = uavGpuDescriptorHandle;
+
+}
+
 
 ComPtr<ID3D12Resource> Texture::CreateTexture(const ComPtr<ID3D12Device>& _pDevice, UINT _width, UINT _height, DXGI_FORMAT _format, D3D12_RESOURCE_FLAGS _resourceFlags, D3D12_RESOURCE_STATES _resourceStates, D3D12_CLEAR_VALUE* _clearValue, UINT _resourceType, UINT _index) {
 	resourceTypes[_index] = _resourceType;
@@ -111,6 +174,44 @@ void Texture::CreateBuffer(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID
 	bufferElements[nIndex] = nElements;
 	bufferStrides[nIndex] = nStride;
 	pTextureBuffers[nIndex] = ::CreateBufferResource(_pDevice, _pCommandList, pData, nElements * nStride, d3dHeapType, d3dResourceStates, pTextureUploadBuffers[nIndex]);
+}
+
+D3D12_UNORDERED_ACCESS_VIEW_DESC Texture::GetUnorderedAccessViewDesc(int _index) {
+	ComPtr< ID3D12Resource> pShaderResource = GetResource(_index);
+	D3D12_RESOURCE_DESC d3dResourceDesc = pShaderResource->GetDesc();
+
+	D3D12_UNORDERED_ACCESS_VIEW_DESC d3dUnorderedAccessViewDesc;
+
+	int nTextureType = GetTextureType(_index);
+	switch (nTextureType)
+	{
+	case RESOURCE_TEXTURE2D: //(d3dResourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D)(d3dResourceDesc.DepthOrArraySize == 1)
+	case RESOURCE_TEXTURE2D_ARRAY: //[]
+		d3dUnorderedAccessViewDesc.Format = d3dResourceDesc.Format;
+		d3dUnorderedAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+		d3dUnorderedAccessViewDesc.Texture2D.MipSlice = 0;
+		d3dUnorderedAccessViewDesc.Texture2D.PlaneSlice = 0;
+		
+		break;
+	case RESOURCE_TEXTURE2DARRAY: //(d3dResourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE2D)(d3dResourceDesc.DepthOrArraySize != 1)
+		d3dUnorderedAccessViewDesc.Format = d3dResourceDesc.Format;
+		d3dUnorderedAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2DARRAY;
+		d3dUnorderedAccessViewDesc.Texture2DArray.MipSlice = 0;
+		d3dUnorderedAccessViewDesc.Texture2DArray.FirstArraySlice = 0;
+		d3dUnorderedAccessViewDesc.Texture2DArray.ArraySize = d3dResourceDesc.DepthOrArraySize;
+		d3dUnorderedAccessViewDesc.Texture2DArray.PlaneSlice = 0;
+		break;
+	case RESOURCE_BUFFER: //(d3dResourceDesc.Dimension == D3D12_RESOURCE_DIMENSION_BUFFER)
+		d3dUnorderedAccessViewDesc.Format = bufferFormats[_index];
+		d3dUnorderedAccessViewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+		d3dUnorderedAccessViewDesc.Buffer.FirstElement = 0;
+		d3dUnorderedAccessViewDesc.Buffer.NumElements = 0;
+		d3dUnorderedAccessViewDesc.Buffer.StructureByteStride = 0;
+		d3dUnorderedAccessViewDesc.Buffer.CounterOffsetInBytes = 0;
+		d3dUnorderedAccessViewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE;
+		break;
+	}
+	return(d3dUnorderedAccessViewDesc);
 }
 
 D3D12_SHADER_RESOURCE_VIEW_DESC Texture::GetShaderResourceViewDesc(int _index)
