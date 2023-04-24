@@ -586,7 +586,6 @@ void BasicShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 			if (pGameObject->GetAlwaysDraw() || (pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum()))
 			{
 				pGameObject->Render(_pCommandList);
-				testcount++;
 			}
 		}
 	}

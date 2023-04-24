@@ -64,7 +64,7 @@ void Scene::LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLis
 }
 
 
-void Scene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)
+void Scene::PostRender()
 {
 }
 
@@ -372,7 +372,7 @@ void LobbyScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, 
 
 }
 
-void LobbyScene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void LobbyScene::PostRender() {
 	if (!isLoading) {
 		for (auto [name, pButton] : pButtons) {
 			pButton->PostRender();
@@ -1878,7 +1878,7 @@ void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, f
 	//pFrustumMesh->Render(_pCommandList);
 }
 
-void PlayScene::PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void PlayScene::PostRender() {
 
 	// 글자는 Render과정이 전부 끝난 후에 가능
 	for (auto [name, pButton] : pButtons) {

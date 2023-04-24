@@ -152,7 +152,6 @@ void Mesh::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _s
 void Mesh::RenderInstance(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, int _subMeshIndex, Instancing_Data& _instanceData) {
 	UINT numInstance = _instanceData.activeInstanceCount;
 
-	_pCommandList->IASetPrimitiveTopology(primitiveTopology);
 	// 인자로 들어온 인스턴스 정보를 이용하여 갯수만큼 한꺼번에 그린다.
 	D3D12_VERTEX_BUFFER_VIEW vertexBuffersViews[6] = { positionBufferView , normalBufferView, tangentBufferView, biTangentsBufferView,  texCoord0BufferView, _instanceData.bufferView };
 	_pCommandList->IASetVertexBuffers(0, 6, vertexBuffersViews);

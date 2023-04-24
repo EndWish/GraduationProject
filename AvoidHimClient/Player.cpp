@@ -287,7 +287,7 @@ void Student::Animate(char _collideCheck, float _timeElapsed) {
 			// 공중에 있을 경우
 			pAniController->ChangeClip("jump");
 		}
-		else if (horizentalMoveSpeedPerSec < 3) {
+		else if (moveDistance < 0.01f) {
 			// 가만히 서있는 경우
 			pAniController->ChangeClip("idle");
 		}
@@ -478,7 +478,7 @@ void Professor::Animate(char _collideCheck, float _timeElapsed) {
 			// 공중에 있을 경우
 			pAniController->ChangeClip("jump");
 		}
-		else if (horizentalMoveSpeedPerSec < 3) {
+		else if (moveDistance < 0.01f) {
 			// 가만히 서있는 경우
 			pAniController->ChangeClip("idle");
 		}

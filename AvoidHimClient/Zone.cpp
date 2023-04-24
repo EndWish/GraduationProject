@@ -584,12 +584,14 @@ void Zone::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared
 
 #ifdef USING_INSTANCING
 
+
 	gameFramework.GetShader("BasicShader")->Render(_pCommandList);
 
 	gameFramework.GetShader("InstancingShader")->Render(_pCommandList);
 
 	gameFramework.GetShader("SkinnedShader")->Render(_pCommandList);
 	gameFramework.GetShader("SkinnedTransparentShader")->Render(_pCommandList);
+
 
 #else
 	gameFramework.GetShader("BasicShader")->PrepareRender(_pCommandList);

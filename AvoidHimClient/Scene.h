@@ -36,7 +36,7 @@ public:
 	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
 	virtual void LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
-	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void PostRender();
 	virtual void NoticeCloseToServer();
 };
 
@@ -103,7 +103,7 @@ public:
 
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	
-	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void PostRender();
 	virtual void ReActButton(shared_ptr<Button> _pButton);
 	virtual void NoticeCloseToServer();
 	void changeUI(LobbyState _state, bool _active);
@@ -165,7 +165,7 @@ public:
 	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
-	virtual void PostRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual void PostRender();
 
 	virtual void ReActButton(shared_ptr<Button> _pButton);
 	virtual void ProcessMouseInput(UINT _type, XMFLOAT2 _pos);

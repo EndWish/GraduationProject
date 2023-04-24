@@ -16,6 +16,8 @@ void GameObject::RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& 
 	gameFramework.GetShader("InstancingShader")->PrepareRender(_pCommandList);
 	GameObjectManager& gameObjManager = gameFramework.GetGameObjectManager();
 
+	_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	
 	for (auto& [name, instanceData] : instanceDatas) {
 		// 해당 인스턴스의 오브젝트 정보를 가져온다.
 		shared_ptr<GameObject> pGameObject = gameObjManager.GetExistGameObject(name);
