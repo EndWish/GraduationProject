@@ -123,6 +123,23 @@ D3D12_SHADER_BYTECODE Shader::CompileShaderFromFile(const wstring& _fileName, co
 	return shaderByteCode;
 }
 
+// 미리 컴파일된 쉐이더를 blob에 적재한다.
+D3D12_SHADER_BYTECODE Shader::LoadShaderFromFile(const wstring& _fileName, ComPtr<ID3DBlob>& _pBlob) {
+	wstring path = L"Shaders/" + _fileName;
+	ifstream in(path, ios::binary);
+	size_t fileSize = filesystem::file_size(path);
+
+	// 파일 크기만큼의 blob 공간을 만든다.
+	D3DCreateBlob(fileSize, _pBlob.GetAddressOf());
+	in.read((char*)_pBlob->GetBufferPointer(), fileSize);
+
+	D3D12_SHADER_BYTECODE shaderByteCode;
+	shaderByteCode.BytecodeLength = _pBlob->GetBufferSize();
+	shaderByteCode.pShaderBytecode = _pBlob->GetBufferPointer();
+
+	return shaderByteCode;
+}
+
 D3D12_DEPTH_STENCIL_DESC Shader::CreateDepthStencilState() {
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
 	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
@@ -317,7 +334,7 @@ void Shader::RenderParticle(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLi
 
 	particleResource.readBackBufferFilledSize->Map(0, NULL, (void**)&particleResource.mappedReadBackBufferFilledSize);
 	//cout << "이월된 파티클 수 : " << (*particleResource.mappedReadBackBufferFilledSize) / nStride << "\n";
-	particleResource.nDefaultStreamOutputParticle += (*particleResource.mappedReadBackBufferFilledSize) / nStride;
+	particleResource.nDefaultStreamOutputParticle += (*particleResource.mappedReadBackBufferFilledSize) / (UINT)nStride;
 	particleResource.readBackBufferFilledSize->Unmap(0, NULL);
 	
 	//5. defaultDrawBuffer를 D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER로 바꾼다.  defaultDrawBuffer를 입력으로 렌더링을 수행한다.
@@ -877,8 +894,8 @@ SkinnedLobbyShader::SkinnedLobbyShader(const ComPtr<ID3D12Device>& _pDevice, con
 	Init(_pDevice, _pRootSignature);
 
 	// 스왑체인에 바로 그리는 Skinned Shader. 로비용
-	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "SkinnedVertexShader", "vs_5_1", pVSBlob);
-	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "SkinnedLobbyPixelShader", "ps_5_1", pPSBlob);
+	pipelineStateDesc.VS = LoadShaderFromFile(L"SkinnedLobbyShader_vs", pVSBlob);
+	pipelineStateDesc.PS = LoadShaderFromFile(L"SkinnedLobbyShader_ps", pPSBlob);
 
 	HRESULT _hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
 	if (_hr == S_OK) cout << "SkinnedLobbyShader 생성 성공\n";
@@ -1551,8 +1568,10 @@ D3D12_BLEND_DESC SkyBoxShader::CreateBlendState() {
 LightingShader::LightingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
 	Init(_pDevice, _pRootSignature);
-	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "LightingVertexShader", "vs_5_1", pVSBlob);
-	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "LightingPixelShader", "ps_5_1", pPSBlob);
+	//pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "LightingVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.VS = LoadShaderFromFile(L"DeferredLighting_vs", pVSBlob);
+	pipelineStateDesc.PS = LoadShaderFromFile(L"DeferredLighting_ps", pVSBlob);
+	//pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "LightingPixelShader", "ps_5_1", pPSBlob);
 
 	HRESULT hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
 	if (hr == S_OK) cout << "LightingShader 생성 성공\n";
@@ -1960,7 +1979,7 @@ BlurComputeShader::BlurComputeShader(const ComPtr<ID3D12Device>& _pDevice, const
 	HRESULT _hr = _pDevice->CreateComputePipelineState(&computePipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
 	if (!FAILED(_hr)) cout << "BlueComputeShader 생성 성공\n";
 	
-	numThreads = XMUINT3(ceil(C_WIDTH / 32.0f), ceil(C_HEIGHT / 32.0f), 1);
+	numThreads = XMUINT3(ceil((float)C_WIDTH / 32.0f), ceil((float)C_HEIGHT / 32.0f), 1);
 
 }
 

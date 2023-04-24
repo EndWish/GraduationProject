@@ -157,7 +157,7 @@ protected:
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
 
 	D3D12_SHADER_BYTECODE CompileShaderFromFile(const wstring& _fileName, const string& _shaderName, const string& _shaderProfile, ComPtr<ID3DBlob>& _pBlob);
-
+	D3D12_SHADER_BYTECODE LoadShaderFromFile(const wstring& _fileName, ComPtr<ID3DBlob>& _pBlob);
 	virtual D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState();
 	virtual D3D12_BLEND_DESC CreateBlendState();
 

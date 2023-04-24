@@ -1,3 +1,4 @@
+
 #define MAX_LIGHTS			20
 
 
@@ -7,6 +8,8 @@
 
 #define EPSILON				1.0e-5
 #define NUM_SHADOW_MAP 10
+
+#include "header.hlsl"
 
 struct LIGHT
 {
@@ -39,10 +42,15 @@ struct LIGHT
     float2 padding;
 };
 
-// »ùÇÃ·¯
-SamplerState gssWrap : register(s0);
-SamplerState gssClamp : register(s1);
-SamplerComparisonState gssPCFShadow : register(s2);
+
+static const int3 d[8] =
+{
+    int3(0, -1, 0), int3(-1, 0, 0), int3(1, 0, 0), int3(0, 1, 0),
+    int3(1, -1, 0), int3(-1, 1, 0), int3(1, 1, 0), int3(-1, -1, 0)
+};
+
+
+
 
 cbuffer cbLightInfo : register(b3) {
     LIGHT lights[MAX_LIGHTS];
@@ -65,7 +73,6 @@ Texture2D<float4> positionTexture : register(t9);
 Texture2D<float4> emissiveTexture : register(t10);
 Texture2D<float4> uvSlideTexture : register(t11);
 Texture2D<float> depthTexture : register(t12);
-
 
 Texture2D<float> shadowMapTexture_1 : register(t21);
 Texture2D<float> shadowMapTexture_2 : register(t22);

@@ -15,6 +15,7 @@ private:
 	shared_ptr<Texture> pBumpTexture; // 노말맵에 대한 텍스처 
 	shared_ptr<Texture> pEmissiveTexture; // 발광맵에 대한 텍스처 
 
+	shared_ptr<VS_MaterialMappedFormat> pMappedMaterial;
 	ComPtr<ID3D12Resource> pMaterialBuffer;
 	UINT nType = 0;			// 쉐이더 내에서 mask값을 위한 변수
 
@@ -27,5 +28,8 @@ public:
 	void SetTexture(shared_ptr<Texture> _pTexture);
 	void SetBumpTexture(shared_ptr<Texture> _pBumpTexture);
 	void SetEmissiveTexture(shared_ptr<Texture> _pEmissiveTexture);
+	void SetDiffuse(const XMFLOAT4& _diffuse);
+	void SetSpecular(const XMFLOAT4& _specular);
+	void SetEmissive(const XMFLOAT4& _emissive);
 };
 

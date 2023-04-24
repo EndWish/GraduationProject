@@ -887,8 +887,6 @@ void GameFramework::FrameAdvance() {
 	}
 
 
-
-
 	// 현재 렌더 타겟에 대한 렌더링이 끝나기를 기다린다.
 	resourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
 	resourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;

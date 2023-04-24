@@ -32,6 +32,7 @@
 #include <wrl.h>
 #include <shellapi.h>
 #include <mmsystem.h>
+#include <filesystem>
 
 // directX 헤더 파일
 #include <d3d11.h>
@@ -49,6 +50,7 @@
 #include <DirectXColors.h>
 #include <DirectXCollision.h>
 #include <dsound.h>
+
 
 #include <mmsystem.h>
 

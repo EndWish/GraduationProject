@@ -63,7 +63,7 @@ void Material::LoadMaterial(ifstream& _file, const ComPtr<ID3D12Device>& _pDevic
 	pBumpTexture = pTextures[1];
 	pEmissiveTexture = pTextures[2];
 
-	shared_ptr<VS_MaterialMappedFormat> pMappedMaterial;
+	
 	UINT cbElementSize = (sizeof(VS_MaterialMappedFormat) + 255) & (~255);
 	ComPtr<ID3D12Resource> temp;
 	pMaterialBuffer = CreateBufferResource(_pDevice, _pCommandList, NULL, cbElementSize, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
@@ -106,12 +106,23 @@ void Material::SetEmissiveTexture(shared_ptr<Texture> _pEmissiveTexture) {
 	pEmissiveTexture = _pEmissiveTexture;
 }
 
+void Material::SetDiffuse(const XMFLOAT4& _diffuse) {
+	pMappedMaterial->diffuse = _diffuse;
+}
+
+void Material::SetSpecular(const XMFLOAT4& _specular) {
+	pMappedMaterial->specular = _specular;
+}
+
+void Material::SetEmissive(const XMFLOAT4& _emissive) {
+	pMappedMaterial->emissive = _emissive;
+}
+
 
 
 
 void Material::DefaultMaterial(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
-	shared_ptr<VS_MaterialMappedFormat> pMappedMaterial;
 	UINT cbElementSize = (sizeof(VS_MaterialMappedFormat) + 255) & (~255);
 	ComPtr<ID3D12Resource> temp;
 

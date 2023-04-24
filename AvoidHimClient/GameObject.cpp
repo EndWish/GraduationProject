@@ -256,7 +256,7 @@ void GameObject::UpdateLocalTransform() {
 	// xT
 	localTransform._41 = localPosition.x;
 	localTransform._42 = localPosition.y;
-	localTransform._43 = localPosition.z;
+	localTransform._43 = localPosition.z;	
 
 }
 void GameObject::UpdateWorldTransform() {
@@ -291,6 +291,10 @@ void GameObject::UpdateOOBB() {
 void GameObject::SetMaterial(int _index, shared_ptr<Material> _pMaterial) {
 	GameFramework& gameFramework = GameFramework::Instance();
 	materials[_index] = _pMaterial;
+}
+
+shared_ptr<Material> GameObject::GetMaterial(int _index) const {
+	return materials[_index];
 }
 
 

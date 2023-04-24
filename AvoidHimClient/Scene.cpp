@@ -896,6 +896,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pZone = make_shared<Zone>(XMFLOAT3(75.0f, 25.0f, 38.0f), XMINT3(10, 5, 5), shared_from_this());
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList, enComID);
 	
+	gameFramework.GetGameObjectManager().GetExistGameObject("CeilingLampNew")->GetMaterial(0)->SetEmissive(XMFLOAT4(0.2f, 0.1f, 0.1f, 1.0f));
 	professorObjectID = recvPacket->professorObjectID;
 
 	for (UINT i = 0; i < recvPacket->nPlayer; ++i) {
@@ -1528,11 +1529,19 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		if (packet->allLeverPowerOn) {
 			globalAmbient = XMFLOAT4(0.5, 0.5, 0.5, 1.0);
 			AllLeverPowerOn = true;
+			gameFramework.GetGameObjectManager().GetExistGameObject("CeilingLampNew")->GetMaterial(0)->SetEmissive(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+			for (auto& pLight : pLights) {
+				pLight->diffuse = XMFLOAT4(5.5f, 7.5f, 5.5f, 1.f);
+			}
 			if (isPlayerProfessor)
 				static_pointer_cast<Professor>(pPlayer)->SetSabotageCoolTime(60.f);
 		}
 		else {
 			globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
+			gameFramework.GetGameObjectManager().GetExistGameObject("CeilingLampNew")->GetMaterial(0)->SetEmissive(XMFLOAT4(0.2f, 0.1f, 0.1f, 1.0f));
+			for (auto& pLight : pLights) {
+				pLight->diffuse = XMFLOAT4(3.0f, 0.0f, 0.0f, 1.0f);
+			}
 			AllLeverPowerOn = false;
 		}
 			
@@ -1847,6 +1856,7 @@ void PlayScene::LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 	}
 
 	gameFramework.GetShader("LightingShader")->PrepareRender(_pCommandList);
+
 	pFullScreenObject->Render(_pCommandList);
 
 	// 반투명한 오브젝트를 마지막에 그린다.

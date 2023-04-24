@@ -1,94 +1,5 @@
-// 루드 시그니처는 64개의 32-비트 배열로 구성됨.
-// 많이 사용하는 매개변수를 앞쪽에 배치하는 것이 좋음.
-
-#define CWIDTH 1280
-#define CHEIGHT 720
-
-// 출력하지 않는 렌더타겟이 있을 수 있다.
-#pragma warning( disable :  3578 )
-
-
-
-static const int3 d[8] =
-{
-    int3(0, -1, 0), int3(-1, 0, 0), int3(1, 0, 0), int3(0, 1, 0),
-    int3(1, -1, 0), int3(-1, 1, 0), int3(1, 1, 0), int3(-1, -1, 0)
-};
-
-cbuffer cbCameraInfo : register(b1) {
-	matrix view : packoffset(c0);
-	matrix projection : packoffset(c4);
-    float3 cameraPosition : packoffset(c8);
-};
-
-cbuffer cbGameObjectInfo : register(b2) {
-	matrix worldTransform : packoffset(c0);
-};
-
-cbuffer cbIntVariable : register(b5) {
-    int intValue : packoffset(c0);
-};
-
-cbuffer cbFrameworkInfo : register(b11)
-{
-    float currentTime : packoffset(c0.x);
-    float elapsedTime : packoffset(c0.y);
-};
-cbuffer cbFloatVariable : register(b6) {
-    float floatValue : packoffset(c0);
-};
-
-
-cbuffer cbIntVariable : register(b10) {
-    int lightIndex : packoffset(c0);
-};
-
-
-
-struct EFFECT_INDEX
-{
-    uint index;
-    uint row;
-    uint col;
-};
-
-cbuffer cbEffectIndexInfo : register(b9)
-{
-    EFFECT_INDEX indexInfo : packoffset(c0);
-}
-
-#define MAX_BONE 100
-cbuffer cbSkinnedOffsetTransforms : register(b7)
-{
-    matrix offsetTransform[MAX_BONE];
-}
-cbuffer cbSkinnedWorldTransforms : register(b8)
-{
-    matrix skinnedWorldTransforms[MAX_BONE];
-}
 
 #include "Light.hlsl"
-
-
-float3 RandomDirection(float seedOffset);
-float RandomFloat(float2 co);
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
-
-#define WATER_HEIGHT 150.0f
-
-#define MATERIAL_ALBEDO_MAP		0x01
-#define MATERIAL_NORMAL_MAP      0x02
-#define MATERIAL_EMISSIVE_MAP      0x04
-
-
-// 텍스처
-Texture2D albedoMap : register(t5);
-Texture2D normalMap : register(t6);
-Texture2D emissiveMap : register(t13);
-
-Texture2D PostBuffer : register(t14);
 
 struct G_BUFFER_OUTPUT {
     float4 color : SV_TARGET0;   // 조명을 처리하기 전의 픽셀의 색상
@@ -123,28 +34,6 @@ struct VS_OUTPUT {
     float2 uv : TEXCOORD;
 };
 
-
-bool isBorder(float2 uv)
-{
-    int3 coord;
-    float depth;
-    int3 baseCoord = int3(uv.x * CWIDTH, uv.y * CHEIGHT, 0);
-    float baseDepth = 0;
-    baseDepth = depthTexture.Load(baseCoord);
-    if (baseDepth != -1)
-        return false;
-    else
-    {
-        for (int i = 0; i < 8; ++i)
-        {
-            coord = baseCoord + d[i];
-            depth = depthTexture.Load(coord);
-            if (abs(depth - baseDepth) > 0.2f)
-                return true;
-        }
-        return false;
-    }
-}
 
 VS_OUTPUT DefaultVertexShader(VS_INPUT input){
     VS_OUTPUT output;
@@ -426,36 +315,6 @@ G_BUFFER_OUTPUT SkinnedTransparentPixelShader(VS_SKINNED_OUTPUT input)
 }
 
 
-[earlydepthstencil]
-float4 SkinnedLobbyPixelShader(VS_SKINNED_OUTPUT input) : SV_TARGET
-{
-    float4 cColor = float4(0, 0, 0, 1);
-    if (drawMask & MATERIAL_ALBEDO_MAP)
-    {
-        cColor = albedoMap.Sample(gssWrap, input.uv);
-    }
-    else
-    {
-        cColor = diffuse;
-    }
-    
-    // 노멀값 조정
-    if (drawMask & MATERIAL_NORMAL_MAP)
-    {
-        float3x3 TBN = float3x3(normalize(input.tangent), normalize(input.biTangent), normalize(input.normal));
-        float3 vNormal = normalize(normalMap.Sample(gssWrap, input.uv).rgb * 2.0f - 1.0f); //[0, 1] → [-1, 1]
-        input.normal = normalize(mul(vNormal, TBN));
-    }
-    else
-    {
-        input.normal = normalize(input.normal);
-    }
-    
-    float4 color = CalculateLight(cColor, input.positionW, input.normal);
-    return color;
-}
-
-
 
 SHADOW_MAP_VS_OUTPUT SkinnedShadowVertexShader(VS_SKINNED_INPUT input)
 { 
@@ -688,100 +547,6 @@ float4 SkyBoxPixelShader(VS_S_OUT input) : SV_TARGET
     float2 uv = input.uv;
     uv.y = 1 - uv.y;
     float4 cColor = albedoMap.Sample(gssClamp, uv);
-    return cColor;
-}
-
-struct VS_LIGHTING_IN
-{
-    float3 position : POSITION;
-    float2 uv : TEXCOORD;
-};
-
-struct VS_LIGHTING_OUT
-{
-    float4 position : SV_POSITION;
-    float2 uv : TEXCOORD;
-};
-
-
-VS_LIGHTING_OUT LightingVertexShader(VS_LIGHTING_IN input)
-{
-    VS_LIGHTING_OUT output;
-    output.position = float4(input.position, 1.0f);
-    output.uv = input.uv;
-    return output;
-}
-
-
-
-float4 PreLightingColor(float4 baseColor, float2 uv)
-{
-    float4 color = baseColor;
-    return color;
-}
-
-float4 PostLightingColor(float4 baseColor, float2 uv)
-{
-    float4 color = baseColor;
-    // hit value
-    if (intValue == 1)
-    {
-        float dist = length(uv - float2(0.5f, 0.5f));
-        // 화면 바깥 부분이 빨갛게 보이는 효과
-        color = lerp(color, float4(1, 0, 0, 1), max(dist - 0.3f, 0) * floatValue);
-    }
-    return color;
-}
-
-
-float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
-{
-    
-    float4 uvSlide =  uvSlideTexture.Sample(gssWrap, input.uv);
-    //return abs(uvSlideTexture.Sample(gssWrap, input.uv));
-    float3 positionW = positionTexture.Sample(gssWrap, input.uv).xyz;
-    
-    float3 changeNormal = uvSlideTexture.Sample(gssWrap, input.uv).xyz;
-
-    // 투명한 경우 기존 픽셀의 노말을 흔들어 주고, 약간 어둡게 칠한다.
-    float3 normal = lerp(normalTexture.Sample(gssWrap, input.uv).xyz, changeNormal, float3(0.5, 0.5, 0.5));
-    float4 color;
-    
-    if (isBorder(input.uv))
-    {
-        color = float4(0.0, 0, 0.1, 1);
-    }
-    else
-    {
-        color = colorTexture.Sample(gssWrap, input.uv);
-        if (length(changeNormal) > 0.f)
-            color *= 0.9f;
-    }
-
- 
-    
-    color = PreLightingColor(color, input.uv);
-
-    // 이곳에서 조명처리를 해준다.
-    float4 cColor = CalculateLight(color, positionW, normal);
-    
-    
-    // uv좌표를 텍셀좌표로 바꾼다. (Load함수를 쓰기 위함)
-    int3 texLocation = int3(input.uv.x * CWIDTH, input.uv.y * CHEIGHT, 0);
-    cColor += emissiveTexture.Load(texLocation) / 5.f;
-    
-    [unroll(8)]
-    for (int i = 0; i < 8; ++i)
-    {
-        [unroll(15)]
-        for (int j = 1; j <= 15; ++j)
-        {
-            float4 emissiveColor = emissiveTexture.Load(texLocation + d[i] * j);
-            cColor += emissiveColor / (pow(j, 1.7f) + 3);
-        }
-    }
-    
-    cColor = PostLightingColor(cColor, input.uv);
     return cColor;
 }
 

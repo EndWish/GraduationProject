@@ -148,6 +148,7 @@ public:
 
 	// 해당 오브젝트의 메쉬의 index번째 마테리얼의 텍스처를 변경
 	void SetMaterial(int _index, shared_ptr<Material> _pMaterial);
+	shared_ptr<Material> GetMaterial(int _index) const;
 
 	void SetSector(Sector* _pSector);
 	Sector* GetSector();
@@ -566,6 +567,7 @@ enum class ScreenType : int {
 	fadein,
 	fadeout,
 	blur,
+	leverOff,
 	num
 };
 
