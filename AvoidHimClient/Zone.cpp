@@ -717,7 +717,6 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 					wpScene.lock()->AddComputer(static_pointer_cast<Computer>(pGameObject));
 				}
 				else {
-					continue;
 					pGameObject = make_shared<GameObject>();
 				}
 				break;

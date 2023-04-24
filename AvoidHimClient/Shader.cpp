@@ -1568,9 +1568,10 @@ D3D12_BLEND_DESC SkyBoxShader::CreateBlendState() {
 LightingShader::LightingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
 	Init(_pDevice, _pRootSignature);
-	//pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "LightingVertexShader", "vs_5_1", pVSBlob);
+
 	pipelineStateDesc.VS = LoadShaderFromFile(L"DeferredLighting_vs", pVSBlob);
 	pipelineStateDesc.PS = LoadShaderFromFile(L"DeferredLighting_ps", pVSBlob);
+	//pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "LightingVertexShader", "vs_5_1", pVSBlob);
 	//pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "LightingPixelShader", "ps_5_1", pPSBlob);
 
 	HRESULT hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
