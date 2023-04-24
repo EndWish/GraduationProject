@@ -7,6 +7,9 @@ class Camera;
 enum class PARTICLE_TYPE {
 	waterDispenserUse,
 	healItemUse,
+	throwAttack,
+	LeverUse,
+	KeyUse,
 };
 
 struct VS_ParticleMappedFormat {

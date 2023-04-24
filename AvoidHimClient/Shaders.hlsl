@@ -794,6 +794,8 @@ float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
 
 #define WATER_DISPENSER_USE 0
 #define HEAL_ITEM_USE 1
+#define THROW_ATTACK 2
+#define LEVER_USE 3
 
 struct VS_PARTICLE_INPUT
 {
@@ -811,6 +813,8 @@ VS_PARTICLE_INPUT ParticleStreamOutVertexShader(VS_PARTICLE_INPUT input)
 
 void WaterDispenserUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream);
 void HealItemUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream);
+void ThrowAttackParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream);
+void LeverUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream);
 
 [maxvertexcount(20)] // sizeof(VS_PARTICLE_INPUT) 와 maxvertexcount 를 곱해서 1024바이트를 넘으면 안된다.
 void ParticleStreamOutGeometryShader(point VS_PARTICLE_INPUT input[1], inout PointStream<VS_PARTICLE_INPUT> outStream)
@@ -824,6 +828,13 @@ void ParticleStreamOutGeometryShader(point VS_PARTICLE_INPUT input[1], inout Poi
         case HEAL_ITEM_USE:
             HealItemUseParticle(particle, outStream);
             break;
+        case THROW_ATTACK:
+            ThrowAttackParticle(particle, outStream);
+            break;
+        case LEVER_USE:
+            LeverUseParticle(particle, outStream);
+            break;
+
     }
 }
 
@@ -852,7 +863,31 @@ void HealItemUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_
         outStream.Append(input);
     }
 }
-
+void ThrowAttackParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream)
+{
+    // 수명이 남아 있으면 이동시키고(중력의 영향을 받도록 한다.), 
+    if (input.lifetime > 0.0f)  // 수명이 남아있을 경우
+    {
+        input.lifetime -= elapsedTime;
+        input.position += input.velocity * elapsedTime;
+        input.velocity *= 1.0 - elapsedTime * 4.f;
+        
+        outStream.Append(input);
+    }
+}
+void LeverUseParticle(VS_PARTICLE_INPUT input, inout PointStream<VS_PARTICLE_INPUT> outStream)
+{
+    // 수명이 남아 있으면 이동시키고(중력의 영향을 받도록 한다.), 
+    if (input.lifetime > 0.0f)  // 수명이 남아있을 경우
+    {
+        input.lifetime -= elapsedTime;
+        input.position += input.velocity * elapsedTime;
+        //input.velocity *= 1.0 - elapsedTime;
+        input.position.y -= elapsedTime * 2.f;
+        
+        outStream.Append(input);
+    }
+}
 
 float3 RandomDirection(float seedOffset)
 {
@@ -957,6 +992,16 @@ G_BUFFER_OUTPUT ParticleDrawPixelShader(GS_PARTICLE_OUTPUT input)
     if (input.type == WATER_DISPENSER_USE || input.type == HEAL_ITEM_USE)
     {
         output.emissive = color * (input.lifetime / 1.f);
+    }
+    else if (input.type == THROW_ATTACK)
+    {
+        output.emissive = color * (input.lifetime / 2.5f);
+    }
+    else if (input.type == LEVER_USE)
+    {
+        float t = input.lifetime / 0.3f;
+        float4 newColor = color * t + float4(1, 0, 0, 1) * (1 - t);
+        output.emissive = newColor;
     }
     else
     {

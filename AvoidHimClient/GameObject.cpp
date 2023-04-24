@@ -1136,6 +1136,7 @@ void Lever::QueryInteract() {
 
 void Lever::Interact() {
 	power = !power;
+
 }
 
 bool Lever::IsInteractable() {
@@ -1158,6 +1159,24 @@ void Lever::Animate(float _timeElapsed) {
 		// 내려감
 		angle = min(180.0f, (90.0f - openAngle) / _timeElapsed);
 		Rotate(GetWorldRightVector(), angle, _timeElapsed);
+
+		// 파티클 생성
+		VS_ParticleMappedFormat particle;
+		particle.boardSize = { 0.01f, 0.01f };
+		particle.lifetime = 0.15f;
+		particle.position = GetWorldPosition();
+		particle.type = (int)PARTICLE_TYPE::LeverUse;
+
+		uniform_real_distribution<float> urd(-1.0f, 1.0f);
+		uniform_real_distribution<float> urdCreateChance(0.f, _timeElapsed);
+		// 약 0.1초에 5개정도의 파티클을 생성한다.
+		for (int i = 0; i < 15; ++i) {
+			if (urdCreateChance(rd) < 0.1f) {
+				particle.velocity = Vector3::Add(XMFLOAT3(urd(rd), urd(rd), urd(rd)), GetWorldLookVector(), 6.f);//  XMFLOAT3(urd(rd), urd(rd) - 1, urd(rd));
+				Shader::AddParticle(particle);
+			}
+		}
+
 	}
 	else if (!power && openAngle > 0.f) {
 		// 올라감
@@ -1436,6 +1455,24 @@ void ThrowAttack::Animate(float _timeElapsed) {
 		acc += GRAVITY * _timeElapsed;
 		velocity.y -= acc * _timeElapsed;
 		UpdateObject();
+
+		// 파티클 생성
+		VS_ParticleMappedFormat particle;
+		particle.boardSize = { 0.02f, 0.02f };
+		particle.lifetime = 2.5f;
+		particle.position = GetWorldPosition();
+		particle.type = (int)PARTICLE_TYPE::throwAttack;
+
+		uniform_real_distribution<float> urd(-1.f, 1.f);
+		uniform_real_distribution<float> urdCreateChance(0.f, _timeElapsed);
+		// 약 0.1초에 5개정도의 파티클을 생성한다.
+		for (int i = 0; i < 5; ++i) {
+			if (urdCreateChance(rd) < 0.1f) {
+				particle.velocity = Vector3::Add(XMFLOAT3(urd(rd), urd(rd), urd(rd)), velocity, 0.1f);
+				Shader::AddParticle(particle);
+			}
+		}
+
 	}
 
 	lifeTime -= _timeElapsed;
