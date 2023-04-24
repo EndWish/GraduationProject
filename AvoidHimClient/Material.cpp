@@ -99,8 +99,10 @@ void Material::SetBumpTexture(shared_ptr<Texture> _pBumpTexture) {
 }
 
 void Material::SetEmissiveTexture(shared_ptr<Texture> _pEmissiveTexture) {
-	if (_pEmissiveTexture) nType |= 4;
-	else nType &= ~4;
+	if (_pEmissiveTexture) 
+		nType |= 4;
+	else 
+		nType &= ~4;
 	pEmissiveTexture = _pEmissiveTexture;
 }
 

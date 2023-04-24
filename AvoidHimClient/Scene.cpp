@@ -788,21 +788,31 @@ char PlayScene::CheckCollision(float _timeElapsed) {
 	}
 	
 
-	if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
-		if (camera->GetMinDistance() < camera->GetCurrentDistance()) {
-			camera->MoveFront(15.f, min(_timeElapsed, 1.f/30.f));
-		}
-	}
-	else {
-		if (camera->GetCurrentDistance() < camera->GetMaxDistance()) {
-			camera->MoveFront(-15.f, min(_timeElapsed, 1.f / 30.f));
-			camera->UpdateObject();
-			if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
-				camera->MoveFront(15.f, min(_timeElapsed, 1.f / 30.f));
-				camera->UpdateObject();
-			}
-		}
-	}
+	 while (camera->GetCurrentDistance() < camera->GetMaxDistance() && !pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
+		 camera->MoveFront(-0.03f);
+		 camera->UpdateObject();
+	 }
+	 while (camera->GetMinDistance() < camera->GetCurrentDistance() && pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
+		 camera->MoveFront(0.03f);
+		 camera->UpdateObject();
+	 }
+
+	 // [¿¾³¯ ÄÚµå]
+	//if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
+	//	if (camera->GetMinDistance() < camera->GetCurrentDistance()) {
+	//		camera->MoveFront(15.f, min(_timeElapsed, 1.f/30.f));
+	//	}
+	//}
+	//else {
+	//	if (camera->GetCurrentDistance() < camera->GetMaxDistance()) {
+	//		camera->MoveFront(-15.f, min(_timeElapsed, 1.f / 30.f));
+	//		camera->UpdateObject();
+	//		if (pZone->CheckObstacleBetweenPlayerAndCamera(camera)) {
+	//			camera->MoveFront(15.f, min(_timeElapsed, 1.f / 30.f));
+	//			camera->UpdateObject();
+	//		}
+	//	}
+	//}
 
 	return result;
 }

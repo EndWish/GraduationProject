@@ -29,7 +29,7 @@ public:
 
 	void Create(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
-	float GetCurrentDistance() const { return Vector3::Length(XMFLOAT3(localPosition.x, localPosition.y - 1.0f, localPosition.z)); }
+	float GetCurrentDistance() const { return Vector3::Length(XMFLOAT3(localPosition.x, localPosition.y, localPosition.z)); }
 	void SetMinDistance(float _minDistance) { minDistance = _minDistance; }
 	float GetMinDistance() const { return minDistance; }
 	void SetMaxDistance(float _maxDistance) { minDistance = _maxDistance; }
