@@ -139,9 +139,8 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
     if (distance <= lights[_nIndex].range)
     {
         float theta = acos(dot(lights[_nIndex].direction, -toLight)); // 조명의 방향과 조명에서 오브젝트로 가는 방향의 각도 (라디안)
-        if (theta <= lights[_nIndex].theta / 2)  // 조명을 받지 않을 경우
+        if (theta <= lights[_nIndex].theta / 2) /// 외부원안쪽에 있을 경우
         {
-            /// 외부원안쪽에 있을 경우
             float fDiffuseFactor = max(0, dot(toLight, _normal));
             float specularFactor = 0.0f;
             if (specular.a != 0.0f)
@@ -150,14 +149,17 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
                 specularFactor = pow(max(dot(reflectVec, _toCamera), 0.0f), specular.a);
             }
             
-            float spotFactor = theta <= lights[_nIndex].phi / 2 ? 1.f : lights[_nIndex].falloff;
+            float spotFactor = theta <= lights[_nIndex].phi / 2 ? 1.f : (lights[_nIndex].theta / 2 - theta) / (lights[_nIndex].theta / 2 - lights[_nIndex].phi / 2);
+            //lights[_nIndex].falloff;
             
             float attenuationFactor = 1.0f / dot(lights[_nIndex].attenuation, float3(1.0f, distance, distance * distance));
             color = (_color * (lights[_nIndex].diffuse * fDiffuseFactor * diffuse) + (lights[_nIndex].specular * specularFactor * specular)) * attenuationFactor * spotFactor;
         }
     }
     
-    color = color * clamp((15 - length(_position - cameraPosition)) / 5.f, 0.f, 1.f);
+    const float reduceMinDist = 10.f;
+    const float reduceMaxDist = 15.f;
+    color = color * clamp((reduceMaxDist - length(_position - cameraPosition)) / reduceMinDist, 0.f, 1.f);
     
     return color;
 }

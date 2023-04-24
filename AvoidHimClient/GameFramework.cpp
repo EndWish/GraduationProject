@@ -887,9 +887,7 @@ void GameFramework::FrameAdvance() {
 	}
 
 
-	if (!pScenes.empty()) {
-		pScenes.top()->PostRender();
-	}
+
 
 	// 현재 렌더 타겟에 대한 렌더링이 끝나기를 기다린다.
 	resourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
@@ -907,6 +905,9 @@ void GameFramework::FrameAdvance() {
 	//GPU가 모든 명령 리스트를 실행할 때 까지 기다린다. 
 	WaitForGpuComplete();
 
+	if (!pScenes.empty()) {
+		pScenes.top()->PostRender();
+	}
 
 	//	스왑체인을 프리젠트한다.
 	DXGI_PRESENT_PARAMETERS dxgiPresentParameters;
