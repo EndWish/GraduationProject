@@ -8,6 +8,7 @@ HINSTANCE hInst;
 WCHAR szTitle[MAX_LOADSTRING];                  
 WCHAR szWindowClass[MAX_LOADSTRING];            
 HWND hLoginDlg;
+ComPtr<ID3D12Debug1> pDebugLayer;
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -21,7 +22,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
-
+    
     setlocale(LC_ALL, "");
     LoadStringW(hInstance, IDS_APP_TITLE, szTitle, MAX_LOADSTRING);
     LoadStringW(hInstance, IDC_CLIENT, szWindowClass, MAX_LOADSTRING);
@@ -101,6 +102,10 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
     DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, DlgProc);
 
+    // 디바이스가 만들어지기 전에 enable되어야한다.
+    if (!FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(&(pDebugLayer))))) {
+       //pDebugLayer->EnableDebugLayer();
+    }
     GameFramework::Create(hInst, hWnd);
 
     GetClientRect(hWnd, &clientRect);
@@ -115,6 +120,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     POINT p;
     switch (message)
     {
+    case WM_SIZE:
+           // window size changed
+
+        break;
     case WM_LBUTTONDOWN:
     case WM_LBUTTONUP:
     case WM_RBUTTONDOWN:
@@ -136,6 +145,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         GameFramework::Instance().NoticeCloseToServer();
         PostQuitMessage(0);
         break;
+
     default:
         return DefWindowProc(hWnd, message, wParam, lParam);
     }

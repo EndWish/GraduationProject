@@ -498,7 +498,7 @@ void Shader::CreateComputeDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nCo
 
 	cbvComputeCPUDescriptorStartHandle = computeDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	cbvComputeGPUDescriptorStartHandle = computeDescriptorHeap->GetGPUDescriptorHandleForHeapStart();
-
+	
 	srvComputeCPUDescriptorStartHandle.ptr = cbvComputeCPUDescriptorStartHandle.ptr + (::cbvSrvDescriptorIncrementSize * nConstantBufferViews);
 	srvComputeGPUDescriptorStartHandle.ptr = cbvComputeGPUDescriptorStartHandle.ptr + (::cbvSrvDescriptorIncrementSize * nConstantBufferViews);
 

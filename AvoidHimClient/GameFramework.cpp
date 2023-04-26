@@ -12,7 +12,9 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 
 		gameFramework.instanceHandle = _hInstance;
 		gameFramework.windowHandle = _hMainWnd;
-		
+
+
+
 		gameFramework.CreateDirect3DDevice();    // 가장먼저 디바이스를 생성해야 명령 대기열이나 서술자 힙 등을 생성할 수 있다.
 		gameFramework.CreateCommandQueueList();
 		gameFramework.CreateRtvAndDsvDescriptorHeaps();
@@ -39,7 +41,7 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 
 		// cbv, srv를 담기 위한 정적 디스크립터 힙 생성
 		Shader::CreateCbvSrvUavDescriptorHeaps(gameFramework.pDevice, 0, 300, 1);
-		Shader::CreateComputeDescriptorHeaps(gameFramework.pDevice, 0, 3, 1);
+		Shader::CreateComputeDescriptorHeaps(gameFramework.pDevice, 0, 6, 1);
 
 
 
@@ -160,6 +162,7 @@ GameFramework::GameFramework() {
 	oldCursorPos = POINT();
 	isClick = false;
 	rtvCPUDescriptorHandles.fill(D3D12_CPU_DESCRIPTOR_HANDLE());
+	postBufferCPUDescriptorHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
 	// 현재 스왑체인의 후면 버퍼의 인덱스
 	swapChainBufferCurrentIndex = 0;
 	fenceEvent = NULL;
@@ -287,7 +290,7 @@ void GameFramework::CreateSwapChain()
 	dxgiSwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	HRESULT hResult = pDxgiFactory->CreateSwapChain(pCommandQueue.Get(), &dxgiSwapChainDesc, (IDXGISwapChain**)pDxgiSwapChain.GetAddressOf());
-
+	
 	swapChainBufferCurrentIndex = pDxgiSwapChain->GetCurrentBackBufferIndex();
 
 	hResult = pDxgiFactory->MakeWindowAssociation(windowHandle, DXGI_MWA_NO_ALT_ENTER);
@@ -765,6 +768,7 @@ void GameFramework::FrameAdvance() {
 	vector<ComPtr<ID3D12CommandList>>  pCommandLists;
 	float timeElapsed = gameTimer.GetTimeElapsed();
 	// 입력을 받을 때 플레이어의 움직임을 저장한다.
+
 	ProcessInput();
 
 	if (!pScenes.empty()) {	// 씬 진행(애니메이트). 스택의 맨 위 원소에 대해 진행
@@ -776,21 +780,13 @@ void GameFramework::FrameAdvance() {
 	Shader::UpdateShadersObject();
 
 	// 현재 렌더 타겟에 대한 Present가 끝나기를 기다림.  (PRESENT = 프리젠트 상태, RENDER_TARGET = 렌더 타겟 상태
-	D3D12_RESOURCE_BARRIER resourceBarrier;
-	ZeroMemory(&resourceBarrier, sizeof(D3D12_RESOURCE_BARRIER));
-	resourceBarrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-	resourceBarrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-	resourceBarrier.Transition.pResource = pRenderTargetBuffers[swapChainBufferCurrentIndex].Get();
-	resourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_PRESENT;
-	resourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	resourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-
-	pCommandList->ResourceBarrier(1, &resourceBarrier);
+	::SynchronizeResourceTransition(pCommandList, pRenderTargetBuffers[swapChainBufferCurrentIndex].Get(),D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
 	// 루트 시그니처를 Set
 	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
 	pCommandList->SetComputeRootSignature(pComputeRootSignature.Get());
 	
 	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
 	// 후면 버퍼의 핸들
 	D3D12_CPU_DESCRIPTOR_HANDLE swapChainDescriptorHandle = pRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	swapChainDescriptorHandle.ptr += (rtvDescriptorIncrementSize * swapChainBufferCurrentIndex);
@@ -817,7 +813,7 @@ void GameFramework::FrameAdvance() {
 			// i번째 쉐도우맵을 렌더타겟으로 지정한다.
 			pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, &dsvCPUDescriptorHandle);
 			pCommandList->ClearRenderTargetView(rtvShadowCPUDescriptorHandles[0], pClearColor, 0, NULL);
-
+			
 			// i번째 조명에 대한 쉐도우맵 렌더링을 한다.
 			pScenes.top()->RenderShadowMap(pCommandList, i);
 
@@ -886,12 +882,9 @@ void GameFramework::FrameAdvance() {
 		
 	}
 
-
 	// 현재 렌더 타겟에 대한 렌더링이 끝나기를 기다린다.
-	resourceBarrier.Transition.StateBefore = D3D12_RESOURCE_STATE_RENDER_TARGET;
-	resourceBarrier.Transition.StateAfter = D3D12_RESOURCE_STATE_PRESENT;
-	resourceBarrier.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
-	pCommandList->ResourceBarrier(1, &resourceBarrier);
+	::SynchronizeResourceTransition(pCommandList, pRenderTargetBuffers[swapChainBufferCurrentIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);
+
 	 
 	//명령 리스트를 닫힌 상태로 만든다. 
 	hResult = pCommandList->Close();
@@ -913,11 +906,11 @@ void GameFramework::FrameAdvance() {
 	dxgiPresentParameters.pDirtyRects = NULL;
 	dxgiPresentParameters.pScrollRect = NULL;
 	dxgiPresentParameters.pScrollOffset = NULL;
-	pDxgiSwapChain->Present1(1, 0, &dxgiPresentParameters);
+	HRESULT hr = pDxgiSwapChain->Present1(1, 0, &dxgiPresentParameters);
 
 	// 다음 프레임으로 이동, (다음 버퍼로 이동)
 	MoveToNextFrame();
-
+	
 	// FPS 표시
 	wstring titleString = L"FPS : " + to_wstring(gameTimer.GetFPS());
 	SetWindowText(windowHandle, (LPCWSTR)titleString.c_str());
@@ -938,14 +931,11 @@ void GameFramework::MoveToNextFrame() {
 }
 
 void GameFramework::ChangeSwapChainState() {
-
+	return;
 	WaitForGpuComplete();
 	BOOL fullScreenState;
 
 	// 현재 모드 반전
-	pDxgiSwapChain->GetFullscreenState(&fullScreenState, NULL);
-	pDxgiSwapChain->SetFullscreenState(~fullScreenState, NULL);
-
 
 	DXGI_MODE_DESC dxgiTargetParameters;
 	dxgiTargetParameters.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -956,20 +946,34 @@ void GameFramework::ChangeSwapChainState() {
 	dxgiTargetParameters.Scaling = DXGI_MODE_SCALING_UNSPECIFIED;
 	dxgiTargetParameters.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 
-	pDxgiSwapChain->ResizeTarget(&dxgiTargetParameters);
+
+	if (!fullScreenState) {
+		pDxgiSwapChain->ResizeTarget(&dxgiTargetParameters);
+		//pDxgiSwapChain->SetFullscreenState(~fullScreenState, NULL);
+	}
+	else {
+		//pDxgiSwapChain->SetFullscreenState(~fullScreenState, NULL);
+		pDxgiSwapChain->ResizeTarget(&dxgiTargetParameters);
+	}
+
+
 	for (int i = 0; i < nSwapChainBuffer; i++) {
 		if (pRenderTargetBuffers[i]) {
 			pRenderTargetBuffers[i].Reset();
 		}
 	}
-
 	DXGI_SWAP_CHAIN_DESC dxgiSwapChainDesc;
 	pDxgiSwapChain->GetDesc(&dxgiSwapChainDesc);
+	dxgiSwapChainDesc.Flags = 0;
 	pDxgiSwapChain->ResizeBuffers(nSwapChainBuffer, clientWidth,
 		clientHeight, dxgiSwapChainDesc.BufferDesc.Format, dxgiSwapChainDesc.Flags);
 	swapChainBufferCurrentIndex = pDxgiSwapChain->GetCurrentBackBufferIndex();
+
 	CreateRenderTargetViews();
+
 }
+
+
 
 
 void GameFramework::ProcessInput() {
