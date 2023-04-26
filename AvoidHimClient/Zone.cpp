@@ -559,7 +559,7 @@ vector<Sector*> Zone::GetFrustumSectors(const BoundingFrustum& _frustum) {
 }
 
 // 뷰프러스텀과 충돌하는 섹터 업데이트
-void Zone::UpdateFrustumSectors(const BoundingFrustum& _frustum) {
+int Zone::UpdateFrustumSectors(const BoundingFrustum& _frustum) {
 	int count = 0;
 	for (int x = 0; x < div.x; ++x) {
 		for (int y = 0; y < div.y; ++y) {
@@ -570,10 +570,14 @@ void Zone::UpdateFrustumSectors(const BoundingFrustum& _frustum) {
 				XMFLOAT3 center = Vector3::Add(Vector3::Add(startPoint, Vector3::Multiple(sectorSize, index)), extents);
 
 				BoundingBox boundingBox(center, extents);
-				GetSector(index)->SetInFrustum(_frustum.Intersects(boundingBox));
+				bool isContains = _frustum.Intersects(boundingBox);
+				isContains = true;
+				GetSector(index)->SetInFrustum(isContains);
+				if(isContains) count++;
 			}
 		}
 	}
+	return count;
 }
 
 

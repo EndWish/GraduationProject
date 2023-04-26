@@ -128,7 +128,7 @@ public:
 
 	// 뷰프러스텀과 충돌하는 섹터 얻기
 	vector<Sector*> GetFrustumSectors(const BoundingFrustum& _frustum);
-	void UpdateFrustumSectors(const BoundingFrustum& _frustum);
+	int UpdateFrustumSectors(const BoundingFrustum& _frustum);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, shared_ptr<BoundingFrustum> _pBoundingFrustum);
 	void LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, const array<UINT, MAX_PARTICIPANT>& _enableComputers);
 	

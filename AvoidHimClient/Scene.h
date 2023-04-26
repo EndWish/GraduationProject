@@ -146,6 +146,9 @@ private:
 	// Pre Render의 결과를 이 오브젝트에 그린다.
 	shared_ptr<FullScreenObject> pFullScreenObject;
 
+
+	shared_ptr<TextBox> pFrustum;
+	int nSector;
 	BoundingBox exitBox;
 	bool exit = false;
 	float fadeOut = 0.0f;
