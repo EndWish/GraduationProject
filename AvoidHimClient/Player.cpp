@@ -115,7 +115,8 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 	// 월드행렬을 업데이트 해준다.
 	GameObject::UpdateObject();
 	pFootStepSound->SetPosition(GetWorldPosition());
-
+	GameFramework& gameFramework = GameFramework::Instance();
+	gameFramework.GetSoundManager().SetPosition("horror", GetWorldPosition());
 	position = GetWorldPosition();
 	if (!(_collideCheck & 1)) {
 		moveDistance = Vector3::Length(Vector3::Subtract(prevPosition, position));

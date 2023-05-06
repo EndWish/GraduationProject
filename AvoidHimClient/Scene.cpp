@@ -105,7 +105,7 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	gameFramework.GetTextureManager().GetTexture("2DUI_host", _pDevice, _pCommandList);
 	gameFramework.GetTextureManager().GetTexture("2DUI_roomInfo", _pDevice, _pCommandList);
 
-	gameFramework.GetSoundManager().Play("step");
+	gameFramework.GetSoundManager().Play("noneSound");
 	pUIs["2DUI_title"] = make_shared<Image2D>("2DUI_title", XMFLOAT2(2.f, 2.f), XMFLOAT2(0.f,0.f), XMFLOAT2(1.f,1.f), _pDevice, _pCommandList, false);
 	pUIs["2DUI_title"]->SetDepth(1.f);
 
@@ -1010,6 +1010,8 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pLightsBuffer = ::CreateBufferResource(_pDevice, _pCommandList, NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
 	pLightsBuffer->Map(0, NULL, (void**)&pMappedLights);
 
+	gameFramework.GetSoundManager().Play("horror", true);
+
 	Shader::SetCamera(camera);
 }
 
@@ -1535,6 +1537,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			}
 			if (isPlayerProfessor)
 				static_pointer_cast<Professor>(pPlayer)->SetSabotageCoolTime(60.f);
+
+			gameFramework.GetSoundManager().Stop("horror");
 		}
 		else {
 			globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
@@ -1542,6 +1546,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			for (auto& pLight : pLights) {
 				pLight->diffuse = XMFLOAT4(3.0f, 0.0f, 0.0f, 1.0f);
 			}
+			if(AllLeverPowerOn == true)
+				gameFramework.GetSoundManager().Play("horror", true);
 			AllLeverPowerOn = false;
 		}
 			

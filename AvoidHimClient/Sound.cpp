@@ -195,8 +195,10 @@ void SoundManager::Init(HWND _hwnd) {
 	}
 	/////////////////////////////////
 
-	pSounds["audio"] = LoadFile("audio");
+	//pSounds["audio"] = LoadFile("audio");
+	pSounds["horror"] = LoadFile("horror");
 	pSounds["step"] = LoadFile("step");
+	pSounds["noneSound"] = LoadFile("noneSound");
 
 }
 
@@ -206,8 +208,16 @@ shared_ptr<Sound> SoundManager::LoadFile(string _name) {
 	return pSound;
 }
 
-void SoundManager::Play(string _name, bool _loop) {
+void SoundManager::Play(const string& _name, bool _loop) {
 	pSounds[_name]->Play(_loop);
+}
+
+void SoundManager::Stop(const string& _name) {
+	pSounds[_name]->Stop();
+}
+
+void SoundManager::SetPosition(const string& _name, const XMFLOAT3& _pos) {
+	pSounds[_name]->SetPosition(_pos);
 }
 
 void SoundManager::UpdateListener(const XMFLOAT3& _pos, const XMFLOAT3& _look, const XMFLOAT3& _up) {

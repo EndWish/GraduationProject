@@ -908,6 +908,7 @@ void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 	UpdateObject();
 	XMFLOAT3 position = GetWorldPosition();
 	pFootStepSound->SetPosition(position);
+	
 
 	XMFLOAT3 prevPositionFootStep = GetWorldPosition();
 	if (position.y == prevPositionFootStep.y) {

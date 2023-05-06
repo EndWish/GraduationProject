@@ -61,6 +61,8 @@ public:
 	~SoundManager();
 	void Init(HWND _hwnd);
 	shared_ptr<Sound> LoadFile(string _name);
-	void Play(string _name, bool _loop = false);
+	void Play(const string& _name, bool _loop = false);
+	void Stop(const string& _name);
+	void SetPosition(const string& _name, const XMFLOAT3& _pos);
 	void UpdateListener(const XMFLOAT3& _pos, const XMFLOAT3& _look, const XMFLOAT3& _up);
 };
