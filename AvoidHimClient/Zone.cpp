@@ -736,8 +736,8 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pGameObject->UpdateObject();
 			if (objType == ObjectType::computer) {
 				BoundingOrientedBox oobb = pGameObject->GetBaseBoundingBox();
-				oobb.Center.y += 20.0f;
-				oobb.Extents.y += 30.0f;
+				oobb.Center.y += 0.2f;
+				oobb.Extents.y += 0.2f;
 				pGameObject->SetBoundingBox(oobb);
 				pGameObject->UpdateObject();
 			}
