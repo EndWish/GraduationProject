@@ -694,8 +694,10 @@ void PlayScene::AddComputer(const shared_ptr<Computer>& _pComputer) {
  
 void PlayScene::UpdateTimeText() {
 	UINT UINTTime = (UINT)remainTime;
+	UINT second = UINTTime % 60;
+	wstring mid = second >= 10 ? L" : " : L" : 0";
 
-	pTexts["remainTime"]->SetText((to_wstring(UINTTime / 60) + L" : " + to_wstring(UINTTime % 60)).c_str());
+	pTexts["remainTime"]->SetText((to_wstring(UINTTime / 60) + mid + to_wstring(UINTTime % 60)).c_str());
 	
 }
 

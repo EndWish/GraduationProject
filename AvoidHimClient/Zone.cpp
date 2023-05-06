@@ -734,6 +734,13 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pGameObject->SetLocalScale(scale);
 			pGameObject->SetLocalRotation(rotation);
 			pGameObject->UpdateObject();
+			if (objType == ObjectType::computer) {
+				BoundingOrientedBox oobb = pGameObject->GetBaseBoundingBox();
+				oobb.Center.y += 20.0f;
+				oobb.Extents.y += 30.0f;
+				pGameObject->SetBoundingBox(oobb);
+				pGameObject->UpdateObject();
+			}
 			pGameObject->SetID(objectID);
 			if (isDoor) {
 				BoundingOrientedBox oobb = pGameObject->GetBaseBoundingBox();
