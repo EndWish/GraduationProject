@@ -65,10 +65,6 @@ void ServerFramework::ProcessSocketMessage(HWND _hWnd, UINT _message, WPARAM _wP
             SockErrorDisplay("accept()");
             return;
         }
-        cout << format("클라이언트 접속 : IP 주소={0}, 포트 번호={1}\n", inet_ntoa(clientaddr.sin_addr), ntohs(clientaddr.sin_port));
-
-        //int optVal = 300 * 50;
-        //setsockopt(clientSocket, SOL_SOCKET, SO_RCVBUF, (char*)&optVal, sizeof(optVal));
 
         // 새로운 클라이언트를 추가한다. (컨테이너에 추가)
         Client* pNewClient = new Client(clientSocket);
