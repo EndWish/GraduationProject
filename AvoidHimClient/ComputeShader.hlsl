@@ -1,5 +1,14 @@
 
+
+
+cbuffer cbFloatVariable : register(b0)
+{
+    float radarDepth : packoffset(c0.x);
+    float radarRatio : packoffset(c0.y);
+};
+
 Texture2D<float4> renderTexture : register(t15);
+
 
 Texture2D<float4> colorTexture : register(t16);
 Texture2D<float4> normalTexture : register(t17);
@@ -7,6 +16,8 @@ Texture2D<float4> positionTexture : register(t18);
 Texture2D<float4> emissiveTexture : register(t19);
 Texture2D<float4> uvSlideTexture : register(t20);
 Texture2D<float> depthTexture : register(t21);
+
+Texture2D<float4> radarTexture : register(t22);
 
 RWTexture2D<float4> output : register(u0);
 
@@ -29,19 +40,20 @@ float gaussian(float depth, float distance)
     return result;
 }
 
-[numthreads(32, 32, 1)]
-void GaussianBlur(int3 n3GroupThreadID : SV_GroupThreadID, int3 threadID : SV_DispatchThreadID)
+
+float4 GaussianBlur(int3 n3GroupThreadID, int3 threadID)
 {
+    float4 result = float4(0, 0, 0, 1);
     float depth = depthTexture[threadID.xy];
 
     // 겉 픽셀이여서 샘플링할 수 없는 부분은 그대로 출력한다.
     if ((threadID.x < BlurRange) || (threadID.x >= int(renderTexture.Length.x - BlurRange)) || (threadID.y < BlurRange) || (threadID.y >= int(renderTexture.Length.y - BlurRange)))
     {
-        output[threadID.xy] = renderTexture[threadID.xy];
+        result = renderTexture[threadID.xy];
     }
     // nearDepth미만일경우 for문을 돌면서 계산을 하지 않는다.
     else if (depth < NearDepth)
-        output[threadID.xy] = renderTexture[threadID.xy];
+        result = renderTexture[threadID.xy];
     else
     {
         float weightsum = 0.f;
@@ -55,7 +67,31 @@ void GaussianBlur(int3 n3GroupThreadID : SV_GroupThreadID, int3 threadID : SV_Di
                 weightsum += weight;
             }
         }     
-        output[threadID.xy] = color / weightsum;
+        result = color / weightsum;
         
     }
+    return result;
+}
+
+[numthreads(32, 32, 1)]
+void radarResult(int3 n3GroupThreadID : SV_GroupThreadID, int3 threadID : SV_DispatchThreadID)
+{
+    float4 nColor = GaussianBlur(n3GroupThreadID, threadID);
+    float depth = depthTexture[threadID.xy];
+    // 외곽선을 그리는 물체들은 depth buffer에서의 값이 음수임
+    if (depth < 0)
+        depth = -depth;
+    // 레이더 범위내에 들어올 경우 와이어 프레임 텍스처를 출력한다.
+    if (depth < radarDepth)
+    {
+        output[threadID.xy] = lerp(nColor, positionTexture[threadID.xy], radarRatio);
+    }
+        
+    // 아닐경우 기존 블러 처리를 하여 그대로 내보낸다.
+    else
+    {
+        output[threadID.xy] = nColor;
+    }
+
+
 }

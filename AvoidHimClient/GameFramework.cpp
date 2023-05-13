@@ -552,7 +552,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 }
 
 void GameFramework::CreateComputeRootSignature() {
-	D3D12_DESCRIPTOR_RANGE pDescriptorRanges[3];
+	D3D12_DESCRIPTOR_RANGE pDescriptorRanges[4];
 
 	pDescriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[0].NumDescriptors = 1;
@@ -562,7 +562,7 @@ void GameFramework::CreateComputeRootSignature() {
 
 	pDescriptorRanges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[1].NumDescriptors = NUM_G_BUFFER;
-	pDescriptorRanges[1].BaseShaderRegister = 16; //t16: 깊이 텍스처
+	pDescriptorRanges[1].BaseShaderRegister = 16; //t16 ~ t21: g buffer
 	pDescriptorRanges[1].RegisterSpace = 0;
 	pDescriptorRanges[1].OffsetInDescriptorsFromTableStart = 0;
 
@@ -572,7 +572,13 @@ void GameFramework::CreateComputeRootSignature() {
 	pDescriptorRanges[2].RegisterSpace = 0;
 	pDescriptorRanges[2].OffsetInDescriptorsFromTableStart = 0;
 
-	D3D12_ROOT_PARAMETER pRootParameters[3];
+	pDescriptorRanges[3].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	pDescriptorRanges[3].NumDescriptors = 1;
+	pDescriptorRanges[3].BaseShaderRegister = 22; //t22 = 레이더 와이어프레임 텍스처
+	pDescriptorRanges[3].RegisterSpace = 0;
+	pDescriptorRanges[3].OffsetInDescriptorsFromTableStart = 0;
+
+	D3D12_ROOT_PARAMETER pRootParameters[5];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	pRootParameters[0].DescriptorTable.NumDescriptorRanges = 1;
@@ -582,12 +588,25 @@ void GameFramework::CreateComputeRootSignature() {
 	pRootParameters[1].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	pRootParameters[1].DescriptorTable.NumDescriptorRanges = 1;
 	pRootParameters[1].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[1];
-	pRootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;	// 깊이 텍스처
+	pRootParameters[1].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;	// g buffer
 
 	pRootParameters[2].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	pRootParameters[2].DescriptorTable.NumDescriptorRanges = 1;
 	pRootParameters[2].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[2]; //RWTexture2D
 	pRootParameters[2].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+	pRootParameters[3].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	pRootParameters[3].DescriptorTable.NumDescriptorRanges = 1;
+	pRootParameters[3].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[3];
+	pRootParameters[3].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;	// 깊이 텍스처
+
+	pRootParameters[4].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
+	pRootParameters[4].Constants.Num32BitValues = 2;
+	pRootParameters[4].Constants.ShaderRegister = 0; // b0 = 레이더의 범위 깊이값, 그려질 비율
+	pRootParameters[4].Constants.RegisterSpace = 0;
+	pRootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
+
 
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
 	D3D12_ROOT_SIGNATURE_DESC rootSignatureDesc;
@@ -654,6 +673,7 @@ void GameFramework::InitBuffer() {
 	pPostBuffer = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 	pComputeBuffer = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 	//pDestBuffer = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
+
 
 	DXGI_FORMAT format[NUM_G_BUFFER] = {
 		DXGI_FORMAT_R32G32B32A32_FLOAT,
@@ -873,6 +893,7 @@ void GameFramework::FrameAdvance() {
 			Shader::SetComputeDescriptorHeap(pCommandList);
 			static_pointer_cast<BlurComputeShader>(GetShader("BlurComputeShader"))->Dispatch(pCommandList);
 
+			// 블러 처리가 끝난 텍스처를 후면버퍼에 그대로 그린다.
 			Shader::SetDescriptorHeap(pCommandList);
 			pCommandList->OMSetRenderTargets(1, &swapChainDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
 			pCommandList->ClearRenderTargetView(swapChainDescriptorHandle, pClearColor, 0, NULL);
@@ -972,9 +993,6 @@ void GameFramework::ChangeSwapChainState() {
 	CreateRenderTargetViews();
 
 }
-
-
-
 
 void GameFramework::ProcessInput() {
 

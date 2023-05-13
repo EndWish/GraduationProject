@@ -12,7 +12,7 @@ bool isBorder(float2 uv)
     int3 baseCoord = int3(uv.x * CWIDTH, uv.y * CHEIGHT, 0);
     float baseDepth = 0;
     baseDepth = depthTexture.Load(baseCoord);
-    if (baseDepth != -1)
+    if (baseDepth >= 0)
         return false;
     else
     {

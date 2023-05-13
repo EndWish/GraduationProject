@@ -1569,10 +1569,10 @@ LightingShader::LightingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
 	Init(_pDevice, _pRootSignature);
 
-	pipelineStateDesc.VS = LoadShaderFromFile(L"DeferredLighting_vs", pVSBlob);
-	pipelineStateDesc.PS = LoadShaderFromFile(L"DeferredLighting_ps", pVSBlob);
-	//pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "LightingVertexShader", "vs_5_1", pVSBlob);
-	//pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "LightingPixelShader", "ps_5_1", pPSBlob);
+	//pipelineStateDesc.VS = LoadShaderFromFile(L"DeferredLighting_vs", pVSBlob);
+	//pipelineStateDesc.PS = LoadShaderFromFile(L"DeferredLighting_ps", pPSBlob);
+	pipelineStateDesc.VS = CompileShaderFromFile(L"DeferredLighting.hlsl", "LightingVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"DeferredLighting.hlsl", "LightingPixelShader", "ps_5_1", pPSBlob);
 
 	HRESULT hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
 	if (hr == S_OK) cout << "LightingShader 持失 失因\n";
@@ -1972,13 +1972,13 @@ BlurComputeShader::BlurComputeShader(const ComPtr<ID3D12Device>& _pDevice, const
 
 	ZeroMemory(&computePipelineStateDesc, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
 	computePipelineStateDesc.pRootSignature = _pRootSignature.Get();
-	computePipelineStateDesc.CS = CompileShaderFromFile(L"ComputeShader.hlsl", "GaussianBlur", "cs_5_1", pCSBlob);
+	computePipelineStateDesc.CS = CompileShaderFromFile(L"ComputeShader.hlsl", "radarResult", "cs_5_1", pCSBlob);
 	computePipelineStateDesc.NodeMask = 0;
 	computePipelineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
 	computePipelineStateDesc.CachedPSO = d3dCachedPipelineState;
 
 	HRESULT _hr = _pDevice->CreateComputePipelineState(&computePipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
-	if (!FAILED(_hr)) cout << "BlueComputeShader 持失 失因\n";
+	if (!FAILED(_hr)) cout << "BlurComputeShader 持失 失因\n";
 	
 	numThreads = XMUINT3(ceil((float)C_WIDTH / 32.0f), ceil((float)C_HEIGHT / 32.0f), 1);
 

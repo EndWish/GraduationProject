@@ -405,6 +405,7 @@ public:
 	virtual D3D12_INPUT_LAYOUT_DESC CreateInputLayout();
 };
 
+
 class PostShader : public Shader {
 private:
 

@@ -118,6 +118,12 @@ private:
 	int lightIndex[NUM_SHADOW_MAP];
 	float remainTime;
 
+
+	bool radarEnable;
+	float radarDuration;
+	// radarRange, radarRatio
+	XMFLOAT2 radarInfo;
+
 	shared_ptr<FrustumMesh> pFrustumMesh;
 
 	shared_ptr<Player> pPlayer;

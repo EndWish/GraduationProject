@@ -509,6 +509,10 @@ void Professor::Animate(char _collideCheck, float _timeElapsed) {
 }
 
 void Professor::LeftClick() {
+
+	
+
+
 	// 휘두르기 공격
 	if (GetCoolTime(AttackType::swingAttack) <= 0.f && !isThrowAttacking) {
 		CS_ATTACK sendPacket;

@@ -80,7 +80,7 @@ G_BUFFER_OUTPUT DefaultPixelShader(VS_OUTPUT input)
     output.position = float4(input.positionW, 1.0f);
     output.emissive = (drawMask & MATERIAL_EMISSIVE_MAP) ? emissiveMap.Sample(gssWrap, input.uv) * emissive : emissive;
     // drawOutline 옵션이 true인 오브젝트들은 외곽선을 그린다.
-    output.depth = intValue ? -1.f : length(input.positionW - cameraPosition);
+    output.depth = intValue ? -length(input.positionW - cameraPosition) : length(input.positionW - cameraPosition);
     return output;
 }
 
@@ -275,7 +275,7 @@ G_BUFFER_OUTPUT SkinnedPixelShader(VS_SKINNED_OUTPUT input)
     output.position = float4(input.positionW, 1.0f);
     output.emissive = (drawMask & MATERIAL_EMISSIVE_MAP) ? emissiveMap.Sample(gssWrap, input.uv) * emissive : emissive;
     //output.depth = length(input.positionW - cameraPosition);
-    output.depth = -1;
+    output.depth = -length(input.positionW - cameraPosition);
     return output;
 }
 

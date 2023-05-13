@@ -643,11 +643,14 @@ void LobbyScene::UpdateInRoomState() {
 
 PlayScene::PlayScene() {
 	globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
-	//globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	remainTime = 1000.f;
 
 	professorObjectID = 0;
 	ranges::fill_n(lightIndex, NUM_SHADOW_MAP, 0);
+	radarEnable = false;
+	radarInfo = XMFLOAT2(0.f, 0.f);
+	radarDuration = 0.f;
 }
 
 PlayScene::~PlayScene() {
@@ -1043,8 +1046,14 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 	}
 
 	if (_keyDownBuffer['T']) {
-		GetFullScreenObject()->SetScreenType(ScreenType::blur, 50.0f);
+		radarEnable = true;
+		// 깊이값을 0으로 초기화하고 레이더를 활성화
+		radarInfo.x = 0.0f;
+		radarInfo.y = 1.0f;
+
+		radarDuration = 10.0f;
 	}
+
 
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
 		pPlayer->Dash(_timeElapsed);
@@ -1108,6 +1117,8 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 
 void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 
+
+
 	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
 	if (3 <= fadeOut) {
 		GameFramework& gameFramework = GameFramework::Instance();
@@ -1128,6 +1139,25 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		}
 		return;
 	}
+
+	if (radarEnable) {
+		radarInfo.x += 0.02f;
+	}
+	
+	// 레이더 지속시간이 끝난 경우
+	if (radarDuration <= 0) {
+
+		radarEnable = false;
+		if (radarInfo.y > 0) {
+			radarInfo.y -= 0.005f;
+		}
+		else radarInfo.y = 0;
+
+	}
+	else {
+		radarDuration -= _timeElapsed;
+	}
+	
 
 	GameFramework& gameFramework = GameFramework::Instance();
 	for (auto& pEffect : pEffects) {
@@ -1870,7 +1900,8 @@ void PlayScene::LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 	// 반투명한 오브젝트를 마지막에 그린다.
 	gameFramework.GetShader("BlendingShader")->Render(_pCommandList);
 
-
+	// 레이더의 범위를 컴퓨트 쉐이더에 보내준다.
+	_pCommandList->SetComputeRoot32BitConstants(4, 2, &radarInfo, 0);
 }
 
 void PlayScene::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
