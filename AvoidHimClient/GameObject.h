@@ -32,6 +32,7 @@ protected:
 public:
 	static unordered_map<string, Instancing_Data>& GetInstanceDatas() { return instanceDatas; };
 	static void RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	static void RenderWireFrameInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	static void RenderShadowInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 protected:
 	ShaderType shaderType;

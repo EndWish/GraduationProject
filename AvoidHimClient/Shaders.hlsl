@@ -16,6 +16,11 @@ struct SHADOW_MAP_VS_OUTPUT {
     float3 positionW : POSITION;
 };
 
+struct VS_WIRE_FRAME_OUTPUT
+{
+    float4 position : SV_POSITION;
+    float3 positionW : POSITION;
+};
 
 struct VS_INPUT {
 	float3 position : POSITION;
@@ -84,6 +89,30 @@ G_BUFFER_OUTPUT DefaultPixelShader(VS_OUTPUT input)
     return output;
 }
 
+VS_WIRE_FRAME_OUTPUT DefaultWireFrameVertexShader(VS_INPUT input)
+{
+    VS_WIRE_FRAME_OUTPUT output;
+    output.positionW = (float3) mul(float4(input.position, 1.0f), worldTransform);
+    output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
+    return output;
+}
+
+[earlydepthstencil]
+float4 DefaultWireFramePixelShader(VS_WIRE_FRAME_OUTPUT input) : SV_TARGET
+{
+    float distance = length(input.positionW - cameraPosition);
+    float rangeDistance = floatValue;
+    if (rangeDistance - 10.f <= distance && distance <= rangeDistance)
+    {
+        return float4(1, 1, 0, 1);
+    }
+    else
+    {
+        discard;
+    }
+    
+    return float4(1, 1, 0, 1);
+}
 
 SHADOW_MAP_VS_OUTPUT DefaultShadowVertexShader(VS_INPUT input)
 {
@@ -277,6 +306,43 @@ G_BUFFER_OUTPUT SkinnedPixelShader(VS_SKINNED_OUTPUT input)
     //output.depth = length(input.positionW - cameraPosition);
     output.depth = -length(input.positionW - cameraPosition);
     return output;
+}
+
+VS_WIRE_FRAME_OUTPUT SkinnedWireFrameVertexShader(VS_SKINNED_INPUT input)
+{
+    VS_WIRE_FRAME_OUTPUT output;
+    output.positionW = float3(0, 0, 0);
+    
+    matrix mtxVertexToBoneWorld;
+    for (int i = 0; i < 4; ++i)
+    {
+        if (input.boneWeight[i] > 0.0001f)
+        {
+            mtxVertexToBoneWorld = mul(offsetTransform[input.boneIndex[i]], skinnedWorldTransforms[input.boneIndex[i]]);
+            output.positionW += input.boneWeight[i] * mul(float4(input.position, 1.0f), mtxVertexToBoneWorld).xyz;
+        }
+    }
+    
+    output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
+    return output;
+}
+
+[earlydepthstencil]
+float4 SkinnedWireFramePixelShader(VS_WIRE_FRAME_OUTPUT input) : SV_TARGET
+{
+    return float4(1, 0, 1, 1);
+    float distance = length(input.positionW - cameraPosition);
+    float rangeDistance = floatValue;
+    if (rangeDistance - 10.f <= distance && distance <= rangeDistance)
+    {
+        return float4(1, 0, 1, 1);
+    }
+    else
+    {
+        discard;
+    }
+    
+    return float4(1, 0, 1, 1);
 }
 
 [earlydepthstencil]
@@ -498,6 +564,31 @@ G_BUFFER_OUTPUT InstancePixelShader(VS_OUTPUT input)
 }
 
 
+
+VS_WIRE_FRAME_OUTPUT InstanceWireFrameVertexShader(VS_INSTANCING_INPUT input)
+{
+    VS_WIRE_FRAME_OUTPUT output;
+    output.positionW = (float3) mul(float4(input.position, 1.0f), input.worldMatrix);
+    output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
+    return output;
+}
+
+[earlydepthstencil]
+float4 InstanceWireFramePixelShader(VS_WIRE_FRAME_OUTPUT input) : SV_TARGET
+{
+    float distance = length(input.positionW - cameraPosition);
+    float rangeDistance = floatValue;
+    if (rangeDistance - 10.f <= distance && distance <= rangeDistance)
+    {
+        return float4(1, 0, 0, 1);
+    }
+    else
+    {
+        discard;
+    }
+    
+    return float4(1, 0, 0, 1);
+}
 
 SHADOW_MAP_VS_OUTPUT InstanceShadowVertexShader(VS_INSTANCING_INPUT input)
 {

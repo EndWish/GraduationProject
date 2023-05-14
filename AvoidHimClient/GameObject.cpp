@@ -26,6 +26,18 @@ void GameObject::RenderInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& 
 	}
 }
 
+void GameObject::RenderWireFrameInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework& gameFramework = GameFramework::Instance();
+	gameFramework.GetShader("InstancingWireFrameShader")->PrepareRender(_pCommandList);
+	GameObjectManager& gameObjManager = gameFramework.GetGameObjectManager();
+
+	for (auto& [name, instanceData] : instanceDatas) {
+		// 해당 인스턴스의 오브젝트 정보를 가져온다.
+		shared_ptr<GameObject> pGameObject = gameObjManager.GetExistGameObject(name);
+		if (pGameObject) pGameObject->RenderInstance(_pCommandList, instanceData);
+	}
+}
+
 void GameObject::RenderShadowInstanceObjects(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
 	gameFramework.GetShader("InstancingShadowShader")->PrepareRender(_pCommandList);

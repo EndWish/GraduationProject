@@ -128,6 +128,7 @@ protected:
 	ComPtr<ID3DBlob> pVSBlob, pPSBlob;
 	ComPtr<ID3D12PipelineState> pPipelineState;
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipelineStateDesc;
+protected:
 	vector<D3D12_INPUT_ELEMENT_DESC> inputElementDescs;
 
 	// 해당 쉐이더로 그릴 게임 오브젝트들의 포인터 벡터
@@ -177,6 +178,19 @@ private:
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
 };
 
+class BasicWireFrameShader : public Shader {
+private:
+
+public:
+	BasicWireFrameShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~BasicWireFrameShader();
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+private:
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+	D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState() final;
+};
+
 class BasicShadowShader : public Shader {
 private:
 
@@ -199,6 +213,19 @@ public:
 private:
 	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+};
+
+class SkinnedWireFrameShader : public Shader {
+private:
+
+public:
+	SkinnedWireFrameShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~SkinnedWireFrameShader();
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+private:
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+	D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState() final;
 };
 
 class SkinnedShadowShader : public Shader {
@@ -270,6 +297,20 @@ public:
 private:
 	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
 	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+};
+
+class InstancingWireFrameShader : public Shader {
+private:
+
+public:
+	InstancingWireFrameShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~InstancingWireFrameShader();
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
+private:
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+	D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState() final;
 };
 
 class InstancingShadowShader : public Shader {

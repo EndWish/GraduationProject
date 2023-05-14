@@ -82,9 +82,10 @@ void radarResult(int3 n3GroupThreadID : SV_GroupThreadID, int3 threadID : SV_Dis
     if (depth < 0)
         depth = -depth;
     // 레이더 범위내에 들어올 경우 와이어 프레임 텍스처를 출력한다.
-    if (depth < radarDepth)
+    if (depth <= radarDepth)
     {
-        output[threadID.xy] = lerp(nColor, positionTexture[threadID.xy], radarRatio);
+        float ratio = radarRatio * clamp(depth / max(0.1f, radarDepth - 10.f), 0.f, 1.f);
+        output[threadID.xy] = lerp(nColor, radarTexture[threadID.xy], ratio);
     }
         
     // 아닐경우 기존 블러 처리를 하여 그대로 내보낸다.

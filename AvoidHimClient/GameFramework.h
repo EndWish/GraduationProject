@@ -108,6 +108,10 @@ private:
 	// 컴퓨트 쉐이더의 계산 결과를 출력할 버퍼
 	shared_ptr<Texture> pComputeBuffer;
 
+	// 쉐도우 맵
+	shared_ptr<Texture> pWireFrameMap;
+	D3D12_CPU_DESCRIPTOR_HANDLE wireFrameMapCPUDescriptorHandle;
+
 	// 컴퓨트 쉐이더의 계산 결과를 복사할 버퍼
 	shared_ptr<Texture> pDestBuffer;
 
@@ -173,6 +177,7 @@ public:
 	shared_ptr<Texture> GetShadowMap() const;
 	shared_ptr<Texture> GetPostBuffer() const;
 	shared_ptr<Texture> GetComputeBuffer() const;
+	shared_ptr<Texture> GetWireFrameMap() const;
 	shared_ptr<Texture> GetDestBuffer() const;
 
 

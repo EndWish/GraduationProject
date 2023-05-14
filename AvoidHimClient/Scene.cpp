@@ -997,15 +997,15 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	
 
 	// 빛을 추가
-	shared_ptr<Light> baseLight = make_shared<Light>();
+	//shared_ptr<Light> baseLight = make_shared<Light>();
 
-	baseLight->lightType = 3;
-	baseLight->position = XMFLOAT3(0, 500, 0);
-	baseLight->direction = XMFLOAT3(0, -1, 0);
-	baseLight->diffuse = XMFLOAT4(0.5, 0.5, 0.5, 1);
-	baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
-	AddLight(baseLight);
-	baseLight->UpdateViewTransform();
+	//baseLight->lightType = 3;
+	//baseLight->position = XMFLOAT3(0, 500, 0);
+	//baseLight->direction = XMFLOAT3(0, -1, 0);
+	//baseLight->diffuse = XMFLOAT4(0.5, 0.5, 0.5, 1);
+	//baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
+	//AddLight(baseLight);
+	//baseLight->UpdateViewTransform();
 
 	pFrustumMesh = make_shared<FrustumMesh>();
 	pFrustumMesh->Create(camera->GetBoundingFrustum(), _pDevice, _pCommandList);
@@ -1141,7 +1141,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	}
 
 	if (radarEnable) {
-		radarInfo.x += 0.02f;
+		radarInfo.x += _timeElapsed * 8.f;
 	}
 	
 	// 레이더 지속시간이 끝난 경우
@@ -1849,6 +1849,24 @@ void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 
 	// 다그린 후 쉐도우맵을 연결한다.
 }
+
+void PlayScene::WireFrameRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	gameFramework.UpdateShaderVariables();
+	camera->SetViewPortAndScissorRect(_pCommandList);
+	camera->UpdateShaderVariable(_pCommandList);
+
+	_pCommandList->SetGraphicsRoot32BitConstants(13, 1, &radarInfo.x, 0);
+
+	gameFramework.GetShader("BasicWireFrameShader")->Render(_pCommandList);
+	gameFramework.GetShader("InstancingWireFrameShader")->Render(_pCommandList);
+	gameFramework.GetShader("SkinnedWireFrameShader")->Render(_pCommandList);
+
+	gameFramework.GetWireFrameMap()->UpdateShaderVariable(_pCommandList);
+}
+
+
 
 void PlayScene::PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {
 

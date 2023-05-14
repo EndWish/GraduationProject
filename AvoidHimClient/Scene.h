@@ -171,6 +171,7 @@ public:
 	virtual void ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	
 	virtual void RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex);
+	virtual void WireFrameRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);

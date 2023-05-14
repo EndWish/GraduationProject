@@ -570,6 +570,94 @@ D3D12_INPUT_LAYOUT_DESC BasicShader::CreateInputLayout() {
 	return inputLayoutDesc;
 }
 
+BasicWireFrameShader::BasicWireFrameShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;	// ??????????????????????????????????????????????????????????
+	Init(_pDevice, _pRootSignature);
+
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultWireFrameVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "DefaultWireFramePixelShader", "ps_5_1", pPSBlob);
+
+	HRESULT _hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (_hr == S_OK) cout << "BasicWireFrameShader 생성 성공\n";
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+	inputElementDescs.clear();
+}
+BasicWireFrameShader::~BasicWireFrameShader() {
+
+}
+void BasicWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	auto& pGameObjects = gameFramework.GetShader("BasicShader")->GetGameObjects();
+
+	if (pGameObjects.size() > 0) {
+		PrepareRender(_pCommandList);
+		for (auto& wpGameObject : pGameObjects) {
+			if (wpGameObject.expired()) continue;
+			auto pGameObject = wpGameObject.lock();
+			if (pGameObject->GetAlwaysDraw() || (pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum())) {
+				pGameObject->Render(_pCommandList);
+			}
+		}
+	}
+
+}
+D3D12_RASTERIZER_DESC BasicWireFrameShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	//rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = FALSE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+D3D12_INPUT_LAYOUT_DESC BasicWireFrameShader::CreateInputLayout() {
+	inputElementDescs.assign(5, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[1] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[2] = { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[3] = { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[4] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 4, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
+}
+D3D12_DEPTH_STENCIL_DESC BasicWireFrameShader::CreateDepthStencilState() {
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
+	depthStencilDesc.DepthEnable = FALSE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	depthStencilDesc.StencilEnable = TRUE;
+	depthStencilDesc.StencilReadMask = 0x00;
+	depthStencilDesc.StencilWriteMask = 0x00;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+	depthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+	return depthStencilDesc;
+}
+
 
 BasicShadowShader::BasicShadowShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	renderType = ShaderRenderType::SHADOW_RENDER;
@@ -726,6 +814,103 @@ D3D12_INPUT_LAYOUT_DESC SkinnedShader::CreateInputLayout() {
 	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
 
 	return inputLayoutDesc;
+}
+
+SkinnedWireFrameShader::SkinnedWireFrameShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
+	Init(_pDevice, _pRootSignature);
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC envPipelineStateDesc;
+	ZeroMemory(&envPipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "SkinnedWireFrameVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "SkinnedWireFramePixelShader", "ps_5_1", pPSBlob);
+
+	HRESULT _hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (_hr == S_OK) cout << "SkinnedWireFrameShader 생성 성공\n";
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+	inputElementDescs.clear();
+}
+SkinnedWireFrameShader::~SkinnedWireFrameShader() {
+
+}
+void SkinnedWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	GameFramework& gameFramework = GameFramework::Instance();
+	static float hitRate;
+
+	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
+	if (pGameObjects.size() > 0) {
+		PrepareRender(_pCommandList);
+		for (auto& wpGameObject : pGameObjects) {
+			if (wpGameObject.expired()) continue;
+			auto pGameObject = wpGameObject.lock();
+			auto pSkinnedGameObject = static_pointer_cast<SkinnedGameObject>(pGameObject);
+
+			// 1 ~ 0 값을 넘겨줌
+			hitRate = pSkinnedGameObject->GetHitTime() * 2.f * pSkinnedGameObject->GetHit();
+			_pCommandList->SetGraphicsRoot32BitConstants(13, 1, &hitRate, 0);
+
+			// 플레이어는 sector에 포함되지 않는다.
+			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent()) {
+				pGameObject->Render(_pCommandList);
+			}
+		}
+	}
+}
+D3D12_RASTERIZER_DESC SkinnedWireFrameShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+D3D12_INPUT_LAYOUT_DESC SkinnedWireFrameShader::CreateInputLayout() {
+	inputElementDescs.assign(7, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[1] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[2] = { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[3] = { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[4] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 4, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[5] = { "BONEINDEX", 0, DXGI_FORMAT_R32G32B32A32_UINT, 5, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[6] = { "BONEWEIGHT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 6, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
+}
+D3D12_DEPTH_STENCIL_DESC SkinnedWireFrameShader::CreateDepthStencilState() {
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
+	depthStencilDesc.DepthEnable = FALSE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	depthStencilDesc.StencilEnable = TRUE;
+	depthStencilDesc.StencilReadMask = 0x00;
+	depthStencilDesc.StencilWriteMask = 0x00;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+	depthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+	return depthStencilDesc;
 }
 
 SkinnedShadowShader::SkinnedShadowShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
@@ -1169,6 +1354,87 @@ D3D12_INPUT_LAYOUT_DESC InstancingShader::CreateInputLayout() {
 	return inputLayoutDesc;
 }
 
+InstancingWireFrameShader::InstancingWireFrameShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
+	Init(_pDevice, _pRootSignature);
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC envPipelineStateDesc;
+	ZeroMemory(&envPipelineStateDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "InstanceWireFrameVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "InstanceWireFramePixelShader", "ps_5_1", pPSBlob);
+
+	HRESULT hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (hr == S_OK) cout << "InstancingWireFrameShader 생성 성공\n";
+
+	pVSBlob.Reset();
+	pPSBlob.Reset();
+	inputElementDescs.clear();
+}
+InstancingWireFrameShader::~InstancingWireFrameShader() {
+
+}
+void InstancingWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	// 쉐이더를 파이프라인에 연결한다.
+	GameObject::RenderWireFrameInstanceObjects(_pCommandList);
+}
+D3D12_RASTERIZER_DESC InstancingWireFrameShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	//	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	//rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = FALSE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+D3D12_INPUT_LAYOUT_DESC InstancingWireFrameShader::CreateInputLayout() {
+	inputElementDescs.assign(9, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[1] = { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 1, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[2] = { "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 2, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[3] = { "BITANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 3, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+	inputElementDescs[4] = { "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 4, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	inputElementDescs[5] = { "WORLDMAT", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 5, 0, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
+	inputElementDescs[6] = { "WORLDMAT", 1, DXGI_FORMAT_R32G32B32A32_FLOAT, 5, 16, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
+	inputElementDescs[7] = { "WORLDMAT", 2, DXGI_FORMAT_R32G32B32A32_FLOAT, 5, 32, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
+	inputElementDescs[8] = { "WORLDMAT", 3, DXGI_FORMAT_R32G32B32A32_FLOAT, 5, 48, D3D12_INPUT_CLASSIFICATION_PER_INSTANCE_DATA, 1 };
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
+}
+D3D12_DEPTH_STENCIL_DESC InstancingWireFrameShader::CreateDepthStencilState() {
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
+	depthStencilDesc.DepthEnable = FALSE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	depthStencilDesc.StencilEnable = TRUE;
+	depthStencilDesc.StencilReadMask = 0x00;
+	depthStencilDesc.StencilWriteMask = 0x00;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+	depthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+	return depthStencilDesc;
+}
 
 InstancingShadowShader::InstancingShadowShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
@@ -1628,6 +1894,10 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 	if (basicShader) storage["BasicShader"] = basicShader;
 	else return false;
 
+	shared_ptr<Shader> basicWireFrameShader = make_shared<BasicWireFrameShader>(_pDevice, _pRootSignature);
+	if (basicWireFrameShader) storage["BasicWireFrameShader"] = basicWireFrameShader;
+	else return false;
+
 	shared_ptr<Shader> basicShadowShader = make_shared<BasicShadowShader>(_pDevice, _pRootSignature);
 	if (basicShadowShader) storage["BasicShadowShader"] = basicShadowShader;
 	else return false;
@@ -1644,6 +1914,10 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 	if (instancingShader) storage["InstancingShader"] = instancingShader;
 	else return false;
 
+	shared_ptr<Shader> instancingWireFrameShader = make_shared<InstancingWireFrameShader>(_pDevice, _pRootSignature);
+	if (instancingWireFrameShader) storage["InstancingWireFrameShader"] = instancingWireFrameShader;
+	else return false;
+
 	shared_ptr<Shader> instancingShadowShader = make_shared<InstancingShadowShader>(_pDevice, _pRootSignature);
 	if (instancingShadowShader) storage["InstancingShadowShader"] = instancingShadowShader;
 	else return false;
@@ -1654,6 +1928,10 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 
 	shared_ptr<Shader> skinnedShader = make_shared<SkinnedShader>(_pDevice, _pRootSignature);
 	if (skinnedShader) storage["SkinnedShader"] = skinnedShader;
+	else return false;
+
+	shared_ptr<Shader> skinnedWireFrameShader = make_shared<SkinnedWireFrameShader>(_pDevice, _pRootSignature);
+	if (skinnedWireFrameShader) storage["SkinnedWireFrameShader"] = skinnedWireFrameShader;
 	else return false;
 
 	shared_ptr<Shader> skinnedShadowShader = make_shared<SkinnedShadowShader>(_pDevice, _pRootSignature);
@@ -2001,6 +2279,9 @@ void BlurComputeShader::Dispatch(const ComPtr<ID3D12GraphicsCommandList>& _pComm
 
 	// RWTexture를 uav 2번에 연결
 	gameFramework.GetComputeBuffer()->UpdateComputeShaderVariable(_pCommandList, -1, 2);
+
+	// 레이더 텍스처를 연결한다.
+	gameFramework.GetWireFrameMap()->UpdateComputeShaderVariable(_pCommandList, 3, -1);
 	
 	// 컴퓨트 쉐이더를 수행한다.
 	_pCommandList->Dispatch(numThreads.x, numThreads.y, 1);
@@ -2065,3 +2346,4 @@ D3D12_INPUT_LAYOUT_DESC PostShader::CreateInputLayout() {
 
 	return inputLayoutDesc;
 }
+
