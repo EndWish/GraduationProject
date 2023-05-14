@@ -570,7 +570,7 @@ void GameObject::CopyObject(const GameObject& _other) {
 
 	for (int i = 0; i < _other.pChildren.size(); ++i) {
 		shared_ptr<GameObject> child;
-		if(_other.pChildren[i]->GetObjectClass() == 1)
+		if (_other.pChildren[i]->GetObjectClass() == 1)
 			child = make_shared<SkinnedGameObject>();
 		else if(_other.pChildren[i]->GetObjectClass() == 2)
 			child = make_shared<Effect>();
@@ -640,6 +640,8 @@ void Effect::CopyObject(const GameObject& _other) {
 /////////////////////////// SkinnedGameObject /////////////////////
 
 SkinnedGameObject::SkinnedGameObject() {
+	visible = true;
+
 	objectClass = 1;
 	pAniController = make_shared<AnimationController>();
 	isTransparent = false;

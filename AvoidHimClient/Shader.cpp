@@ -766,7 +766,7 @@ void SkinnedShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLis
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
 			auto pSkinnedGameObject = static_pointer_cast<SkinnedGameObject>(pGameObject);
-
+			if(!pSkinnedGameObject->GetVisible()) continue;
 			// 1 ~ 0 °ªÀ» ³Ñ°ÜÁÜ
 			hitRate = pSkinnedGameObject->GetHitTime() * 2.f * pSkinnedGameObject->GetHit();
 			_pCommandList->SetGraphicsRoot32BitConstants(13, 1, &hitRate, 0);
@@ -846,6 +846,7 @@ void SkinnedWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pC
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
 			auto pSkinnedGameObject = static_pointer_cast<SkinnedGameObject>(pGameObject);
+			if (!pSkinnedGameObject->GetVisible()) continue;
 
 			// 1 ~ 0 °ªÀ» ³Ñ°ÜÁÜ
 			hitRate = pSkinnedGameObject->GetHitTime() * 2.f * pSkinnedGameObject->GetHit();
@@ -940,7 +941,9 @@ void SkinnedShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComm
 		for (auto& wpGameObject : pGameObjects) {
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
-			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
+			auto pSkinnedGameObject = static_pointer_cast<SkinnedGameObject>(pGameObject);
+			if (!pSkinnedGameObject->GetVisible()) continue;
+			if (!pSkinnedGameObject->GetTransparent())
 				pGameObject->Render(_pCommandList);
 		}
 	}
@@ -1009,7 +1012,9 @@ void SkinnedTransparentShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _
 		for (auto& wpGameObject : pGameObjects) {
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
-			if (static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent())
+			auto pSkinnedGameObject = static_pointer_cast<SkinnedGameObject>(pGameObject);
+			if (!pSkinnedGameObject->GetVisible()) continue;
+			if (pSkinnedGameObject->GetTransparent())
 				pGameObject->Render(_pCommandList);
 		}
 	}

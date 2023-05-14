@@ -280,6 +280,7 @@ struct SkinnedWorldTransformFormat {
 
 class SkinnedGameObject : public GameObject {
 protected:
+	bool visible;
 
 	bool isTransparent; // 투명 상태인 경우 true
 	float transparentTime; // 투명 지속시간
@@ -311,6 +312,9 @@ public:
 
 	void SetHitTime(float _hitTime) { hitTime = _hitTime; }
 	float GetHitTime() const { return hitTime; }
+
+	void SetVisible(bool _visible) { visible = _visible; }
+	bool GetVisible() const { return visible; }
 
 	shared_ptr<AnimationController> GetAniController() { return pAniController; }
 

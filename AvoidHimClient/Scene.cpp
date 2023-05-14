@@ -137,7 +137,6 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	for (auto& pRoomPlayerObject : pRoomPlayerObjects) {
 		pRoomPlayerObject = make_shared<RoomPlayerObject>();
 		pRoomPlayerObject->Create("Student"s, _pDevice, _pCommandList);
-
 		pRoomPlayerObject->GetAniController()->ChangeClip("idle");
 	}
 
@@ -301,6 +300,10 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		}
 		isLoading = true;
 		changeUI(LobbyState::inRoom, false);
+		for (shared_ptr<RoomPlayerObject>& pRoomPlayerObject : pRoomPlayerObjects) {
+			dynamic_pointer_cast<SkinnedGameObject>(pRoomPlayerObject->GetObj())->SetVisible(false);
+		}
+
 		loadingScene = make_shared<PlayScene>();
 
 		// 게임이 시작된 경우 먼저 게임에서 사용될 인스턴스 정보, 메쉬, 애니메이션, 텍스처 등의 정보를 로드한다.
@@ -533,6 +536,10 @@ void LobbyScene::changeUI(LobbyState _state, bool _active) {
 		}
 	}
 	if (_active) currState = _state;
+}
+
+array<shared_ptr<RoomPlayerObject>, 5>& LobbyScene::GetRoomPlayerObjects() {
+	return pRoomPlayerObjects;
 }
 
 void LobbyScene::UpdateRoomText() {
@@ -1136,6 +1143,9 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		if (pLobbyScene) {
 			pLobbyScene->changeUI(LobbyState::inRoom, true);
 			pLobbyScene->UpdateInRoomState();
+			for (shared_ptr<RoomPlayerObject>& pRoomPlayerObject : pLobbyScene->GetRoomPlayerObjects()) {
+				dynamic_pointer_cast<SkinnedGameObject>(pRoomPlayerObject->GetObj())->SetVisible(true);
+			}
 		}
 		return;
 	}
