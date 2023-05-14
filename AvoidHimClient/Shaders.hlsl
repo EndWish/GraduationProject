@@ -102,9 +102,11 @@ float4 DefaultWireFramePixelShader(VS_WIRE_FRAME_OUTPUT input) : SV_TARGET
 {
     float distance = length(input.positionW - cameraPosition);
     float rangeDistance = floatValue;
-    if (rangeDistance - 10.f <= distance && distance <= rangeDistance)
+    if (distance <= rangeDistance)
     {
-        return float4(1, 1, 0, 1);
+        float ratio = clamp((distance - (rangeDistance - 30.f)) / 20.f, 0.f, 1.f);
+        //float ratio = clamp(distance / max(0.1f, rangeDistance - 10.f), 0.f, 1.f);
+        return float4(ratio, ratio, 0, 1);
     }
     else
     {
@@ -333,9 +335,11 @@ float4 SkinnedWireFramePixelShader(VS_WIRE_FRAME_OUTPUT input) : SV_TARGET
     return float4(1, 0, 1, 1);
     float distance = length(input.positionW - cameraPosition);
     float rangeDistance = floatValue;
-    if (rangeDistance - 10.f <= distance && distance <= rangeDistance)
+    if (distance <= rangeDistance)
     {
-        return float4(1, 0, 1, 1);
+        float ratio = clamp((distance - (rangeDistance - 30.f)) / 20.f, 0.f, 1.f);
+        //float ratio = clamp(distance / max(0.1f, rangeDistance - 10.f), 0.f, 1.f);
+        return float4(ratio, 0, ratio, 1);
     }
     else
     {
@@ -578,9 +582,10 @@ float4 InstanceWireFramePixelShader(VS_WIRE_FRAME_OUTPUT input) : SV_TARGET
 {
     float distance = length(input.positionW - cameraPosition);
     float rangeDistance = floatValue;
-    if (rangeDistance - 10.f <= distance && distance <= rangeDistance)
+    if (distance <= rangeDistance)
     {
-        return float4(1, 0, 0, 1);
+        float ratio = clamp((distance - (rangeDistance - 30.f)) / 20.f, 0.f, 1.f);
+        return float4(ratio, 0, 0, 1);
     }
     else
     {
