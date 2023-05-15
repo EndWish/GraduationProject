@@ -8,6 +8,7 @@ AnimationClip::AnimationClip() {
 	runTime = 0.f;
 	nKeyFrame = 1;
 	isLoop = false;
+	speedRatio = 1.f;
 }
 AnimationClip::~AnimationClip() {
 
@@ -22,6 +23,7 @@ void AnimationClip::LoadFromFile(ifstream& _file, UINT _nBone) {
 	ReadStringBinary(name, _file);	// animationSetName(string)	// 애니메이션 셋의 이름
 	_file.read((char*)&runTime, sizeof(float));	// animationSetRuntime(float)	// 애니메이션 셋의 런타임
 	_file.read((char*)&isLoop, sizeof(bool));	 // animationSetLoop(bool)		// 애니메이션 반복 여부
+	_file.read((char*)&speedRatio, sizeof(float));	 // animationSetLoop(bool)		// 애니메이션 반복 여부
 	_file.read((char*)&nKeyFrame, sizeof(UINT));	// animationNKeyFrame(UINT)	// 키프레임의 수
 
 	scales.assign(_nBone, vector<XMFLOAT3>(nKeyFrame));
@@ -54,7 +56,7 @@ AnimationController::~AnimationController() {
 void AnimationController::AddTime(float _time) {
 	shared_ptr<AnimationClip>& pAniClip = pAniClips[currentAniClipName];
 
-	time += _time;
+	time += _time * pAniClip->getSpeedRatio();
 	float maxTime = pAniClip->GetRunTime();
 	if (maxTime <= time) {
 		if (pAniClip->IsLoop()) {

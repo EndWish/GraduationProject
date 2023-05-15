@@ -8,6 +8,7 @@ protected:
 	float runTime;
 	UINT nKeyFrame;
 	bool isLoop;
+	float speedRatio;
 
 	vector<vector<XMFLOAT3>> scales, position;
 	vector<vector<XMFLOAT4>> rotation;
@@ -25,6 +26,9 @@ public:
 
 	bool IsLoop() const { return isLoop; }
 	void SetLoop(bool _isLoop) { isLoop = _isLoop; }
+
+	float getSpeedRatio() const { return speedRatio; }
+	void setSpeedRatio(float _speedRatio) { speedRatio = _speedRatio; }
 
 	void LoadFromFile(ifstream& _file, UINT _nBone);
 	
