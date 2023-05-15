@@ -19,6 +19,9 @@ Texture2D<float> depthTexture : register(t21);
 
 Texture2D<float4> radarTexture : register(t22);
 
+Texture2D<float> bakedShadow : register(t23);
+Texture2D<float> dynamicShadow : register(t24);
+
 RWTexture2D<float4> output : register(u0);
 
 const static int BlurRange = 3;
@@ -94,6 +97,16 @@ void radarResult(int3 n3GroupThreadID : SV_GroupThreadID, int3 threadID : SV_Dis
     {
         output[threadID.xy] = nColor;
     }
+}
+
+
+[numthreads(32, 32, 1)]
+void MergeShadow(int3 n3GroupThreadID : SV_GroupThreadID, int3 threadID : SV_DispatchThreadID)
+{
+    float bakeDepth = bakedShadow[threadID.xy] == 0 ? 1000 : bakedShadow[threadID.xy];
+    float dynamicDepth = dynamicShadow[threadID.xy] == 0 ? 1000 : dynamicShadow[threadID.xy];
+
+    output[threadID.xy] = min(bakeDepth, dynamicDepth);
 
 
 }

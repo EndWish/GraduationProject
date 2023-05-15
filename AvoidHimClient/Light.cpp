@@ -27,7 +27,6 @@ Light::Light(const shared_ptr<GameObject>& _object) {
 	// 이 빛이 켜져있는 상태인지 확인
 	enable = true;
 
-
 	//UpdateProjectionTransform(0.1f, 10000.0f, aspectRatio, 65.0f);
 	
 }
@@ -48,8 +47,22 @@ void Light::UpdateLight() {
 		UpdateViewTransform();
 		UpdateProjectionTransform(0.01f, 10.0f, aspectRatio, degree);
 	}
+
+	// 해당 빛에 대한 쉐도우맵을 미리 구워두기 위한 텍스처
+
+	
+
 }
 
+void Light::SetBakedShadowMap(shared_ptr<Texture> _pTexture, D3D12_CPU_DESCRIPTOR_HANDLE _handle) {
+	pBakedShadowMap = _pTexture;
+	bakedShadowMapCPUDescriptorHandle = _handle;
+}
+
+void Light::UpdateComputeShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	// 컴퓨트 쉐이더에 해당 조명의 쉐도우맵을 연결한다.
+	pBakedShadowMap->UpdateComputeShaderVariable(_pCommandList, 5, -1);
+}
 
 void Light::UpdateViewTransform() {
 	// 조명의 위치와 방향에 따라 갱신

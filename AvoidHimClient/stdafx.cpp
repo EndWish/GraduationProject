@@ -4,6 +4,7 @@
 
 HWND hWnd;
 
+D3D12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHeapCurrentHandle = D3D12_CPU_DESCRIPTOR_HANDLE();
 UINT rtvDescriptorIncrementSize = 0;
 UINT dsvDescriptorIncrementSize = 0;
 UINT cbvSrvDescriptorIncrementSize = 0;
@@ -234,9 +235,10 @@ ComPtr<ID3D12Resource> CreateTexture2DResource(ID3D12Device* pd3dDevice, UINT nW
 	d3dTextureResourceDesc.SampleDesc.Quality = 0;
 	d3dTextureResourceDesc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
 	d3dTextureResourceDesc.Flags = d3dResourceFlags;
-
+	
 	HRESULT hResult = pd3dDevice->CreateCommittedResource(&d3dHeapPropertiesDesc, D3D12_HEAP_FLAG_NONE, &d3dTextureResourceDesc, d3dResourceStates, pd3dClearValue, __uuidof(ID3D12Resource), (void**)&pd3dTexture);
-
+	
+	HRESULT t = pd3dDevice->GetDeviceRemovedReason();
 	return(pd3dTexture);
 }
 

@@ -446,6 +446,22 @@ public:
 	virtual D3D12_INPUT_LAYOUT_DESC CreateInputLayout();
 };
 
+class ShadowComputeShader : public Shader {
+
+protected:
+	XMUINT3 numThreads;
+	D3D12_COMPUTE_PIPELINE_STATE_DESC computePipelineStateDesc;
+	ComPtr<ID3DBlob> pCSBlob;
+public:
+	ShadowComputeShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~ShadowComputeShader();
+
+	virtual void Dispatch(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+	virtual D3D12_RASTERIZER_DESC CreateRasterizerState();
+	virtual D3D12_INPUT_LAYOUT_DESC CreateInputLayout();
+};
+
+
 
 class PostShader : public Shader {
 private:

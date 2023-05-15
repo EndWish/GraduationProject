@@ -306,13 +306,13 @@ void Shader::CreateComputeUnorderedAccessView(ComPtr<ID3D12Device> _pDevice, sha
 	D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = _pTexture->GetComputeUAVGpuDescriptorHandle(_Index);
 	if (pShaderResource && !gpuDescriptorHandle.ptr)
 	{
-
+				
 		D3D12_UNORDERED_ACCESS_VIEW_DESC d3dShaderResourceViewDesc = _pTexture->GetUnorderedAccessViewDesc(_Index);
 
 		_pDevice->CreateUnorderedAccessView(pShaderResource.Get(), NULL, &d3dShaderResourceViewDesc, uavComputeCPUDescriptorNextHandle);
 		uavComputeCPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
 
-		_pTexture->SetUAVComputeGpuDescriptorHandle(_Index, uavGPUDescriptorNextHandle);
+		_pTexture->SetUAVComputeGpuDescriptorHandle(_Index, uavComputeGPUDescriptorNextHandle);
 		uavComputeGPUDescriptorNextHandle.ptr += ::cbvSrvDescriptorIncrementSize;
 	}
 }
@@ -479,8 +479,8 @@ void Shader::CreateCbvSrvUavDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int n
 	srvCPUDescriptorNextHandle = srvCPUDescriptorStartHandle;
 	srvGPUDescriptorNextHandle = srvGPUDescriptorStartHandle;
 
-	uavCPUDescriptorNextHandle = srvCPUDescriptorStartHandle;
-	uavGPUDescriptorNextHandle = srvGPUDescriptorStartHandle;
+	uavCPUDescriptorNextHandle = uavCPUDescriptorStartHandle;
+	uavGPUDescriptorNextHandle = uavGPUDescriptorStartHandle;
 }
 
 
@@ -508,8 +508,8 @@ void Shader::CreateComputeDescriptorHeaps(ComPtr<ID3D12Device> _pDevice, int nCo
 	srvComputeCPUDescriptorNextHandle = srvComputeCPUDescriptorStartHandle;
 	srvComputeGPUDescriptorNextHandle = srvComputeGPUDescriptorStartHandle;
 
-	uavComputeCPUDescriptorNextHandle = srvComputeCPUDescriptorStartHandle;
-	uavComputeGPUDescriptorNextHandle = srvComputeGPUDescriptorStartHandle;
+	uavComputeCPUDescriptorNextHandle = uavComputeCPUDescriptorStartHandle;
+	uavComputeGPUDescriptorNextHandle = uavComputeGPUDescriptorStartHandle;
 }
 
 
@@ -1084,8 +1084,10 @@ SkinnedLobbyShader::SkinnedLobbyShader(const ComPtr<ID3D12Device>& _pDevice, con
 	Init(_pDevice, _pRootSignature);
 
 	// 스왑체인에 바로 그리는 Skinned Shader. 로비용
-	pipelineStateDesc.VS = LoadShaderFromFile(L"SkinnedLobbyShader_vs", pVSBlob);
-	pipelineStateDesc.PS = LoadShaderFromFile(L"SkinnedLobbyShader_ps", pPSBlob);
+	//pipelineStateDesc.VS = LoadShaderFromFile(L"SkinnedLobbyShader_vs", pVSBlob);
+	//pipelineStateDesc.PS = LoadShaderFromFile(L"SkinnedLobbyShader_ps", pPSBlob);
+	pipelineStateDesc.VS = CompileShaderFromFile(L"SkinnedLobbyShader.hlsl", "SkinnedVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"SkinnedLobbyShader.hlsl", "SkinnedLobbyPixelShader", "ps_5_1", pPSBlob);
 
 	HRESULT _hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
 	if (_hr == S_OK) cout << "SkinnedLobbyShader 생성 성공\n";
@@ -1975,6 +1977,10 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 	if (blurComputeShader) storage["BlurComputeShader"] = blurComputeShader;
 	else return false;
 
+	shared_ptr<Shader> shadowComputeShader = make_shared<ShadowComputeShader>(_pDevice, _pComputeRootSignature);
+	if (shadowComputeShader) storage["ShadowComputeShader"] = shadowComputeShader;
+	else return false;
+
 	shared_ptr<Shader> postShader = make_shared<PostShader>(_pDevice, _pRootSignature);
 	if (postShader) storage["PostShader"] = postShader;
 	else return false;
@@ -2301,6 +2307,46 @@ D3D12_INPUT_LAYOUT_DESC BlurComputeShader::CreateInputLayout()
 {
 	return D3D12_INPUT_LAYOUT_DESC();
 }
+
+
+ShadowComputeShader::ShadowComputeShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+
+	D3D12_CACHED_PIPELINE_STATE d3dCachedPipelineState = { };
+
+	ZeroMemory(&computePipelineStateDesc, sizeof(D3D12_COMPUTE_PIPELINE_STATE_DESC));
+	computePipelineStateDesc.pRootSignature = _pRootSignature.Get();
+	computePipelineStateDesc.CS = CompileShaderFromFile(L"ComputeShader.hlsl", "MergeShadow", "cs_5_1", pCSBlob);
+	computePipelineStateDesc.NodeMask = 0;
+	computePipelineStateDesc.Flags = D3D12_PIPELINE_STATE_FLAG_NONE;
+	computePipelineStateDesc.CachedPSO = d3dCachedPipelineState;
+
+	HRESULT _hr = _pDevice->CreateComputePipelineState(&computePipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (!FAILED(_hr)) cout << "ShadowComputeShader 생성 성공\n";
+
+	numThreads = XMUINT3(ceil((float)C_WIDTH / 32.0f), ceil((float)C_HEIGHT / 32.0f), 1);
+
+}
+
+ShadowComputeShader::~ShadowComputeShader() {
+
+}
+
+void ShadowComputeShader::Dispatch(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	// 컴퓨트 쉐이더를 수행한다.
+	_pCommandList->Dispatch(numThreads.x, numThreads.y, 1);
+
+}
+
+D3D12_RASTERIZER_DESC ShadowComputeShader::CreateRasterizerState() {
+	return D3D12_RASTERIZER_DESC();
+}
+
+D3D12_INPUT_LAYOUT_DESC ShadowComputeShader::CreateInputLayout()
+{
+	return D3D12_INPUT_LAYOUT_DESC();
+}
+
+
 
 PostShader::PostShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;

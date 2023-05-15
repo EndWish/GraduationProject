@@ -82,7 +82,7 @@ float4 LightingPixelShader(VS_LIGHTING_OUT input) : SV_TARGET
     // 투명한 경우 기존 픽셀의 노말을 흔들어 주고, 약간 어둡게 칠한다.
     float3 normal = lerp(normalTexture.Sample(gssWrap, input.uv).xyz, changeNormal, float3(0.5, 0.5, 0.5));
     float4 color;
-    
+    //return float4(shadowMapTexture_1.Sample(gssWrap, input.uv) / 10, 0, 0, 1);
     if (isBorder(input.uv))
     {
         color = float4(0.0, 0, 0.1, 1);

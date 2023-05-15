@@ -1,7 +1,7 @@
 #pragma once
 
 class GameObject;
-
+class Texture;
 class Light
 {
 public:
@@ -22,23 +22,26 @@ public:
 	float phi; // 내부 원을 그리는 각, 스포트라이트에서 사용
 	XMFLOAT3 direction;
 	float falloff;	// phi와 theta에 대한 감쇠 비율
-
-	// 이 빛을 내고 있는 오브젝트의 포인터
 private:
 	weak_ptr<GameObject> object;
-
 public:
 	// 1 = 점, 2 = 스포트, 3 = 직접
 	int lightType;
 
 	// 이 빛이 켜져있는 상태인지 확인
 	bool enable;
-	XMFLOAT2 padding2;
-	// 패딩 규칙 준수
+
+	D3D12_CPU_DESCRIPTOR_HANDLE bakedShadowMapCPUDescriptorHandle;
+	shared_ptr<Texture> pBakedShadowMap;
+	
 public:
 	Light(const shared_ptr<GameObject>& _object = nullptr);
 	~Light();
 	void UpdateLight();
+
+	void SetBakedShadowMap(shared_ptr<Texture> _pTexture, D3D12_CPU_DESCRIPTOR_HANDLE _handle);
+
+	void UpdateComputeShaderVariable(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
 	void UpdateViewTransform();
 	void UpdateProjectionTransform(float _nearDistance, float _farDistance, float _aspectRatio, float _fovAngle);

@@ -116,7 +116,7 @@ public:
 class PlayScene : public Scene, public enable_shared_from_this<PlayScene> {
 
 private:
-	int lightIndex[NUM_SHADOW_MAP];
+	int lightIndex[MAX_LIGHTS];
 	float remainTime;
 
 
@@ -165,6 +165,7 @@ public:
 	PlayScene();	
 	~PlayScene();
 
+
 	virtual void Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ReleaseUploadBuffers();
 	virtual void ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
@@ -199,4 +200,7 @@ public:
 	void AddItemSpawnLocation(const XMFLOAT3& _position);
 
 	void SetExitBox(const BoundingBox& _exitBox);
+
+	shared_ptr<Light> GetLight(UINT _lightIndex);
+	void BakeShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, D3D12_CPU_DESCRIPTOR_HANDLE& _dsvHandle);
 };

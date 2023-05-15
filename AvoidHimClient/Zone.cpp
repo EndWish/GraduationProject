@@ -775,9 +775,13 @@ void Zone::LoadZoneFromFile(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<I
 			pGameObject->UpdateObject();
 			pGameObject->SetID(objectID);
 
-			// 섹터에 오브젝트를 추가한다. (충돌체크, 프러스텀 컬링용)
-			AddObject(SectorLayer::obstacle, objectID, pGameObject, GetIndex(position));
-			gameFramework.GetShader("BasicShader")->AddObject(pGameObject->GetObj());
+			// 빛은 인스턴싱으로 그린다.
+			//AddObject(SectorLayer::obstacle, objectID, pGameObject, GetIndex(position));
+			//gameFramework.GetShader("BasicShader")->AddObject(pGameObject->GetObj());
+			world = pGameObject->GetWorldTransform();
+			XMStoreFloat4x4(&temp, XMMatrixTranspose(XMLoadFloat4x4(&world)));
+			instanceDatas[objName].push_back(temp);
+
 
 			// 빛을 추가한다.
 			shared_ptr<Light> pNewLight = make_shared<Light>();

@@ -41,7 +41,7 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 
 		// cbv, srv를 담기 위한 정적 디스크립터 힙 생성
 		Shader::CreateCbvSrvUavDescriptorHeaps(gameFramework.pDevice, 0, 300, 1);
-		Shader::CreateComputeDescriptorHeaps(gameFramework.pDevice, 0, 6, 1);
+		Shader::CreateComputeDescriptorHeaps(gameFramework.pDevice, 0, 200, MAX_LIGHTS + 20);
 
 
 
@@ -207,7 +207,6 @@ void GameFramework::CreateDirect3DDevice() {
 	::rtvDescriptorIncrementSize = pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
 	::dsvDescriptorIncrementSize = pDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_DSV);
 
-
 	// 다중 샘플링 정보
 	D3D12_FEATURE_DATA_MULTISAMPLE_QUALITY_LEVELS msaaQualityLevel;
 	msaaQualityLevel.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -253,8 +252,8 @@ void GameFramework::CreateRtvAndDsvDescriptorHeaps() {
 	// 렌더타겟 서술자 힙 생성
 	D3D12_DESCRIPTOR_HEAP_DESC descriptorHeapDesc;
 	ZeroMemory(&descriptorHeapDesc, sizeof(D3D12_DESCRIPTOR_HEAP_DESC));
-	// 쉐도우맵 + G Buffer + 포스트 버퍼 + 후면버퍼
-	descriptorHeapDesc.NumDescriptors = nSwapChainBuffer + NUM_G_BUFFER + NUM_SHADOW_MAP + 1 + 1;
+	// 후면버퍼 + 쉐도우맵 + G Buffer + 포스트 버퍼 + 레이더 텍스처 + baked 쉐도우 맵
+	descriptorHeapDesc.NumDescriptors = nSwapChainBuffer + NUM_G_BUFFER + NUM_SHADOW_MAP + 1 + 1 + MAX_LIGHTS;
 	descriptorHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
 	descriptorHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
 	descriptorHeapDesc.NodeMask = 0;
@@ -561,7 +560,7 @@ void GameFramework::CreateGraphicsRootSignature() {
 }
 
 void GameFramework::CreateComputeRootSignature() {
-	D3D12_DESCRIPTOR_RANGE pDescriptorRanges[4];
+	D3D12_DESCRIPTOR_RANGE pDescriptorRanges[6];
 
 	pDescriptorRanges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
 	pDescriptorRanges[0].NumDescriptors = 1;
@@ -587,7 +586,19 @@ void GameFramework::CreateComputeRootSignature() {
 	pDescriptorRanges[3].RegisterSpace = 0;
 	pDescriptorRanges[3].OffsetInDescriptorsFromTableStart = 0;
 
-	D3D12_ROOT_PARAMETER pRootParameters[5];
+	pDescriptorRanges[4].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	pDescriptorRanges[4].NumDescriptors = 1;
+	pDescriptorRanges[4].BaseShaderRegister = 23; //t23: baked shadow
+	pDescriptorRanges[4].RegisterSpace = 0;
+	pDescriptorRanges[4].OffsetInDescriptorsFromTableStart = 0;
+
+	pDescriptorRanges[5].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	pDescriptorRanges[5].NumDescriptors = 1;
+	pDescriptorRanges[5].BaseShaderRegister = 24; //t24: dynamic shadow
+	pDescriptorRanges[5].RegisterSpace = 0;
+	pDescriptorRanges[5].OffsetInDescriptorsFromTableStart = 0;
+
+	D3D12_ROOT_PARAMETER pRootParameters[7];
 
 	pRootParameters[0].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	pRootParameters[0].DescriptorTable.NumDescriptorRanges = 1;
@@ -615,6 +626,15 @@ void GameFramework::CreateComputeRootSignature() {
 	pRootParameters[4].Constants.RegisterSpace = 0;
 	pRootParameters[4].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
 
+	pRootParameters[5].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	pRootParameters[5].DescriptorTable.NumDescriptorRanges = 1;
+	pRootParameters[5].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[4];
+	pRootParameters[5].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;	// baked shadow
+
+	pRootParameters[6].ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
+	pRootParameters[6].DescriptorTable.NumDescriptorRanges = 1;
+	pRootParameters[6].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[5];
+	pRootParameters[6].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;	// dynamic shadow
 
 
 	D3D12_ROOT_SIGNATURE_FLAGS rootSignatureFlags = D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT | D3D12_ROOT_SIGNATURE_FLAG_DENY_HULL_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_DOMAIN_SHADER_ROOT_ACCESS | D3D12_ROOT_SIGNATURE_FLAG_DENY_GEOMETRY_SHADER_ROOT_ACCESS;
@@ -673,17 +693,24 @@ void GameFramework::InitOldCursor() {
 void GameFramework::InitBuffer() {
 
 	// 기존 렌더타겟의 다음 위치를 구한다.
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvCPUDescriptorHandle = pRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
-	rtvCPUDescriptorHandle.ptr += (rtvDescriptorIncrementSize * nSwapChainBuffer);
-	
+	rtvDescriptorHeapCurrentHandle = pRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	rtvDescriptorHeapCurrentHandle.ptr += (rtvDescriptorIncrementSize * nSwapChainBuffer);
+
 	//  텍스처를 만든다.
 	pGBuffer = make_shared<Texture>(NUM_G_BUFFER, RESOURCE_TEXTURE2D, 0, 1);
 	pShadowMap = make_shared<Texture>(NUM_SHADOW_MAP, RESOURCE_TEXTURE2D, 0, 1);
+	pDynamicShadowMap = make_shared<Texture>(NUM_SHADOW_MAP, RESOURCE_TEXTURE2D, 0, 1);
+	
 	pPostBuffer = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 	pComputeBuffer = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 	pWireFrameMap = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 	//pDestBuffer = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 
+	pBakedShadowMaps.resize(80);
+	bakedShadowMapCPUDescriptorHandles.resize(80);
+	for (auto& pBakedShadowMap : pBakedShadowMaps) {
+		pBakedShadowMap = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
+	}
 
 	DXGI_FORMAT format[NUM_G_BUFFER] = {
 		DXGI_FORMAT_R32G32B32A32_FLOAT,
@@ -708,7 +735,14 @@ void GameFramework::InitBuffer() {
 		pGBuffer->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, format[i], D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON, &clearValue[i], RESOURCE_TEXTURE2D, i);
 	}
 	for (int i = 0; i < NUM_SHADOW_MAP; ++i) {
-		pShadowMap->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, DXGI_FORMAT_R32_FLOAT, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON, &shadowMapClearValue, RESOURCE_TEXTURE2D, i);
+		// 컴퓨트쉐이더에서 사용하므로 UNORDERED_ACCESS 관련 플래그를 사용
+		pShadowMap->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, DXGI_FORMAT_R32_FLOAT, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, NULL, RESOURCE_TEXTURE2D, i);
+	}
+	for (int i = 0; i < NUM_SHADOW_MAP; ++i) {
+		pDynamicShadowMap->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, DXGI_FORMAT_R32_FLOAT, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON, &shadowMapClearValue, RESOURCE_TEXTURE2D, i);
+	}
+	for (auto& pBakedShadowMap : pBakedShadowMaps) {
+		pBakedShadowMap->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, DXGI_FORMAT_R32_FLOAT, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON, &shadowMapClearValue, RESOURCE_TEXTURE2D, 0);
 	}
 
 	pPostBuffer->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON, &clearValue[0], RESOURCE_TEXTURE2D, 0);
@@ -716,14 +750,27 @@ void GameFramework::InitBuffer() {
 	pComputeBuffer->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_UNORDERED_ACCESS, NULL, RESOURCE_TEXTURE2D, 0);
 	pWireFrameMap->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON, &clearValue[0], RESOURCE_TEXTURE2D, 0);
 	//pDestBuffer->CreateTexture(pDevice, C_WIDTH, C_HEIGHT, DXGI_FORMAT_R32G32B32A32_FLOAT, D3D12_RESOURCE_FLAG_NONE, D3D12_RESOURCE_STATE_COPY_DEST, NULL, RESOURCE_TEXTURE2D, 0);
-	
+
 	// g buffer는 루트시그니처 9번을 사용.
 	Shader::CreateShaderResourceViews(pDevice, pGBuffer, 0, 9);
 	// g buffer에 대해 srv를 만들어둔다. 
 	Shader::CreateComputeShaderResourceViews(pDevice, pGBuffer, 0, 1);
 
-	// 쉐도우맵은 10번을 사용
+	// 그래픽스 단계에서 사용할 때는 10번, 컴퓨트 쉐이더에서 결과를 저장하기 위한 uav를 생성
 	Shader::CreateShaderResourceViews(pDevice, pShadowMap, 0, 10);
+	
+	// 그래픽스 단계에서는 여러개의 쉐도우맵을 하나로 묶어보기 위한 srv를 만들고,
+	// 컴퓨트 단계에서는 각 맵을 읽어야 하므로 맵마다의 uav를 만든다.
+	for (int i = 0; i < NUM_SHADOW_MAP; ++i) {
+		Shader::CreateComputeUnorderedAccessView(pDevice, pShadowMap, i);
+	}
+
+	for (auto& pBakedShadowMap : pBakedShadowMaps) {
+		Shader::CreateComputeShaderResourceViews(pDevice, pBakedShadowMap, 0, 5);
+	}
+	// 컴퓨트 쉐이더 루트시그니처 5, 6번에 미리 구워진 쉐도우, 해당 프레임에 그려진 쉐도우를 연결
+	
+	Shader::CreateComputeShaderResourceViews(pDevice, pDynamicShadowMap, 0, 6);
 
 	// 포스트 버퍼에 대한 srv를 만든다. 
 	Shader::CreateShaderResourceViews(pDevice, pPostBuffer, 0, 16);
@@ -747,9 +794,7 @@ void GameFramework::InitBuffer() {
 
 	// 렌더타겟뷰 주소를 담을 공간 할당
 	GBufferCPUDescriptorHandles.resize(NUM_G_BUFFER);
-	shadowMapCPUDescriptorHandles.resize(NUM_SHADOW_MAP);
-
-	D3D12_CPU_DESCRIPTOR_HANDLE rtvPtr = rtvCPUDescriptorHandle;
+	dynamicShadowMapCPUDescriptorHandles.resize(NUM_SHADOW_MAP);
 
 	for (UINT i = 0; i < NUM_G_BUFFER; i++)
 	{
@@ -758,41 +803,54 @@ void GameFramework::InitBuffer() {
 		ID3D12Resource* pd3dTextureResource = pGBuffer->GetResource(i).Get();
 
 		// 기본 렌더타겟뷰 다음 주소에 바로 만든다.
-		if (pd3dTextureResource) pDevice->CreateRenderTargetView(pd3dTextureResource, &d3dRenderTargetViewDesc, rtvPtr);
-		GBufferCPUDescriptorHandles[i] = rtvPtr;
+		if (pd3dTextureResource) pDevice->CreateRenderTargetView(pd3dTextureResource, &d3dRenderTargetViewDesc, rtvDescriptorHeapCurrentHandle);
+		GBufferCPUDescriptorHandles[i] = rtvDescriptorHeapCurrentHandle;
 
-		rtvPtr.ptr += ::rtvDescriptorIncrementSize;
+		rtvDescriptorHeapCurrentHandle.ptr += ::rtvDescriptorIncrementSize;
 	}
 
 	for (UINT i = 0; i < NUM_SHADOW_MAP; i++)
 	{
 		d3dRenderTargetViewDesc.Format = DXGI_FORMAT_R32_FLOAT;
 		// i번째 리소스에 대한 렌더타겟뷰를 생성후 주소를 저장
-		ID3D12Resource* pd3dTextureResource = pShadowMap->GetResource(i).Get();
+		ID3D12Resource* pd3dTextureResource = pDynamicShadowMap->GetResource(i).Get();
 
 		// g 버퍼 주소에 이어서 만든다.
-		if (pd3dTextureResource) pDevice->CreateRenderTargetView(pd3dTextureResource, &d3dRenderTargetViewDesc, rtvPtr);
-		shadowMapCPUDescriptorHandles[i] = rtvPtr;
+		if (pd3dTextureResource) pDevice->CreateRenderTargetView(pd3dTextureResource, &d3dRenderTargetViewDesc, rtvDescriptorHeapCurrentHandle);
+		dynamicShadowMapCPUDescriptorHandles[i] = rtvDescriptorHeapCurrentHandle;
 
-		rtvPtr.ptr += ::rtvDescriptorIncrementSize;
+		rtvDescriptorHeapCurrentHandle.ptr += ::rtvDescriptorIncrementSize;
 	}
 
 	{
 		d3dRenderTargetViewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		ID3D12Resource* pd3dTextureResource = pPostBuffer->GetResource(0).Get();
-		if (pd3dTextureResource) pDevice->CreateRenderTargetView(pd3dTextureResource, &d3dRenderTargetViewDesc, rtvPtr);
-		postBufferCPUDescriptorHandle = rtvPtr;
+		if (pd3dTextureResource) pDevice->CreateRenderTargetView(pd3dTextureResource, &d3dRenderTargetViewDesc, rtvDescriptorHeapCurrentHandle);
+		postBufferCPUDescriptorHandle = rtvDescriptorHeapCurrentHandle;
 
-		rtvPtr.ptr += ::rtvDescriptorIncrementSize;
+		rtvDescriptorHeapCurrentHandle.ptr += ::rtvDescriptorIncrementSize;
+	}
+
+	for (int i = 0; i < pBakedShadowMaps.size(); ++i) {
+
+		d3dRenderTargetViewDesc.Format = DXGI_FORMAT_R32_FLOAT;
+		// i번째 리소스에 대한 렌더타겟뷰를 생성후 주소를 저장
+		ID3D12Resource* pd3dTextureResource = pBakedShadowMaps[i]->GetResource(0).Get();
+
+		// 실행 이후 만든 버퍼들 다음에 만든다.
+		if (pd3dTextureResource) pDevice->CreateRenderTargetView(pd3dTextureResource, &d3dRenderTargetViewDesc, rtvDescriptorHeapCurrentHandle);
+		bakedShadowMapCPUDescriptorHandles[i] = rtvDescriptorHeapCurrentHandle;
+
+		rtvDescriptorHeapCurrentHandle.ptr += ::rtvDescriptorIncrementSize;
 	}
 
 	{
 		d3dRenderTargetViewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 		ID3D12Resource* pd3dTextureResource = pWireFrameMap->GetResource(0).Get();
-		if (pd3dTextureResource) pDevice->CreateRenderTargetView(pd3dTextureResource, &d3dRenderTargetViewDesc, rtvPtr);
-		wireFrameMapCPUDescriptorHandle = rtvPtr;
+		if (pd3dTextureResource) pDevice->CreateRenderTargetView(pd3dTextureResource, &d3dRenderTargetViewDesc, rtvDescriptorHeapCurrentHandle);
+		wireFrameMapCPUDescriptorHandle = rtvDescriptorHeapCurrentHandle;
 
-		rtvPtr.ptr += ::rtvDescriptorIncrementSize;
+		rtvDescriptorHeapCurrentHandle .ptr += ::rtvDescriptorIncrementSize;
 	}
 
 }
@@ -801,6 +859,14 @@ const shared_ptr<Scene>& GameFramework::GetCurrentScene() const {
 	//if (!pScenes.empty()) {
 	return pScenes.top();
 	//}
+}
+
+void GameFramework::BakeShadowMap() {
+	
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvCPUDescriptorHandle = pDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+
+	shared_ptr<PlayScene> pScene = static_pointer_cast<PlayScene>(pScenes.top());
+	pScene->BakeShadowMap(pCommandList, dsvCPUDescriptorHandle);
 }
 
 void GameFramework::FrameAdvance() {
@@ -829,9 +895,8 @@ void GameFramework::FrameAdvance() {
 	// 루트 시그니처를 Set
 	pCommandList->SetGraphicsRootSignature(pRootSignature.Get());
 	pCommandList->SetComputeRootSignature(pComputeRootSignature.Get());
-	
-	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
+	
 	// 후면 버퍼의 핸들
 	D3D12_CPU_DESCRIPTOR_HANDLE swapChainDescriptorHandle = pRtvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 	swapChainDescriptorHandle.ptr += (rtvDescriptorIncrementSize * swapChainBufferCurrentIndex);
@@ -839,37 +904,93 @@ void GameFramework::FrameAdvance() {
 	// 깊이 스텐실 버퍼의 핸들
 	D3D12_CPU_DESCRIPTOR_HANDLE dsvCPUDescriptorHandle = pDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
 
-	// 그림자 맵 렌더링
 
 	Shader::SetDescriptorHeap(pCommandList);
-	
-	if (!pScenes.empty()) {
-		D3D12_CPU_DESCRIPTOR_HANDLE* rtvShadowCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[1];
 
-		for (int i = 0; i < NUM_SHADOW_MAP; ++i)
-		{
-			rtvShadowCPUDescriptorHandles[0].ptr = shadowMapCPUDescriptorHandles[i].ptr;
+	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	static bool baked = false;
 
-			// 이전 그림자 맵을 그릴 때 남은 깊이값을 지운다.
-			pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
+	// 정적 쉐도우맵 최초 생성
+	if (!baked && !pScenes.empty()) {
+		auto pScene = dynamic_pointer_cast<PlayScene>(pScenes.top());
+		if (pScene) {
+			BakeShadowMap();
+			baked = true;
+			//명령 리스트를 닫힌 상태로 만든다. 
+			hResult = pCommandList->Close();
+			//명령 리스트를 명령 큐에 추가하여 실행한다. 
+			pCommandLists = { pCommandList.Get() };
 
-			SynchronizeResourceTransition(pCommandList.Get(), pShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+			pCommandQueue->ExecuteCommandLists(1, pCommandLists.data()->GetAddressOf());
 
-			// i번째 쉐도우맵을 렌더타겟으로 지정한다.
-			pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, &dsvCPUDescriptorHandle);
-			pCommandList->ClearRenderTargetView(rtvShadowCPUDescriptorHandles[0], pClearColor, 0, NULL);
-			
-			// i번째 조명에 대한 쉐도우맵 렌더링을 한다.
-			pScenes.top()->RenderShadowMap(pCommandList, i);
+			//GPU가 모든 명령 리스트를 실행할 때 까지 기다린다. 
+			WaitForGpuComplete();
 
-			SynchronizeResourceTransition(pCommandList.Get(), pShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
+			//	스왑체인을 프리젠트한다.
+			DXGI_PRESENT_PARAMETERS dxgiPresentParameters;
+			dxgiPresentParameters.DirtyRectsCount = 0;
+			dxgiPresentParameters.pDirtyRects = NULL;
+			dxgiPresentParameters.pScrollRect = NULL;
+			dxgiPresentParameters.pScrollOffset = NULL;
+			HRESULT hr = pDxgiSwapChain->Present1(1, 0, &dxgiPresentParameters);
+
+			// 다음 프레임으로 이동, (다음 버퍼로 이동)
+			MoveToNextFrame();
+			return;
 		}
-		delete[] rtvShadowCPUDescriptorHandles;
 	}
 
+	else if (!pScenes.empty()) {
+		auto pScene = dynamic_pointer_cast<PlayScene>(pScenes.top());
+		if (pScene) {
+
+			pScene->UpdateLightShaderVariables(pCommandList);
+			// 동적 그림자 맵 렌더링	
+			D3D12_CPU_DESCRIPTOR_HANDLE* rtvShadowCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[1];
+
+			for (int i = 0; i < NUM_SHADOW_MAP; ++i)
+			{
+				rtvShadowCPUDescriptorHandles[0].ptr = dynamicShadowMapCPUDescriptorHandles[i].ptr;
+
+				// 이전 그림자 맵을 그릴 때 남은 깊이값을 지운다.
+				pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
+
+				SynchronizeResourceTransition(pCommandList.Get(), pDynamicShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+				// i번째 쉐도우맵을 렌더타겟으로 지정한다.
+				pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, &dsvCPUDescriptorHandle);
+				pCommandList->ClearRenderTargetView(rtvShadowCPUDescriptorHandles[0], pClearColor, 0, NULL);
+
+				// i번째 조명에 대한 쉐도우맵 렌더링을 한다.
+				pScenes.top()->RenderShadowMap(pCommandList, i);
+
+				SynchronizeResourceTransition(pCommandList.Get(), pDynamicShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
+			}
+			delete[] rtvShadowCPUDescriptorHandles;
+
+			// 미리 그려놓은 쉐도우맵과 병합
+			Shader::SetComputeDescriptorHeap(pCommandList);
+
+			auto pShader = static_pointer_cast<ShadowComputeShader>(GetShader("ShadowComputeShader"));
+			pShader->PrepareRender(pCommandList);
+
+			for (int i = 0; i < NUM_SHADOW_MAP; ++i) {
+				// 해당 인덱스의 빛의 미리 구워놓은 쉐도우 맵을 연결
+				pScene->GetLight(i)->pBakedShadowMap->UpdateComputeShaderVariable(pCommandList, 5, -1);
+				
+				// 해당 인덱스의 빛의 대한 동적 쉐도우 맵을 연결
+				pDynamicShadowMap->UpdateComputeShaderVariable(pCommandList, 6, -1, i);
+
+				// 두 쉐도우 맵을 병합한 결과를 쓸 RWTexture를 uav 2번에 연결
+				pShadowMap->UpdateComputeShaderVariable(pCommandList, -1, 2, i);
+
+				// 두 쉐도우맵을 병합
+				pShader->Dispatch(pCommandList);
+			}
+		}
+	}
+	Shader::SetDescriptorHeap(pCommandList);
 	pShadowMap->UpdateShaderVariable(pCommandList);
-	
-	
 
 	// G Buffer 렌더링
 	// 미리 그릴 버퍼의 핸들
@@ -1138,6 +1259,20 @@ shared_ptr<Texture> GameFramework::GetPostBuffer() const {
 
 shared_ptr<Texture> GameFramework::GetComputeBuffer() const {
 	return pComputeBuffer;
+}
+
+shared_ptr<Texture> GameFramework::GetDynamicShadowMap() const {
+	return pDynamicShadowMap;
+}
+
+shared_ptr<Texture> GameFramework::GetBakedShadowMap(int _index) const
+{
+	return pBakedShadowMaps[_index];
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE GameFramework::GetBakedShadowMapHandle(int _index) const
+{
+	return bakedShadowMapCPUDescriptorHandles[_index];
 }
 
 shared_ptr<Texture> GameFramework::GetWireFrameMap() const {

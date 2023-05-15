@@ -650,11 +650,11 @@ void LobbyScene::UpdateInRoomState() {
 
 PlayScene::PlayScene() {
 	globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
-	globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
+	//globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
 	remainTime = 1000.f;
 
 	professorObjectID = 0;
-	ranges::fill_n(lightIndex, NUM_SHADOW_MAP, 0);
+	ranges::fill_n(lightIndex, MAX_LIGHTS, 0);
 	radarEnable = false;
 	radarInfo = XMFLOAT2(0.f, 0.f);
 	radarDuration = 0.f;
@@ -880,7 +880,7 @@ XMFLOAT3 PlayScene::GetCollideNormalVector(const shared_ptr<GameObject>& _collid
 void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	GameFramework& gameFramework = GameFramework::Instance();
 	// 쉐도우맵 렌더링시 필요한 인덱스 생성
-	for (int i = 0; i < NUM_SHADOW_MAP; ++i) {
+	for (int i = 0; i < MAX_LIGHTS; ++i) {
 		lightIndex[i] = i;
 	}
 	gameFramework.GetGameObjectManager().LoadGameObject("SwingAttack", _pDevice, _pCommandList);
@@ -908,6 +908,12 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	pZone = make_shared<Zone>(XMFLOAT3(75.0f, 25.0f, 38.0f), XMINT3(10, 5, 5), shared_from_this());
 	pZone->LoadZoneFromFile(_pDevice, _pCommandList, enComID);
 	
+
+	for (int i = 0; i < pLights.size(); ++i) {
+		pLights[i]->SetBakedShadowMap(gameFramework.GetBakedShadowMap(i), gameFramework.GetBakedShadowMapHandle(i));
+	}
+
+
 	gameFramework.GetGameObjectManager().GetExistGameObject("CeilingLampNew")->GetMaterial(0)->SetEmissive(XMFLOAT4(0.2f, 0.1f, 0.1f, 1.0f));
 	professorObjectID = recvPacket->professorObjectID;
 
@@ -1001,18 +1007,7 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 		pUIs["2DUI_hacking"] = make_shared<Image2D>("2DUI_hacking", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 		pUIs["2DUI_hackingFrame"] = make_shared<Image2D>("2DUI_hackingFrame", XMFLOAT2(0.5f, 0.1f), XMFLOAT2(0.75f, 1.4f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, false);
 	}
-	
 
-	// 빛을 추가
-	//shared_ptr<Light> baseLight = make_shared<Light>();
-
-	//baseLight->lightType = 3;
-	//baseLight->position = XMFLOAT3(0, 500, 0);
-	//baseLight->direction = XMFLOAT3(0, -1, 0);
-	//baseLight->diffuse = XMFLOAT4(0.5, 0.5, 0.5, 1);
-	//baseLight->specular = XMFLOAT4(0.01f, 0.01f, 0.01f, 1.0f);
-	//AddLight(baseLight);
-	//baseLight->UpdateViewTransform();
 
 	pFrustumMesh = make_shared<FrustumMesh>();
 	pFrustumMesh->Create(camera->GetBoundingFrustum(), _pDevice, _pCommandList);
@@ -1025,6 +1020,8 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	gameFramework.GetSoundManager().Play("horror", true);
 
 	Shader::SetCamera(camera);
+
+
 }
 
 void PlayScene::ReleaseUploadBuffers() {
@@ -1123,7 +1120,6 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 }
 
 void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-
 
 
 	// 탈출하게 되면 화면이 흰색이 되면서 완전 흰색이 되면 서버에 탈출했다는 패킷을 보내면서 게임이 끝난다.
@@ -1741,7 +1737,7 @@ void PlayScene::UpdateLightShaderVariables(const ComPtr<ID3D12GraphicsCommandLis
 	
 	int nLight = (UINT)pLights.size();
 
-	for (int i = 0; i < min(nLight, MAX_LIGHTS); ++i) {
+	for (int i = 0; i < nLight; ++i) {
 		memcpy(&pMappedLights->lights[i], pLights[i].get(), sizeof(Light));
 	}
 
@@ -1780,6 +1776,57 @@ void PlayScene::AddItemSpawnLocation(const XMFLOAT3& _position) {
 
 void PlayScene::SetExitBox(const BoundingBox& _exitBox) {
 	exitBox = _exitBox;
+}
+
+shared_ptr<Light> PlayScene::GetLight(UINT _lightIndex) {
+	return pLights[_lightIndex];
+}
+
+void PlayScene::BakeShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, D3D12_CPU_DESCRIPTOR_HANDLE& _dsvHandle) {
+	
+	GameFramework& gameFramework = GameFramework::Instance();
+	D3D12_CPU_DESCRIPTOR_HANDLE* rtvShadowCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[1];
+	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	
+	int nLight = (UINT)pLights.size();
+
+	for (int i = 0; i < nLight; ++i) {
+		memcpy(&pMappedLights->lights[i], pLights[i].get(), sizeof(Light));
+	}
+
+	memcpy(&pMappedLights->globalAmbient, &globalAmbient, sizeof(XMFLOAT4));
+	memcpy(&pMappedLights->nLight, &nLight, sizeof(int));
+
+	D3D12_GPU_VIRTUAL_ADDRESS gpuVirtualAddress = pLightsBuffer->GetGPUVirtualAddress();
+	_pCommandList->SetGraphicsRootConstantBufferView(2, gpuVirtualAddress);
+
+	camera->SetViewPortAndScissorRect(_pCommandList);
+	camera->UpdateShaderVariable(_pCommandList);
+
+	int index = 0;
+
+	// 각 빛에 대해서 인스턴싱 오브젝트만 그린다.
+	for (auto& pLight : pLights) {
+
+		// 빛의 정보를 쉐이더에 연결해준다.
+
+
+		_pCommandList->SetGraphicsRoot32BitConstants(14, 1, &lightIndex[index], 0);
+		_pCommandList->ClearDepthStencilView(_dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
+		
+		rtvShadowCPUDescriptorHandles[0].ptr = pLight->bakedShadowMapCPUDescriptorHandle.ptr;
+		SynchronizeResourceTransition(_pCommandList.Get(), pLight->pBakedShadowMap->GetResource(0).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+		// 조명이 가지고 있는 쉐도우 맵을 OM단계에 연결한다.
+		_pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, &_dsvHandle);
+		_pCommandList->ClearRenderTargetView(rtvShadowCPUDescriptorHandles[0], pClearColor, 0, NULL);
+
+		// 정적인 오브젝트들을 그려준다.
+		gameFramework.GetShader("InstancingShadowShader")->Render(_pCommandList);
+
+		SynchronizeResourceTransition(_pCommandList.Get(), pLight->pBakedShadowMap->GetResource(0).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
+		++index;
+	}
 }
 
 void PlayScene::ReActButton(shared_ptr<Button> _pButton) {
@@ -1843,7 +1890,7 @@ void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 
 	GameFramework& gameFramework = GameFramework::Instance();
 
-	UpdateLightShaderVariables(_pCommandList);
+	cout << gameFramework.GetShader("BasicShader")->GetGameObjects().size() << "\n";
 	camera->SetViewPortAndScissorRect(_pCommandList);
 	camera->UpdateShaderVariable(_pCommandList);
 
@@ -1851,10 +1898,8 @@ void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 	_pCommandList->SetGraphicsRoot32BitConstants(14, 1, &lightIndex[_lightIndex], 0);
 	// 그림자에 영향을 주는 오브젝트들을 그린다. basic, instancing, effect..
 
-	testcount = 0;
 	gameFramework.GetShader("BasicShadowShader")->Render(_pCommandList);
 
-	gameFramework.GetShader("InstancingShadowShader")->Render(_pCommandList);
 	gameFramework.GetShader("SkinnedShadowShader")->Render(_pCommandList);
 
 	// 다그린 후 쉐도우맵을 연결한다.
@@ -1921,6 +1966,7 @@ void PlayScene::LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 			globalAmbient = Vector4::Add(XMFLOAT4(0.5, 0.5, 0.5, 0), Vector4::Multiply(fadeOut, XMFLOAT4(-1, -1, -1, 1)));
 	}
 
+	UpdateLightShaderVariables(_pCommandList);
 	gameFramework.GetShader("LightingShader")->PrepareRender(_pCommandList);
 
 	pFullScreenObject->Render(_pCommandList);

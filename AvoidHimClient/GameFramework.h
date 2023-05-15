@@ -96,11 +96,19 @@ private:
 	shared_ptr<Texture> pGBuffer;
 	// G BufferÀÇ ·»´õÅ¸°Ùºä ÁÖ¼Ò
 	vector<D3D12_CPU_DESCRIPTOR_HANDLE> GBufferCPUDescriptorHandles;
-	// ½¦µµ¿ì ¸Ê
-	shared_ptr<Texture> pShadowMap;
-	// ½¦µµ¿ì ¸ÊÀÇ ·»´õÅ¸°Ùºä ÁÖ¼Ò
-	vector<D3D12_CPU_DESCRIPTOR_HANDLE> shadowMapCPUDescriptorHandles;
 	
+	// 
+	vector < shared_ptr<Texture>>pBakedShadowMaps;
+	vector<D3D12_CPU_DESCRIPTOR_HANDLE> bakedShadowMapCPUDescriptorHandles;
+
+
+	// ¸Å ÇÁ·¹ÀÓ ±×·ÁÁö´Â ½¦µµ¿ì ¸Ê
+	shared_ptr<Texture> pDynamicShadowMap;
+	vector<D3D12_CPU_DESCRIPTOR_HANDLE> dynamicShadowMapCPUDescriptorHandles;
+	
+	// ½¦µµ¿ì ¸Ê = dynamic + baked
+	shared_ptr<Texture> pShadowMap;
+
 	// ºû Ã³¸®¸¦ ¸¶Ä£ È­¸é ¹öÆÛ
 	shared_ptr<Texture> pPostBuffer;
 	D3D12_CPU_DESCRIPTOR_HANDLE postBufferCPUDescriptorHandle;
@@ -151,6 +159,8 @@ public:
 	
 	const shared_ptr<Scene>& GetCurrentScene() const;
 
+	void BakeShadowMap();
+
 	void InitOldCursor();
 
 
@@ -177,6 +187,9 @@ public:
 	shared_ptr<Texture> GetShadowMap() const;
 	shared_ptr<Texture> GetPostBuffer() const;
 	shared_ptr<Texture> GetComputeBuffer() const;
+	shared_ptr<Texture> GetDynamicShadowMap() const;
+	shared_ptr<Texture> GetBakedShadowMap(int _index) const;
+	D3D12_CPU_DESCRIPTOR_HANDLE GetBakedShadowMapHandle(int _index) const;
 	shared_ptr<Texture> GetWireFrameMap() const;
 	shared_ptr<Texture> GetDestBuffer() const;
 

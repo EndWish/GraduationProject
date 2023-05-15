@@ -100,7 +100,6 @@ void Texture::UpdateComputeShaderVariable(ComPtr<ID3D12GraphicsCommandList> _pCo
 void Texture::UpdateComputeShaderVariable(ComPtr<ID3D12GraphicsCommandList> _pCommandList, int _srvIndex, int _uavIndex, int _index) {
 
 	if (srvComputeGpuDescriptorHandles[_index].ptr && _srvIndex != -1) {
-		cout << _index << "는 " << GetResource(_index).Get() << "입니다.\n";
 		_pCommandList->SetComputeRootDescriptorTable(_srvIndex, srvComputeGpuDescriptorHandles[_index]);
 	}
 	if (uavComputeGpuDescriptorHandles[_index].ptr && _uavIndex != -1) {

@@ -6,8 +6,8 @@
 
 #define WIN32_LEAN_AND_MEAN             // 거의 사용되지 않는 내용을 Windows 헤더에서 제외
 #define NUM_G_BUFFER 6
-#define NUM_SHADOW_MAP 10
-#define MAX_LIGHTS 20 // 조명의 최대 갯수
+#define NUM_SHADOW_MAP 20
+#define MAX_LIGHTS 80 // 조명의 최대 갯수
 #define GRAVITY 9.8f
 #define C_WIDTH 1280	
 #define C_HEIGHT 720
@@ -97,6 +97,9 @@ using namespace DirectX;
 using namespace DirectX::PackedVector;
 
 #define MAX_BONE 100
+
+// 현재 렌더타겟 뷰의 핸들
+extern D3D12_CPU_DESCRIPTOR_HANDLE rtvDescriptorHeapCurrentHandle;
 
 // 각 디스크립터 내 보더 사이즈
 extern UINT cbvSrvDescriptorIncrementSize;

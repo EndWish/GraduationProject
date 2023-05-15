@@ -1,5 +1,5 @@
 
-#define MAX_LIGHTS			20
+#define MAX_LIGHTS			80
 
 
 #define POINT_LIGHT			1
@@ -7,7 +7,7 @@
 #define DIRECTIONAL_LIGHT	3
 
 #define EPSILON				1.0e-5
-#define NUM_SHADOW_MAP 10
+#define NUM_SHADOW_MAP 20
 
 #include "header.hlsl"
 
@@ -38,8 +38,9 @@ struct LIGHT
 
 	// 이 빛이 켜져있는 상태인지 확인
 	bool enable;
-
-    float2 padding;
+    
+    float2 cpuHandle;
+    float4 shadowMap;
 };
 
 
@@ -84,6 +85,16 @@ Texture2D<float> shadowMapTexture_7 : register(t27);
 Texture2D<float> shadowMapTexture_8 : register(t28);
 Texture2D<float> shadowMapTexture_9 : register(t29);
 Texture2D<float> shadowMapTexture_10 : register(t30);
+Texture2D<float> shadowMapTexture_11 : register(t31);
+Texture2D<float> shadowMapTexture_12 : register(t32);
+Texture2D<float> shadowMapTexture_13 : register(t33);
+Texture2D<float> shadowMapTexture_14 : register(t34);
+Texture2D<float> shadowMapTexture_15 : register(t35);
+Texture2D<float> shadowMapTexture_16 : register(t36);
+Texture2D<float> shadowMapTexture_17 : register(t37);
+Texture2D<float> shadowMapTexture_18 : register(t38);
+Texture2D<float> shadowMapTexture_19 : register(t39);
+Texture2D<float> shadowMapTexture_20 : register(t40);
 
 float2 convertViewportToUV(float2 _viewport) {
     return float2((_viewport.x + 1) / 2, 1 - (_viewport.y + 1) / 2);
@@ -174,7 +185,6 @@ float4 SpotLight(int _nIndex, float3 _position, float3 _normal, float3 _toCamera
 float CheckShadow(Texture2D<float> _shadowMap, int3 texLocation, float compareValue) {
     // 쉐도우 맵내 깊이를 구한다.
     float bias = 0.2f;
-
     float depth = _shadowMap.Load(texLocation);
 
     // 빛에서 정점까지의 거리가 쉐도우 맵에서의 거리보다 큰경우 그림자이다.
@@ -242,7 +252,26 @@ float GetShadowRate(float3 _Position, int _Index) {
             shadowMap = shadowMapTexture_9;
         else if (_Index == 9) 
             shadowMap = shadowMapTexture_10;
-
+        else if (_Index == 10) 
+            shadowMap = shadowMapTexture_11;
+        else if (_Index == 11) 
+            shadowMap = shadowMapTexture_12;
+        else if (_Index == 12) 
+            shadowMap = shadowMapTexture_13;
+        else if (_Index == 13) 
+            shadowMap = shadowMapTexture_14;
+        else if (_Index == 14) 
+            shadowMap = shadowMapTexture_15;
+        else if (_Index == 15) 
+            shadowMap = shadowMapTexture_16;
+        else if (_Index == 16) 
+            shadowMap = shadowMapTexture_17;
+        else if (_Index == 17) 
+            shadowMap = shadowMapTexture_18;
+        else if (_Index == 18) 
+            shadowMap = shadowMapTexture_19;
+        else if (_Index == 19) 
+            shadowMap = shadowMapTexture_20;
         shadowCount += CheckShadow(shadowMap, location, distance);
         // 각 방향으로 다시 검사를 하여 그림자의 세기를 정한다.
         [unroll(8)]
@@ -264,8 +293,8 @@ float4 CalculateLight(float4 color, float3 _Position, float3 _Normal) {
     //return float4(shadowMapTexture_1.Sample(gssWrap, _uv) / 20, 0, 0, 1);
     
 	// 루프를 unroll하여 성능 향상. 
-    [unroll(MAX_LIGHTS)]
-        for (int i = 0; i < MAX_LIGHTS; ++i)
+    [unroll(MAX_LIGHTS / 4)]
+        for (int i = 0; i < MAX_LIGHTS / 4; ++i)
         {
             if (nLight <= i || (1 <= newColor.r && 1 <= newColor.g && 1 <= newColor.b))
                 break;

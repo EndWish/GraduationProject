@@ -599,7 +599,7 @@ SHADOW_MAP_VS_OUTPUT InstanceShadowVertexShader(VS_INSTANCING_INPUT input)
 {
     SHADOW_MAP_VS_OUTPUT output;
     output.positionW = (float3) mul(float4(input.position, 1.0f), input.worldMatrix);
-    // 이 때 변환 행렬은 조명의 위치 기준 카메라의 변환 행렬이다.
+    // 해당 조명의 인덱스는 0이다. ( 미리 구움 )
     output.position = mul(mul(float4(output.positionW, 1.0f), lights[lightIndex].view), lights[lightIndex].projection);
     return output;
 }
