@@ -220,7 +220,7 @@ void Shader::CreateShaderResourceViews(ComPtr<ID3D12Device> _pDevice, shared_ptr
 
 void Shader::CreateUnorderedAccessView(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, int _Index) {
 	// 셰이더 내 디스크립터 힙에 해당 uav를 생성
-	// 여러개를 만들거면, Heap 생성시 uav 개수를 늘려주어야 한다!! 현재 1로 해둠
+	// 여러개를 만들거면, Heap 생성시 uav 개수를 체크
 	ComPtr<ID3D12Resource> pShaderResource = _pTexture->GetResource(_Index);
 	D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = _pTexture->GetUAVGpuDescriptorHandle(_Index);
 	if (pShaderResource && !gpuDescriptorHandle.ptr)
@@ -301,7 +301,7 @@ void Shader::CreateComputeShaderResourceViews(ComPtr<ID3D12Device> _pDevice, sha
 
 void Shader::CreateComputeUnorderedAccessView(ComPtr<ID3D12Device> _pDevice, shared_ptr<Texture> _pTexture, int _Index) {
 	// 셰이더 내 디스크립터 힙에 해당 uav를 생성
-	// 여러개를 만들거면, Heap 생성시 uav 개수를 늘려주어야 한다!! 현재 1로 해둠
+	// 여러개를 만들거면, Heap 생성시 uav 개수를 체크. 
 	ComPtr<ID3D12Resource> pShaderResource = _pTexture->GetResource(_Index);
 	D3D12_GPU_DESCRIPTOR_HANDLE gpuDescriptorHandle = _pTexture->GetComputeUAVGpuDescriptorHandle(_Index);
 	if (pShaderResource && !gpuDescriptorHandle.ptr)
@@ -429,10 +429,11 @@ void Shader::ClearObject() {
 }
 
 
-void Shader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void Shader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	// 쉐이더를 파이프라인에 연결한다.
 	if (wpGameObjects.size() > 0) {
-		PrepareRender(_pCommandList);
+		if(_setPipeline) PrepareRender(_pCommandList);
+
 		for (auto& wpGameObject : wpGameObjects) {
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
@@ -587,13 +588,13 @@ BasicWireFrameShader::BasicWireFrameShader(const ComPtr<ID3D12Device>& _pDevice,
 BasicWireFrameShader::~BasicWireFrameShader() {
 
 }
-void BasicWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void BasicWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	auto& pGameObjects = gameFramework.GetShader("BasicShader")->GetGameObjects();
 
 	if (pGameObjects.size() > 0) {
-		PrepareRender(_pCommandList);
+		if(_setPipeline) PrepareRender(_pCommandList);
 		for (auto& wpGameObject : pGameObjects) {
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
@@ -678,13 +679,13 @@ BasicShadowShader::~BasicShadowShader() {
 
 }
 
-void BasicShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void BasicShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	auto& pGameObjects = gameFramework.GetShader("BasicShader")->GetGameObjects();
 
 	if (pGameObjects.size() > 0) {
-		PrepareRender(_pCommandList);
+		if(_setPipeline) PrepareRender(_pCommandList);
 		for (auto& wpGameObject : pGameObjects) {
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
@@ -733,6 +734,28 @@ D3D12_INPUT_LAYOUT_DESC BasicShadowShader::CreateInputLayout() {
 	return inputLayoutDesc;
 }
 
+D3D12_DEPTH_STENCIL_DESC BasicShadowShader::CreateDepthStencilState() {
+	// 그림자맵 연산시에는 depth stencil buffer를 사용하지 않는다.
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
+	depthStencilDesc.DepthEnable = FALSE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	depthStencilDesc.StencilEnable = FALSE;
+	depthStencilDesc.StencilReadMask = 0x00;
+	depthStencilDesc.StencilWriteMask = 0x00;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+	depthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+	return depthStencilDesc;
+}
+
 
 //////////////////// SkinnedShader
 SkinnedShader::SkinnedShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
@@ -755,13 +778,13 @@ SkinnedShader::~SkinnedShader() {
 
 }
 
-void SkinnedShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void SkinnedShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	GameFramework& gameFramework = GameFramework::Instance();
 	static float hitRate;
 
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {
-		PrepareRender(_pCommandList);
+		if(_setPipeline) PrepareRender(_pCommandList);
 		for (auto& wpGameObject : pGameObjects) {
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
@@ -835,13 +858,13 @@ SkinnedWireFrameShader::SkinnedWireFrameShader(const ComPtr<ID3D12Device>& _pDev
 SkinnedWireFrameShader::~SkinnedWireFrameShader() {
 
 }
-void SkinnedWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void SkinnedWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	GameFramework& gameFramework = GameFramework::Instance();
 	static float hitRate;
 
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {
-		PrepareRender(_pCommandList);
+		if(_setPipeline) PrepareRender(_pCommandList);
 		for (auto& wpGameObject : pGameObjects) {
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
@@ -932,12 +955,12 @@ SkinnedShadowShader::~SkinnedShadowShader() {
 
 }
 
-void SkinnedShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void SkinnedShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {
-		PrepareRender(_pCommandList);
+		if(_setPipeline) PrepareRender(_pCommandList);
 		for (auto& wpGameObject : pGameObjects) {
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
@@ -985,6 +1008,28 @@ D3D12_INPUT_LAYOUT_DESC SkinnedShadowShader::CreateInputLayout() {
 	return inputLayoutDesc;
 }
 
+D3D12_DEPTH_STENCIL_DESC SkinnedShadowShader::CreateDepthStencilState() {
+	// 그림자맵 연산시에는 depth stencil buffer를 사용하지 않는다.
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
+	depthStencilDesc.DepthEnable = FALSE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	depthStencilDesc.StencilEnable = FALSE;
+	depthStencilDesc.StencilReadMask = 0x00;
+	depthStencilDesc.StencilWriteMask = 0x00;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+	depthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+	return depthStencilDesc;
+}
+
 SkinnedTransparentShader::SkinnedTransparentShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
 	renderType = ShaderRenderType::PRE_RENDER;
 	Init(_pDevice, _pRootSignature);
@@ -1003,12 +1048,12 @@ SkinnedTransparentShader::~SkinnedTransparentShader() {
 
 }
 
-void SkinnedTransparentShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void SkinnedTransparentShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	GameFramework& gameFramework = GameFramework::Instance();
 
 	auto& pGameObjects = gameFramework.GetShader("SkinnedShader")->GetGameObjects();
 	if (pGameObjects.size() > 0) {
-		PrepareRender(_pCommandList);
+		if(_setPipeline) PrepareRender(_pCommandList);
 		for (auto& wpGameObject : pGameObjects) {
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
@@ -1100,7 +1145,7 @@ SkinnedLobbyShader::~SkinnedLobbyShader() {
 
 }
 
-void SkinnedLobbyShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void SkinnedLobbyShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	// 미사용
 }
 
@@ -1315,7 +1360,7 @@ InstancingShader::~InstancingShader() {
 }
 
 
-void InstancingShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void InstancingShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	// 쉐이더를 파이프라인에 연결한다.
 	GameObject::RenderInstanceObjects(_pCommandList);
 }
@@ -1380,7 +1425,7 @@ InstancingWireFrameShader::InstancingWireFrameShader(const ComPtr<ID3D12Device>&
 InstancingWireFrameShader::~InstancingWireFrameShader() {
 
 }
-void InstancingWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void InstancingWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	// 쉐이더를 파이프라인에 연결한다.
 	GameObject::RenderWireFrameInstanceObjects(_pCommandList);
 }
@@ -1464,7 +1509,7 @@ InstancingShadowShader::~InstancingShadowShader() {
 
 }
 
-void InstancingShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void InstancingShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	GameObject::RenderShadowInstanceObjects(_pCommandList);
 }
 
@@ -1506,6 +1551,28 @@ D3D12_INPUT_LAYOUT_DESC InstancingShadowShader::CreateInputLayout() {
 	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
 
 	return inputLayoutDesc;
+}
+
+D3D12_DEPTH_STENCIL_DESC InstancingShadowShader::CreateDepthStencilState() {
+	// 그림자맵 연산시에는 depth stencil buffer를 사용하지 않는다.
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
+	depthStencilDesc.DepthEnable = FALSE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	depthStencilDesc.StencilEnable = FALSE;
+	depthStencilDesc.StencilReadMask = 0x00;
+	depthStencilDesc.StencilWriteMask = 0x00;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+	depthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+	return depthStencilDesc;
 }
 
 
@@ -1610,7 +1677,7 @@ D3D12_DEPTH_STENCIL_DESC BlendingShader::CreateDepthStencilState() {
 	return depthStencilDesc;
 }
 
-void BlendingShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void BlendingShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	XMFLOAT3 cameraPos = wpCamera.lock()->GetWorldPosition();
 
 	// 카메라와의 거리를 비교하여 멀리 있는 오브젝트를 먼저 그린다.
@@ -1622,7 +1689,7 @@ void BlendingShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandLi
 	
 	ranges::sort(wpGameObjects, func, &weak_ptr<GameObject>::lock);
 
-	Shader::Render(_pCommandList);
+	Shader::Render(_pCommandList, _setPipeline);
 }
 
 //////////////////// Effect Shader ///////////////////////
@@ -1724,7 +1791,7 @@ D3D12_DEPTH_STENCIL_DESC EffectShader::CreateDepthStencilState() {
 	return depthStencilDesc;
 }
 
-void EffectShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+void EffectShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
 	XMFLOAT3 cameraPos = wpCamera.lock()->GetWorldPosition();
 
 	// 카메라와의 거리를 비교하여 멀리 있는 오브젝트를 먼저 그린다.
@@ -1736,7 +1803,7 @@ void EffectShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 	};
 	ranges::sort(wpGameObjects, func, &weak_ptr<GameObject>::lock);
 
-	Shader::Render(_pCommandList);
+	Shader::Render(_pCommandList, _setPipeline);
 }
 
 
@@ -2242,8 +2309,8 @@ D3D12_INPUT_LAYOUT_DESC ParticleDrawShader::CreateInputLayout() {
 	return inputLayoutDesc;
 }
 
-void ParticleDrawShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-	PrepareRender(_pCommandList);
+void ParticleDrawShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
+	if(_setPipeline) PrepareRender(_pCommandList);
 	particleResource.texture->UpdateShaderVariable(_pCommandList);
 
 	_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);

@@ -945,25 +945,44 @@ void GameFramework::FrameAdvance() {
 		if (pScene) {
 
 			pScene->UpdateLightShaderVariables(pCommandList);
+			pScene->UpdateCameraShaderVariables(pCommandList);
 			// 동적 그림자 맵 렌더링	
+
 			D3D12_CPU_DESCRIPTOR_HANDLE* rtvShadowCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[1];
+			pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
 
 			for (int i = 0; i < NUM_SHADOW_MAP; ++i)
 			{
-				rtvShadowCPUDescriptorHandles[0].ptr = dynamicShadowMapCPUDescriptorHandles[i].ptr;
-
-				// 이전 그림자 맵을 그릴 때 남은 깊이값을 지운다.
-				pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
-
+				// 렌더타겟으로 변경하고 이전프레임의 내용을 지운다.
 				SynchronizeResourceTransition(pCommandList.Get(), pDynamicShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-				// i번째 쉐도우맵을 렌더타겟으로 지정한다.
-				pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, &dsvCPUDescriptorHandle);
+				rtvShadowCPUDescriptorHandles[0].ptr = dynamicShadowMapCPUDescriptorHandles[i].ptr;
 				pCommandList->ClearRenderTargetView(rtvShadowCPUDescriptorHandles[0], pClearColor, 0, NULL);
+			}
+			
+			GetShader("BasicShadowShader")->PrepareRender(pCommandList);
+			for (int i = 0; i < NUM_SHADOW_MAP; ++i)
+			{
+				// i번째 쉐도우맵을 렌더타겟으로 지정한다.
+				rtvShadowCPUDescriptorHandles[0].ptr = dynamicShadowMapCPUDescriptorHandles[i].ptr;
+				pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, &dsvCPUDescriptorHandle);
 
 				// i번째 조명에 대한 쉐도우맵 렌더링을 한다.
-				pScenes.top()->RenderShadowMap(pCommandList, i);
+				pScene->RenderShadowMap(pCommandList, i, "BasicShadowShader");
+			}
 
+			GetShader("SkinnedShadowShader")->PrepareRender(pCommandList);
+			for (int i = 0; i < NUM_SHADOW_MAP; ++i)
+			{
+				// i번째 쉐도우맵을 렌더타겟으로 지정한다.
+				rtvShadowCPUDescriptorHandles[0].ptr = dynamicShadowMapCPUDescriptorHandles[i].ptr;
+				pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, &dsvCPUDescriptorHandle);
+
+				// i번째 조명에 대한 쉐도우맵 렌더링을 한다.
+				pScene->RenderShadowMap(pCommandList, i, "SkinnedShadowShader");
+			}
+
+			for (int i = 0; i < NUM_SHADOW_MAP; ++i)
+			{
 				SynchronizeResourceTransition(pCommandList.Get(), pDynamicShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
 			}
 			delete[] rtvShadowCPUDescriptorHandles;

@@ -340,7 +340,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 
 }
 
-void LobbyScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex) {
+void LobbyScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex, string _shaderName) {
 
 }
 
@@ -1778,6 +1778,11 @@ void PlayScene::SetExitBox(const BoundingBox& _exitBox) {
 	exitBox = _exitBox;
 }
 
+void PlayScene::UpdateCameraShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
+	camera->SetViewPortAndScissorRect(_pCommandList);
+	camera->UpdateShaderVariable(_pCommandList);
+}
+
 shared_ptr<Light> PlayScene::GetLight(UINT _lightIndex) {
 	return pLights[_lightIndex];
 }
@@ -1886,22 +1891,16 @@ void PlayScene::ProcessCursorMove(XMFLOAT2 _delta)  {
 }
 
 
-void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex) {
+void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex, string _shaderName) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
-
-	cout << gameFramework.GetShader("BasicShader")->GetGameObjects().size() << "\n";
-	camera->SetViewPortAndScissorRect(_pCommandList);
-	camera->UpdateShaderVariable(_pCommandList);
 
 	// 빛의 인덱스를 보내준다.
 	_pCommandList->SetGraphicsRoot32BitConstants(14, 1, &lightIndex[_lightIndex], 0);
 	// 그림자에 영향을 주는 오브젝트들을 그린다. basic, instancing, effect..
 
-	gameFramework.GetShader("BasicShadowShader")->Render(_pCommandList);
-
-	gameFramework.GetShader("SkinnedShadowShader")->Render(_pCommandList);
-
+	// GameFramework에서 PrepareRender를 해준다.
+	gameFramework.GetShader(_shaderName)->Render(_pCommandList, false);
 	// 다그린 후 쉐도우맵을 연결한다.
 }
 
