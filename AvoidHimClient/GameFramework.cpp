@@ -41,7 +41,7 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 
 		// cbv, srv를 담기 위한 정적 디스크립터 힙 생성
 		Shader::CreateCbvSrvUavDescriptorHeaps(gameFramework.pDevice, 0, 300, 1);
-		Shader::CreateComputeDescriptorHeaps(gameFramework.pDevice, 0, 200, MAX_LIGHTS + 20);
+		Shader::CreateComputeDescriptorHeaps(gameFramework.pDevice, 0, 200, MAX_LIGHTS + 10);
 
 
 
@@ -765,15 +765,15 @@ void GameFramework::InitBuffer() {
 		Shader::CreateComputeUnorderedAccessView(pDevice, pShadowMap, i);
 	}
 
+	// 컴퓨트 쉐이더 루트시그니처 5, 6번에 미리 구워진 쉐도우, 해당 프레임에 그려진 쉐도우를 연결
+
 	for (auto& pBakedShadowMap : pBakedShadowMaps) {
 		Shader::CreateComputeShaderResourceViews(pDevice, pBakedShadowMap, 0, 5);
 	}
-	// 컴퓨트 쉐이더 루트시그니처 5, 6번에 미리 구워진 쉐도우, 해당 프레임에 그려진 쉐도우를 연결
 	
 	Shader::CreateComputeShaderResourceViews(pDevice, pDynamicShadowMap, 0, 6);
 
 	// 포스트 버퍼에 대한 srv를 만든다. 
-	Shader::CreateShaderResourceViews(pDevice, pPostBuffer, 0, 16);
 	Shader::CreateComputeShaderResourceViews(pDevice, pPostBuffer, 0, 0);
 
 	//// dest buffer에는 그래픽, 컴퓨트 힙에 하나씩 srv를 만든다.
@@ -867,6 +867,159 @@ void GameFramework::BakeShadowMap() {
 
 	shared_ptr<PlayScene> pScene = static_pointer_cast<PlayScene>(pScenes.top());
 	pScene->BakeShadowMap(pCommandList, dsvCPUDescriptorHandle);
+	//명령 리스트를 닫힌 상태로 만든다. 
+	HRESULT hResult = pCommandList->Close();
+	//명령 리스트를 명령 큐에 추가하여 실행한다. 
+	vector<ComPtr<ID3D12CommandList>> pCommandLists = { pCommandList.Get() };
+
+	pCommandQueue->ExecuteCommandLists(1, pCommandLists.data()->GetAddressOf());
+
+	//GPU가 모든 명령 리스트를 실행할 때 까지 기다린다. 
+	WaitForGpuComplete();
+
+	//	스왑체인을 프리젠트한다.
+	DXGI_PRESENT_PARAMETERS dxgiPresentParameters;
+	dxgiPresentParameters.DirtyRectsCount = 0;
+	dxgiPresentParameters.pDirtyRects = NULL;
+	dxgiPresentParameters.pScrollRect = NULL;
+	dxgiPresentParameters.pScrollOffset = NULL;
+	HRESULT hr = pDxgiSwapChain->Present1(1, 0, &dxgiPresentParameters);
+
+	// 다음 프레임으로 이동, (다음 버퍼로 이동)
+	MoveToNextFrame();
+}
+
+void GameFramework::RenderDynamicShadowMap() {
+
+	auto pScene = dynamic_pointer_cast<PlayScene>(pScenes.top());
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvCPUDescriptorHandle = pDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	D3D12_CPU_DESCRIPTOR_HANDLE* rtvShadowCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[1];
+
+	for (int i = 0; i < NUM_SHADOW_MAP; ++i)
+	{
+		// 렌더타겟으로 변경하고 이전프레임의 내용을 지운다.
+		SynchronizeResourceTransition(pCommandList.Get(), pDynamicShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+		rtvShadowCPUDescriptorHandles[0].ptr = dynamicShadowMapCPUDescriptorHandles[i].ptr;
+
+		pCommandList->ClearRenderTargetView(rtvShadowCPUDescriptorHandles[0], pClearColor, 0, NULL);
+	}
+
+	// SetPipelineState 횟수를 줄이기 위함
+	for (int i = 0; i < NUM_SHADOW_MAP; ++i)
+	{
+		// i번째 쉐도우맵을 렌더타겟으로 지정한다.
+		rtvShadowCPUDescriptorHandles[0].ptr = dynamicShadowMapCPUDescriptorHandles[i].ptr;
+		pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, NULL);
+		pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
+
+		// i번째 조명에 대한 쉐도우맵 렌더링을 한다.
+		pScene->RenderShadowMap(pCommandList, i);
+	}
+
+	for (int i = 0; i < NUM_SHADOW_MAP; ++i)
+	{
+		SynchronizeResourceTransition(pCommandList.Get(), pDynamicShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
+	}
+	delete[] rtvShadowCPUDescriptorHandles;
+}
+
+void GameFramework::MergeShadowMap() {
+	// 미리 그려놓은 쉐도우맵과 병합
+	Shader::SetComputeDescriptorHeap(pCommandList);
+	auto pScene = dynamic_pointer_cast<PlayScene>(pScenes.top());
+
+	auto pShader = static_pointer_cast<ShadowComputeShader>(GetShader("ShadowComputeShader"));
+	pShader->PrepareRender(pCommandList);
+
+	for (int i = 0; i < NUM_SHADOW_MAP; ++i) {
+		// 해당 인덱스의 빛의 미리 구워놓은 쉐도우 맵을 연결
+		pScene->GetLight(i)->pBakedShadowMap->UpdateComputeShaderVariable(pCommandList, 5, -1);
+
+		// 해당 인덱스의 빛의 대한 동적 쉐도우 맵을 연결
+		pDynamicShadowMap->UpdateComputeShaderVariable(pCommandList, 6, -1, i);
+
+		// 두 쉐도우 맵을 병합한 결과를 쓸 RWTexture를 uav 2번에 연결
+		pShadowMap->UpdateComputeShaderVariable(pCommandList, -1, 2, i);
+
+		// 두 쉐도우맵을 병합
+		pShader->Dispatch(pCommandList);
+	}
+
+	// 다시 그래픽스 디스크립터 힙을 연결
+	Shader::SetDescriptorHeap(pCommandList);
+	pShadowMap->UpdateShaderVariable(pCommandList);
+}
+
+void GameFramework::RenderGBuffer() {
+	// 미리 그릴 버퍼의 핸들
+	float timeElapsed = gameTimer.GetTimeElapsed();
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvCPUDescriptorHandle = pDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	D3D12_CPU_DESCRIPTOR_HANDLE* rtvCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[NUM_G_BUFFER];
+
+	for (int i = 0; i < NUM_G_BUFFER; ++i)
+		SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+
+	for (int i = 0; i < NUM_G_BUFFER; ++i) {
+		rtvCPUDescriptorHandles[i].ptr = GBufferCPUDescriptorHandles[i].ptr;
+		pCommandList->ClearRenderTargetView(GBufferCPUDescriptorHandles[i], pClearColor, 0, NULL);
+	}
+
+	// G Buffer 및 조명 처리전의 씬을 그리기 위한 버퍼들을 렌더타겟에 Set한다. 
+	pCommandList->OMSetRenderTargets(NUM_G_BUFFER, rtvCPUDescriptorHandles, FALSE, &dsvCPUDescriptorHandle);
+	pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
+
+	// 해당 씬에 대한 G Buffer 및 조명을 제외한 씬을 그린다.
+	if (!pScenes.empty()) {
+		pScenes.top()->PreRender(pCommandList, timeElapsed);
+	}
+
+	for (int i = 0; i < NUM_G_BUFFER; ++i)
+		SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
+
+	delete[] rtvCPUDescriptorHandles;
+}
+
+void GameFramework::RenderWireFrame() {
+	// 와이어프레임 렌더링
+	float timeElapsed = gameTimer.GetTimeElapsed();
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvCPUDescriptorHandle = pDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	SynchronizeResourceTransition(pCommandList.Get(), pWireFrameMap->GetResource(0).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
+	pCommandList->ClearRenderTargetView(wireFrameMapCPUDescriptorHandle, pClearColor, 0, NULL);
+
+	pCommandList->OMSetRenderTargets(1, &wireFrameMapCPUDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
+	pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
+	if (!pScenes.empty()) {
+		shared_ptr<PlayScene> pPlayScene = dynamic_pointer_cast<PlayScene>(pScenes.top());
+		if (pPlayScene)
+			pPlayScene->WireFrameRender(pCommandList, timeElapsed);
+	}
+	SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(0).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
+
+}
+
+void GameFramework::LightingAndComputeBlur() {
+	// 포스트 버퍼에 조명처리한 현재 씬을 그린다.
+	float timeElapsed = gameTimer.GetTimeElapsed();
+	D3D12_CPU_DESCRIPTOR_HANDLE dsvCPUDescriptorHandle = pDsvDescriptorHeap->GetCPUDescriptorHandleForHeapStart();
+	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+	pCommandList->OMSetRenderTargets(1, &postBufferCPUDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
+	pCommandList->ClearRenderTargetView(postBufferCPUDescriptorHandle, pClearColor, 0, NULL);
+	pScenes.top()->LightingRender(pCommandList, timeElapsed);
+	pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
+
+	// 포스트 버퍼에 대한 블러 처리를 진행한다.
+	Shader::SetComputeDescriptorHeap(pCommandList);
+	static_pointer_cast<BlurComputeShader>(GetShader("BlurComputeShader"))->Dispatch(pCommandList);
+
+	// 블러 처리가 끝난 텍스처를 후면버퍼에 그대로 그린다.
+	Shader::SetDescriptorHeap(pCommandList);
 }
 
 void GameFramework::FrameAdvance() {
@@ -877,7 +1030,11 @@ void GameFramework::FrameAdvance() {
 	HRESULT hResult = pCommandAllocator->Reset();
 	hResult = pCommandList->Reset(pCommandAllocator.Get(), NULL);
 	vector<ComPtr<ID3D12CommandList>>  pCommandLists;
+
 	float timeElapsed = gameTimer.GetTimeElapsed();
+
+	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
+
 	// 입력을 받을 때 플레이어의 움직임을 저장한다.
 
 	ProcessInput();
@@ -907,178 +1064,47 @@ void GameFramework::FrameAdvance() {
 
 	Shader::SetDescriptorHeap(pCommandList);
 
-	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	static bool baked = false;
 
-	// 정적 쉐도우맵 최초 생성
+	// 첫 PlayScene 진입 시 정적 쉐도우맵 최초 생성
 	if (!baked && !pScenes.empty()) {
 		auto pScene = dynamic_pointer_cast<PlayScene>(pScenes.top());
 		if (pScene) {
 			BakeShadowMap();
 			baked = true;
-			//명령 리스트를 닫힌 상태로 만든다. 
-			hResult = pCommandList->Close();
-			//명령 리스트를 명령 큐에 추가하여 실행한다. 
-			pCommandLists = { pCommandList.Get() };
-
-			pCommandQueue->ExecuteCommandLists(1, pCommandLists.data()->GetAddressOf());
-
-			//GPU가 모든 명령 리스트를 실행할 때 까지 기다린다. 
-			WaitForGpuComplete();
-
-			//	스왑체인을 프리젠트한다.
-			DXGI_PRESENT_PARAMETERS dxgiPresentParameters;
-			dxgiPresentParameters.DirtyRectsCount = 0;
-			dxgiPresentParameters.pDirtyRects = NULL;
-			dxgiPresentParameters.pScrollRect = NULL;
-			dxgiPresentParameters.pScrollOffset = NULL;
-			HRESULT hr = pDxgiSwapChain->Present1(1, 0, &dxgiPresentParameters);
-
-			// 다음 프레임으로 이동, (다음 버퍼로 이동)
-			MoveToNextFrame();
 			return;
 		}
 	}
 
-	else if (!pScenes.empty()) {
+	if (!pScenes.empty()) {
 		auto pScene = dynamic_pointer_cast<PlayScene>(pScenes.top());
 		if (pScene) {
 
 			pScene->UpdateLightShaderVariables(pCommandList);
 			pScene->UpdateCameraShaderVariables(pCommandList);
+
 			// 동적 그림자 맵 렌더링	
-
-			D3D12_CPU_DESCRIPTOR_HANDLE* rtvShadowCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[1];
-			pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
-
-			for (int i = 0; i < NUM_SHADOW_MAP; ++i)
-			{
-				// 렌더타겟으로 변경하고 이전프레임의 내용을 지운다.
-				SynchronizeResourceTransition(pCommandList.Get(), pDynamicShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
-				rtvShadowCPUDescriptorHandles[0].ptr = dynamicShadowMapCPUDescriptorHandles[i].ptr;
-				pCommandList->ClearRenderTargetView(rtvShadowCPUDescriptorHandles[0], pClearColor, 0, NULL);
-			}
+			RenderDynamicShadowMap();
 			
-			GetShader("BasicShadowShader")->PrepareRender(pCommandList);
-			for (int i = 0; i < NUM_SHADOW_MAP; ++i)
-			{
-				// i번째 쉐도우맵을 렌더타겟으로 지정한다.
-				rtvShadowCPUDescriptorHandles[0].ptr = dynamicShadowMapCPUDescriptorHandles[i].ptr;
-				pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, &dsvCPUDescriptorHandle);
-
-				// i번째 조명에 대한 쉐도우맵 렌더링을 한다.
-				pScene->RenderShadowMap(pCommandList, i, "BasicShadowShader");
-			}
-
-			GetShader("SkinnedShadowShader")->PrepareRender(pCommandList);
-			for (int i = 0; i < NUM_SHADOW_MAP; ++i)
-			{
-				// i번째 쉐도우맵을 렌더타겟으로 지정한다.
-				rtvShadowCPUDescriptorHandles[0].ptr = dynamicShadowMapCPUDescriptorHandles[i].ptr;
-				pCommandList->OMSetRenderTargets(1, rtvShadowCPUDescriptorHandles, TRUE, &dsvCPUDescriptorHandle);
-
-				// i번째 조명에 대한 쉐도우맵 렌더링을 한다.
-				pScene->RenderShadowMap(pCommandList, i, "SkinnedShadowShader");
-			}
-
-			for (int i = 0; i < NUM_SHADOW_MAP; ++i)
-			{
-				SynchronizeResourceTransition(pCommandList.Get(), pDynamicShadowMap->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
-			}
-			delete[] rtvShadowCPUDescriptorHandles;
-
 			// 미리 그려놓은 쉐도우맵과 병합
-			Shader::SetComputeDescriptorHeap(pCommandList);
+			MergeShadowMap();
+			
+			// G Buffer 렌더링
+			RenderGBuffer();
 
-			auto pShader = static_pointer_cast<ShadowComputeShader>(GetShader("ShadowComputeShader"));
-			pShader->PrepareRender(pCommandList);
+			// 와이어 프레임 렌더링
+			RenderWireFrame();
 
-			for (int i = 0; i < NUM_SHADOW_MAP; ++i) {
-				// 해당 인덱스의 빛의 미리 구워놓은 쉐도우 맵을 연결
-				pScene->GetLight(i)->pBakedShadowMap->UpdateComputeShaderVariable(pCommandList, 5, -1);
-				
-				// 해당 인덱스의 빛의 대한 동적 쉐도우 맵을 연결
-				pDynamicShadowMap->UpdateComputeShaderVariable(pCommandList, 6, -1, i);
+			// 후처리 및 블러, 레이더 효과 적용
+			LightingAndComputeBlur();
 
-				// 두 쉐도우 맵을 병합한 결과를 쓸 RWTexture를 uav 2번에 연결
-				pShadowMap->UpdateComputeShaderVariable(pCommandList, -1, 2, i);
-
-				// 두 쉐도우맵을 병합
-				pShader->Dispatch(pCommandList);
-			}
 		}
-	}
-	Shader::SetDescriptorHeap(pCommandList);
-	pShadowMap->UpdateShaderVariable(pCommandList);
-
-	// G Buffer 렌더링
-	// 미리 그릴 버퍼의 핸들
-	D3D12_CPU_DESCRIPTOR_HANDLE* rtvCPUDescriptorHandles = new D3D12_CPU_DESCRIPTOR_HANDLE[NUM_G_BUFFER];
-
-	for (int i = 0; i < NUM_G_BUFFER; ++i)
-		SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(i).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
-
-	for (int i = 0; i < NUM_G_BUFFER; ++i) {
-		rtvCPUDescriptorHandles[i].ptr = GBufferCPUDescriptorHandles[i].ptr;
-		pCommandList->ClearRenderTargetView(GBufferCPUDescriptorHandles[i], pClearColor, 0, NULL);
+		// 최종 결과를 후면버퍼에 출력
+		pCommandList->OMSetRenderTargets(1, &swapChainDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
+		pCommandList->ClearRenderTargetView(swapChainDescriptorHandle, pClearColor, 0, NULL);
+		pScenes.top()->Render(pCommandList, timeElapsed);
 	}
 
-	// G Buffer 및 조명 처리전의 씬을 그리기 위한 버퍼들을 렌더타겟에 Set한다. 
-	pCommandList->OMSetRenderTargets(NUM_G_BUFFER, rtvCPUDescriptorHandles, FALSE, &dsvCPUDescriptorHandle);
-	pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
-
-	// 해당 씬에 대한 G Buffer 및 조명을 제외한 씬을 그린다.
-	if (!pScenes.empty()) {
-		pScenes.top()->PreRender(pCommandList, timeElapsed);
-	}
-
-	for (int i = 0; i < NUM_G_BUFFER; ++i)
-		SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(i).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
-
-	delete[] rtvCPUDescriptorHandles;
-
-	// 와이어프레임 렌더링
-	SynchronizeResourceTransition(pCommandList.Get(), pWireFrameMap->GetResource(0).Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_RENDER_TARGET);
-	pCommandList->ClearRenderTargetView(wireFrameMapCPUDescriptorHandle, pClearColor, 0, NULL);
-
-	pCommandList->OMSetRenderTargets(1, &wireFrameMapCPUDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
-	pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
-	if (!pScenes.empty()) {
-		shared_ptr<PlayScene> pPlayScene = dynamic_pointer_cast<PlayScene>(pScenes.top());
-		if (pPlayScene)
-			pPlayScene->WireFrameRender(pCommandList, timeElapsed);
-	}
-	SynchronizeResourceTransition(pCommandList.Get(), pGBuffer->GetResource(0).Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_COMMON);
-
-	// lobbyScene일 경우 후면버퍼를, playScene은 postBuffer를 렌더타겟으로 설정한다.
-
-	
-	// 씬 렌더링
-	if (!pScenes.empty()) {
-		if (dynamic_pointer_cast<LobbyScene>(pScenes.top())) {
-			pCommandList->OMSetRenderTargets(1, &swapChainDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
-			pCommandList->ClearRenderTargetView(swapChainDescriptorHandle, pClearColor, 0, NULL);
-			pScenes.top()->Render(pCommandList, timeElapsed);
-		}
-		else {
-			// 포스트 버퍼에 조명처리한 현재 씬을 그린다.
-			pCommandList->OMSetRenderTargets(1, &postBufferCPUDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
-			pCommandList->ClearRenderTargetView(postBufferCPUDescriptorHandle, pClearColor, 0, NULL);
-			pScenes.top()->LightingRender(pCommandList, timeElapsed);
-			pCommandList->ClearDepthStencilView(dsvCPUDescriptorHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
-
-			// 포스트 버퍼에 대한 블러 처리를 진행한다.
-			Shader::SetComputeDescriptorHeap(pCommandList);
-			static_pointer_cast<BlurComputeShader>(GetShader("BlurComputeShader"))->Dispatch(pCommandList);
-
-			// 블러 처리가 끝난 텍스처를 후면버퍼에 그대로 그린다.
-			Shader::SetDescriptorHeap(pCommandList);
-			pCommandList->OMSetRenderTargets(1, &swapChainDescriptorHandle, TRUE, &dsvCPUDescriptorHandle);
-			pCommandList->ClearRenderTargetView(swapChainDescriptorHandle, pClearColor, 0, NULL);
-			pScenes.top()->Render(pCommandList, timeElapsed);
-		}
-		
-	}
 
 	// 현재 렌더 타겟에 대한 렌더링이 끝나기를 기다린다.
 	::SynchronizeResourceTransition(pCommandList, pRenderTargetBuffers[swapChainBufferCurrentIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT);

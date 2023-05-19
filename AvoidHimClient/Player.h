@@ -149,6 +149,8 @@ protected:
 	bool isSwingAttacking, isThrowAttacking;
 	bool isCreatedThrowAttack;
 
+	float radarRemainCoolTime;
+	float radarMaxCoolTime;
 public:
 	Professor();
 	virtual ~Professor();
@@ -168,7 +170,8 @@ public:
 	bool IsCreatedThrowAttack() const { return isCreatedThrowAttack; }
 	void SetCreatedThrowAttack(bool _isCreatedThrowAttack) { isCreatedThrowAttack = _isCreatedThrowAttack; }
 
-	
+	float GetRadarCoolTime() const { return radarRemainCoolTime;  }
+	void SetRadarCoolTime() { radarRemainCoolTime = radarMaxCoolTime; }
 	virtual void LeftClick();
 	virtual void RightClick();
 

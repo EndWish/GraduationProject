@@ -81,15 +81,18 @@ void radarResult(int3 n3GroupThreadID : SV_GroupThreadID, int3 threadID : SV_Dis
 {
     float4 nColor = GaussianBlur(n3GroupThreadID, threadID);
     float depth = depthTexture[threadID.xy];
+    float4 radarColor = radarTexture[threadID.xy];
+    
     // 외곽선을 그리는 물체들은 depth buffer에서의 값이 음수임
     if (depth < 0)
         depth = -depth;
     // 레이더 범위내에 들어올 경우 와이어 프레임 텍스처를 출력한다.
-    if (depth <= radarDepth)
+    
+    if (depth <= radarDepth && depth != 0)
     {
         float ratio = radarRatio * clamp((depth - (radarDepth - 30.f)) / 20.f, 0.f, 1.f);
         //float ratio = radarRatio * clamp(depth / max(0.1f, radarDepth - 10.f), 0.f, 1.f);
-        output[threadID.xy] = lerp(nColor, radarTexture[threadID.xy], ratio);
+        output[threadID.xy] = lerp(nColor, radarColor, ratio);
     }
         
     // 아닐경우 기존 블러 처리를 하여 그대로 내보낸다.
@@ -107,6 +110,4 @@ void MergeShadow(int3 n3GroupThreadID : SV_GroupThreadID, int3 threadID : SV_Dis
     float dynamicDepth = dynamicShadow[threadID.xy] == 0 ? 1000 : dynamicShadow[threadID.xy];
 
     output[threadID.xy] = min(bakeDepth, dynamicDepth);
-
-
 }

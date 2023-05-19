@@ -32,7 +32,7 @@ public:
 
 	virtual void ReActButton(shared_ptr<Button> _pButton) = 0;
 	virtual char CheckCollision(float _timeElapsed);
-	virtual void RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex, string _shaderName) = 0;
+	virtual void RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex) = 0;
 	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
 	virtual void LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) = 0;
@@ -97,7 +97,7 @@ public:
 	virtual void AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
-	virtual void RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex, string _shaderName);
+	virtual void RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex);
 	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	
 
@@ -112,6 +112,8 @@ public:
 	void UpdateRoomText();
 	void SetBackGround(string _bgName);
 	void RenderPlayerMesh(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
+
+	
 };
 class PlayScene : public Scene, public enable_shared_from_this<PlayScene> {
 
@@ -172,7 +174,7 @@ public:
 	virtual void AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	virtual void ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	
-	virtual void RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex, string _shaderName);
+	virtual void RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex);
 	virtual void WireFrameRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void PreRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
 	virtual void LightingRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed);
@@ -200,7 +202,7 @@ public:
 	void AddItemSpawnLocation(const XMFLOAT3& _position);
 
 	void SetExitBox(const BoundingBox& _exitBox);
-
+	void UpdateCoolTimeText(string _coolTime, string _UI, float coolTime);
 	void UpdateCameraShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	shared_ptr<Light> GetLight(UINT _lightIndex);
 	void BakeShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, D3D12_CPU_DESCRIPTOR_HANDLE& _dsvHandle);

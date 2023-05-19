@@ -147,7 +147,18 @@ protected:
 	// 쉐이더 생성
 	bool InitShader();
 	void InitBuffer();
+	
+	// Frame Advance
+
+	void BakeShadowMap();
+	void RenderDynamicShadowMap();
+	void MergeShadowMap();
+	void RenderGBuffer();
+	void RenderWireFrame();
+	void LightingAndComputeBlur();
 	// get set 함수
+
+
 public:
 
 	void NoticeCloseToServer();
@@ -158,8 +169,6 @@ public:
 	HitBoxMesh& GetHitBoxMesh() { return hitBoxMesh; };
 	
 	const shared_ptr<Scene>& GetCurrentScene() const;
-
-	void BakeShadowMap();
 
 	void InitOldCursor();
 
@@ -173,6 +182,7 @@ public:
 	void FrameAdvance();
 	void WaitForGpuComplete();			// GPU와 동기화하기 위한 대기
 	void MoveToNextFrame();				// 다음 후면버퍼로 변경후 WaitForGpuComplete() 수행
+
 
 	void ChangeSwapChainState();
 	void ProcessInput();

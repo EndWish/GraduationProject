@@ -406,6 +406,9 @@ Professor::Professor() {
 	isSwingAttacking = false; 
 	isThrowAttacking = false;
 	isCreatedThrowAttack = false;
+
+	radarRemainCoolTime = 0;
+	radarMaxCoolTime = 15.0f;
 }
 
 Professor::~Professor() {
@@ -498,6 +501,7 @@ void Professor::Animate(char _collideCheck, float _timeElapsed) {
 	Player::Animate(_collideCheck, _timeElapsed);
 
 	sabotageCoolTime -= _timeElapsed;
+	if (radarRemainCoolTime >= 0.f) radarRemainCoolTime -= _timeElapsed;
 
 
 	for (auto& coolTime : attackRemainCoolTime) {

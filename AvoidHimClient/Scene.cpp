@@ -340,7 +340,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 
 }
 
-void LobbyScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex, string _shaderName) {
+void LobbyScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex) {
 
 }
 
@@ -599,6 +599,8 @@ void LobbyScene::RenderPlayerMesh(const ComPtr<ID3D12GraphicsCommandList>& _pCom
 		pRoomPlayerObjects[i]->GetObj()->Render(_pCommandList);
 	}
 }
+
+
 
 void LobbyScene::UpdateInRoomState() {
 
@@ -989,6 +991,9 @@ void PlayScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12Gr
 	if (isPlayerProfessor) {	// 교수일 경우의 UI 로드
 		pUIs["2DUI_swingAttack"] = make_shared<Image2D>("2DUI_swingAttack", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 		pUIs["2DUI_throwAttack"] = make_shared<Image2D>("2DUI_throwAttack", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.75f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
+
+		pTexts["radarCoolTime"] = make_shared<TextBox>((WCHAR*)L"Who asks Satan", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.25f, 1.7f), XMFLOAT2(0.1f, 0.1f), C_WIDTH / 30.0f, false);
+		pUIs["2DUI_radar"] = make_shared<Image2D>("2DUI_radar", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(0.2f, 1.7f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
 	}
 	else {		// 학생일 경우의 UI 로드
 		pUIs["2DUI_leftSkill"] = make_shared<Image2D>("2DUI_skillFrame", XMFLOAT2(0.2f, 0.2f), XMFLOAT2(1.5f, 1.5f), XMFLOAT2(1.f, 1.f), _pDevice, _pCommandList, true);
@@ -1049,14 +1054,7 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		SendFixedPacket(sendPacket);
 	}
 
-	if (_keyDownBuffer['T']) {
-		radarEnable = true;
-		// 깊이값을 0으로 초기화하고 레이더를 활성화
-		radarInfo.x = 0.0f;
-		radarInfo.y = 1.0f;
-
-		radarDuration = 10.0f;
-	}
+	
 
 
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
@@ -1092,6 +1090,19 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 			cameraBack = Vector3::ScalarProduct(cameraBack, -1);
 			moveVector = Vector3::Add(moveVector, cameraBack);
 			move = true;
+		}
+	}
+	if (pProfessor) {
+		if (_keyDownBuffer['Q'] && pProfessor->GetRadarCoolTime() <= 0) {
+			pProfessor->SetRadarCoolTime();
+			radarEnable = true;
+			// 깊이값을 0으로 초기화하고 레이더를 활성화
+			radarInfo.x = 0.0f;
+			radarInfo.y = 1.0f;
+
+			radarDuration = 10.0f;
+			GetText("radarCoolTime")->SetEnable(true);
+			GetUI("2DUI_radar")->SetDark(true);
 		}
 	}
 	
@@ -1294,62 +1305,13 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	// 쿨타임 텍스트를 갱신해준다.
 	if (isPlayerProfessor) {	// 교수
 		auto pProfessor = static_pointer_cast<Professor>(pPlayer);
-		if (pTexts["leftCoolTime"]->GetEnable()) {	// 왼쪽 스킬이 쿨타임일 경우
-			if (pProfessor) {
-				float coolTime = pProfessor->GetCoolTime(AttackType::swingAttack);
-				if (coolTime <= 0.f) {	// 쿨타임이 끝난경우
-					pTexts["leftCoolTime"]->SetEnable(false);
-					pUIs["2DUI_swingAttack"]->SetDark(false);
-				}
-				else {
-					if (coolTime >= 1.0f) { // 1초 이상일경우에는 정수로 출력한다.
-
-						pTexts["leftCoolTime"]->SetText(to_wstring((int)coolTime).c_str());
-					}
-					else {
-						pTexts["leftCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3).c_str());
-					}
-				}
-			}
-		}
-		if (pTexts["rightCoolTime"]->GetEnable()) {	// 왼쪽 스킬이 쿨타임일 경우
-			if (pProfessor) {
-				float coolTime = pProfessor->GetCoolTime(AttackType::throwAttack);
-				if (coolTime <= 0.f) {	// 쿨타임이 끝난경우
-					pTexts["rightCoolTime"]->SetEnable(false);
-					pUIs["2DUI_throwAttack"]->SetDark(false);
-				}
-				else {
-					if (coolTime >= 1.0f) { // 1초 이상일경우에는 정수로 출력한다.
-
-						pTexts["rightCoolTime"]->SetText(to_wstring((int)coolTime).c_str());
-					}
-					else {
-						pTexts["rightCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3).c_str());
-					}
-				}
-			}
-		}
-
+		UpdateCoolTimeText("leftCoolTime", "2DUI_swingAttack", pProfessor->GetCoolTime(AttackType::swingAttack));
+		UpdateCoolTimeText("rightCoolTime", "2DUI_throwAttack", pProfessor->GetCoolTime(AttackType::throwAttack));
+		UpdateCoolTimeText("radarCoolTime", "2DUI_radar", pProfessor->GetRadarCoolTime());
 	}
 	else {	// 학생
 		auto pStudent = static_pointer_cast<Student>(pPlayer);
-		if (pTexts["rightCoolTime"]->GetEnable()) {
-			float coolTime = pStudent->GetCoolTime();
-			if (coolTime <= 0.f) {	// 쿨타임이 끝난경우
-				pTexts["rightCoolTime"]->SetEnable(false);
-				pUIs["2DUI_transparent"]->SetDark(false);
-			}
-			else {
-				if (coolTime >= 1.0f) { // 1초 이상일경우에는 정수로 출력한다.
-
-					pTexts["rightCoolTime"]->SetText(to_wstring((int)coolTime).c_str());
-				}
-				else {
-					pTexts["rightCoolTime"]->SetText(to_wstring(coolTime).substr(0, 3).c_str());
-				}
-			}
-		}
+		UpdateCoolTimeText("rightCoolTime", "2DUI_transparent", pStudent->GetCoolTime());
 	}
 
 	// zone 내 오브젝트들에 대한 animate를 수행
@@ -1778,6 +1740,24 @@ void PlayScene::SetExitBox(const BoundingBox& _exitBox) {
 	exitBox = _exitBox;
 }
 
+void PlayScene::UpdateCoolTimeText(string _coolTimeText, string _UI, float _coolTime) {
+	if (pTexts[_coolTimeText]->GetEnable()) {	// 쿨타임일 경우
+		if (_coolTime <= 0.f) {	// 쿨타임이 끝난경우
+			pTexts[_coolTimeText]->SetEnable(false);
+			pUIs[_UI]->SetDark(false);
+		}
+		else {
+			if (_coolTime >= 1.0f) { // 1초 이상일경우에는 정수로 출력한다.
+
+				pTexts[_coolTimeText]->SetText(to_wstring((int)_coolTime).c_str());
+			}
+			else {
+				pTexts[_coolTimeText]->SetText(to_wstring(_coolTime).substr(0, 3).c_str());
+			}
+		}
+	}
+}
+
 void PlayScene::UpdateCameraShaderVariables(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	camera->SetViewPortAndScissorRect(_pCommandList);
 	camera->UpdateShaderVariable(_pCommandList);
@@ -1794,7 +1774,6 @@ void PlayScene::BakeShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommand
 	float pClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	
 	int nLight = (UINT)pLights.size();
-
 	for (int i = 0; i < nLight; ++i) {
 		memcpy(&pMappedLights->lights[i], pLights[i].get(), sizeof(Light));
 	}
@@ -1814,7 +1793,6 @@ void PlayScene::BakeShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommand
 	for (auto& pLight : pLights) {
 
 		// 빛의 정보를 쉐이더에 연결해준다.
-
 
 		_pCommandList->SetGraphicsRoot32BitConstants(14, 1, &lightIndex[index], 0);
 		_pCommandList->ClearDepthStencilView(_dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
@@ -1891,7 +1869,7 @@ void PlayScene::ProcessCursorMove(XMFLOAT2 _delta)  {
 }
 
 
-void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex, string _shaderName) {
+void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, UINT _lightIndex) {
 
 	GameFramework& gameFramework = GameFramework::Instance();
 
@@ -1899,9 +1877,9 @@ void PlayScene::RenderShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pComma
 	_pCommandList->SetGraphicsRoot32BitConstants(14, 1, &lightIndex[_lightIndex], 0);
 	// 그림자에 영향을 주는 오브젝트들을 그린다. basic, instancing, effect..
 
-	// GameFramework에서 PrepareRender를 해준다.
-	gameFramework.GetShader(_shaderName)->Render(_pCommandList, false);
-	// 다그린 후 쉐도우맵을 연결한다.
+	gameFramework.GetShader("BasicShadowShader")->Render(_pCommandList);
+	gameFramework.GetShader("SkinnedShadowShader")->Render(_pCommandList);
+
 }
 
 void PlayScene::WireFrameRender(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, float _timeElapsed) {

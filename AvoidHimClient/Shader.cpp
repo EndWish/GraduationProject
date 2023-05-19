@@ -735,12 +735,12 @@ D3D12_INPUT_LAYOUT_DESC BasicShadowShader::CreateInputLayout() {
 }
 
 D3D12_DEPTH_STENCIL_DESC BasicShadowShader::CreateDepthStencilState() {
-	// 그림자맵 연산시에는 depth stencil buffer를 사용하지 않는다.
+
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
 	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
-	depthStencilDesc.DepthEnable = FALSE;
-	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 	depthStencilDesc.StencilEnable = FALSE;
 	depthStencilDesc.StencilReadMask = 0x00;
 	depthStencilDesc.StencilWriteMask = 0x00;
@@ -1009,12 +1009,12 @@ D3D12_INPUT_LAYOUT_DESC SkinnedShadowShader::CreateInputLayout() {
 }
 
 D3D12_DEPTH_STENCIL_DESC SkinnedShadowShader::CreateDepthStencilState() {
-	// 그림자맵 연산시에는 depth stencil buffer를 사용하지 않는다.
+
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
 	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
-	depthStencilDesc.DepthEnable = FALSE;
-	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 	depthStencilDesc.StencilEnable = FALSE;
 	depthStencilDesc.StencilReadMask = 0x00;
 	depthStencilDesc.StencilWriteMask = 0x00;
@@ -1554,12 +1554,11 @@ D3D12_INPUT_LAYOUT_DESC InstancingShadowShader::CreateInputLayout() {
 }
 
 D3D12_DEPTH_STENCIL_DESC InstancingShadowShader::CreateDepthStencilState() {
-	// 그림자맵 연산시에는 depth stencil buffer를 사용하지 않는다.
 	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
 	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
-	depthStencilDesc.DepthEnable = FALSE;
-	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
-	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_ALWAYS;
+	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
 	depthStencilDesc.StencilEnable = FALSE;
 	depthStencilDesc.StencilReadMask = 0x00;
 	depthStencilDesc.StencilWriteMask = 0x00;
