@@ -9,6 +9,17 @@ ServerFramework ServerFramework::instance;	// 고유 프레임워크
 void ServerFramework::Init(HWND _windowHandle) {
     LoadMapFile();
     windowHandle = _windowHandle;
+
+    char name[256];
+    gethostname(name, sizeof(name));
+    PHOSTENT host = gethostbyname(name);
+
+    string addr = inet_ntoa(*(in_addr*)(*host->h_addr_list));
+
+    wstring waddr;
+    waddr.assign(addr.begin(), addr.end());
+    SetWindowText(windowHandle, waddr.c_str());
+
 }
 void ServerFramework::Destroy() {
     for (auto [key, pClient] : pClients)

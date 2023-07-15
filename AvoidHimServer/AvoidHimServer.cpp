@@ -33,18 +33,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
     LoadStringW(hInstance, IDC_AVOIDHIMSERVER, szWindowClass, MAX_LOADSTRING);
     MyRegisterClass(hInstance);
 
+    // 윈속 초기화
+    WSADATA wsa;
+    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
+        return 1;
+
+
     // 애플리케이션 초기화를 수행합니다:
-    if (!InitInstance (hInstance, nCmdShow)) {
+    if (!InitInstance(hInstance, nCmdShow)) {
         return FALSE;
     }
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_AVOIDHIMSERVER));
     MSG msg;
 
-    // 윈속 초기화
-    WSADATA wsa;
-    if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
-        return 1;
 
     // 소켓 생성
     SOCKET listen_sock = socket(AF_INET, SOCK_STREAM, 0);
@@ -122,7 +124,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    hInst = hInstance; // 인스턴스 핸들을 전역 변수에 저장합니다.
 
    hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
-      0, 0, 300, 200, nullptr, nullptr, hInstance, nullptr);
+       0, 0, 300, 200, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
    {
@@ -132,6 +134,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
    ServerFramework::Instance().Init(hWnd);
    ShowWindow(hWnd, nCmdShow);
    UpdateWindow(hWnd);
+
+
 
    return TRUE;
 }
