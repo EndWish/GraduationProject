@@ -219,6 +219,64 @@ G_BUFFER_OUTPUT EffectPixelShader(VS_EFFECT_OUTPUT input)
 }
 
 
+///////////////////////////////////////////////////////////////////////////////
+///
+
+struct VS_BILLBOARD_OUTPUT
+{
+    float3 position : POSITION;
+};
+
+VS_BILLBOARD_OUTPUT BillboardVertexShader(float3 input : POSITION)
+{
+    VS_BILLBOARD_OUTPUT output;
+    output.position = input;
+    return output;
+}
+
+struct GS_BILLBOARD_OUTPUT
+{
+    float4 position : SV_POSITION;
+    float3 positionW : POSITION;
+    float2 uv : TEXCOORD;
+};
+
+[maxvertexcount(4)]
+void BillboardGeometryShader(point VS_BILLBOARD_OUTPUT input[1], inout TriangleStream<GS_BILLBOARD_OUTPUT> outStream)
+{
+    GS_BILLBOARD_OUTPUT output;
+    
+    float3 normal = normalize(cameraPosition - input[0].position);
+    
+    float3 rightVector = normalize(cross(float3(0, 1, 0), normal)); // Y축과 look벡터 외적해서 rightVector를 얻는다.
+    float3 upVector = normalize(cross(normal, rightVector)); //
+    
+    float3 dxOffset = rightVector * 0.4f / 2.0f; //rightVector * input[0].boardSize.x / 2.0f;
+    float3 dyOffset = upVector * 0.4f / 2.0f; //upVector * input[0].boardSize.y / 2.0f;
+    
+     // 시계방향이 앞쪽
+    float3 dx[4] = { -dxOffset, dxOffset, -dxOffset, dxOffset };
+    float3 dy[4] = { -dyOffset, -dyOffset, dyOffset, dyOffset };
+    
+    float2 startUV = float2(0, 0);
+    float2 widUV = float2(1.0f, 1.0f);
+    
+    float2 uv[4] = { startUV + widUV, startUV + float2(0, widUV.y), startUV + float2(widUV.x, 0), startUV }; // 오른쪽위, 왼쪽위, 오른쪽아래, 왼쪽아래
+    for (int i = 0; i < 4; ++i)
+    {
+        output.positionW = input[0].position + dx[i] + dy[i];
+        output.position = mul(mul(float4(output.positionW, 1.0f), view), projection);
+        output.uv = uv[i];
+        outStream.Append(output);
+    }
+}
+
+[earlydepthstencil]
+float4 BillboardPixelShader(GS_BILLBOARD_OUTPUT input) : SV_TARGET
+{
+    return albedoMap.Sample(gssWrap, input.uv);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /// 

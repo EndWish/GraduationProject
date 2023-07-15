@@ -11,7 +11,7 @@ Player::Player() {
 	rotation = Vector4::QuaternionIdentity();
 	sendMovePacketTime = 0.f;
 	speed = 5.0f;
-	baseSpeed = 5.0f;
+	baseSpeed = 4.0f;
 
 	mp = 100.0f;
 	mpTick = 5.f;

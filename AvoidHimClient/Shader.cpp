@@ -1806,6 +1806,108 @@ void EffectShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList
 }
 
 
+//////////////////// Billboard Shader ///////////////////////
+
+
+BillboardShader::BillboardShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
+
+	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
+	Init(_pDevice, _pRootSignature);
+	pipelineStateDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_POINT;
+	pipelineStateDesc.VS = CompileShaderFromFile(L"Shaders.hlsl", "BillboardVertexShader", "vs_5_1", pVSBlob);
+	pipelineStateDesc.GS = CompileShaderFromFile(L"Shaders.hlsl", "BillboardGeometryShader", "gs_5_1", pGSBlob);
+	pipelineStateDesc.PS = CompileShaderFromFile(L"Shaders.hlsl", "BillboardPixelShader", "ps_5_1", pPSBlob);
+
+	HRESULT hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
+	if (hr == S_OK) cout << "BillboardShader 생성 성공\n";
+	else cout << hr << "\n";
+	pVSBlob.Reset();
+	pGSBlob.Reset();
+	pPSBlob.Reset();
+
+	inputElementDescs.clear();
+}
+
+BillboardShader::~BillboardShader() {
+
+}
+
+
+D3D12_RASTERIZER_DESC BillboardShader::CreateRasterizerState() {
+	D3D12_RASTERIZER_DESC rasterizerDesc;
+	ZeroMemory(&rasterizerDesc, sizeof(D3D12_RASTERIZER_DESC));
+	//	d3dRasterizerDesc.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
+	rasterizerDesc.CullMode = D3D12_CULL_MODE_BACK;
+	rasterizerDesc.FrontCounterClockwise = FALSE;
+	rasterizerDesc.DepthBias = 0;
+	rasterizerDesc.DepthBiasClamp = 0.0f;
+	rasterizerDesc.SlopeScaledDepthBias = 0.0f;
+	rasterizerDesc.DepthClipEnable = TRUE;
+	rasterizerDesc.MultisampleEnable = FALSE;
+	rasterizerDesc.AntialiasedLineEnable = FALSE;
+	rasterizerDesc.ForcedSampleCount = 0;
+	rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;
+
+	return rasterizerDesc;
+}
+
+D3D12_INPUT_LAYOUT_DESC BillboardShader::CreateInputLayout() {
+	inputElementDescs.assign(1, {});
+
+	inputElementDescs[0] = { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 };
+
+	D3D12_INPUT_LAYOUT_DESC inputLayoutDesc;
+	inputLayoutDesc.pInputElementDescs = &inputElementDescs[0];
+	inputLayoutDesc.NumElements = (UINT)inputElementDescs.size();
+
+	return inputLayoutDesc;
+}
+
+D3D12_DEPTH_STENCIL_DESC BillboardShader::CreateDepthStencilState() {
+	D3D12_DEPTH_STENCIL_DESC depthStencilDesc;
+	ZeroMemory(&depthStencilDesc, sizeof(D3D12_DEPTH_STENCIL_DESC));
+	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthWriteMask = D3D12_DEPTH_WRITE_MASK_ZERO;
+	depthStencilDesc.DepthFunc = D3D12_COMPARISON_FUNC_LESS;
+	depthStencilDesc.StencilEnable = FALSE;
+	depthStencilDesc.StencilReadMask = 0x00;
+
+	depthStencilDesc.StencilWriteMask = 0x00;
+	depthStencilDesc.FrontFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+	depthStencilDesc.BackFace.StencilFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilPassOp = D3D12_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D12_COMPARISON_FUNC_NEVER;
+
+	return depthStencilDesc;
+}
+
+void BillboardShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline) {
+	GameFramework& gameFramework = GameFramework::Instance();
+
+	auto& pGameObjects = gameFramework.GetShader("BillboardShader")->GetGameObjects();
+
+	_pCommandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_POINTLIST);
+
+	if (pGameObjects.size() > 0) {
+		if (_setPipeline) PrepareRender(_pCommandList);
+		for (auto& wpGameObject : pGameObjects) {
+			if (wpGameObject.expired()) continue;
+			auto pGameObject = wpGameObject.lock();
+			if (pGameObject->GetAlwaysDraw() || (pGameObject->GetSector() && pGameObject->GetSector()->GetInFrustum())) {
+				pGameObject->Render(_pCommandList);
+			}
+		}
+	}
+
+	Shader::Render(_pCommandList, _setPipeline);
+}
+
+
 //////////////////// SkyBox Shader ///////////////////////
 
 SkyBoxShader::SkyBoxShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature) {
@@ -2021,6 +2123,10 @@ bool ShaderManager::InitShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 
 	shared_ptr<Shader> effectShader = make_shared<EffectShader>(_pDevice, _pRootSignature);
 	if (effectShader) storage["EffectShader"] = effectShader;
+	else return false;
+
+	shared_ptr<Shader> billboardShader = make_shared<BillboardShader>(_pDevice, _pRootSignature);
+	if (billboardShader) storage["BillboardShader"] = billboardShader;
 	else return false;
 
 	shared_ptr<Shader> skyBoxShader = make_shared<SkyBoxShader>(_pDevice, _pRootSignature);

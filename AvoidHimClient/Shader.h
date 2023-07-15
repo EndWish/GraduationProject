@@ -365,6 +365,23 @@ private:
 
 };
 
+class BillboardShader : public Shader {
+protected:
+	ComPtr<ID3DBlob> pGSBlob;
+
+public:
+	BillboardShader(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12RootSignature>& _pRootSignature);
+	virtual ~BillboardShader();
+	virtual void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList, bool _setPipeline = true);
+
+private:
+	D3D12_RASTERIZER_DESC CreateRasterizerState() final;
+	D3D12_INPUT_LAYOUT_DESC CreateInputLayout() final;
+	virtual D3D12_DEPTH_STENCIL_DESC CreateDepthStencilState();
+
+
+};
+
 class SkyBoxShader : public Shader {
 private:
 
