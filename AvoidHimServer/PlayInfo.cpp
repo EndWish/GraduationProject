@@ -19,6 +19,7 @@ PlayInfo::PlayInfo(UINT _playInfoID) : playInfoID{ _playInfoID } {
 	prisonDoorObjectID = 0;
 
 	professorClientID = 0;
+
 }
 PlayInfo::~PlayInfo() {
 	ServerFramework& serverFramework = ServerFramework::Instance();
@@ -206,19 +207,43 @@ void PlayInfo::ProcessLoadingComplete() {
 	loadingCompletes.clear();
 	loadingCompletes.rehash(0);
 
+	// 서버의 타이머를 작동시킨다.
+	gameStartTime = chrono::system_clock::now();
+
 	// 모든 플레이어가 로딩이 완료되었다고 패킷을 보낸다.
 	SC_All_PLAYER_LOADING_COMPLETE sendPacket;
+
 	for (auto [participant, pClient] : participants) {
 		if (pClient)
 			SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
 	}
+
 }
 
 void PlayInfo::FrameAdvance(float _timeElapsed) {
 	if (!allPlayerLoadingComplete)
 		return;
 
+	
 	ServerFramework& serverFramework = ServerFramework::Instance();
+
+	// 시간이 다 된경우 학생이 이긴 판정을 클라이언트에게 보낸다.
+	if (chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - gameStartTime).count() > GAME_TIME) {
+		cout << format("CS_EXIT_PLAYER ( TIME_OVER )");
+
+		if (!endGame) {
+			endGame = true;
+
+			// 패킷을 전송한다.
+			SC_EXIT_PLAYER sendPacket;
+			sendPacket.playerObjectID = 0;
+			for (auto [participant, pClient] : participants) {
+				SendContents(pClient->GetSocket(), pClient->GetRemainBuffer(), sendPacket);
+			}
+		}
+
+	}
+
 
 	// 플레이어의 위치를 보내준다.
 	SC_PLAYERS_INFO sendPacket;
@@ -258,6 +283,8 @@ void PlayInfo::FrameAdvance(float _timeElapsed) {
 			AddItem();
 		}
 	}
+
+	
 }
 
 void PlayInfo::ProcessRecv(CS_PACKET_TYPE _packetType) {

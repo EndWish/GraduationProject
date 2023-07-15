@@ -38,6 +38,7 @@ private:
 	float itemCreateCoolTime;
 	bool allLeverPowerOn;
 
+	chrono::system_clock::time_point gameStartTime;
 	bool endGame;
 
 public:

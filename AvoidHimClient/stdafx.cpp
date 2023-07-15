@@ -30,6 +30,7 @@ array<char, BUFSIZE> sendBuffer;
 array<char, BUFSIZE> recvBuffer;
 
 int testcount = 0;
+chrono::system_clock::time_point gameStartTime;
 
 float random(float min, float max) {
 	uniform_real_distribution<float> dis(min, max);

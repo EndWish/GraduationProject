@@ -119,8 +119,6 @@ class PlayScene : public Scene, public enable_shared_from_this<PlayScene> {
 
 private:
 	int lightIndex[MAX_LIGHTS];
-	float remainTime;
-
 
 	bool radarEnable;
 	float radarDuration;

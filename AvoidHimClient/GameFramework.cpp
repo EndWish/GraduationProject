@@ -41,7 +41,7 @@ void GameFramework::Create(HINSTANCE _hInstance, HWND _hMainWnd) {
 
 		// cbv, srv를 담기 위한 정적 디스크립터 힙 생성
 		Shader::CreateCbvSrvUavDescriptorHeaps(gameFramework.pDevice, 0, 300, 1);
-		Shader::CreateComputeDescriptorHeaps(gameFramework.pDevice, 0, 200, MAX_LIGHTS + 10);
+		Shader::CreateComputeDescriptorHeaps(gameFramework.pDevice, 0, 200, MAX_LIGHTS + NUM_SHADOW_MAP);
 
 
 

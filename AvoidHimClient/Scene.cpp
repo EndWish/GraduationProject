@@ -324,7 +324,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		isLoading = false;
 		gameFramework.InitOldCursor();
 		gameFramework.PushScene(loadingScene);
-		
+		gameStartTime = chrono::system_clock::now();
 		loadingScene = nullptr;
 		break;
 	}
@@ -653,7 +653,6 @@ void LobbyScene::UpdateInRoomState() {
 PlayScene::PlayScene() {
 	globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
 	//globalAmbient = XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f);
-	remainTime = 1000.f;
 
 	professorObjectID = 0;
 	ranges::fill_n(lightIndex, MAX_LIGHTS, 0);
@@ -664,6 +663,8 @@ PlayScene::PlayScene() {
 
 PlayScene::~PlayScene() {
 	pLightsBuffer->Unmap(0, NULL);
+	=
+
 }
 
 shared_ptr<FullScreenObject> PlayScene::GetFullScreenObject() const {
@@ -683,6 +684,8 @@ void PlayScene::changeUI(bool _enable) {
 	if (isPlayerProfessor) {	// 교수일 경우의 UI 
 		pUIs["2DUI_throwAttack"]->SetEnable(_enable);
 		pUIs["2DUI_swingAttack"]->SetEnable(_enable);
+		pUIs["2DUI_radar"]->SetEnable(_enable);
+		pTexts["radarCoolTime"]->SetEnable(_enable);
 	}
 	else {		// 학생일 경우의 UI 
 		pUIs["2DUI_leftSkill"]->SetEnable(_enable);
@@ -705,7 +708,7 @@ void PlayScene::AddComputer(const shared_ptr<Computer>& _pComputer) {
 }
  
 void PlayScene::UpdateTimeText() {
-	UINT UINTTime = (UINT)remainTime;
+	UINT UINTTime = (UINT)max((int)(GAME_TIME - chrono::duration_cast<chrono::seconds>(chrono::system_clock::now() - gameStartTime).count()), 0);
 	UINT second = UINTTime % 60;
 	wstring mid = second >= 10 ? L" : " : L" : 0";
 
@@ -1138,6 +1141,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		GameFramework& gameFramework = GameFramework::Instance();
 		changeUI(false);
 		gameFramework.PopScene();
+		gameFramework.GetSoundManager().Stop("horror");
 
 		// 게임을 끝낸다.
 		CS_EXIT_GAME sendPacket;
@@ -1325,7 +1329,6 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 
 	// 시간을 갱신한다.
 	UpdateTimeText();
-	remainTime -= _timeElapsed;
 
 	pZone->AnimateObjects(_timeElapsed);
 }
@@ -1643,9 +1646,11 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 	}
 	case SC_PACKET_TYPE::exitPlayer: {
 		SC_EXIT_PLAYER* packet = GetPacket<SC_EXIT_PLAYER>();
-		shared_ptr<InterpolateMoveGameObject> pOtherPlayer = pOtherPlayers[packet->playerObjectID];
-		pZone->RemoveObject(SectorLayer::otherPlayer, packet->playerObjectID, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
-		pOtherPlayers.erase(packet->playerObjectID);
+		if (packet->playerObjectID != 0) {
+			shared_ptr<InterpolateMoveGameObject> pOtherPlayer = pOtherPlayers[packet->playerObjectID];
+			pZone->RemoveObject(SectorLayer::otherPlayer, packet->playerObjectID, pZone->GetIndex(pOtherPlayer->GetWorldPosition()));
+			pOtherPlayers.erase(packet->playerObjectID);
+		}
 		exit = true;
 		break;
 	}
@@ -1793,7 +1798,6 @@ void PlayScene::BakeShadowMap(const ComPtr<ID3D12GraphicsCommandList>& _pCommand
 	for (auto& pLight : pLights) {
 
 		// 빛의 정보를 쉐이더에 연결해준다.
-
 		_pCommandList->SetGraphicsRoot32BitConstants(14, 1, &lightIndex[index], 0);
 		_pCommandList->ClearDepthStencilView(_dsvHandle, D3D12_CLEAR_FLAG_DEPTH | D3D12_CLEAR_FLAG_STENCIL, 1.0f, 0, 0, NULL);
 		

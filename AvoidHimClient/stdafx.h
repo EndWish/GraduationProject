@@ -139,6 +139,8 @@ extern array<char, BUFSIZE> recvBuffer;
 using Microsoft::WRL::ComPtr;
 extern int testcount;
 
+extern chrono::system_clock::time_point gameStartTime;
+
 
 // float 난수 생성
 float random(float min, float max);

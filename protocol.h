@@ -19,6 +19,8 @@ using namespace DirectX;
 #define MAX_PARTICIPANT 5
 #define SERVER_PERIOD (1.f / 20)
 #define WATER_DISPENSER_COOLTIME 10.f
+#define GAME_TIME 30
+
 ///////////////////////////////
 
 enum class CS_PACKET_TYPE : char {
