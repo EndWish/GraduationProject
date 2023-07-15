@@ -663,7 +663,7 @@ PlayScene::PlayScene() {
 
 PlayScene::~PlayScene() {
 	pLightsBuffer->Unmap(0, NULL);
-	=
+
 
 }
 
