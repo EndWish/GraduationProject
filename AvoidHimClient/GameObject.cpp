@@ -1059,11 +1059,17 @@ void Door::QueryInteract() {
 	packet.playerObjectID = myObjectID;
 	SendFixedPacket(packet);
 
+
 }
 
 void Door::Interact() {
 	isOpen = !isOpen;
 	cout << "열려라 참깨\n";
+
+	// 사운드 재생
+	GameFramework& gameFramework = GameFramework::Instance();
+	gameFramework.GetSoundManager().SetPosition("openDoorSound", GetWorldPosition());
+	gameFramework.GetSoundManager().Play("openDoorSound");
 }
 
 void Door::Animate(float _timeElapsed) {
@@ -1257,10 +1263,6 @@ void Computer::QueryInteract() {
 
 void Computer::Interact() {
 	cout << " 컴퓨터 해킹 시작 \n";
-	// 사운드 재생
-	GameFramework& gameFramework = GameFramework::Instance();
-	gameFramework.GetSoundManager().SetPosition("keyboardSound", GetWorldPosition());
-	gameFramework.GetSoundManager().Play("keyboardSound", true);
 }
 
 bool Computer::IsEnable() {
@@ -1325,9 +1327,6 @@ void Computer::EndInteract() {
 		sendPacket.computerObjectID = id;
 		sendPacket.rate = hackingRate;
 		SendFixedPacket(sendPacket);
-		// 사운드 종료
-		GameFramework& gameFramework = GameFramework::Instance();
-		gameFramework.GetSoundManager().Stop("keyboardSound");
 	}
 }
 

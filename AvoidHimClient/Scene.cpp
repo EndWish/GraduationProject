@@ -1391,14 +1391,6 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		SC_TOGGLE_DOOR* packet = GetPacket<SC_TOGGLE_DOOR>();
 		// 해당 오브젝트에 대한 상호작용을 한다.
 		pZone->Interact(packet->objectID);
-
-		// 사운드 재생
-		GameFramework& gameFramework = GameFramework::Instance();
-		shared_ptr<InteractObject> interactObject = pZone->GetInteractObject(packet->objectID);
-		if (interactObject) {
-			gameFramework.GetSoundManager().SetPosition("openDoorSound", interactObject->GetWorldPosition());
-			gameFramework.GetSoundManager().Play("openDoorSound");
-		}
 		break;
 	}
 	case SC_PACKET_TYPE::useWaterDispenser: {
@@ -1634,8 +1626,6 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			auto pStudent = static_pointer_cast<InterpolateMoveGameObject>(FindPlayerObject(packet->playerObjectID));
 			if (packet->objectType == ObjectType::medicalKitItem) {
 				pStudent->AddHP(50.0f);
-				gameFramework.GetSoundManager().SetPosition("healSound", pStudent->GetWorldPosition());
-				gameFramework.GetSoundManager().Play("healSound");
 
 				// 파티클 생성
 				VS_ParticleMappedFormat particle;

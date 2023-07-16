@@ -1122,6 +1122,7 @@ shared_ptr<Trap> Zone::GetTrap(UINT _objectID) {
 
 void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObject> _pPlayerObject, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	auto pProfessor = dynamic_pointer_cast<Professor>(_pPlayerObject);
+	GameFramework& gameFramework = GameFramework::Instance();
 
 	shared_ptr<Attack> pAttack;
 	if (_attackType == AttackType::swingAttack) {
@@ -1140,6 +1141,10 @@ void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObje
 		
 		pAttack->Rotate(pAttack->GetLocalLookVector(), -18.f);
 		pAttack->Rotate(pAttack->GetLocalRightVector(), -35.f);
+
+		// 사운드 재생
+		gameFramework.GetSoundManager().SetPosition("swingSound01", pProfessor->GetWorldPosition());
+		gameFramework.GetSoundManager().Play("swingSound01");
 	}
 	else if (_attackType == AttackType::throwAttack) {
 
@@ -1160,6 +1165,10 @@ void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObje
 		else
 			pAttack->SetLocalPosition(static_pointer_cast<InterpolateMoveGameObject>(_pPlayerObject)->GetHandObject()->GetWorldPosition());
 		pAttack->SetLocalRotation(_pPlayerObject->GetLocalRotate());
+
+		// 사운드 재생
+		gameFramework.GetSoundManager().SetPosition("swingSound02", pProfessor->GetWorldPosition());
+		gameFramework.GetSoundManager().Play("swingSound02");
 	}
 	
 	pAttack->UpdateObject();

@@ -526,11 +526,6 @@ void Professor::LeftClick() {
 		sendPacket.playerObjectID = myObjectID;
 		Reload(AttackType::swingAttack);
 
-		// 사운드 재생
-		GameFramework& gameFramework = GameFramework::Instance();
-		gameFramework.GetSoundManager().SetPosition("swingSound01", GetWorldPosition());
-		gameFramework.GetSoundManager().Play("swingSound01");
-
 		// 애니메이션 처리
 		wpAniController.lock()->ChangeClip("Melee");
 		isSwingAttacking = true;
@@ -565,10 +560,7 @@ void Professor::RightClick() {
 		// 이후 서버에게 패킷을 받아 실제로 공격을 생성할 때 다시 쿨타임을 적용한다.
 		Reload(AttackType::throwAttack);
 
-		// 사운드 재생
-		GameFramework& gameFramework = GameFramework::Instance();
-		gameFramework.GetSoundManager().SetPosition("swingSound02", GetWorldPosition());
-		gameFramework.GetSoundManager().Play("swingSound02");
+
 
 		// 애니메이션 처리
 		wpAniController.lock()->ChangeClip("throw");

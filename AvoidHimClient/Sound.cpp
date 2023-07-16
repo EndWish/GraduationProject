@@ -206,7 +206,6 @@ void SoundManager::Init(HWND _hwnd) {
 
 	pSounds["healSound"] = LoadFile("healSound");
 	pSounds["hittingSound"] = LoadFile("hittingSound");
-	pSounds["keyboardSound"] = LoadFile("keyboardSound");
 	pSounds["leverSound"] = LoadFile("leverSound");
 	pSounds["lightSound"] = LoadFile("lightSound");
 	pSounds["openDoorSound"] = LoadFile("openDoorSound");
