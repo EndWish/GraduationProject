@@ -140,9 +140,9 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 		pRoomPlayerObject->GetAniController()->ChangeClip("idle");
 	}
 
-	pButtons["startButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.5f, 1.2f), ButtonType::start, _pDevice, _pCommandList);;
+	pButtons["startButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.5f, 1.35f), ButtonType::start, _pDevice, _pCommandList);;
 
-	pButtons["optionButton"] = make_shared<Button>("2DUI_optionButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.5f, 1.4f), ButtonType::option, _pDevice, _pCommandList);;
+	//pButtons["optionButton"] = make_shared<Button>("2DUI_optionButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.5f, 1.4f), ButtonType::option, _pDevice, _pCommandList);;
 
 	pButtons["exitButton"] = make_shared<Button>("2DUI_exitButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.5f, 1.6f), ButtonType::exit, _pDevice, _pCommandList);;
 
@@ -400,6 +400,10 @@ void LobbyScene::ReActButton(shared_ptr<Button> _pButton) { // 시작 버튼을 누른 
 		changeUI(LobbyState::roomList, true);
 		break;
 	}
+	case ButtonType::exit: {
+		DestroyWindow(hWnd);
+		break;
+	}
 	case ButtonType::makeRoom: {
 
 		// 패킷을 보낸 후, 방 생성은 항상 성공하므로 서버에게 따로 패킷을 받지 않고
@@ -490,7 +494,7 @@ void LobbyScene::changeUI(LobbyState _state, bool _active) {
 	// 로비씬의 각 세부 상태에 따라 버튼, 배경 이미지를 변경한다.  
 	if (_state == LobbyState::title) {
 		pButtons["startButton"]->SetEnable(_active);
-		pButtons["optionButton"]->SetEnable(_active);
+		//pButtons["optionButton"]->SetEnable(_active);
 		pButtons["exitButton"]->SetEnable(_active);
 		if (_active) {
 			SetBackGround("2DUI_title");
