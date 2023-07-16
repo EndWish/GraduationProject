@@ -115,7 +115,6 @@ D3D12_SHADER_BYTECODE Shader::CompileShaderFromFile(const wstring& _fileName, co
 		pErrorString = (char*)pErrorBlob->GetBufferPointer();
 		cout << "바이트 코드 생성 오류 : " << pErrorString << "\n";
 	}
-
 	D3D12_SHADER_BYTECODE shaderByteCode;
 	shaderByteCode.BytecodeLength = _pBlob->GetBufferSize();
 	shaderByteCode.pShaderBytecode = _pBlob->GetBufferPointer();
@@ -1129,10 +1128,11 @@ SkinnedLobbyShader::SkinnedLobbyShader(const ComPtr<ID3D12Device>& _pDevice, con
 	Init(_pDevice, _pRootSignature);
 
 	// 스왑체인에 바로 그리는 Skinned Shader. 로비용
-	//pipelineStateDesc.VS = LoadShaderFromFile(L"SkinnedLobbyShader_vs", pVSBlob);
-	//pipelineStateDesc.PS = LoadShaderFromFile(L"SkinnedLobbyShader_ps", pPSBlob);
-	pipelineStateDesc.VS = CompileShaderFromFile(L"SkinnedLobbyShader.hlsl", "SkinnedVertexShader", "vs_5_1", pVSBlob);
-	pipelineStateDesc.PS = CompileShaderFromFile(L"SkinnedLobbyShader.hlsl", "SkinnedLobbyPixelShader", "ps_5_1", pPSBlob);
+	// 라이팅 쉐이더의 경우 컴파일이 매우 오래걸려 (unroll) 미리 컴파일된 쉐이더 파일을 불러와 사용
+	pipelineStateDesc.VS = LoadShaderFromFile(L"SkinnedLobbyShader_vs", pVSBlob);
+	pipelineStateDesc.PS = LoadShaderFromFile(L"SkinnedLobbyShader_ps", pPSBlob);
+	//pipelineStateDesc.VS = CompileShaderFromFile(L"SkinnedLobbyShader.hlsl", "SkinnedVertexShader", "vs_5_1", pVSBlob);
+	//pipelineStateDesc.PS = CompileShaderFromFile(L"SkinnedLobbyShader.hlsl", "SkinnedLobbyPixelShader", "ps_5_1", pPSBlob);
 
 	HRESULT _hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
 	if (_hr == S_OK) cout << "SkinnedLobbyShader 생성 성공\n";
@@ -2010,10 +2010,11 @@ LightingShader::LightingShader(const ComPtr<ID3D12Device>& _pDevice, const ComPt
 	renderType = ShaderRenderType::SWAP_CHAIN_RENDER;
 	Init(_pDevice, _pRootSignature);
 
-	//pipelineStateDesc.VS = LoadShaderFromFile(L"DeferredLighting_vs", pVSBlob);
-	//pipelineStateDesc.PS = LoadShaderFromFile(L"DeferredLighting_ps", pPSBlob);
-	pipelineStateDesc.VS = CompileShaderFromFile(L"DeferredLighting.hlsl", "LightingVertexShader", "vs_5_1", pVSBlob);
-	pipelineStateDesc.PS = CompileShaderFromFile(L"DeferredLighting.hlsl", "LightingPixelShader", "ps_5_1", pPSBlob);
+	// 라이팅 쉐이더의 경우 컴파일이 매우 오래걸려 (unroll) 미리 컴파일된 쉐이더 파일을 불러와 사용
+	pipelineStateDesc.VS = LoadShaderFromFile(L"DeferredLighting_vs", pVSBlob);
+	pipelineStateDesc.PS = LoadShaderFromFile(L"DeferredLighting_ps", pPSBlob);
+	//pipelineStateDesc.VS = CompileShaderFromFile(L"DeferredLighting.hlsl", "LightingVertexShader", "vs_5_1", pVSBlob);
+	//pipelineStateDesc.PS = CompileShaderFromFile(L"DeferredLighting.hlsl", "LightingPixelShader", "ps_5_1", pPSBlob);
 
 	HRESULT hr = _pDevice->CreateGraphicsPipelineState(&pipelineStateDesc, __uuidof(ID3D12PipelineState), (void**)&pPipelineState);
 	if (hr == S_OK) cout << "LightingShader 생성 성공\n";

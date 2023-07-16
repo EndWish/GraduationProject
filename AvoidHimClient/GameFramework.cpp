@@ -706,8 +706,8 @@ void GameFramework::InitBuffer() {
 	pWireFrameMap = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 	//pDestBuffer = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 
-	pBakedShadowMaps.resize(80);
-	bakedShadowMapCPUDescriptorHandles.resize(80);
+	pBakedShadowMaps.resize(MAX_LIGHTS);
+	bakedShadowMapCPUDescriptorHandles.resize(MAX_LIGHTS);
 	for (auto& pBakedShadowMap : pBakedShadowMaps) {
 		pBakedShadowMap = make_shared<Texture>(1, RESOURCE_TEXTURE2D, 0, 1);
 	}

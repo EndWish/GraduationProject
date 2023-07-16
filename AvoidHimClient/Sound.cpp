@@ -12,6 +12,7 @@ Sound::~Sound() {
 }
 
 void Sound::Play(bool _loop) {
+
 	if (!(GetStatus() & DSBSTATUS_LOOPING)) {
 		DWORD flag = _loop ? DSBPLAY_LOOPING : 0;
 
@@ -21,9 +22,9 @@ void Sound::Play(bool _loop) {
 	}
 }
 
-void Sound::SetSpeed(float _speed) {
+void Sound::SetFreq(float _freq) {
 	// 지정된 샘플레이트를 벗어나게 하지 말것
-	pSecondaryBuffer->SetFrequency(DWORD(sampleRate * _speed));
+	pSecondaryBuffer->SetFrequency(DWORD(sampleRate * _freq));
 }
 
 void Sound::Stop() {
@@ -196,15 +197,19 @@ void SoundManager::Init(HWND _hwnd) {
 	/////////////////////////////////
 
 	//pSounds["audio"] = LoadFile("audio");
-	pSounds["horror"] = LoadFile("horror");
-	pSounds["step"] = LoadFile("step");
+	pSounds["horror"] = LoadFile("horror", 1.0f);
+	pSounds["step"] = LoadFile("step", 1.0f);
 	pSounds["noneSound"] = LoadFile("noneSound");
+	pSounds["water"] = LoadFile("water");
+	pSounds["monster"] = LoadFile("monster");
+	pSounds["radar"] = LoadFile("radar");
 
 }
 
-shared_ptr<Sound> SoundManager::LoadFile(string _name) {
+shared_ptr<Sound> SoundManager::LoadFile(string _name, float _freq) {
 	shared_ptr<Sound> pSound = make_shared<Sound>();
 	pSound->Init(pDirectSound, "Sound/" + _name + ".wav");
+	pSound->SetFreq(_freq);
 	return pSound;
 }
 

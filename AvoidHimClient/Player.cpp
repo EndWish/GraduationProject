@@ -45,7 +45,7 @@ void Player::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, co
 	SetChild(pCamera);
 	pCamera->UpdateObject();
 
-	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
+	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step", 1.0f);
 
 	SetBoundingBox(BoundingOrientedBox(
 		XMFLOAT3(0.f, 0.72f, 0.f),
@@ -310,7 +310,7 @@ void Student::Animate(char _collideCheck, float _timeElapsed) {
 void Student::LeftClick() {
 	// 아이템 사용
 	// 열쇠는 다른곳에서 처리한다.
-
+	GameFramework& gameFramework = GameFramework::Instance();
 
 	shared_ptr<Image2D> pUI;
 	if (item == ObjectType::prisonKeyItem || item == ObjectType::none) return;
@@ -328,7 +328,8 @@ void Student::LeftClick() {
 		pUI = Scene::GetUI("2DUI_energyDrink");
 		// 스태미너 100% 회복
 		SetMP(100.0f);
-
+		gameFramework.GetSoundManager().SetPosition("monster", GetWorldPosition());
+		gameFramework.GetSoundManager().Play("monster");
 		// 파티클 생성
 		VS_ParticleMappedFormat particle;
 		particle.boardSize = { 0.03f, 0.03f };

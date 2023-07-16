@@ -872,7 +872,7 @@ void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12De
 	GameFramework& gameFramework = GameFramework::Instance();
 	GameObject::Create(_ObjectName, _pDevice, _pCommandList);
 	name = "OtherPlayer";
-	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step");
+	pFootStepSound = gameFramework.GetSoundManager().LoadFile("step", 1.0f);
 	wpHandObject = FindFrame("Bip001 R Hand");
 
 	SetBoundingBox(BoundingOrientedBox(

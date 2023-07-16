@@ -1,4 +1,5 @@
 
+
 #define CWIDTH 1280
 #define CHEIGHT 720
 
@@ -70,9 +71,6 @@ cbuffer cbSkinnedWorldTransforms : register(b8)
 {
     matrix skinnedWorldTransforms[MAX_BONE];
 }
-
-
-
 
 float3 RandomDirection(float seedOffset);
 float RandomFloat(float2 co);

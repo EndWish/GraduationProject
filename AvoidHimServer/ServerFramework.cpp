@@ -19,8 +19,8 @@ void ServerFramework::Init(HWND _windowHandle) {
     wstring waddr;
     waddr.assign(addr.begin(), addr.end());
     SetWindowText(windowHandle, waddr.c_str());
-
 }
+
 void ServerFramework::Destroy() {
     for (auto [key, pClient] : pClients)
         delete pClient;

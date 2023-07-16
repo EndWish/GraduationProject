@@ -36,7 +36,7 @@ public:
 	Sound();
 	~Sound();
 	void Play(bool _loop = false);
-	void SetSpeed(float _speed);
+	void SetFreq(float _speed);
 	void Stop();
 	void Init(const ComPtr<IDirectSound8>& _pDirectSound, string _name);
 
@@ -60,7 +60,7 @@ public:
 	SoundManager();
 	~SoundManager();
 	void Init(HWND _hwnd);
-	shared_ptr<Sound> LoadFile(string _name);
+	shared_ptr<Sound> LoadFile(string _name, float _freq = 2.0f);
 	void Play(const string& _name, bool _loop = false);
 	void Stop(const string& _name);
 	void SetPosition(const string& _name, const XMFLOAT3& _pos);

@@ -1102,7 +1102,8 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 			// 깊이값을 0으로 초기화하고 레이더를 활성화
 			radarInfo.x = 0.0f;
 			radarInfo.y = 1.0f;
-
+			gameFramework.GetSoundManager().SetPosition("radar", pProfessor->GetWorldPosition());
+			gameFramework.GetSoundManager().Play("radar");
 			radarDuration = 10.0f;
 			GetText("radarCoolTime")->SetEnable(true);
 			GetUI("2DUI_radar")->SetDark(true);
@@ -1397,6 +1398,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		if (packet->playerObjectID == myObjectID) {	// 자신이 정수기를 사용했을 경우
 			// 스테미너를 충전한다.
 			pPlayer->SetMP(100.f);
+			gameFramework.GetSoundManager().SetPosition("water", pPlayer->GetWorldPosition());
+			gameFramework.GetSoundManager().Play("water");
 			particlePos = pPlayer->GetHeadObject()->GetWorldPosition();
 		}
 		else {
