@@ -526,17 +526,25 @@ void Professor::LeftClick() {
 		sendPacket.playerObjectID = myObjectID;
 		Reload(AttackType::swingAttack);
 
+		// 사운드 재생
+		GameFramework& gameFramework = GameFramework::Instance();
+		gameFramework.GetSoundManager().SetPosition("swingSound01", GetWorldPosition());
+		gameFramework.GetSoundManager().Play("swingSound01");
+
 		// 애니메이션 처리
 		wpAniController.lock()->ChangeClip("Melee");
 		isSwingAttacking = true;
 		// 손에 책을 추가한다.
 		shared_ptr<GameObject> pBookObject = GameFramework::Instance().GetGameObjectManager().GetGameObject("Book", nullptr, nullptr);
+		pBookObject->SetAlwaysDraw(true);
 		pBookObject->Rotate(pBookObject->GetLocalLookVector(), 90.f);
 		pBookObject->MoveUp(0.2f);
 		pBookObject->MoveRight(0.05f);
 		pBookObject->UpdateObject();
-		if(auto pHandObject = wpHandObject.lock())
+		if (auto pHandObject = wpHandObject.lock()) {
 			pHandObject->SetChild(pBookObject);
+		}
+			
 
 		SendFixedPacket(sendPacket);
 	}
@@ -556,6 +564,11 @@ void Professor::RightClick() {
 		// 서버가 늦어질 경우 이곳에서 대기 쿨타임을 주지 않을경우 계속해서 패킷을 전송하게 된다.
 		// 이후 서버에게 패킷을 받아 실제로 공격을 생성할 때 다시 쿨타임을 적용한다.
 		Reload(AttackType::throwAttack);
+
+		// 사운드 재생
+		GameFramework& gameFramework = GameFramework::Instance();
+		gameFramework.GetSoundManager().SetPosition("swingSound02", GetWorldPosition());
+		gameFramework.GetSoundManager().Play("swingSound02");
 
 		// 애니메이션 처리
 		wpAniController.lock()->ChangeClip("throw");

@@ -1155,7 +1155,10 @@ void Lever::QueryInteract() {
 
 void Lever::Interact() {
 	power = !power;
-
+	// 사운드 재생
+	GameFramework& gameFramework = GameFramework::Instance();
+	gameFramework.GetSoundManager().SetPosition("leverSound", GetWorldPosition());
+	gameFramework.GetSoundManager().Play("leverSound");
 }
 
 bool Lever::IsInteractable() {
@@ -1254,6 +1257,10 @@ void Computer::QueryInteract() {
 
 void Computer::Interact() {
 	cout << " 컴퓨터 해킹 시작 \n";
+	// 사운드 재생
+	GameFramework& gameFramework = GameFramework::Instance();
+	gameFramework.GetSoundManager().SetPosition("keyboardSound", GetWorldPosition());
+	gameFramework.GetSoundManager().Play("keyboardSound", true);
 }
 
 bool Computer::IsEnable() {
@@ -1318,6 +1325,9 @@ void Computer::EndInteract() {
 		sendPacket.computerObjectID = id;
 		sendPacket.rate = hackingRate;
 		SendFixedPacket(sendPacket);
+		// 사운드 종료
+		GameFramework& gameFramework = GameFramework::Instance();
+		gameFramework.GetSoundManager().Stop("keyboardSound");
 	}
 }
 

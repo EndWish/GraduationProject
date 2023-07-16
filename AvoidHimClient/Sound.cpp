@@ -204,6 +204,15 @@ void SoundManager::Init(HWND _hwnd) {
 	pSounds["monster"] = LoadFile("monster");
 	pSounds["radar"] = LoadFile("radar");
 
+	pSounds["healSound"] = LoadFile("healSound");
+	pSounds["hittingSound"] = LoadFile("hittingSound");
+	pSounds["keyboardSound"] = LoadFile("keyboardSound");
+	pSounds["leverSound"] = LoadFile("leverSound");
+	pSounds["lightSound"] = LoadFile("lightSound");
+	pSounds["openDoorSound"] = LoadFile("openDoorSound");
+	pSounds["swingSound01"] = LoadFile("swingSound01");
+	pSounds["swingSound02"] = LoadFile("swingSound02");
+
 }
 
 shared_ptr<Sound> SoundManager::LoadFile(string _name, float _freq) {

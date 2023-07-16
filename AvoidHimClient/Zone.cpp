@@ -257,6 +257,9 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 				continue;
 			}
 			_pPlayer->AddHP(-pAttack->GetDamage());
+			// 사운드 재생
+			gameFramework.GetSoundManager().SetPosition("hittingSound", pAttack->GetWorldPosition());
+			gameFramework.GetSoundManager().Play("hittingSound");
 
 			// 플레이어의 체력이 0이 되었을 경우 자신을 감옥으로 이동시키고 패킷을 보낸다.
 			auto pStudent = dynamic_pointer_cast<Student>(_pPlayer);
@@ -1211,10 +1214,20 @@ void Zone::RemoveTrap(UINT _objectID) {
 }
 
 void Zone::Interact(UINT _objectID) {
-	shared_ptr<InteractObject> pGameObject = pInteractObjTable[_objectID];
-	if (pGameObject)
-		pGameObject->Interact();
-	else
+	if (pInteractObjTable.contains(_objectID)) {
+		pInteractObjTable[_objectID]->Interact();
+	}
+	else {
 		cout << "InteractObject Null Error. objID : " << _objectID << "\n";
+	}
 }
 
+shared_ptr<InteractObject> Zone::GetInteractObject(UINT _objectID) {
+	if (pInteractObjTable.contains(_objectID)) {
+		return pInteractObjTable[_objectID];
+	}
+	else {
+		cout << "해당 오브젝트가 존재하지 않는다.\n";
+		return nullptr;
+	}
+}

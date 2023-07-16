@@ -169,6 +169,8 @@ public:
 	void RemoveTrap(UINT _objectID);
 	// 특정 오브젝트에 대한 상호작용을 수행하는 함수
 	void Interact(UINT _objectID);
+	// 상호작용가능한 오브젝트를 얻는 함수
+	shared_ptr<InteractObject> GetInteractObject(UINT _objectID);
 	// 현재 플레이어가 위치한 섹터의 인덱스를 업데이트
 	void UpdatePlayerSector();
 

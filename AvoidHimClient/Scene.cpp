@@ -1391,6 +1391,14 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		SC_TOGGLE_DOOR* packet = GetPacket<SC_TOGGLE_DOOR>();
 		// 해당 오브젝트에 대한 상호작용을 한다.
 		pZone->Interact(packet->objectID);
+
+		// 사운드 재생
+		GameFramework& gameFramework = GameFramework::Instance();
+		shared_ptr<InteractObject> interactObject = pZone->GetInteractObject(packet->objectID);
+		if (interactObject) {
+			gameFramework.GetSoundManager().SetPosition("openDoorSound", interactObject->GetWorldPosition());
+			gameFramework.GetSoundManager().Play("openDoorSound");
+		}
 		break;
 	}
 	case SC_PACKET_TYPE::useWaterDispenser: {
@@ -1464,6 +1472,10 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			if (!pAttack) break;
 			pHitPlayerObject->AddHP(-pAttack->GetDamage());
 			pHitPlayerObject->SetHit(true);
+
+			// 사운드 재생
+			gameFramework.GetSoundManager().SetPosition("hittingSound", pHitPlayerObject->GetWorldPosition());
+			gameFramework.GetSoundManager().Play("hittingSound");
 		}
 		else {
 			cout << "해당 플레이어가 없습니다!!\n";
@@ -1549,6 +1561,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 				static_pointer_cast<Professor>(pPlayer)->SetSabotageCoolTime(60.f);
 
 			gameFramework.GetSoundManager().Stop("horror");
+			gameFramework.GetSoundManager().SetPosition("lightSound", pPlayer->GetWorldPosition());
+			gameFramework.GetSoundManager().Play("lightSound");
 		}
 		else {
 			globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
@@ -1585,7 +1599,10 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		if (packet->playerObjectID == myObjectID) {
 			auto pStudent = static_pointer_cast<Student>(pPlayer);
 			if(packet->objectType == ObjectType::medicalKitItem) {
+				
 				pStudent->AddHP(50.0f);
+				gameFramework.GetSoundManager().SetPosition("healSound", pStudent->GetWorldPosition());
+				gameFramework.GetSoundManager().Play("healSound");
 
 				// 파티클 생성
 				VS_ParticleMappedFormat particle;
@@ -1617,6 +1634,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			auto pStudent = static_pointer_cast<InterpolateMoveGameObject>(FindPlayerObject(packet->playerObjectID));
 			if (packet->objectType == ObjectType::medicalKitItem) {
 				pStudent->AddHP(50.0f);
+				gameFramework.GetSoundManager().SetPosition("healSound", pStudent->GetWorldPosition());
+				gameFramework.GetSoundManager().Play("healSound");
 
 				// 파티클 생성
 				VS_ParticleMappedFormat particle;
