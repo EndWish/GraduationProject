@@ -868,16 +868,11 @@ void SkinnedWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pC
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
 			auto pSkinnedGameObject = static_pointer_cast<SkinnedGameObject>(pGameObject);
-			if (!pSkinnedGameObject->GetVisible()) continue;
-
-			// 1 ~ 0 값을 넘겨줌
-			hitRate = pSkinnedGameObject->GetHitTime() * 2.f * pSkinnedGameObject->GetHit();
-			_pCommandList->SetGraphicsRoot32BitConstants(13, 1, &hitRate, 0);
 
 			// 플레이어는 sector에 포함되지 않는다.
-			if (!static_pointer_cast<SkinnedGameObject>(pGameObject)->GetTransparent()) {
-				pGameObject->Render(_pCommandList);
-			}
+			// 투명상태여도 레이더의 와이어프레임을 Render한다.
+			pGameObject->Render(_pCommandList);
+			
 		}
 	}
 }
