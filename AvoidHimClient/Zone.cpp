@@ -258,7 +258,7 @@ void Sector::CheckCollisionWithAttack(shared_ptr<Student> _pPlayer) {
 			}
 			_pPlayer->AddHP(-pAttack->GetDamage());
 			// 사운드 재생
-			gameFramework.GetSoundManager().SetPosition("hittingSound", pAttack->GetWorldPosition());
+			gameFramework.GetSoundManager().SetPosition("hittingSound", pGameObject->GetWorldPosition());
 			gameFramework.GetSoundManager().Play("hittingSound");
 
 			// 플레이어의 체력이 0이 되었을 경우 자신을 감옥으로 이동시키고 패킷을 보낸다.
@@ -1143,7 +1143,7 @@ void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObje
 		pAttack->Rotate(pAttack->GetLocalRightVector(), -35.f);
 
 		// 사운드 재생
-		gameFramework.GetSoundManager().SetPosition("swingSound01", pProfessor->GetWorldPosition());
+		gameFramework.GetSoundManager().SetPosition("swingSound01", _pPlayerObject->GetWorldPosition());
 		gameFramework.GetSoundManager().Play("swingSound01");
 	}
 	else if (_attackType == AttackType::throwAttack) {
@@ -1167,7 +1167,7 @@ void Zone::AddAttack(AttackType _attackType, UINT _objectID, shared_ptr<GameObje
 		pAttack->SetLocalRotation(_pPlayerObject->GetLocalRotate());
 
 		// 사운드 재생
-		gameFramework.GetSoundManager().SetPosition("swingSound02", pProfessor->GetWorldPosition());
+		gameFramework.GetSoundManager().SetPosition("swingSound02", _pPlayerObject->GetWorldPosition());
 		gameFramework.GetSoundManager().Play("swingSound02");
 	}
 	
