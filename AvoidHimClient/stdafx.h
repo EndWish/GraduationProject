@@ -9,8 +9,7 @@
 #define NUM_SHADOW_MAP 20
 #define MAX_LIGHTS 80 // 조명의 최대 갯수
 #define GRAVITY 9.8f
-#define C_WIDTH 1280	
-#define C_HEIGHT 720
+
 #define USING_INSTANCING
 //#define DEBUG
 #define DRAW_BOUNDING
@@ -140,7 +139,12 @@ using Microsoft::WRL::ComPtr;
 extern int testcount;
 
 extern chrono::system_clock::time_point gameStartTime;
+extern bool fpsToggle;
 
+
+extern int C_WIDTH;
+extern int C_HEIGHT;
+extern bool windowed;
 
 // float 난수 생성
 float random(float min, float max);
@@ -157,6 +161,7 @@ std::ostream& operator<<(std::ostream& os, const XMFLOAT3& f3);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4& f4);
 std::ostream& operator<<(std::ostream& os, const XMFLOAT4X4& f4x4);
 std::ostream& operator<<(std::ostream& os, const XMINT3& i3);
+
 
 
 ComPtr<ID3D12Resource> CreateTextureResourceFromDDSFile(ID3D12Device* pd3dDevice, ID3D12GraphicsCommandList* pd3dCommandList, const wchar_t* pszFileName, ID3D12Resource** ppd3dUploadBuffer, D3D12_RESOURCE_STATES d3dResourceStates);

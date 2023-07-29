@@ -285,7 +285,7 @@ void GameFramework::CreateSwapChain()
 	dxgiSwapChainDesc.OutputWindow = windowHandle;    // 출력할 윈도우
 	dxgiSwapChainDesc.SampleDesc.Count = (msaa4xEnable) ? 4 : 1;
 	dxgiSwapChainDesc.SampleDesc.Quality = (msaa4xEnable) ? (msaa4xLevel - 1) : 0;
-	dxgiSwapChainDesc.Windowed = TRUE;    // 창모드를 쓸껀지?
+	dxgiSwapChainDesc.Windowed = windowed;    // 창모드를 쓸껀지?
 	dxgiSwapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
 
 	HRESULT hResult = pDxgiFactory->CreateSwapChain(pCommandQueue.Get(), &dxgiSwapChainDesc, (IDXGISwapChain**)pDxgiSwapChain.GetAddressOf());
@@ -498,6 +498,12 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[17].DescriptorTable.NumDescriptorRanges = 1;
 	pRootParameters[17].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[6];
 	pRootParameters[17].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// G Buffer
+
+	pRootParameters[18].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+	pRootParameters[18].Descriptor.ShaderRegister = 12; // 해상도값
+	pRootParameters[18].Descriptor.RegisterSpace = 0;
+	pRootParameters[18].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
+
 
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[3];
 	::ZeroMemory(samplerDesc, sizeof(D3D12_STATIC_SAMPLER_DESC) * 3);
@@ -1136,7 +1142,7 @@ void GameFramework::FrameAdvance() {
 	MoveToNextFrame();
 	
 	// FPS 표시
-	wstring titleString = L"FPS : " + to_wstring(gameTimer.GetFPS());
+	wstring titleString = L"Avoid Him";
 	SetWindowText(windowHandle, (LPCWSTR)titleString.c_str());
 }
 
@@ -1331,12 +1337,14 @@ shared_ptr<Texture> GameFramework::GetDestBuffer() const {
 
 
 void GameFramework::CreateShaderVariables() {
-	ComPtr<ID3D12Resource> temp;
+	ComPtr<ID3D12Resource> frameworkTemp;
 	UINT ncbElementBytes = ((sizeof(CB_FRAMEWORK_INFO) + 255) & ~255); //256의 배수
 
-	pcbFrameworkInfo = ::CreateBufferResource(pDevice.Get(), pCommandList.Get(), NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, temp);
+	pcbFrameworkInfo = ::CreateBufferResource(pDevice.Get(), pCommandList.Get(), NULL, ncbElementBytes, D3D12_HEAP_TYPE_UPLOAD, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER, frameworkTemp);
 
 	pcbFrameworkInfo->Map(0, NULL, (void**)&pcbMappedFrameworkInfo);
+
+
 }
 void GameFramework::UpdateShaderVariables() {
 	float tempTimeElapsed = gameTimer.GetTimeElapsed();
@@ -1344,8 +1352,15 @@ void GameFramework::UpdateShaderVariables() {
 	g_Time += 0.0002f;
 	pcbMappedFrameworkInfo->currentTime = (float)g_Time;
 	pcbMappedFrameworkInfo->elapsedTime = (float)gameTimer.GetTimeElapsed();
+	pcbMappedFrameworkInfo->width = C_WIDTH;
+	pcbMappedFrameworkInfo->height = C_HEIGHT;
 
 	D3D12_GPU_VIRTUAL_ADDRESS d3dGpuVirtualAddress = pcbFrameworkInfo->GetGPUVirtualAddress();
 	pCommandList->SetGraphicsRootConstantBufferView(15, d3dGpuVirtualAddress);
+}
+
+int GameFramework::GetFPS()
+{
+	return gameTimer.GetFPS();
 }
 

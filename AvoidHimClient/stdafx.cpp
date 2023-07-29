@@ -32,6 +32,12 @@ array<char, BUFSIZE> recvBuffer;
 int testcount = 0;
 chrono::system_clock::time_point gameStartTime;
 
+bool fpsToggle = false;
+
+int C_WIDTH;
+int C_HEIGHT;
+bool windowed;
+
 float random(float min, float max) {
 	uniform_real_distribution<float> dis(min, max);
 	return dis(rd);

@@ -694,7 +694,6 @@ void BasicShadowShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pComman
 			}
 		}
 	}
-
 }
 
 D3D12_RASTERIZER_DESC BasicShadowShader::CreateRasterizerState() {
@@ -868,7 +867,7 @@ void SkinnedWireFrameShader::Render(const ComPtr<ID3D12GraphicsCommandList>& _pC
 			if (wpGameObject.expired()) continue;
 			auto pGameObject = wpGameObject.lock();
 			auto pSkinnedGameObject = static_pointer_cast<SkinnedGameObject>(pGameObject);
-
+			if (!pSkinnedGameObject->GetVisible()) continue;
 			// 플레이어는 sector에 포함되지 않는다.
 			// 투명상태여도 레이더의 와이어프레임을 Render한다.
 			pGameObject->Render(_pCommandList);

@@ -77,7 +77,7 @@ LobbyScene::LobbyScene()
 {
 	roomPage = 1;
 	currState = LobbyState::title;
-	viewPort = { 0,0, C_WIDTH, C_HEIGHT, 0, 1 };
+	viewPort = { 0,0, (float)C_WIDTH, (float)C_HEIGHT, 0, 1 };
 	scissorRect = { 0,0, C_WIDTH, C_HEIGHT };
 	roomList.resize(6);
 	isLoading = false;
@@ -169,6 +169,9 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 	pTexts["inRoomName3"] = make_shared<TextBox>((WCHAR*)L"LeeSeoyun", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.856f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
 	pTexts["inRoomName4"] = make_shared<TextBox>((WCHAR*)L"LeeSeoyun", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.244f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
 	pTexts["inRoomName5"] = make_shared<TextBox>((WCHAR*)L"LeeSeoyun", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(1.632f, 1.38f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 40.0f, false);
+	
+	
+	pTexts["fps"] = make_shared<TextBox>((WCHAR*)L"굴림체", D2D1::ColorF(1, 1, 1, 1), XMFLOAT2(0.f, 0.f), XMFLOAT2(0.285f, 0.142f), C_WIDTH / 100.0f, fpsToggle);
 
 	Computer::InitMaterials(_pDevice, _pCommandList);
 
@@ -191,12 +194,20 @@ void LobbyScene::ReleaseUploadBuffers() {
 }
 
 void LobbyScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, const array<UCHAR, 256>& _keysBuffers, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
-
+	if (_keyDownBuffer['F']) {
+		fpsToggle = !fpsToggle;
+		pTexts["fps"]->SetEnable(fpsToggle);
+	}
 }
 
 void LobbyScene::AnimateObjects(char _collideCheck, float _timeElapsed, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList)  {
 	for (auto& pRoomPlayerObject : pRoomPlayerObjects) {
 		pRoomPlayerObject->Animate(_timeElapsed);
+	}
+	GameFramework& gameFramework = GameFramework::Instance();
+	if (fpsToggle) {
+		wstring fpsText = L"FPS : " + to_wstring(gameFramework.GetFPS());
+		pTexts["fps"]->SetText(fpsText.c_str());
 	}
 }
 
@@ -1076,7 +1087,10 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		sendPacket.cid = cid;
 		SendFixedPacket(sendPacket);
 	}
-
+	if (_keyDownBuffer['F']) {
+		fpsToggle = !fpsToggle;
+		pTexts["fps"]->SetEnable(fpsToggle);
+	}
 	
 
 
@@ -1209,6 +1223,11 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		pEffect->Animate(_timeElapsed);
 	}
 
+	if (fpsToggle) {
+		wstring fpsText = L"FPS : " + to_wstring(gameFramework.GetFPS());
+		pTexts["fps"]->SetText(fpsText.c_str());
+	}
+
 	// 플레이어 애니메이션
 	pPlayer->Animate(_collideCheck, _timeElapsed);
 	camera->UpdateObject();
@@ -1296,7 +1315,7 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 	// 다른 플레이어들에 대한 이동을 수행
 	for (auto& [objectID, pOtherPlayer] : pOtherPlayers) {
 		XMINT3 prevIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
-		pOtherPlayer->Animate(_timeElapsed);
+		pOtherPlayer->Animate(_timeElapsed, pPlayer->GetWorldPosition());
 
 		XMINT3 nextIndex = pZone->GetIndex(pOtherPlayer->GetWorldPosition());
 

@@ -6,6 +6,8 @@
 struct CB_FRAMEWORK_INFO {
 	float currentTime;
 	float elapsedTime;
+	UINT width;
+	UINT height;
 };
 
 class GameFramework {
@@ -127,6 +129,7 @@ private:
 	ComPtr<ID3D12Resource> pcbFrameworkInfo;
 	shared_ptr<CB_FRAMEWORK_INFO> pcbMappedFrameworkInfo;
 
+
 	// 持失, 社瑚切
 private:
 	GameFramework();
@@ -176,6 +179,7 @@ public:
 	TextureManager& GetTextureManager();
 	GameObjectManager& GetGameObjectManager();
 	SoundManager& GetSoundManager();
+
 	shared_ptr<Shader> GetShader(const string& _name);
 	UINT GetCurrentSwapChainIndex() const { return swapChainBufferCurrentIndex; };
 
@@ -207,4 +211,5 @@ public:
 
 	void CreateShaderVariables();
 	void UpdateShaderVariables();
+	int GetFPS();
 };

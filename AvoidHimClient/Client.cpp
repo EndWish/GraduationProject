@@ -9,6 +9,8 @@ WCHAR szTitle[MAX_LOADSTRING];
 WCHAR szWindowClass[MAX_LOADSTRING];            
 HWND hLoginDlg;
 ComPtr<ID3D12Debug1> pDebugLayer;
+int width[5]{ 800, 1024, 1280, 1600, 1920 };
+int height[5]{ 600, 768, 720, 900, 1080 };
 
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -86,6 +88,7 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
     DWORD dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_MINIMIZEBOX | WS_SYSMENU |
         WS_BORDER;
 
+
     RECT windowSize = { 0, 0, C_WIDTH, C_HEIGHT };
     AdjustWindowRect(&windowSize, dwStyle, FALSE);
 
@@ -98,12 +101,19 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
         return FALSE;
     }
 
+
     // 윈속 초기화
     WSADATA wsa;
     if (WSAStartup(MAKEWORD(2, 2), &wsa) != 0)
         cout << "WSA Init Error! \n";
 
     DialogBox(hInstance, MAKEINTRESOURCE(IDD_DIALOG1), NULL, DlgProc);
+
+    // 윈도우를 먼저 만든 후, 받은 인자값으로 창 크기를 변경한다.
+    windowSize = { 0, 0, C_WIDTH, C_HEIGHT };
+    AdjustWindowRect(&windowSize, dwStyle, FALSE);
+    SetWindowPos(hWnd, NULL, 0, 0, windowSize.right - windowSize.left, windowSize.bottom - windowSize.top, 0);
+
 
     // 디바이스가 만들어지기 전에 enable되어야한다.
     if (!FAILED(D3D12GetDebugInterface(IID_PPV_ARGS(&(pDebugLayer))))) {
@@ -180,6 +190,12 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
     case WM_INITDIALOG:
     {
         hLoginDlg = hDlg;
+        wstring t;
+        for (int i = 0; i < 5; ++i) {
+            t = to_wstring(width[i]) + L"x" + to_wstring(height[i]);
+            SendMessage(GetDlgItem(hLoginDlg, IDC_LIST1), LB_ADDSTRING, 0, (LPARAM)t.c_str());
+            SendMessage(GetDlgItem(hLoginDlg, IDC_LIST1), LB_SETCURSEL, 0, (LPARAM)0);
+        }
         return TRUE;
     }
     case WM_COMMAND:
@@ -190,6 +206,14 @@ INT_PTR CALLBACK DlgProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
             TCHAR IPbuffer[16];
             GetDlgItemTextW(hDlg, IDC_EDIT1, nickNameBuffer, 64);
             GetDlgItemText(hDlg, IDC_IPADDRESS1, IPbuffer, 16);
+            int index = SendMessage(GetDlgItem(hDlg, IDC_LIST1), LB_GETCURSEL, 0, 0);
+            
+            // 창모드 유무, 해상도 값을 가져온다.
+            C_WIDTH = width[index];
+            C_HEIGHT = height[index];
+            windowed = SendMessage(GetDlgItem(hDlg, IDC_CHECK1), BM_GETCHECK, 0, 0);
+
+            cout << C_WIDTH << "x" << C_HEIGHT << " , " << windowed << "\n";
             size_t nicklen = wcslen(nickNameBuffer);
 
             if (nicklen >= 20)

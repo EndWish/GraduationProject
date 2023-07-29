@@ -862,6 +862,8 @@ InterpolateMoveGameObject::InterpolateMoveGameObject() {
 	t = 0;
 	hp = 100.0f;
 
+
+	prevFootPosition = XMFLOAT3();
 	visible = false;
 	imprisoned = false;
 
@@ -891,7 +893,7 @@ void InterpolateMoveGameObject::Create(string _ObjectName, const ComPtr<ID3D12De
 InterpolateMoveGameObject::~InterpolateMoveGameObject() {
 }
 
-void InterpolateMoveGameObject::Animate(float _timeElapsed) {
+void InterpolateMoveGameObject::Animate(float _timeElapsed, const XMFLOAT3& _playerPos) {
 	GetAniController()->AddTime(_timeElapsed);
 
 	// 공격 애니메이션도중 책 오브젝트의 생성과 삭제를 처리
@@ -920,22 +922,27 @@ void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 	localScale = Vector3::Lerp(prevScale, nextScale, t);
 
 	UpdateObject();
-	XMFLOAT3 position = GetWorldPosition();
-	pFootStepSound->SetPosition(position);
-	
 
-	XMFLOAT3 prevPositionFootStep = GetWorldPosition();
-	if (position.y == prevPositionFootStep.y) {
-		moveDistance = Vector3::Length(Vector3::Subtract(prevPositionFootStep, position));
+	XMFLOAT3 position = GetWorldPosition();
+
+	// 플레이어와 다른 플레이어 사이의 거리 (스칼라x)
+	XMFLOAT3 distance = Vector3::Subtract(position, _playerPos);
+
+	// 소리의 거리가 너무 짧은 관계로, 해당 방향으로 소리 거리를 늘려준다.
+	XMFLOAT3 soundPos = Vector3::Add(position, Vector3::ScalarProduct(distance, 1.5f));
+	pFootStepSound->SetPosition(soundPos);
+
+	if (position.y == prevFootPosition.y) {
+		moveDistance = Vector3::Length(Vector3::Subtract(prevFootPosition, position));
 	}
 
-	if (moveDistance > 0 )
+	if (moveDistance > 0)
 	{
 		// 클립 시작 4프레임 후에 첫 발 내딛음
 		if (footStepCooltime == 0) footStepCooltime = 8.0f / 29.97f;
 		else footStepCooltime += _timeElapsed;
 	}
-	else footStepCooltime = 0;
+
 
 	// 발 간격이 12 프레임
 	if (footStepCooltime >= (12.0f / 29.97f)) {
@@ -943,6 +950,8 @@ void InterpolateMoveGameObject::Animate(float _timeElapsed) {
 		footStepCooltime = 0.01f;
 	}
 	GameObject::Animate(_timeElapsed);
+
+	prevFootPosition = GetWorldPosition();
 }
 
 void InterpolateMoveGameObject::Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {

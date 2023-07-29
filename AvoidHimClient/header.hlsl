@@ -1,8 +1,5 @@
 
 
-#define CWIDTH 1280
-#define CHEIGHT 720
-
 // 출력하지 않는 렌더타겟이 있을 수 있다.
 #pragma warning( disable :  3578 )
 
@@ -36,6 +33,8 @@ cbuffer cbFrameworkInfo : register(b11)
 {
     float currentTime : packoffset(c0.x);
     float elapsedTime : packoffset(c0.y);
+    uint CWIDTH : packoffset(c0.z);
+    uint CHEIGHT : packoffset(c0.w);
 };
 cbuffer cbFloatVariable : register(b6)
 {

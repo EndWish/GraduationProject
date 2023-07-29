@@ -349,6 +349,8 @@ private:
 	XMFLOAT4 nextRotation;
 	XMFLOAT3 nextScale;
 
+	XMFLOAT3 prevFootPosition;
+
 	float moveDistance;
 	float t;
 	float hp;
@@ -370,7 +372,7 @@ public:
 	~InterpolateMoveGameObject();
 	virtual void Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 
-	virtual void Animate(float _timeElapsed);
+	virtual void Animate(float _timeElapsed, const XMFLOAT3& _playerPosition);
 	void Render(const ComPtr<ID3D12GraphicsCommandList>& _pCommandList);
 	
 	void SetNextTransform(const XMFLOAT3& _position, const XMFLOAT4& _rotation, const XMFLOAT3& _scale);
