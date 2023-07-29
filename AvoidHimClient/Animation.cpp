@@ -123,3 +123,11 @@ void AnimationController::ChangeClip(const string& _name, float _time) {
 bool AnimationController::IsMaxFrame() const {
 	return pAniClips.at(currentAniClipName)->GetRunTime() <= time;\
 }
+
+
+void AnimationController::AddCurrentClipAniSpeedRatio(float add) {
+	shared_ptr<AnimationClip> curAniClip = pAniClips.at(currentAniClipName);
+	curAniClip->setSpeedRatio(curAniClip->getSpeedRatio() + add);
+	cout << "clip - " << curAniClip->GetName() << "의 스피드 : " << curAniClip->getSpeedRatio() << "\n";
+
+}

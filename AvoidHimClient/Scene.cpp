@@ -181,6 +181,9 @@ void LobbyScene::Init(const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12G
 
 	pButtons["gameStartButton"] = make_shared<Button>("2DUI_startButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.25f, 1.7f), ButtonType::gameStart, _pDevice, _pCommandList, false);
 	pButtons["quitRoomButton"] = make_shared<Button>("2DUI_quitRoomButton", XMFLOAT2(0.3f, 0.2f), XMFLOAT2(1.6f, 1.7f), ButtonType::quitRoom, _pDevice, _pCommandList, false);
+
+	// 브금 재생
+	gameFramework.GetSoundManager().Play("introMusic", true);
 }
 
 void LobbyScene::ReleaseUploadBuffers() {
@@ -294,6 +297,7 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		break;
 	}
 	case SC_PACKET_TYPE::gameStart: {
+		gameFramework.GetSoundManager().Stop("introMusic");
 		// 게임이 돌아왔을 때 모든 플레이어가 대기상태여야 하기 때문에 미리 풀어준다.
 		for (auto& player : roomInfo.players) {
 			player.ready = false;
@@ -332,6 +336,11 @@ void LobbyScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, cons
 		SC_YOUR_PLAYER_OBJECTID* packet = GetPacket<SC_YOUR_PLAYER_OBJECTID>();
 
 		myObjectID = packet->objectID;
+		break;
+	}
+	case SC_PACKET_TYPE::playersInfo: {
+		SC_PLAYERS_INFO* packet = GetPacket<SC_PLAYERS_INFO>();
+		cout << "playersInfo : 로비씬으로 이동하면서 처리를 하지 않아도 되는 패킷\n";
 		break;
 	}
 	default:
@@ -1049,6 +1058,13 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 	GameFramework& gameFramework = GameFramework::Instance();
 	// 등속운동은 미리 timeElapsed를 곱해준다
 
+	//if (_keyDownBuffer['N']) {
+	//	pPlayer->GetAniController()->AddCurrentClipAniSpeedRatio(-0.05f);
+	//}
+	//if (_keyDownBuffer['M']) {
+	//	pPlayer->GetAniController()->AddCurrentClipAniSpeedRatio(+0.05f);
+	//}
+
 
 	if (_keyDownBuffer['E']) {
 		// 상호작용 키
@@ -1147,6 +1163,9 @@ void PlayScene::AnimateObjects(char _collideCheck, float _timeElapsed, const Com
 		changeUI(false);
 		gameFramework.PopScene();
 		gameFramework.GetSoundManager().Stop("horror");
+		gameFramework.GetSoundManager().Stop("lightBGM");
+		gameFramework.GetSoundManager().Play("introMusic", true);
+
 
 		// 게임을 끝낸다.
 		CS_EXIT_GAME sendPacket;
@@ -1382,8 +1401,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 				pZone->HandOffObject(SectorLayer::otherPlayer, pMoveClient->GetID(), pMoveClient, prevIndex, nextIndex);
 			}
 			// 애니메이션 처리
-			string clieName = pinfo.clipName;
-			pMoveClient->GetAniController()->ChangeClip(clieName);
+			string clipName = pinfo.clipName;
+			pMoveClient->GetAniController()->ChangeClip(clipName);
 		}
 		break;
 	}
@@ -1474,7 +1493,7 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 		}
 		if (pAttack && pAttack->GetAttackType() == AttackType::throwAttack)
 			pAttack->Remove();
-		else cout << "내가 이미 맞은 공격의 대한 패킷입니다.\n";
+		
 		break;
 		
 	}
@@ -1555,6 +1574,7 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			gameFramework.GetSoundManager().Stop("horror");
 			gameFramework.GetSoundManager().SetPosition("lightSound", pPlayer->GetWorldPosition());
 			gameFramework.GetSoundManager().Play("lightSound");
+			gameFramework.GetSoundManager().Play("lightBGM", true);
 		}
 		else {
 			globalAmbient = XMFLOAT4(0.15f, 0.15f, 0.15f, 1.0f);
@@ -1562,8 +1582,10 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			for (auto& pLight : pLights) {
 				pLight->diffuse = XMFLOAT4(3.0f, 0.0f, 0.0f, 1.0f);
 			}
-			if(AllLeverPowerOn == true)
+			if (AllLeverPowerOn == true) {
 				gameFramework.GetSoundManager().Play("horror", true);
+				gameFramework.GetSoundManager().Stop("lightBGM");
+			}
 			AllLeverPowerOn = false;
 		}
 			

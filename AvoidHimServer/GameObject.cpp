@@ -103,12 +103,14 @@ Player::Player() : GameObject() {
 	item = ObjectType::none;
 	exit = false;
 	clientID = 0;
+	strcpy_s(clipName, "idle");
 }
 Player::Player(const Player& _other) : GameObject(_other) {
 	imprisoned = _other.imprisoned;
 	item = _other.item;
 	exit = _other.exit;
 	clientID = _other.clientID;
+	strcpy_s(clipName, "idle");
 }
 Player& Player::operator=(const Player& _other) {
 	GameObject::operator=(_other);
@@ -116,6 +118,7 @@ Player& Player::operator=(const Player& _other) {
 	item = _other.item;
 	exit = _other.exit;
 	clientID = _other.clientID;
+	strcpy_s(clipName, "idle");
 	return *this;
 }
 Player::~Player() {

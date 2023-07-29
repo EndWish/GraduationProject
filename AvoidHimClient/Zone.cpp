@@ -1048,7 +1048,6 @@ void Zone::AnimateObjects(float _timeElapsed) {
 		prevIndex = GetIndex(pAttack->GetWorldPosition());
 		// 사라져야할 공격은 삭제, 소속 섹터 업데이트
 		if (pAttack->GetIsRemove()) {
-			cout << (*pAttackTableIter).second->GetID() << " 삭제\n";
 			GetSector(prevIndex)->RemoveObject(SectorLayer::attack, objectID);
 			pAttackTableIter = pAttackObjTable.erase(pAttackTableIter);
 

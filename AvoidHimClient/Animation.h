@@ -60,4 +60,6 @@ public:
 
 	bool IsMaxFrame() const;
 
+	void AddCurrentClipAniSpeedRatio(float add);
+
 };

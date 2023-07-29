@@ -198,6 +198,8 @@ void SoundManager::Init(HWND _hwnd) {
 
 	//pSounds["audio"] = LoadFile("audio");
 	pSounds["horror"] = LoadFile("horror", 1.0f);
+	pSounds["introMusic"] = LoadFile("introMusic");
+	pSounds["lightBGM"] = LoadFile("lightBGM");
 	pSounds["step"] = LoadFile("step", 1.0f);
 	pSounds["noneSound"] = LoadFile("noneSound");
 	pSounds["water"] = LoadFile("water");
