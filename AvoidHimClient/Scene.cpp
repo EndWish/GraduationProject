@@ -1548,6 +1548,8 @@ void PlayScene::ProcessSocketMessage(const ComPtr<ID3D12Device>& _pDevice, const
 			if (packet->openPlayerObjectID == myObjectID) {
 				pStudent->SetItem(ObjectType::none);
 				Scene::GetUI("2DUI_prisonKey")->SetEnable(false);
+				Scene::GetUI("2DUI_leftSkill")->SetEnable(true);
+
 			}
 			if (pStudent->GetImprisoned()) {	// 수감되어 있다면
 				// 수감해제로 바꾼다.
