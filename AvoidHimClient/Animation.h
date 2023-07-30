@@ -60,6 +60,6 @@ public:
 
 	bool IsMaxFrame() const;
 
-	void AddCurrentClipAniSpeedRatio(float add);
+	shared_ptr<AnimationClip> GetCurrentClip();
 
 };

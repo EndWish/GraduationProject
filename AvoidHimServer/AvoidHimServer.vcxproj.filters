@@ -81,10 +81,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="small.ico">
-      <Filter>리소스 파일</Filter>
-    </Image>
-    <Image Include="AvoidHimServer.ico">
+    <Image Include="AvoidHimIconServer.ico">
       <Filter>리소스 파일</Filter>
     </Image>
   </ItemGroup>

@@ -180,6 +180,7 @@
     <ResourceCompile Include="Client.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="AvoidHimIconClient.ico" />
     <Image Include="Client.ico" />
     <Image Include="small.ico" />
   </ItemGroup>

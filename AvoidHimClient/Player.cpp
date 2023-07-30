@@ -129,7 +129,10 @@ void Player::Animate(char _collideCheck, float _timeElapsed) {
 			else footStepCooltime = 8.0f / 29.97f;
 			
 		}
-		else footStepCooltime += _timeElapsed;
+		else {
+			auto aniClip = wpAniController.lock()->GetCurrentClip();
+			footStepCooltime += _timeElapsed * aniClip->getSpeedRatio();
+		}
 	}
 	else footStepCooltime = 0;
 

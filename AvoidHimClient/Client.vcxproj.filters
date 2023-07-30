@@ -153,6 +153,9 @@
     <Image Include="Client.ico">
       <Filter>리소스 파일</Filter>
     </Image>
+    <Image Include="AvoidHimIconClient.ico">
+      <Filter>리소스 파일</Filter>
+    </Image>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="ComputeShader.hlsl">
