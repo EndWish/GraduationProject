@@ -1429,7 +1429,7 @@ void Attack::Animate(float _timeElapsed) {
 
 SwingAttack::SwingAttack() {
 	attackType = AttackType::swingAttack;
-	damage = 20.0f;
+	damage = 34.0f;
 	isProcessAttack = false;
 	canGiveDmg = false;
 }
@@ -1481,7 +1481,7 @@ ThrowAttack::~ThrowAttack() {
 
 void ThrowAttack::Create(string _ObjectName, const ComPtr<ID3D12Device>& _pDevice, const ComPtr<ID3D12GraphicsCommandList>& _pCommandList) {
 	Attack::Create(_ObjectName, _pDevice, _pCommandList);
-	damage = 20.0f;
+	damage = 34.0f;
 }
 
 void ThrowAttack::Animate(float _timeElapsed) {
