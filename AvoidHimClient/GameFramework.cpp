@@ -499,11 +499,6 @@ void GameFramework::CreateGraphicsRootSignature() {
 	pRootParameters[17].DescriptorTable.pDescriptorRanges = &pDescriptorRanges[6];
 	pRootParameters[17].ShaderVisibility = D3D12_SHADER_VISIBILITY_PIXEL;	// G Buffer
 
-	pRootParameters[18].ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
-	pRootParameters[18].Descriptor.ShaderRegister = 12; // 해상도값
-	pRootParameters[18].Descriptor.RegisterSpace = 0;
-	pRootParameters[18].ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL;
-
 
 	D3D12_STATIC_SAMPLER_DESC samplerDesc[3];
 	::ZeroMemory(samplerDesc, sizeof(D3D12_STATIC_SAMPLER_DESC) * 3);

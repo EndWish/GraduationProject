@@ -1091,7 +1091,9 @@ void PlayScene::ProcessKeyboardInput(const array<bool, 256>& _keyDownBuffer, con
 		fpsToggle = !fpsToggle;
 		pTexts["fps"]->SetEnable(fpsToggle);
 	}
-	
+	if (_keyDownBuffer[VK_F12]) {
+		DestroyWindow(hWnd);
+	}
 
 
 	if (_keysBuffers[VK_SHIFT] & 0xF0) {
